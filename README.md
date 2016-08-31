@@ -11,9 +11,6 @@ The "bright line" dividing the class of models of interest to us are those for w
 
 There's going to be some simulation, validation, etc, with this project. For that we use [nestly] (http://nestly.readthedocs.io/en/latest/).
 
-Sequence data from Tas et al. → [data/Tas/aad3439-DatabaseS1.xlsx] (data/Tas/aad3439-DatabaseS1.xlsx)
-
-
         1
        /|\
       1 3 2
