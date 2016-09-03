@@ -11,8 +11,15 @@ The "bright line" dividing the class of models of interest to us are those for w
 
 There's going to be some simulation, validation, etc, with this project. For that we use [nestly] (http://nestly.readthedocs.io/en/latest/).
 
+## Scripts
+
+* TasParse.py - this reads the Tas data excel file, extracts the sequences from lymph node 2 germinal center 1, aligns with muscle, and prints to phyllip format.
+* recurse.py - recursion for computing probability of the number of clone leaves and mutant clades for a binary tree with branching prob p and mutation prob q, then using that in an outer recurison level to compute the likelihood of p and q given the entire collapsed tree. Input is breadth-first pairs of comma-separated counts and descendant numbers.
+
+
+
         1
-       /|\
-      1 3 2
+       / \
+      1   ^
      /
     4
