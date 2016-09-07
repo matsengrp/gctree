@@ -14,12 +14,5 @@ There's going to be some simulation, validation, etc, with this project. For tha
 ## Scripts
 
 * TasParse.py - this reads the Tas data excel file, extracts the sequences from lymph node 2 germinal center 1, aligns with muscle, and prints to phyllip format.
-* recurse.py - recursion for computing probability of the number of clone leaves and mutant clades for a binary tree with branching prob p and mutation prob q, then using that in an outer recurison level to compute the likelihood of p and q given the entire collapsed tree. Input is breadth-first pairs of comma-separated counts and descendant numbers.
+* recurse.py - simulate, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types.
 
-
-
-        1
-       / \
-      1   ^
-     /
-    4
