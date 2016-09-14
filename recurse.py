@@ -1,11 +1,7 @@
 #! /bin/env python
 
-import sys, scipy, warnings, random
+import scipy, warnings, random
 from scipy.optimize import minimize, check_grad
-import matplotlib
-matplotlib.use('PDF')
-from matplotlib import pyplot as plt
-from matplotlib import rc
 
 """
 This module contains classes for simulation and inference for a binary branching process with mutation
@@ -14,9 +10,9 @@ in which the tree is collapsed to nodes that count the number of clonal leaves o
 
 class LeavesAndClades():
     """
-    This is a base class for simulating, and computing likelihood for, a binary infinite type branching process with branching
-    probability p, mutation probability q, and we collapse mutant clades off the root type
-    and consider just the number of clone leaves, c, and mutant clades, m.
+    This is a base class for simulating, and computing likelihood for, a binary infinite type branching
+    process with branching probability p, mutation probability q, and we collapse mutant clades off the
+    root type and consider just the number of clone leaves, c, and mutant clades, m.
 
       /\            
      /\ ^          (3)
@@ -27,7 +23,7 @@ class LeavesAndClades():
     def __init__(self, p=None, q=None, c=None, m=None):
         """initialize with branching probability p and mutation probability q, both in the unit interval"""
         if p is not None or q is not None:
-            if not (0 < p < 1 and 0 < q < 1):
+            if not (0 <= p <= 1 and 0 <= q <= 1):
                 raise ValueError('p and q must be in the unit interval')
             self._p = p
             self._q = q
@@ -36,41 +32,36 @@ class LeavesAndClades():
                 raise ValueError('c and m must be nonnegative integers summing greater than zero')
             self._c = c
             self._m = m
-    def simulate(self, max_gen=20):
+        self._extinction_time = None # <-- number of generations clone line survives for
+
+    def simulate(self):
         """simulate the number of clone leaves and mutant clades off a root node"""
         if self._p>=.5:
             warnings.warn('p >= .5 is not subcritical, tree simulations not garanteed to terminate')
         if self._p is None or self._q is None:
             raise ValueError('p and q parameters must be defined for simulation\n')
-        if max_gen == 0:
-            raise RuntimeError('tree not terminated before max_gen generations\n')
-        # if there are no children, there is just one leaf and no mutant clades
-        if random.random() > self._p:
-            self._c = 1
-            self._m = 0
-            return self
-        clone_leaves = 0
-        mutant_clades = 0
-        # if not a leaf, there are two children
-        for child in range(2):
-            # if mutant, it just counts as a clade
-            if random.random() < self._q:
-                mutant_clades += 1
-            else:
-                LeavesAndClades.simulate(self, max_gen=max_gen-1)
-                new_clone_leaves = self._c
-                new_mutant_clades = self._m
-                if new_clone_leaves is not None and new_mutant_clades is not None:
-                    clone_leaves += new_clone_leaves
-                    mutant_clades += new_mutant_clades
-                else:
-                    clone_leaves = mutant_clades = None
-                    break
-        self._c = clone_leaves
-        self._m = mutant_clades
-        return self
 
-    f_hash = {} # <--- class variable for hashing these
+        # let's track the tree in breadth first order, listing number clone and mutant descendants of each node
+        # mutant clades terminate in this view
+        cumsum_clones = 0
+        len_tree = 0
+        self._c = 0
+        self._m = 0
+        # while termination condition not met
+        while cumsum_clones > len_tree - 1:
+            if random.random() < self._p:
+                mutants = sum(random.random() < self._q for child in range(2))
+                clones = 2 - mutants 
+                self._m += mutants
+            else:
+                mutants = 0
+                clones = 0
+                self._c += 1
+            cumsum_clones += clones
+            len_tree += 1
+        assert cumsum_clones == len_tree - 1
+
+    f_hash = {} # <--- class variable for hashing calls to the following function
     def f(self, p, q, sign=1):
         """
         Probability of getting c leaves that are clones of the root and m mutant clades off
@@ -81,41 +72,46 @@ class LeavesAndClades():
         c, m = self._c, self._m
         if (p, q, c, m) not in LeavesAndClades.f_hash:
             if c==m==0 or (c==0 and m==1):
-                return (0., (0., 0.))
-            if c==1 and m==0:
-                return (1-p, (-1, 0.))
-            if c==1 and m==1:
-                return (2*p*q*(1-q), (2*q*(1-q), 2*p - 4*p*q))
-            if c==0 and m==2:
-                return (p*q**2, (q**2, 2*p*q))
-            if m >= 1:
-                neighbor = LeavesAndClades(p=p, q=q, c=c, m=m-1)
-                neighbor_f, (neighbor_dfdp, neighbor_dfdq) = neighbor.f(p, q)
-                f_result = 2*p*q*(1-q)*neighbor_f
-                dfdp_result =   2*q*(1-q) * neighbor_f + \
-                              2*p*q*(1-q) * neighbor_dfdp 
-                dfdq_result = (2*p - 4*p*q) * neighbor_f + \
-                               2*p*q*(1-q)  * neighbor_dfdq
+                f_result = 0
+                dfdp_result = 0
+                dfdq_result = 0
+            elif c==1 and m==0:
+                f_result = 1-p
+                dfdp_result = -1
+                dfdq_result = 0
+            elif c==0 and m==2:
+                f_result = p*q**2
+                dfdp_result = q**2
+                dfdq_result = 2*p*q
             else:
-                f_result = 0.
-                dfdp_result = 0.
-                dfdq_result = 0.
-            for cx in range(c+1):
-                for mx in range(m+1):
-                    if (not (cx==0 and mx==0)) and (not (cx==c and mx==m)):
-                        neighbor1 = LeavesAndClades(p=p, q=q, c=cx, m=mx)
-                        neighbor2 = LeavesAndClades(p=p, q=q, c=c-cx, m=m-mx)
-                        neighbor1_f, (neighbor1_dfdp, neighbor1_dfdq) = neighbor1.f(p, q)
-                        neighbor2_f, (neighbor2_dfdp, neighbor2_dfdq) = neighbor2.f(p, q)
-                        f_result += p*(1-q)**2*neighbor1_f*neighbor2_f
-                        dfdp_result +=   (1-q)**2 * neighbor1_f    * neighbor2_f + \
-                                       p*(1-q)**2 * neighbor1_dfdp * neighbor2_f + \
-                                       p*(1-q)**2 * neighbor1_f    * neighbor2_dfdp
-                        dfdq_result += -2*p*(1-q) * neighbor1_f    * neighbor2_f + \
-                                       p*(1-q)**2 * neighbor1_dfdq * neighbor2_f + \
-                                       p*(1-q)**2 * neighbor1_f    * neighbor2_dfdq
-            CollapsedTree.f_hash[(p, q, c, m)] = (f_result, scipy.array([dfdp_result, dfdq_result]))
-        return CollapsedTree.f_hash[(p, q, c, m)]
+                if m >= 1:
+                    neighbor = LeavesAndClades(p=p, q=q, c=c, m=m-1)
+                    neighbor_f, (neighbor_dfdp, neighbor_dfdq) = neighbor.f(p, q)
+                    f_result = 2*p*q*(1-q)*neighbor_f
+                    dfdp_result =   2*q*(1-q) * neighbor_f + \
+                                  2*p*q*(1-q) * neighbor_dfdp 
+                    dfdq_result = (2*p - 4*p*q) * neighbor_f + \
+                                   2*p*q*(1-q)  * neighbor_dfdq
+                else:
+                    f_result = 0.
+                    dfdp_result = 0.
+                    dfdq_result = 0.
+                for cx in range(c+1):
+                    for mx in range(m+1):
+                        if (not (cx==0 and mx==0)) and (not (cx==c and mx==m)):
+                            neighbor1 = LeavesAndClades(p=p, q=q, c=cx, m=mx)
+                            neighbor2 = LeavesAndClades(p=p, q=q, c=c-cx, m=m-mx)
+                            neighbor1_f, (neighbor1_dfdp, neighbor1_dfdq) = neighbor1.f(p, q)
+                            neighbor2_f, (neighbor2_dfdp, neighbor2_dfdq) = neighbor2.f(p, q)
+                            f_result += p*(1-q)**2*neighbor1_f*neighbor2_f
+                            dfdp_result +=   (1-q)**2 * neighbor1_f    * neighbor2_f + \
+                                           p*(1-q)**2 * neighbor1_dfdp * neighbor2_f + \
+                                           p*(1-q)**2 * neighbor1_f    * neighbor2_dfdp
+                            dfdq_result += -2*p*(1-q) * neighbor1_f    * neighbor2_f + \
+                                           p*(1-q)**2 * neighbor1_dfdq * neighbor2_f + \
+                                           p*(1-q)**2 * neighbor1_f    * neighbor2_dfdq
+            LeavesAndClades.f_hash[(p, q, c, m)] = (f_result, scipy.array([dfdp_result, dfdq_result]))
+        return LeavesAndClades.f_hash[(p, q, c, m)]
 
     def get(self, param_name=None):
         """
@@ -169,7 +165,28 @@ class CollapsedTree(LeavesAndClades):
             if not all(scipy.greater(scipy.cumsum([x[1] for x in tree])[:-1], scipy.arange(1, k)-1)):
                 raise ValueError('inconsistent breadth first tree data')
         self._tree = tree
+        self._extinction_time = None
 
+    def phi(self, x, n):
+        """
+        The nth composition of the generating function of the offspring distribution
+        This is the generating function of the total number of (uncollapsed) nodes in the nth generation
+        Note: since collapsed tree simulations don't currently capture fine structure, this is of limited use
+        """
+        if n == 1:
+            return (1-self._p) + self._p*x**2
+        elif n > 1:
+            return phi(x, n-1)
+        else:
+            raise ValueError('n must be a natural number')
+
+    def sf(self, n):
+        """
+        The survival function of the extinction time, n (integer number of generations), of the uncollapsed tree
+        This is computed analytically in terms of the generating funtion, phi, of the offsprint distribution
+        Note: since collapsed tree simulations don't currently capture fine structure, this is of limited use
+        """
+        return 1 - phi(self, 0, n)
 
     def l(self, (p, q), sign=1):
         """
@@ -211,6 +228,35 @@ class CollapsedTree(LeavesAndClades):
         """
         if self._p is None or self._q is None:
             raise ValueError('p and q parameters must be defined for simulation')
+
+#        This code simulates the fine structure of the tree, possibly useful if we want extinction time
+#        # initiate with an unmutated root node (type 0)
+#        # this tree is the full tree
+#        tree = [(2 if random.random() < self._p else 0, 0)]
+#        # while termination condition not met
+#        cumsum_offspring = tree[0][0]
+#        len_tree = 0
+#        while cumsum_offspring > len_tree - 1:
+#            offspring = 2 if random.random() < self._p else 0
+#            a_type = random.random() < self._q
+#            tree.append((offspring, is_mutant))
+#            cumsum_offspring += offspring
+#            len_tree += 1
+#        assert cumsum_offspring == len_tree - 1
+#
+#        # use breadth first structure to figure out generation boundaries
+#        self._extinction_time = 1
+#        nextgen_size = tree[0][0]
+#        i = 1
+#        while i + nextgen_size < len_tree:
+#            next_nextgen_size = sum(offspring for offspring, is_mutant in tree[i:(i+nextgen_size)])
+#            i += nextgen_size
+#            nextgen_size = next_nextgen_size
+#            self._extinction_time += 1
+#
+#        # now we would need to collapse the tree given the simulated fine structure...
+        
+
         # initiate by running a LeavesAndClades simulation to get the number of clones and mutants
         # in the root node of the collapsed tree
         LeavesAndClades.simulate(self)
@@ -329,72 +375,131 @@ class CollapsedForest(CollapsedTree):
         
 
 def main():
-    """some tests"""
-    p = random.random()/2
-    q = random.random()
-    n_trees = 100
-    print 'initializing a forest of %d trees with random (subcritical) parameters' % n_trees
-    forest = CollapsedForest(p, q, n_trees)
-    print 'true parameters: p = %f, q = %f' % (p, q)
+    """
+    checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to foo.pdf
+    command line arguments are p, q, and the number of trees to simulate
+    """
+    import sys, matplotlib
+    matplotlib.use('PDF')
+    from matplotlib import pyplot as plt
+    from matplotlib import rc, ticker
+    from scipy.stats import probplot
 
-    print 'simulating the forest'
+    p, q, n_trees = sys.argv[1:]
+    p = float(p)
+    q = float(q)
+    n_trees = int(n_trees)
+
+    print 'Let''s check our likelihood against a by-hand calculation for the following simple tree'
+    tree = CollapsedTree(tree=[(2,1), (1,0)])
+    print '    T =', str(tree.get('tree'))
+    print '    Summing the probabilities of the two possible fine structures, we have'
+    print '    Pr(T) = 6 p^2 (1-p)^3 q (1-q)^3 =', 6*p**2*(1-p)**3*q*(1-q)**3
+    print '    Now, our dynamic programming algorithm gives'
+    print '    Pr(T) =', scipy.exp(tree.l((p, q))[0])
+    print ''
+
+    print 'Simulating a forest of %d trees' % n_trees
+    forest = CollapsedForest(p, q, n_trees)
+    print '    true parameters: p = %f, q = %f' % (p, q)
     forest.simulate()
 
-    print 'computing MLE'
-    mle = forest.mle().x
-    print 'MLE parameters:  p = %f, q = %f' % tuple(mle.tolist())
+    # total leaf counts
+    total_data = sorted([sum(x[0] for x in tree) for tree in forest.get('forest')])
+    max_total = max(total_data)
+    len_total = len(total_data)
 
-    # plot the 2-norm of the difference between the gradient and a finite difference approximation
-    # ideally small everywhere
-    print 'computing plot data (may take a sec)...'
-    X, Y = scipy.mgrid[slice(.02, 1, .02),
-                       slice(.02, 1, .02)]
+    totals, freq, log_prob = zip(*[(x, total_data.count(x), CollapsedTree(tree=[(x, 0)]).l((p, 0))[0]) for x in range(1, max_total+1)])
+    theoretical_cdf = scipy.cumsum(scipy.exp(log_prob))
+    empirical_cdf = scipy.cumsum(freq)/float(len_total)
+
+    fig = plt.figure()
+    fig.set_tight_layout(True)
+    plt.rc('text', usetex=True)
+
+    # plot the empirical and theoretical distribution of total leaf counts
+
+    ax = fig.add_subplot(2,2,1)
+    ax.plot(totals, scipy.exp(log_prob), 'ko', markerfacecolor='none', alpha=.5, label='theoretical PMF')
+    ax.plot(totals, scipy.array(freq)/float(len_total), 'k.', label='empirical PMF')
+    ax.legend(numpoints=1, loc=1, fontsize='small')
+    ax.set_xlabel('total leaves')
+    ax.set_ylabel('$\Pr($total leaves$)$')
+    ax.set_ylim([0, 1.1])
+    #ax.set_xscale('log')
+    #ax.set_yscale('symlog')
+
+# uncomment this if you want the CDF
+#    ax = fig.add_subplot(2,2,2)
+#    ax.plot(totals, theoretical_cdf, 'ko', markerfacecolor='none', alpha=.5, label='theoretical CDF')
+#    ax.plot(totals, empirical_cdf, 'k.', label='empirical CDF')
+#    ax.legend(numpoints=1, loc=4, fontsize='small')
+#    ax.set_xlabel('number of leaves')
+#    ax.set_ylim([0, 1.1])
+
+
+    empirical_quantiles = []
+    theoretical_quantiles = []
+    for x in total_data:
+        empirical_quantiles.append(sum(y <= x for y in total_data)/float(len_total))
+        theoretical_quantiles.append(scipy.sum(scipy.exp([CollapsedTree(tree=[(y, 0)]).l((p, 0))[0] for y in range(1, x+1)])))
+
+    ax = fig.add_subplot(2,2,2)
+    ax.plot(theoretical_quantiles, empirical_quantiles, 'ko', alpha=.1)
+    ax.plot([0, 1], [0, 1], 'k')
+    ax.set_title('total leaves')
+    ax.set_xlabel('theoretical quantiles')
+    ax.set_ylabel('empirical quantiles')
+    ax.set_xlim([0, 1])
+    ax.set_ylim([0, 1])
+    ax.set_aspect('equal')
+
+    mle = forest.mle().x
+    print '    MLE parameters:  p = %f, q = %f' % tuple(mle.tolist())
+
+    # plot the 2-norm of the difference between the gradient and its finite difference approximation
+    print 'computing plot data...'
+    X, Y = scipy.mgrid[slice(.05, 1, .05),
+                       slice(.05, 1, .05)]
     Z = scipy.zeros((X.shape[0], X.shape[1]))
     for i in range(Z.shape[0]):
         for j in range(Z.shape[1]):
             Z[i, j] = check_grad(lambda x: forest.l(x)[0], lambda x: forest.l(x)[1], (X[i, j], Y[i, j]))
-    fig = plt.figure()
-    plt.rc('text', usetex=True)
-    plt.title(r'$||\nabla \ell(p, q) - \Delta \ell(p, q)||_2$')
-    plt.pcolor(X, Y, Z)
-    plt.xlabel(r'$p$')
-    plt.ylabel(r'$q$')
-    plt.axes().set_aspect('equal')
-    plt.colorbar()
-    plt.savefig('foo.pdf')
+
+    print 'done'
+    ax = fig.add_subplot(2,2,3)
+    ax.set_title(r'$||\nabla \ell(p, q) - \Delta \ell(p, q)||_2$')
+    im = ax.contourf(X, Y, Z, locator=ticker.LogLocator(), cmap='Greys')
+    ax.set_xlabel(r'$p$')
+    ax.set_ylabel(r'$q$')
+    ax.set_aspect('equal')
+    fig.colorbar(im, ax=ax)
 
 
-    # plot likelihood surface
+    # plot likelihood surface, with true and MLE parameters shown
     X, Y = scipy.mgrid[slice(.02, 1, .02),
                        slice(.02, 1, .02)]
     Z = scipy.zeros((X.shape[0], X.shape[1]))
-    #U = scipy.zeros((X.shape[0], X.shape[1]))
-    #V = scipy.zeros((X.shape[0], X.shape[1]))
     for i in range(Z.shape[0]):
         for j in range(Z.shape[1]):
             l, grad_l = forest.l((X[i, j], Y[i, j]))
-            z = l #scipy.exp(l)
+            z = l
             Z[i, j] = z
-    #        U[i, j] = z*grad_l[0]
-    #        V[i, j] = z*grad_l[1]
-    fig = plt.figure()
-    plt.rc('text', usetex=True)
-    plt.title(r'$\ell(p, q)$')
-    #plt.title(r'$P(T \mid p, q), \nabla_{p q} P(T \mid p, q)$')
-    contour = plt.contour(X, Y, Z, colors='k', label='likelihood contours')#cmap='Blues', vmin=vmin, vmax=1.1*vmax)
+    ax = fig.add_subplot(2,2,4)
+    ax.set_title(r'$\ell(p, q)$')
+    contour = ax.contour(X, Y, Z, colors='k', label='likelihood contours')
     for c in contour.collections:
         c.set_linestyle('solid')
 
-    plt.clabel(contour, fontsize=9, inline=1)
-    #plt.quiver(X, Y, U, V, units='x', color='w',edgecolors=('grey'))
-    plt.plot([p], [q], 'k+', label='true parameters')
-    plt.plot(mle[0], mle[1], 'ko', markerfacecolor='none', label='MLE parameters')
-    plt.xlabel(r'$p$')
-    plt.ylabel(r'$q$')
-    plt.axes().set_aspect('equal')
-    plt.legend(numpoints = 1)
-    plt.savefig('bar.pdf')
+    ax.clabel(contour, fontsize=9, inline=1)
+    ax.plot([p], [q], 'k+', label='true parameters')
+    ax.plot(mle[0], mle[1], 'ko', markerfacecolor='none', label='MLE parameters')
+    ax.set_xlabel(r'$p$')
+    ax.set_ylabel(r'$q$')
+    ax.set_aspect('equal')
+    ax.legend(numpoints = 1, fontsize='small')
 
+    plt.savefig('foo.pdf')
 
 if __name__ == "__main__":
     main()

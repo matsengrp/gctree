@@ -14,7 +14,5 @@ There's going to be some simulation, validation, etc, with this project. For tha
 ## Scripts
 
 * TasParse.py - this reads the Tas data excel file, extracts the sequences from lymph node 2 germinal center 1, aligns with muscle, and prints to phyllip format.
-* recurse.py - classes for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. The main routine performs some tests using a simulated forest and outputs plots foo.pdf and bar.pdf.
-	* foo.pdf shows the 2-norm of the difference between the analytical likelihood gradient and a finite difference approximation over the parameter space. Hopefully it is small everywhere
-	* bar.pdf shows the likelihood surface for the randomized forest with the true parameters (red) and MLE parameters (blue)
-
+* recurse.py - classes for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. The main routine performs a test of the likelihood against a by-hand calculation for a simple tree, and simulates a forest of trees and performs MLE. It outputs plot foo.pdf.
+	* command line args: p (branch prob), q (mutation prob), and n_trees (number of trees to simulate)
