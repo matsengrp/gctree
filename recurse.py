@@ -25,8 +25,8 @@ class LeavesAndClades():
         if p is not None or q is not None:
             if not (0 <= p <= 1 and 0 <= q <= 1):
                 raise ValueError('p and q must be in the unit interval')
-            self._p = p
-            self._q = q
+        self._p = p
+        self._q = q
         if c is not None or m is not None:
             if not (c >= 0) and (m >= 0) and (c+m > 0):
                 raise ValueError('c and m must be nonnegative integers summing greater than zero')
@@ -149,11 +149,9 @@ class CollapsedTree(LeavesAndClades):
         tree: Clonal leaf count and count of mutant clades are provided as tuples in
         breadth first order.
         """
-        if p is not None and q is not None:
-            LeavesAndClades.__init__(self, p=p, q=q)
-        else:
-            if tree is None:
-                raise ValueError('either p and q or tree (or all three) must be provided')
+        if p is None and q is None and tree is None:
+            raise ValueError('either p and q or tree (or all three) must be provided')
+        LeavesAndClades.__init__(self, p=p, q=q)
         # check that tree is valid
         if tree is not None:
             k = len(tree)
@@ -373,22 +371,20 @@ class CollapsedForest(CollapsedTree):
         return ('p = %f, q = %f, n_trees = %d\n'+
                 '\n'.join([str(tree) for tree in self._forest])) % (self._p, self._q, self._n_trees)
         
+def test(p, q, n, plot_file):
+    """
+    checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to plot_file
+    command line arguments are p, q, number of trees to simulate, and plot file name
+    """
 
-def main():
-    """
-    checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to foo.pdf
-    command line arguments are p, q, and the number of trees to simulate
-    """
-    import sys, matplotlib
+    if plot_file[-4:] != '.pdf':
+        plot_file += '.pdf'
+
+    import matplotlib
     matplotlib.use('PDF')
     from matplotlib import pyplot as plt
     from matplotlib import rc, ticker
     from scipy.stats import probplot
-
-    p, q, n_trees = sys.argv[1:]
-    p = float(p)
-    q = float(q)
-    n_trees = int(n_trees)
 
     print 'Let''s check our likelihood against a by-hand calculation for the following simple tree'
     tree = CollapsedTree(tree=[(2,1), (1,0)])
@@ -399,8 +395,8 @@ def main():
     print '    Pr(T) =', scipy.exp(tree.l((p, q))[0])
     print ''
 
-    print 'Simulating a forest of %d trees' % n_trees
-    forest = CollapsedForest(p, q, n_trees)
+    print 'Simulating a forest of %d trees' % n
+    forest = CollapsedForest(p, q, n)
     print '    true parameters: p = %f, q = %f' % (p, q)
     forest.simulate()
 
@@ -499,7 +495,124 @@ def main():
     ax.set_aspect('equal')
     ax.legend(numpoints = 1, fontsize='small')
 
-    plt.savefig('foo.pdf')
+    plt.savefig(plot_file)
+    print 'plot saved to', plot_file
+
+def main():
+    """if "--test" option is passed, run the test suite, else load newick file and do MLEs for each tree"""
+    import argparse
+    parser = argparse.ArgumentParser(description='multitype tree modeling')
+    parser.add_argument('--test', action='store_true', default=False, help='run tests on library functions')
+    parser.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
+    parser.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
+    parser.add_argument('--n', type=int, default=100, help='forest size for test mode')
+    parser.add_argument('--plot_file', type=str, default='foo.pdf', help='output file for plots from test mode')
+
+    #parser.add_argument('outfile', type=str, help='dnapars outfile (verbose output)')
+    parser.add_argument('outtree', type=str, help='newick file of trees (dnapars outtree)')
+    
+    args = parser.parse_args()
+
+    if args.test:
+        test(args.p, args.q, args.n, args.plot_file)
+        return
+    
+    #with open(args.outfile, 'r') as f:
+    #    node_sequences = f.read().split('\n\n\n\n')
+    #for i in range(len(node_sequences)):
+    #    blocks = node_sequences[i].split('From    To     Any Steps?    State at upper node\n                            \n')[1].split('\n\n')
+    #    for j in range(len(blocks)):
+    #        if j == 0:
+    #            # get edge ids
+    #            edge_ids = []
+    #            for x in blocks[j].rstrip().lstrip().split('\n')[1:]:
+    #                edge_ids.append(x.split()[:2])
+    #        blocks[j] = [x.split()[2] for x in blocks[j].split('\n')[1:]]
+    #    print blocks
+    #    assert all(len(block) == len(edge_ids) for block in blocks)
+    #    node_sequences[i] = {tuple(edge_ids[j]):''.join([block[j] for block in blocks]) for j in range(len(edge_ids))}
+        
+        #print node_sequences[i]
+    #return
+
+    import dendropy
+    trees = dendropy.TreeList.get(path=args.outtree, schema='newick')
+
+    # let's infer the seq length from the per site branch lengths
+    lengths = [node.edge.length for node in trees[0] if node.edge.length is not None]
+    min_delta = 100
+    for length in range(1,1000):
+        delta = sum(abs(round(x*length) - x*length) for x in lengths)
+        if delta < min_delta:
+            min_delta = delta
+            best_length = length
+
+    print 'inferred sequence length:', best_length
+
+    # this code grabs info needed to convert to collapsed tree
+    for tree in trees:
+        #collapsed_tree = []
+        #for node in tree.levelorder_node_iter():
+        #    abundance = 0 if node.taxon is None else int(str(node.taxon).rstrip("'").split(' ')[1])
+        #    mutant_offspring = len(node.child_nodes())
+        #    collapsed_tree.append((abundance, mutant_offspring))
+        #mle = CollapsedTree(tree=collapsed_tree).mle()
+        #print 'p =', mle.x[0], 'q =', mle.x[1], 'l =', mle.fun
+
+
+        # we need to adjust the branch lengths, since they're per site
+        for node in tree:
+            if node.edge.length is not None:
+                node.edge.length = round(node.edge.length*best_length,1)
+                # if branch lenght is fractional, forget about this tree
+                if node.edge.length % 1 != 0:
+                    trees.remove(tree)
+                    break
+
+    print 'number of trees with integer branch lengths:', len(trees)
+    # now we need to get collapsed trees
+    for tree in trees:
+        collapsed_tree = []
+        # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
+        # root first
+        clone_leaves = sum(node.distance_from_root() == 0 for node in tree.leaf_nodes())
+        # to get mutant offspring, first consider all nodes that are distance zero
+        mutant_offspring = sum(child_edge.length for child_edge in node.child_edge_iter() if child_edge.length != 0 for node in tree if node.distance_from_root() == 0)
+        # now, the mutant offspring are children of these nodes with nonzero edge length
+        print clone_leaves, mutant_offspring  
+
+# child_node_iter()
+# leaf_nodes()
+# distance_from_root()
+# extract_subtree()
+            
+
+
+
+
+        #tree.print_plot()
+
+    # ete seems to have a problem parsing the newick trees...
+    #from ete3 import Tree
+    #trees = [Tree(newick_str+';', format=1) for newick_str in open(args.newick_file, 'r').read().strip('\n').split(';')]
+    #for tree in trees:
+    #    # traverse nodes to get CollapsedTree
+    #    collapsed_tree = []
+    #    for node in tree.traverse():
+    #        abundance = 0 if '_' not in node.name else int(node.name.split('_')[1])
+    #        mutant_offspring = len(node.children)
+    #        collapsed_tree.append((abundance, mutant_offspring))
+    #    print collapsed_tree
+    #    print tree
+    #    mle = CollapsedTree(tree=collapsed_tree).mle()
+    #    print 'p =', mle.x[0], 'q =', mle.x[1], 'l =', mle.fun
+    #    print tree
+
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
