@@ -535,7 +535,9 @@ def main():
         #print node_sequences[i]
     #return
 
-    import dendropy
+
+
+    import dendropy, copy
     trees = dendropy.TreeList.get(path=args.outtree, schema='newick')
 
     # let's infer the seq length from the per site branch lengths
@@ -549,64 +551,79 @@ def main():
 
     print 'inferred sequence length:', best_length
 
-    # this code grabs info needed to convert to collapsed tree
-    for tree in trees:
-        #collapsed_tree = []
-        #for node in tree.levelorder_node_iter():
-        #    abundance = 0 if node.taxon is None else int(str(node.taxon).rstrip("'").split(' ')[1])
-        #    mutant_offspring = len(node.child_nodes())
-        #    collapsed_tree.append((abundance, mutant_offspring))
-        #mle = CollapsedTree(tree=collapsed_tree).mle()
-        #print 'p =', mle.x[0], 'q =', mle.x[1], 'l =', mle.fun
-
-
+    # adjust branch lens and remove trees with fractional branches
+    i = 0
+    while i < len(trees):
         # we need to adjust the branch lengths, since they're per site
-        for node in tree:
-            if node.edge.length is not None:
-                node.edge.length = round(node.edge.length*best_length,1)
-                # if branch lenght is fractional, forget about this tree
-                if node.edge.length % 1 != 0:
-                    trees.remove(tree)
+        for edge in trees[i].postorder_edge_iter():
+            if edge.length is not None:
+                edge.length = round(edge.length*best_length,1)
+                # if branch length is fractional, forget about this tree
+                if edge.length % 1 != 0:
+                    trees.remove(trees[i])
+                    bad_tree = True
                     break
+                else:
+                    bad_tree = False
+        if not bad_tree:
+            i += 1
 
     print 'number of trees with integer branch lengths:', len(trees)
-    # now we need to get collapsed trees
-    for tree in trees:
+    # now we need to get collapsed trees, is there a less ugly way to do this in dendropy?
+    for i, tree in enumerate(trees):
         collapsed_tree = []
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
         # root first
         clone_leaves = sum(node.distance_from_root() == 0 for node in tree.leaf_nodes())
         # to get mutant offspring, first consider all nodes that are distance zero
-        mutant_offspring = sum(child_edge.length for child_edge in node.child_edge_iter() if child_edge.length != 0 for node in tree if node.distance_from_root() == 0)
-        # now, the mutant offspring are children of these nodes with nonzero edge length
-        print clone_leaves, mutant_offspring  
+        # the mutant offspring are children of these nodes with nonzero edge length
+        mutant_offspring_nodes = [child_node for node in tree if node.distance_from_root() == 0 for child_node in node.child_node_iter() if child_node.edge.length != 0]
+        mutant_offspring = len(mutant_offspring_nodes)
+        collapsed_tree.append((clone_leaves, mutant_offspring))
+        # recurse into the mutant offspring
+        done = False
+        while not done:
+            new_mutant_offspring_nodes = []
+            for mutant in mutant_offspring_nodes:
+                new_mutant_offspring_nodes_from_this_mutant = []
+                if mutant.num_child_nodes() == 0:
+                    clone_leaves = 1
+                else:
+                    clone_leaves = 0
+                    for clonal_descendent in mutant.preorder_iter():
+                        # skip the root of the subtree
+                        if clonal_descendent == mutant:
+                            continue
+                        distances = [clonal_descendent.edge_length]
+                        clonal_descendent_parent = clonal_descendent.parent_node
+                        while clonal_descendent_parent is not mutant:
+                            distances.append(clonal_descendent_parent.edge_length)
+                            clonal_descendent_parent = clonal_descendent_parent.parent_node
+                        if sum(distances) == 0 and clonal_descendent.is_leaf():
+                            clone_leaves += 1
+                        elif distances[0] != 0 and all(distances[i] == 0 for i in range(1, len(distances))):
+                            new_mutant_offspring_nodes_from_this_mutant.append(clonal_descendent)
+                mutant_offspring = len(new_mutant_offspring_nodes_from_this_mutant)
+                collapsed_tree.append((clone_leaves, mutant_offspring))
+                new_mutant_offspring_nodes.extend(new_mutant_offspring_nodes_from_this_mutant)
+            mutant_offspring_nodes = new_mutant_offspring_nodes
+            if len(new_mutant_offspring_nodes) == 0:
+                done = True
 
-# child_node_iter()
-# leaf_nodes()
-# distance_from_root()
-# extract_subtree()
-            
+        assert sum(clone_leaves for clone_leaves, mutant_offspring in collapsed_tree) == len(tree.leaf_nodes())
 
-
-
-
+        # make a dendropy version of collapsed tree
+        #nodes = [dendropy.Node(label=str(clone_leaves)) for clone_leaves, mutant_offspring in collapsed_tree]
+        #tree = dendropy.Tree(seed_node=nodes[0]) # seed_node=nodes[0])        
+        #for i, (clone_leaves, mutant_offspring) in enumerate(collapsed_tree):
+        #    for j in range(mutant_offspring):
+        #        nodes[i].add_child(nodes[i+j+1])
         #tree.print_plot()
+        #print tree.as_string(schema="newick")
 
-    # ete seems to have a problem parsing the newick trees...
-    #from ete3 import Tree
-    #trees = [Tree(newick_str+';', format=1) for newick_str in open(args.newick_file, 'r').read().strip('\n').split(';')]
-    #for tree in trees:
-    #    # traverse nodes to get CollapsedTree
-    #    collapsed_tree = []
-    #    for node in tree.traverse():
-    #        abundance = 0 if '_' not in node.name else int(node.name.split('_')[1])
-    #        mutant_offspring = len(node.children)
-    #        collapsed_tree.append((abundance, mutant_offspring))
-    #    print collapsed_tree
-    #    print tree
-    #    mle = CollapsedTree(tree=collapsed_tree).mle()
-    #    print 'p =', mle.x[0], 'q =', mle.x[1], 'l =', mle.fun
-    #    print tree
+        print collapsed_tree
+        result = CollapsedTree(tree=collapsed_tree).mle()
+        print 'l = %f, p = %f, q = %f' % (-result.fun, result.x[0], result.x[1])
 
 
 if __name__ == "__main__":
