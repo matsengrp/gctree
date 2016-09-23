@@ -160,7 +160,8 @@ class CollapsedTree(LeavesAndClades):
                not all(scipy.greater_equal([x for y in tree for x in y], 0)):
                 raise ValueError('"tree" must be a nonempty list of 2-element tuples of nonnegative integers')
             cs, ms = zip(*tree)
-            if not all(scipy.greater(scipy.cumsum([x[1] for x in tree])[:-1], scipy.arange(1, k)-1)):
+            if not all(scipy.greater(scipy.cumsum([x[1] for x in tree])[:-1], scipy.arange(1, k)-1)) \
+            or sum(x[1] for x in tree) != k - 1:
                 raise ValueError('inconsistent breadth first tree data')
         self._tree = tree
         self._extinction_time = None
@@ -500,7 +501,7 @@ def test(p, q, n, plot_file):
 
 def main():
     """if "--test" option is passed, run the test suite, else load newick file and do MLEs for each tree"""
-    import argparse
+    import sys, argparse
     parser = argparse.ArgumentParser(description='multitype tree modeling')
     parser.add_argument('--test', action='store_true', default=False, help='run tests on library functions')
     parser.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
@@ -568,8 +569,11 @@ def main():
         if not bad_tree:
             i += 1
 
-    print 'number of trees with integer branch lengths:', len(trees)
+    n_trees = len(trees)
+
+    print 'number of trees with integer branch lengths:', n_trees
     # now we need to get collapsed trees, is there a less ugly way to do this in dendropy?
+    best_likelihood_sofar = None
     for i, tree in enumerate(trees):
         collapsed_tree = []
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
@@ -589,11 +593,15 @@ def main():
                 if mutant.num_child_nodes() == 0:
                     clone_leaves = 1
                 else:
-                    clone_leaves = 0
+                    clone_leaves = 0 # <-- initialize
+                    # loop over nodes of the subtree rooted at this mutant
                     for clonal_descendent in mutant.preorder_iter():
                         # skip the root of the subtree
                         if clonal_descendent == mutant:
                             continue
+                        # let's get the sequence of branch lengths connecting clonal_descendent with this mutant
+                        # Looking at that sequence we can see if a node is a clone of the mutant, or the beginning 
+                        # of a new mutant clade
                         distances = [clonal_descendent.edge_length]
                         clonal_descendent_parent = clonal_descendent.parent_node
                         while clonal_descendent_parent is not mutant:
@@ -610,21 +618,69 @@ def main():
             if len(new_mutant_offspring_nodes) == 0:
                 done = True
 
+        # make sure number of leaves is consistent
         assert sum(clone_leaves for clone_leaves, mutant_offspring in collapsed_tree) == len(tree.leaf_nodes())
 
-        # make a dendropy version of collapsed tree
-        #nodes = [dendropy.Node(label=str(clone_leaves)) for clone_leaves, mutant_offspring in collapsed_tree]
-        #tree = dendropy.Tree(seed_node=nodes[0]) # seed_node=nodes[0])        
-        #for i, (clone_leaves, mutant_offspring) in enumerate(collapsed_tree):
-        #    for j in range(mutant_offspring):
-        #        nodes[i].add_child(nodes[i+j+1])
-        #tree.print_plot()
-        #print tree.as_string(schema="newick")
+        # ok, so now we have the parsimony tree in dendropy format and the corresponding collapsed tree in 
+        # CollapsedTree format. 
 
-        print collapsed_tree
         result = CollapsedTree(tree=collapsed_tree).mle()
-        print 'l = %f, p = %f, q = %f' % (-result.fun, result.x[0], result.x[1])
+        assert result.success
 
+        if best_likelihood_sofar is None or -result.fun > best_likelihood_sofar:
+            best_likelihood_sofar = -result.fun
+            best_likelihood_sofar_params = result.x
+            best_i = i
+        print 'tree %d: l = %f, p = %f, q = %f' % (i+1, -result.fun, result.x[0], result.x[1])
+        sys.stdout.flush()
+
+
+    print 'best tree: tree %d, l = %f, p = %f, q = %f' % (best_i + 1,
+                                                          best_likelihood_sofar,
+                                                          best_likelihood_sofar_params[0],
+                                                          best_likelihood_sofar_params[1])
+
+    from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
+
+    # make an ete version of collapsed tree for plotting
+    nodes = [Tree(name=clone_leaves) for clone_leaves, mutant_offspring in collapsed_tree]
+    #nodes = [dendropy.Node(label=str(clone_leaves)) for clone_leaves, mutant_offspring in collapsed_tree]
+    #tree = dendropy.Tree(seed_node=nodes[0]) # seed_node=nodes[0])        
+    gen_size = 1
+    gen_start_index = 0
+    terminated = False
+    while not terminated:
+        k = 0
+        for i in range(gen_start_index,gen_start_index + gen_size):
+            for j in range(collapsed_tree[i][1]):
+                nodes[i].add_child(nodes[gen_start_index+gen_size+k])
+                k += 1
+        new_gen_start_index = gen_start_index + gen_size
+        gen_size = sum(x[1] for x in collapsed_tree[gen_start_index:(gen_start_index + gen_size)])
+        gen_start_index = new_gen_start_index
+        if gen_size == 0:
+            terminated = True
+
+    for node in nodes:
+        nstyle = NodeStyle()
+        nstyle['size'] = 10*scipy.sqrt(node.name)
+        node.set_style(nstyle)
+
+    ts = TreeStyle()
+    ts.show_leaf_name = False
+    ts.rotation = 90
+    def my_layout(node):
+        N = AttrFace('name', fsize=14, fgcolor='black')
+        N.rotation = -90
+        faces.add_face_to_node(N, node, 0, position='branch-top')
+        #C = CircleFace(radius=5*scipy.sqrt(node.name), color='RoyalBlue', style='sphere')
+        #C.opacity = 1#0.5
+        # And place as a float face over the tree
+        #faces.add_face_to_node(C, node, 0, position="float")
+    ts.layout_fn = my_layout
+    nodes[0].render(args.plot_file, tree_style=ts)
+    print 'tree plot saved to', args.plot_file
+    
 
 if __name__ == "__main__":
     main()
