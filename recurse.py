@@ -582,8 +582,9 @@ def main():
         # to get mutant offspring, first consider all nodes that are distance zero
         # the mutant offspring are children of these nodes with nonzero edge length
         mutant_offspring_nodes = [child_node for node in tree if node.distance_from_root() == 0 for child_node in node.child_node_iter() if child_node.edge.length != 0]
-        mutant_offspring = len(mutant_offspring_nodes)
-        collapsed_tree.append((clone_leaves, mutant_offspring))
+        mutant_offspring_edge_lengths = [node.edge.length for node in mutant_offspring_nodes]
+        #mutant_offspring = len(mutant_offspring_nodes)
+        collapsed_tree.append((clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
         # recurse into the mutant offspring
         done = False
         while not done:
@@ -611,29 +612,30 @@ def main():
                             clone_leaves += 1
                         elif distances[0] != 0 and all(distances[i] == 0 for i in range(1, len(distances))):
                             new_mutant_offspring_nodes_from_this_mutant.append(clonal_descendent)
-                mutant_offspring = len(new_mutant_offspring_nodes_from_this_mutant)
-                collapsed_tree.append((clone_leaves, mutant_offspring))
+                #mutant_offspring = len(new_mutant_offspring_nodes_from_this_mutant)
+                mutant_offspring_edge_lengths = [node.edge.length for node in new_mutant_offspring_nodes_from_this_mutant]
+                collapsed_tree.append((clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
                 new_mutant_offspring_nodes.extend(new_mutant_offspring_nodes_from_this_mutant)
             mutant_offspring_nodes = new_mutant_offspring_nodes
             if len(new_mutant_offspring_nodes) == 0:
                 done = True
 
         # make sure number of leaves is consistent
-        assert sum(clone_leaves for clone_leaves, mutant_offspring in collapsed_tree) == len(tree.leaf_nodes())
+        assert sum(clone_leaves for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree) == len(tree.leaf_nodes())
 
         # ok, so now we have the parsimony tree in dendropy format and the corresponding collapsed tree in 
-        # CollapsedTree format. 
+        # CollapsedTree format (but with explicit edge lengths). 
 
-        result = CollapsedTree(tree=collapsed_tree).mle()
+        result = CollapsedTree(tree=[(clone_leaves, len(mutant_offspring_edge_lengths)) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree]).mle()
         assert result.success
 
         if best_likelihood_sofar is None or -result.fun > best_likelihood_sofar:
             best_likelihood_sofar = -result.fun
             best_likelihood_sofar_params = result.x
             best_i = i
+            best_tree = collapsed_tree
         print 'tree %d: l = %f, p = %f, q = %f' % (i+1, -result.fun, result.x[0], result.x[1])
         sys.stdout.flush()
-
 
     print 'best tree: tree %d, l = %f, p = %f, q = %f' % (best_i + 1,
                                                           best_likelihood_sofar,
@@ -644,6 +646,7 @@ def main():
 
     # make an ete version of collapsed tree for plotting
     nodes = [Tree(name=clone_leaves) for clone_leaves, mutant_offspring in collapsed_tree]
+    nodes[0].dist = 0 # zero length edge for root node
     #nodes = [dendropy.Node(label=str(clone_leaves)) for clone_leaves, mutant_offspring in collapsed_tree]
     #tree = dendropy.Tree(seed_node=nodes[0]) # seed_node=nodes[0])        
     gen_size = 1
@@ -652,11 +655,11 @@ def main():
     while not terminated:
         k = 0
         for i in range(gen_start_index,gen_start_index + gen_size):
-            for j in range(collapsed_tree[i][1]):
-                nodes[i].add_child(nodes[gen_start_index+gen_size+k])
+            for j in range(len(collapsed_tree[i][1])):
+                nodes[i].add_child(nodes[gen_start_index+gen_size+k], dist=collapsed_tree[i][1][j])
                 k += 1
         new_gen_start_index = gen_start_index + gen_size
-        gen_size = sum(x[1] for x in collapsed_tree[gen_start_index:(gen_start_index + gen_size)])
+        gen_size = sum(len(x[1]) for x in collapsed_tree[gen_start_index:(gen_start_index + gen_size)])
         gen_start_index = new_gen_start_index
         if gen_size == 0:
             terminated = True
@@ -668,6 +671,7 @@ def main():
 
     ts = TreeStyle()
     ts.show_leaf_name = False
+    #ts.show_branch_length = True
     ts.rotation = 90
     def my_layout(node):
         N = AttrFace('name', fsize=14, fgcolor='black')
