@@ -39,9 +39,9 @@ for seq in aln:
     else:
         new_aln.append(seq)
 
-## put unmutated ancestor first
-#unmutated_ancestor.extend(new_aln)
-#new_aln = unmutated_ancestor
+# put unmutated ancestor first
+unmutated_ancestor.extend(new_aln)
+new_aln = unmutated_ancestor
 
 print new_aln.format('phylip')
 

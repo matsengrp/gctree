@@ -508,6 +508,7 @@ def main():
     parser.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
     parser.add_argument('--n', type=int, default=100, help='forest size for test mode')
     parser.add_argument('--plot_file', type=str, default='foo.pdf', help='output file for plots from test mode')
+    parser.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
 
     #parser.add_argument('outfile', type=str, help='dnapars outfile (verbose output)')
     parser.add_argument('outtree', type=str, help='newick file of trees (dnapars outtree)')
@@ -555,6 +556,15 @@ def main():
     # adjust branch lens and remove trees with fractional branches
     i = 0
     while i < len(trees):
+        # if germline seq is defined, we reroot on it
+        # the reroot_at_node function doesn't seem to work right because it expects an internal node
+        if args.germline is not None:
+            GL = trees[i].find_node_with_taxon_label(args.germline)
+            assert len(GL.child_nodes()) == 0
+            for child in trees[i].seed_node.child_node_iter():
+                child.edge_length += GL.edge_length
+            trees[i].seed_node.remove_child(GL)#, suppress_unifurcations=True)
+            trees[i].seed_node.label = GL
         # we need to adjust the branch lengths, since they're per site
         for edge in trees[i].postorder_edge_iter():
             if edge.length is not None:
@@ -636,6 +646,8 @@ def main():
             best_tree = collapsed_tree
         print 'tree %d: l = %f, p = %f, q = %f' % (i+1, -result.fun, result.x[0], result.x[1])
         sys.stdout.flush()
+
+        #break
 
     print 'best tree: tree %d, l = %f, p = %f, q = %f' % (best_i + 1,
                                                           best_likelihood_sofar,
