@@ -584,6 +584,7 @@ def main():
     print 'number of trees with integer branch lengths:', n_trees
     # now we need to get collapsed trees, is there a less ugly way to do this in dendropy?
     best_likelihood_sofar = None
+    print 'tree\tparsimony\tl\tp\tq'
     for i, tree in enumerate(trees):
         collapsed_tree = []
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
@@ -644,7 +645,9 @@ def main():
             best_likelihood_sofar_params = result.x
             best_i = i
             best_tree = collapsed_tree
-        print 'tree %d: l = %f, p = %f, q = %f' % (i+1, -result.fun, result.x[0], result.x[1])
+
+        parsimony_score = sum(edge.length for edge in trees[i].preorder_edge_iter() if edge.length is not None)
+        print '\t'.join(map(str, [i+1, parsimony_score, -result.fun, result.x[0], result.x[1]]))
         sys.stdout.flush()
 
         #break
