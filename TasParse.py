@@ -25,6 +25,24 @@ infile = sys.argv[1]
 
 aln = AlignIO.read(infile, 'fasta')
 
+seqs_unique_counts = {}
+for seq in aln:
+    if seq.id == 'GL':
+        germline = seq
+    elif seq.id == '17':
+        seqs_unique_counts[seq.seq] = 17
+    elif seq.seq not in seqs_unique_counts:
+        seqs_unique_counts[seq.seq] = 1
+    else:
+        seqs_unique_counts[seq.seq] += 1
+
+new_aln = MultipleSeqAlignment([germline])
+for i, seq in enumerate(seqs_unique_counts):
+    new_aln.append(SeqRecord(seq, id=str(i+1)+'_'+str(seqs_unique_counts[seq])))
+
+print new_aln.format('phylip')
+sys.exit()
+
 # the big expanded clone is marked with a single entry ">17", we have to duplicate that
 # we also need to remove their "GL" sequence (unmutated Vh ancestor)
 new_aln = MultipleSeqAlignment([])

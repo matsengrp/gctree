@@ -16,6 +16,7 @@ dnapars <<- 	STDIN
                 3
                 4
                 5
+                .
 		Y
 
 		STDIN

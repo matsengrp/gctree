@@ -584,12 +584,12 @@ def main():
     print 'number of trees with integer branch lengths:', n_trees
     # now we need to get collapsed trees, is there a less ugly way to do this in dendropy?
     best_likelihood_sofar = None
-    print 'tree\tparsimony\tl\tp\tq'
+    print 'tree\ttotals\talleles\tparsimony\tl\tp\tq'
     for i, tree in enumerate(trees):
         collapsed_tree = []
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
         # root first
-        clone_leaves = sum(node.distance_from_root() == 0 for node in tree.leaf_nodes())
+        clone_leaves = sum((int(node.taxon.label.split(' ')[1]) if ' ' in node.taxon.label else 1) for node in tree.leaf_nodes() if node.distance_from_root() == 0)
         # to get mutant offspring, first consider all nodes that are distance zero
         # the mutant offspring are children of these nodes with nonzero edge length
         mutant_offspring_nodes = [child_node for node in tree if node.distance_from_root() == 0 for child_node in node.child_node_iter() if child_node.edge.length != 0]
@@ -620,7 +620,7 @@ def main():
                             distances.append(clonal_descendent_parent.edge_length)
                             clonal_descendent_parent = clonal_descendent_parent.parent_node
                         if sum(distances) == 0 and clonal_descendent.is_leaf():
-                            clone_leaves += 1
+                            clone_leaves += (int(clonal_descendent.taxon.label.split(' ')[1]) if ' ' in clonal_descendent.taxon.label else 1)
                         elif distances[0] != 0 and all(distances[i] == 0 for i in range(1, len(distances))):
                             new_mutant_offspring_nodes_from_this_mutant.append(clonal_descendent)
                 #mutant_offspring = len(new_mutant_offspring_nodes_from_this_mutant)
@@ -630,9 +630,6 @@ def main():
             mutant_offspring_nodes = new_mutant_offspring_nodes
             if len(new_mutant_offspring_nodes) == 0:
                 done = True
-
-        # make sure number of leaves is consistent
-        assert sum(clone_leaves for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree) == len(tree.leaf_nodes())
 
         # ok, so now we have the parsimony tree in dendropy format and the corresponding collapsed tree in 
         # CollapsedTree format (but with explicit edge lengths). 
@@ -647,7 +644,9 @@ def main():
             best_tree = collapsed_tree
 
         parsimony_score = sum(edge.length for edge in trees[i].preorder_edge_iter() if edge.length is not None)
-        print '\t'.join(map(str, [i+1, parsimony_score, -result.fun, result.x[0], result.x[1]]))
+        totals = sum(clone_leaves for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
+        alleles = sum(len(mutant_offspring_edge_lengths) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
+        print '\t'.join(map(str, [i+1, totals, alleles, parsimony_score, -result.fun, result.x[0], result.x[1]]))
         sys.stdout.flush()
 
         #break
