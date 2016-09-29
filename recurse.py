@@ -1,7 +1,14 @@
 #! /bin/env python
 
 import scipy, warnings, random
+from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad
+
+import matplotlib
+matplotlib.use('PDF')
+from matplotlib import pyplot as plt
+from matplotlib import rc, ticker
+from scipy.stats import probplot, pearsonr
 
 """
 This module contains classes for simulation and inference for a binary branching process with mutation
@@ -149,8 +156,8 @@ class CollapsedTree(LeavesAndClades):
         tree: Clonal leaf count and count of mutant clades are provided as tuples in
         breadth first order.
         """
-        if p is None and q is None and tree is None:
-            raise ValueError('either p and q or tree (or all three) must be provided')
+        #if p is None and q is None and tree is None:
+        #    raise ValueError('either p and q or tree (or all three) must be provided')
         LeavesAndClades.__init__(self, p=p, q=q)
         # check that tree is valid
         if tree is not None:
@@ -203,7 +210,7 @@ class CollapsedTree(LeavesAndClades):
         dfdqs = scipy.array([x[1][1] for x in f_data])
         return sign*scipy.log(fs).sum(), sign*scipy.array([(dfdps/fs).sum(), (dfdqs/fs).sum()])
 
-    def mle(self):
+    def mle(self, **kwargs):
         """
         Maximum likelihood estimate for p and q given tree
         updates p and q if not None
@@ -212,7 +219,9 @@ class CollapsedTree(LeavesAndClades):
         # random initalization
         x_0 = (random.random(), random.random())
         bounds = ((.001, .999), (.001, .999))
-        result = minimize(self.l, x0=x_0, args=(-1,), jac=True, method='L-BFGS-B', bounds=bounds)
+        kwargs['sign'] = -1
+        #print check_grad(lambda x: self.l(x, **kwargs)[0], lambda x: self.l(x, **kwargs)[1], (.4, .5))
+        result = minimize(lambda x: self.l(x, **kwargs), x0=x_0, jac=True, method='L-BFGS-B', bounds=bounds)
         # update p and q if None and optimization successful
         if not result.success:
             warnings.warn('optimization not sucessful, '+result.message, RuntimeWarning)
@@ -291,6 +300,7 @@ class CollapsedTree(LeavesAndClades):
     def __str__(self):
         """return a string representation for printing"""
         return 'p = %f, q = %f\ntree: ' % (self._p, self._q) + str(self._tree)
+
         
 class CollapsedForest(CollapsedTree):
     """
@@ -306,9 +316,8 @@ class CollapsedForest(CollapsedTree):
         in addition to p and q, we need number of trees
         can also intialize with forest, a list of trees, each same format as tree member of CollapsedTree
         """
-        if p is not None and q is not None:
-            CollapsedTree.__init__(self, p=p, q=q)
-        elif forest is None:
+        CollapsedTree.__init__(self, p=p, q=q)
+        if forest is None and p is None and q is None:
             raise ValueError('either p and q or forest (or all three) must be provided')
         if forest is not None:
             if len(forest) == 0:
@@ -333,21 +342,30 @@ class CollapsedForest(CollapsedTree):
         self._forest = [tree.simulate().get('tree') for x in range(self._n_trees)]
         return self
 
-    def l(self, (p, q), sign=1):
+    def l(self, (p, q), sign=1, Vlad_sum=False):
         """
         likelihood of (p, q), given forest, and it's gradient wrt (p, q)
         optional parameter sign must be 1 or -1, with the latter useful for MLE by minimization
+        if optional parameter Vlad_sum is true, we're doing the Vlad sum for estimating p, q for
+        as set of parsimony trees
         """
         if self._forest is None:
             raise ValueError('forest data must be defined to compute likelihood')
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
         # since the l method on the CollapsedTree class returns l and grad_l...
-        terms = [CollapsedTree(tree=tree).l((p, q), sign=sign) for tree in self._forest]
-        return sum(x[0] for x in terms), scipy.array([sum(x[1][0] for x in terms), sum(x[1][1] for x in terms)])
+        if Vlad_sum:
+            terms = [CollapsedTree(tree=tree).l((p, q)) for tree in self._forest]
+            sumexp = scipy.exp([x[0] for x in terms]).sum()
+            assert sumexp != 0
+            return sign*(-scipy.log(len(terms)) + logsumexp([x[0] for x in terms])), \
+                   sign*scipy.array([sum(scipy.exp(x[0])*x[1][0] for x in terms)/sumexp,
+                               sum(scipy.exp(x[0])*x[1][1] for x in terms)/sumexp])
+        else:
+            terms = [CollapsedTree(tree=tree).l((p, q), sign=sign) for tree in self._forest]
+            return sum(x[0] for x in terms), scipy.array([sum(x[1][0] for x in terms), sum(x[1][1] for x in terms)])
 
-    # I would have coded a method for Maximum likelihood method for p and q given forest of independent trees
-    # but we get this for free from inheritance and polymorphism magic.
+    # NOTE: we get mle() method for free by inheritance/polymorphism magic
 
     def get(self, param_name=None):
         """
@@ -371,6 +389,7 @@ class CollapsedForest(CollapsedTree):
         """return a string representation for printing"""
         return ('p = %f, q = %f, n_trees = %d\n'+
                 '\n'.join([str(tree) for tree in self._forest])) % (self._p, self._q, self._n_trees)
+
         
 def test(p, q, n, plot_file):
     """
@@ -380,12 +399,6 @@ def test(p, q, n, plot_file):
 
     if plot_file[-4:] != '.pdf':
         plot_file += '.pdf'
-
-    import matplotlib
-    matplotlib.use('PDF')
-    from matplotlib import pyplot as plt
-    from matplotlib import rc, ticker
-    from scipy.stats import probplot
 
     print 'Let''s check our likelihood against a by-hand calculation for the following simple tree'
     tree = CollapsedTree(tree=[(2,1), (1,0)])
@@ -519,27 +532,8 @@ def main():
         test(args.p, args.q, args.n, args.plot_file)
         return
     
-    #with open(args.outfile, 'r') as f:
-    #    node_sequences = f.read().split('\n\n\n\n')
-    #for i in range(len(node_sequences)):
-    #    blocks = node_sequences[i].split('From    To     Any Steps?    State at upper node\n                            \n')[1].split('\n\n')
-    #    for j in range(len(blocks)):
-    #        if j == 0:
-    #            # get edge ids
-    #            edge_ids = []
-    #            for x in blocks[j].rstrip().lstrip().split('\n')[1:]:
-    #                edge_ids.append(x.split()[:2])
-    #        blocks[j] = [x.split()[2] for x in blocks[j].split('\n')[1:]]
-    #    print blocks
-    #    assert all(len(block) == len(edge_ids) for block in blocks)
-    #    node_sequences[i] = {tuple(edge_ids[j]):''.join([block[j] for block in blocks]) for j in range(len(edge_ids))}
-        
-        #print node_sequences[i]
-    #return
-
-
-
     import dendropy, copy
+    from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
     trees = dendropy.TreeList.get(path=args.outtree, schema='newick')
 
     # let's infer the seq length from the per site branch lengths
@@ -583,9 +577,11 @@ def main():
 
     print 'number of trees with integer branch lengths:', n_trees
     # now we need to get collapsed trees, is there a less ugly way to do this in dendropy?
-    best_likelihood_sofar = None
-    print 'tree\ttotals\talleles\tparsimony\tl\tp\tq'
-    for i, tree in enumerate(trees):
+
+    collapsed_trees = []
+    parsimony_scores = []
+    pearsons = []
+    for tree_i, tree in enumerate(trees):
         collapsed_tree = []
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
         # root first
@@ -634,71 +630,87 @@ def main():
         # ok, so now we have the parsimony tree in dendropy format and the corresponding collapsed tree in 
         # CollapsedTree format (but with explicit edge lengths). 
 
-        result = CollapsedTree(tree=[(clone_leaves, len(mutant_offspring_edge_lengths)) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree]).mle()
-        assert result.success
+        collapsed_trees.append(collapsed_tree)
+        parsimony_scores.append(sum(edge.length for edge in trees[tree_i].preorder_edge_iter() if edge.length is not None))
 
-        if best_likelihood_sofar is None or -result.fun > best_likelihood_sofar:
-            best_likelihood_sofar = -result.fun
+        # print the tree
+
+        # make an ete version of collapsed tree for plotting
+        nodes = [Tree(name=clone_leaves) for clone_leaves, mutant_offspring in collapsed_tree]
+        nodes[0].dist = 0 # zero length edge for root node
+        gen_size = 1
+        gen_start_index = 0
+        terminated = False
+        while not terminated:
+            k = 0
+            for i in range(gen_start_index,gen_start_index + gen_size):
+                for j in range(len(collapsed_tree[i][1])):
+                    nodes[i].add_child(nodes[gen_start_index+gen_size+k], dist=collapsed_tree[i][1][j])
+                    k += 1
+            new_gen_start_index = gen_start_index + gen_size
+            gen_size = sum(len(x[1]) for x in collapsed_tree[gen_start_index:(gen_start_index + gen_size)])
+            gen_start_index = new_gen_start_index
+            if gen_size == 0:
+                terminated = True
+
+        for node in nodes:
+            nstyle = NodeStyle()
+            nstyle['size'] = 10*scipy.sqrt(node.name)
+            node.set_style(nstyle)
+
+        ts = TreeStyle()
+        ts.show_leaf_name = False
+        #ts.show_branch_length = True
+        ts.rotation = 90
+        def my_layout(node):
+            N = AttrFace('name', fsize=14, fgcolor='black')
+            N.rotation = -90
+            faces.add_face_to_node(N, node, 0, position='branch-top')
+            #C = CircleFace(radius=5*scipy.sqrt(node.name), color='RoyalBlue', style='sphere')
+            #C.opacity = 1#0.5
+            # And place as a float face over the tree
+            #faces.add_face_to_node(C, node, 0, position="float")
+        ts.layout_fn = my_layout
+        nodes[0].render(args.plot_file+'.'+str(tree_i+1)+'.png', tree_style=ts)
+
+        # for each tree, let's plot the node data
+
+        #fig = plt.figure()
+        x, y = zip(*[(clone_leaves, len(mutant_offspring_edge_lengths)) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree])
+        pearsons.append(pearsonr(x, y)[0])
+
+
+
+    #plt.plot(x, y, 'ko', alpha=.5)
+    #plt.xlabel('clone leaves')
+    #plt.ylabel('mutant clades')
+    #plt.xlim([0,20])
+    #plt.ylim([0,30])
+    #plt.savefig(args.plot_file+'.'+str(tree_i+1)+'nodeScatter.pdf')
+    #fig.close()
+
+
+
+    result = CollapsedForest(forest=[[(clone_leaves, len(mutant_offspring_edge_lengths)) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree] for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
+    assert result.success
+    print 'p = %f, q = %f' % tuple(result.x)
+
+    print 'tree\ttotals\talleles\tparsimony\tlogLikelihood\tclone_mutant_correlation'
+    best_likelihood_sofar = None
+    for i, collapsed_tree in enumerate(collapsed_trees):
+        l = CollapsedTree(tree=[(clone_leaves, len(mutant_offspring_edge_lengths)) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree]).l(result.x)[0]
+        if best_likelihood_sofar is None or l > best_likelihood_sofar:
+            best_likelihood_sofar = l
             best_likelihood_sofar_params = result.x
             best_i = i
             best_tree = collapsed_tree
-
-        parsimony_score = sum(edge.length for edge in trees[i].preorder_edge_iter() if edge.length is not None)
         totals = sum(clone_leaves for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
         alleles = sum(len(mutant_offspring_edge_lengths) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
-        print '\t'.join(map(str, [i+1, totals, alleles, parsimony_score, -result.fun, result.x[0], result.x[1]]))
+        print '\t'.join(map(str, [i+1, totals, alleles, parsimony_scores[i], l, pearsons[i]]))
         sys.stdout.flush()
 
-        #break
+    print 'best tree: tree %d, l = %f' % (best_i + 1, best_likelihood_sofar)
 
-    print 'best tree: tree %d, l = %f, p = %f, q = %f' % (best_i + 1,
-                                                          best_likelihood_sofar,
-                                                          best_likelihood_sofar_params[0],
-                                                          best_likelihood_sofar_params[1])
-
-    from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
-
-    # make an ete version of collapsed tree for plotting
-    nodes = [Tree(name=clone_leaves) for clone_leaves, mutant_offspring in collapsed_tree]
-    nodes[0].dist = 0 # zero length edge for root node
-    #nodes = [dendropy.Node(label=str(clone_leaves)) for clone_leaves, mutant_offspring in collapsed_tree]
-    #tree = dendropy.Tree(seed_node=nodes[0]) # seed_node=nodes[0])        
-    gen_size = 1
-    gen_start_index = 0
-    terminated = False
-    while not terminated:
-        k = 0
-        for i in range(gen_start_index,gen_start_index + gen_size):
-            for j in range(len(collapsed_tree[i][1])):
-                nodes[i].add_child(nodes[gen_start_index+gen_size+k], dist=collapsed_tree[i][1][j])
-                k += 1
-        new_gen_start_index = gen_start_index + gen_size
-        gen_size = sum(len(x[1]) for x in collapsed_tree[gen_start_index:(gen_start_index + gen_size)])
-        gen_start_index = new_gen_start_index
-        if gen_size == 0:
-            terminated = True
-
-    for node in nodes:
-        nstyle = NodeStyle()
-        nstyle['size'] = 10*scipy.sqrt(node.name)
-        node.set_style(nstyle)
-
-    ts = TreeStyle()
-    ts.show_leaf_name = False
-    #ts.show_branch_length = True
-    ts.rotation = 90
-    def my_layout(node):
-        N = AttrFace('name', fsize=14, fgcolor='black')
-        N.rotation = -90
-        faces.add_face_to_node(N, node, 0, position='branch-top')
-        #C = CircleFace(radius=5*scipy.sqrt(node.name), color='RoyalBlue', style='sphere')
-        #C.opacity = 1#0.5
-        # And place as a float face over the tree
-        #faces.add_face_to_node(C, node, 0, position="float")
-    ts.layout_fn = my_layout
-    nodes[0].render(args.plot_file, tree_style=ts)
-    print 'tree plot saved to', args.plot_file
-    
 
 if __name__ == "__main__":
     main()
