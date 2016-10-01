@@ -512,9 +512,15 @@ def test(p, q, n, plot_file):
     plt.savefig(plot_file)
     print 'plot saved to', plot_file
 
+def hamming_distance(seq1, seq2):
+    """Hamming distance between two sequences of equal length"""
+    return sum(x != y for x, y in zip(seq1, seq2))
+
 def main():
     """if "--test" option is passed, run the test suite, else load newick file and do MLEs for each tree"""
     import sys, argparse
+    from Bio.Seq import Seq
+    from Bio.Alphabet import generic_dna
     parser = argparse.ArgumentParser(description='multitype tree modeling')
     parser.add_argument('--test', action='store_true', default=False, help='run tests on library functions')
     parser.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
@@ -523,57 +529,74 @@ def main():
     parser.add_argument('--plot_file', type=str, default='foo.pdf', help='output file for plots from test mode')
     parser.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
 
-    #parser.add_argument('outfile', type=str, help='dnapars outfile (verbose output)')
-    parser.add_argument('outtree', type=str, help='newick file of trees (dnapars outtree)')
+    parser.add_argument('--outfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
+    #parser.add_argument('--outtree', type=str, help='newick file of trees (dnapars outtree)')
     
     args = parser.parse_args()
 
     if args.test:
         test(args.p, args.q, args.n, args.plot_file)
         return
-    
-    import dendropy, copy
+
+
+    # parse phylip outfile
+    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(args.outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
+
+    #import dendropy, copy
     from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
-    trees = dendropy.TreeList.get(path=args.outtree, schema='newick')
 
-    # let's infer the seq length from the per site branch lengths
-    lengths = [node.edge.length for node in trees[0] if node.edge.length is not None]
-    min_delta = 100
-    for length in range(1,1000):
-        delta = sum(abs(round(x*length) - x*length) for x in lengths)
-        if delta < min_delta:
-            min_delta = delta
-            best_length = length
+    # ete trees
+    trees = []
+    for i, tree in enumerate(outfiledat):
+        tree_sequence_dict = {}
+        parent_dict = {}
+        names = []
+        for j, block in enumerate(tree):
+            if j == 0:
+                for line in block.split('\n'):
+                    fields = line.split()
+                    if len(fields) == 0:
+                        continue
+                    name = fields[1]
+                    names.append(name)
+                    if fields[0] == 'root':
+                        seq = ''.join(fields[2:])
+                        parent = None
+                    else:
+                        seq = ''.join(fields[3:]) 
+                        parent = fields[0]
+                    tree_sequence_dict[name] = seq
+                    parent_dict[name] = parent
+            else:
+                for line in block.split('\n'):
+                    fields = line.split()
+                    name = fields[1]
+                    if fields[0] == 'root':
+                        seq = ''.join(fields[2:])
+                    else:
+                        seq = ''.join(fields[3:])
+                    tree_sequence_dict[name] += seq
 
-    print 'inferred sequence length:', best_length
-
-    # adjust branch lens and remove trees with fractional branches
-    i = 0
-    while i < len(trees):
-        # if germline seq is defined, we reroot on it
-        # the reroot_at_node function doesn't seem to work right because it expects an internal node
-        if args.germline is not None:
-            GL = trees[i].find_node_with_taxon_label(args.germline)
-            assert len(GL.child_nodes()) == 0
-            for child in trees[i].seed_node.child_node_iter():
-                child.edge_length += GL.edge_length
-            trees[i].seed_node.remove_child(GL)#, suppress_unifurcations=True)
-            trees[i].seed_node.label = GL
-        # we need to adjust the branch lengths, since they're per site
-        for edge in trees[i].postorder_edge_iter():
-            if edge.length is not None:
-                edge.length = round(edge.length*best_length,1)
-                # if branch length is fractional, forget about this tree
-                if edge.length % 1 != 0:
-                    trees.remove(trees[i])
-                    bad_tree = True
-                    break
-                else:
-                    bad_tree = False
-        if not bad_tree:
-            i += 1
+        # if integer branch (not weird ambiguous chars)
+        if set(''.join([tree_sequence_dict[name] for name in names])) == set('ACGT'):
+            nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
+            tree = nodes[names[0]]
+            for name in parent_dict:
+                if parent_dict[name] is not None:
+                    nodes[parent_dict[name]].add_child(nodes[name])
+            # reroot on germline!
+            if args.germline is not None:
+                assert len(nodes[args.germline].children) == 0
+                tree.remove_child(nodes[args.germline])
+                for child in tree.children:
+                    nodes[args.germline].add_child(child)
+                    child.name = (child.name[0], hamming_distance(tree_sequence_dict[child.name[0]], tree_sequence_dict[args.germline]))
+                tree = nodes[args.germline]
+            trees.append(tree)
 
     n_trees = len(trees)
+
+    #NOTE: stopped refactoring here
 
     print 'number of trees with integer branch lengths:', n_trees
     # now we need to get collapsed trees, is there a less ugly way to do this in dendropy?
@@ -585,18 +608,23 @@ def main():
         collapsed_tree = []
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
         # root first
-        clone_leaves = sum((int(node.taxon.label.split(' ')[1]) if ' ' in node.taxon.label else 1) for node in tree.leaf_nodes() if node.distance_from_root() == 0)
+        clone_leaves = sum((int(node.taxon.label.split('_')[1]) if '_' in node.taxon.label else 1) for node in tree.leaf_nodes() if node.distance_from_root() == 0)
+        sequence = tree_sequences[tree_i][tree.seed_node.label]
         # to get mutant offspring, first consider all nodes that are distance zero
         # the mutant offspring are children of these nodes with nonzero edge length
         mutant_offspring_nodes = [child_node for node in tree if node.distance_from_root() == 0 for child_node in node.child_node_iter() if child_node.edge.length != 0]
         mutant_offspring_edge_lengths = [node.edge.length for node in mutant_offspring_nodes]
         #mutant_offspring = len(mutant_offspring_nodes)
-        collapsed_tree.append((clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
+        collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
         # recurse into the mutant offspring
         done = False
         while not done:
             new_mutant_offspring_nodes = []
             for mutant in mutant_offspring_nodes:
+                if len(mutant.child_nodes()) == 0:
+                    sequence = tree_sequences[tree_i][mutant.taxon.label]
+                else:
+                    sequence = tree_sequences[tree_i][mutant.label]
                 new_mutant_offspring_nodes_from_this_mutant = []
                 if mutant.num_child_nodes() == 0:
                     clone_leaves = 1
@@ -616,12 +644,12 @@ def main():
                             distances.append(clonal_descendent_parent.edge_length)
                             clonal_descendent_parent = clonal_descendent_parent.parent_node
                         if sum(distances) == 0 and clonal_descendent.is_leaf():
-                            clone_leaves += (int(clonal_descendent.taxon.label.split(' ')[1]) if ' ' in clonal_descendent.taxon.label else 1)
+                            clone_leaves += (int(clonal_descendent.taxon.label.split('_')[1]) if '_' in clonal_descendent.taxon.label else 1)
                         elif distances[0] != 0 and all(distances[i] == 0 for i in range(1, len(distances))):
                             new_mutant_offspring_nodes_from_this_mutant.append(clonal_descendent)
                 #mutant_offspring = len(new_mutant_offspring_nodes_from_this_mutant)
                 mutant_offspring_edge_lengths = [node.edge.length for node in new_mutant_offspring_nodes_from_this_mutant]
-                collapsed_tree.append((clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
+                collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
                 new_mutant_offspring_nodes.extend(new_mutant_offspring_nodes_from_this_mutant)
             mutant_offspring_nodes = new_mutant_offspring_nodes
             if len(new_mutant_offspring_nodes) == 0:
@@ -633,10 +661,9 @@ def main():
         collapsed_trees.append(collapsed_tree)
         parsimony_scores.append(sum(edge.length for edge in trees[tree_i].preorder_edge_iter() if edge.length is not None))
 
-        # print the tree
 
         # make an ete version of collapsed tree for plotting
-        nodes = [Tree(name=clone_leaves) for clone_leaves, mutant_offspring in collapsed_tree]
+        nodes = [Tree(name=(sequence, clone_leaves)) for sequence, clone_leaves, mutant_offspring in collapsed_tree]
         nodes[0].dist = 0 # zero length edge for root node
         gen_size = 1
         gen_start_index = 0
@@ -644,18 +671,28 @@ def main():
         while not terminated:
             k = 0
             for i in range(gen_start_index,gen_start_index + gen_size):
-                for j in range(len(collapsed_tree[i][1])):
-                    nodes[i].add_child(nodes[gen_start_index+gen_size+k], dist=collapsed_tree[i][1][j])
+                for j in range(len(collapsed_tree[i][2])):
+                    nodes[i].add_child(nodes[gen_start_index+gen_size+k], dist=collapsed_tree[i][2][j])
                     k += 1
             new_gen_start_index = gen_start_index + gen_size
-            gen_size = sum(len(x[1]) for x in collapsed_tree[gen_start_index:(gen_start_index + gen_size)])
+            gen_size = sum(len(x[2]) for x in collapsed_tree[gen_start_index:(gen_start_index + gen_size)])
             gen_start_index = new_gen_start_index
             if gen_size == 0:
                 terminated = True
 
         for node in nodes:
             nstyle = NodeStyle()
-            nstyle['size'] = 10*scipy.sqrt(node.name)
+            nstyle['size'] = 10*scipy.sqrt(node.name[1])
+            nstyle['fgcolor'] = 'black'
+            if node.up is not None:
+                nonsyn = hamming_distance(Seq(node.name[0], generic_dna).translate(), Seq(node.up.name[0], generic_dna).translate())
+                if nonsyn > 0:
+                    nstyle['hz_line_color'] = 'orange'
+                    nstyle["hz_line_width"] = nonsyn
+                else:
+                    nstyle['hz_line_color'] = 'green'
+            if '*' in Seq(node.name[0], generic_dna).translate():
+                    nstyle['fgcolor'] = 'red'
             node.set_style(nstyle)
 
         ts = TreeStyle()
@@ -663,7 +700,7 @@ def main():
         #ts.show_branch_length = True
         ts.rotation = 90
         def my_layout(node):
-            N = AttrFace('name', fsize=14, fgcolor='black')
+            N = TextFace(node.name[1], fsize=14, fgcolor='black')
             N.rotation = -90
             faces.add_face_to_node(N, node, 0, position='branch-top')
             #C = CircleFace(radius=5*scipy.sqrt(node.name), color='RoyalBlue', style='sphere')
@@ -676,7 +713,7 @@ def main():
         # for each tree, let's plot the node data
 
         #fig = plt.figure()
-        x, y = zip(*[(clone_leaves, len(mutant_offspring_edge_lengths)) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree])
+        x, y = zip(*[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree])
         pearsons.append(pearsonr(x, y)[0])
 
 
@@ -691,21 +728,21 @@ def main():
 
 
 
-    result = CollapsedForest(forest=[[(clone_leaves, len(mutant_offspring_edge_lengths)) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree] for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
+    result = CollapsedForest(forest=[[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree] for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
     assert result.success
     print 'p = %f, q = %f' % tuple(result.x)
 
     print 'tree\ttotals\talleles\tparsimony\tlogLikelihood\tclone_mutant_correlation'
     best_likelihood_sofar = None
     for i, collapsed_tree in enumerate(collapsed_trees):
-        l = CollapsedTree(tree=[(clone_leaves, len(mutant_offspring_edge_lengths)) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree]).l(result.x)[0]
+        l = CollapsedTree(tree=[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree]).l(result.x)[0]
         if best_likelihood_sofar is None or l > best_likelihood_sofar:
             best_likelihood_sofar = l
             best_likelihood_sofar_params = result.x
             best_i = i
             best_tree = collapsed_tree
-        totals = sum(clone_leaves for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
-        alleles = sum(len(mutant_offspring_edge_lengths) for clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
+        totals = sum(clone_leaves for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
+        alleles = sum(len(mutant_offspring_edge_lengths) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
         print '\t'.join(map(str, [i+1, totals, alleles, parsimony_scores[i], l, pearsons[i]]))
         sys.stdout.flush()
 
