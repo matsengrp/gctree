@@ -8,7 +8,7 @@ import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
-from scipy.stats import probplot, pearsonr
+from scipy.stats import probplot
 
 """
 This module contains classes for simulation and inference for a binary branching process with mutation
@@ -590,11 +590,18 @@ def main():
                 tree.remove_child(nodes[args.germline])
                 for child in tree.children:
                     nodes[args.germline].add_child(child)
-                    child.name = (child.name[0], hamming_distance(tree_sequence_dict[child.name[0]], tree_sequence_dict[args.germline]))
+                    child.dist = hamming_distance(tree_sequence_dict[child.name[0]], tree_sequence_dict[args.germline])
                 tree = nodes[args.germline]
+            
+            # assert branch lengths make sense
+            for node in tree.iter_descendants():
+                assert node.dist == hamming_distance(node.name[1], node.up.name[1])
+
+
             trees.append(tree)
 
     n_trees = len(trees)
+
 
     #NOTE: stopped refactoring here
 
@@ -603,17 +610,16 @@ def main():
 
     collapsed_trees = []
     parsimony_scores = []
-    pearsons = []
     for tree_i, tree in enumerate(trees):
         collapsed_tree = []
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
         # root first
-        clone_leaves = sum((int(node.taxon.label.split('_')[1]) if '_' in node.taxon.label else 1) for node in tree.leaf_nodes() if node.distance_from_root() == 0)
-        sequence = tree_sequences[tree_i][tree.seed_node.label]
+        clone_leaves = sum((int(leaf.name[0].split('_')[1]) if '_' in leaf.name[0] else 1) for leaf in tree.iter_leaves() if tree.get_distance(leaf) == 0)
+        sequence = tree.name[1] 
         # to get mutant offspring, first consider all nodes that are distance zero
         # the mutant offspring are children of these nodes with nonzero edge length
-        mutant_offspring_nodes = [child_node for node in tree if node.distance_from_root() == 0 for child_node in node.child_node_iter() if child_node.edge.length != 0]
-        mutant_offspring_edge_lengths = [node.edge.length for node in mutant_offspring_nodes]
+        mutant_offspring_nodes = [child for node in tree.traverse() if tree.get_distance(node) == 0 for child in node.children if child.dist != 0]
+        mutant_offspring_edge_lengths = [node.dist for node in mutant_offspring_nodes]
         #mutant_offspring = len(mutant_offspring_nodes)
         collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
         # recurse into the mutant offspring
@@ -621,45 +627,21 @@ def main():
         while not done:
             new_mutant_offspring_nodes = []
             for mutant in mutant_offspring_nodes:
-                if len(mutant.child_nodes()) == 0:
-                    sequence = tree_sequences[tree_i][mutant.taxon.label]
-                else:
-                    sequence = tree_sequences[tree_i][mutant.label]
-                new_mutant_offspring_nodes_from_this_mutant = []
-                if mutant.num_child_nodes() == 0:
-                    clone_leaves = 1
-                else:
-                    clone_leaves = 0 # <-- initialize
-                    # loop over nodes of the subtree rooted at this mutant
-                    for clonal_descendent in mutant.preorder_iter():
-                        # skip the root of the subtree
-                        if clonal_descendent == mutant:
-                            continue
-                        # let's get the sequence of branch lengths connecting clonal_descendent with this mutant
-                        # Looking at that sequence we can see if a node is a clone of the mutant, or the beginning 
-                        # of a new mutant clade
-                        distances = [clonal_descendent.edge_length]
-                        clonal_descendent_parent = clonal_descendent.parent_node
-                        while clonal_descendent_parent is not mutant:
-                            distances.append(clonal_descendent_parent.edge_length)
-                            clonal_descendent_parent = clonal_descendent_parent.parent_node
-                        if sum(distances) == 0 and clonal_descendent.is_leaf():
-                            clone_leaves += (int(clonal_descendent.taxon.label.split('_')[1]) if '_' in clonal_descendent.taxon.label else 1)
-                        elif distances[0] != 0 and all(distances[i] == 0 for i in range(1, len(distances))):
-                            new_mutant_offspring_nodes_from_this_mutant.append(clonal_descendent)
-                #mutant_offspring = len(new_mutant_offspring_nodes_from_this_mutant)
-                mutant_offspring_edge_lengths = [node.edge.length for node in new_mutant_offspring_nodes_from_this_mutant]
-                collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
+                sequence = mutant.name[1]
+                clone_leaves = sum((int(leaf.name[0].split('_')[1]) if '_' in leaf.name[0] else 1) for leaf in mutant.iter_leaves() if mutant.get_distance(leaf) == 0)
+                new_mutant_offspring_nodes_from_this_mutant = [child for node in mutant.traverse() if mutant.get_distance(node) == 0 for child in node.children if child.dist != 0]
+                mutant_offspring_edge_lengths = [node.dist for node in new_mutant_offspring_nodes_from_this_mutant]
+                collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))
                 new_mutant_offspring_nodes.extend(new_mutant_offspring_nodes_from_this_mutant)
             mutant_offspring_nodes = new_mutant_offspring_nodes
             if len(new_mutant_offspring_nodes) == 0:
                 done = True
 
-        # ok, so now we have the parsimony tree in dendropy format and the corresponding collapsed tree in 
-        # CollapsedTree format (but with explicit edge lengths). 
+        # ok, so now we have the parsimony tree in ete format and the corresponding collapsed tree in 
+        # CollapsedTree format (but with explicit edge lengths and seqs). 
 
         collapsed_trees.append(collapsed_tree)
-        parsimony_scores.append(sum(edge.length for edge in trees[tree_i].preorder_edge_iter() if edge.length is not None))
+        parsimony_scores.append(sum(node.dist for node in trees[tree_i].iter_descendants()))
 
 
         # make an ete version of collapsed tree for plotting
@@ -688,7 +670,7 @@ def main():
                 nonsyn = hamming_distance(Seq(node.name[0], generic_dna).translate(), Seq(node.up.name[0], generic_dna).translate())
                 if nonsyn > 0:
                     nstyle['hz_line_color'] = 'orange'
-                    nstyle["hz_line_width"] = nonsyn
+                    nstyle["hz_line_width"] = 1+nonsyn
                 else:
                     nstyle['hz_line_color'] = 'green'
             if '*' in Seq(node.name[0], generic_dna).translate():
@@ -714,7 +696,6 @@ def main():
 
         #fig = plt.figure()
         x, y = zip(*[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree])
-        pearsons.append(pearsonr(x, y)[0])
 
 
 
@@ -732,7 +713,7 @@ def main():
     assert result.success
     print 'p = %f, q = %f' % tuple(result.x)
 
-    print 'tree\ttotals\talleles\tparsimony\tlogLikelihood\tclone_mutant_correlation'
+    print 'tree\ttotals\talleles\tparsimony\tlogLikelihood'
     best_likelihood_sofar = None
     for i, collapsed_tree in enumerate(collapsed_trees):
         l = CollapsedTree(tree=[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree]).l(result.x)[0]
@@ -743,7 +724,7 @@ def main():
             best_tree = collapsed_tree
         totals = sum(clone_leaves for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
         alleles = sum(len(mutant_offspring_edge_lengths) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
-        print '\t'.join(map(str, [i+1, totals, alleles, parsimony_scores[i], l, pearsons[i]]))
+        print '\t'.join(map(str, [i+1, totals, alleles, parsimony_scores[i], l]))
         sys.stdout.flush()
 
     print 'best tree: tree %d, l = %f' % (best_i + 1, best_likelihood_sofar)
