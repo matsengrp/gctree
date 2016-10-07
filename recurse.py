@@ -356,7 +356,8 @@ class CollapsedForest(CollapsedTree):
         # since the l method on the CollapsedTree class returns l and grad_l...
         if Vlad_sum:
             terms = [CollapsedTree(tree=tree).l((p, q)) for tree in self._forest]
-            sumexp = scipy.exp([x[0] for x in terms]).sum()
+            #sumexp = scipy.exp([x[0] for x in terms]).sum()
+            sumexp = scipy.exp(logsumexp([x[0] for x in terms]))
             assert sumexp != 0
             return sign*(-scipy.log(len(terms)) + logsumexp([x[0] for x in terms])), \
                    sign*scipy.array([sum(scipy.exp(x[0])*x[1][0] for x in terms)/sumexp,
@@ -664,15 +665,19 @@ def main():
 
         for node in nodes:
             nstyle = NodeStyle()
-            nstyle['size'] = 10*scipy.sqrt(node.name[1])
-            nstyle['fgcolor'] = 'black'
+            if node.name[1] == 0:
+                nstyle['size'] = 5
+                nstyle['fgcolor'] = 'grey'
+            else:
+                nstyle['size'] = 10*scipy.sqrt(node.name[1])
+                nstyle['fgcolor'] = 'black'
             if node.up is not None:
                 nonsyn = hamming_distance(Seq(node.name[0], generic_dna).translate(), Seq(node.up.name[0], generic_dna).translate())
                 if nonsyn > 0:
                     nstyle['hz_line_color'] = 'orange'
-                    nstyle["hz_line_width"] = 1+nonsyn
+                    nstyle["hz_line_width"] = 1+2*nonsyn
                 else:
-                    nstyle['hz_line_color'] = 'green'
+                    nstyle['hz_line_color'] = 'black'
             if '*' in Seq(node.name[0], generic_dna).translate():
                     nstyle['fgcolor'] = 'red'
             node.set_style(nstyle)
@@ -682,9 +687,10 @@ def main():
         #ts.show_branch_length = True
         ts.rotation = 90
         def my_layout(node):
-            N = TextFace(node.name[1], fsize=14, fgcolor='black')
-            N.rotation = -90
-            faces.add_face_to_node(N, node, 0, position='branch-top')
+            if node.name[1] > 1:
+                N = TextFace(node.name[1], fsize=14, fgcolor='black')
+                N.rotation = -90
+                faces.add_face_to_node(N, node, 0, position='branch-top')
             #C = CircleFace(radius=5*scipy.sqrt(node.name), color='RoyalBlue', style='sphere')
             #C.opacity = 1#0.5
             # And place as a float face over the tree
@@ -728,6 +734,19 @@ def main():
         sys.stdout.flush()
 
     print 'best tree: tree %d, l = %f' % (best_i + 1, best_likelihood_sofar)
+
+    plt.figure()
+    cs = scipy.arange(11)
+    ms = scipy.arange(20)
+    colors=plt.cm.rainbow(scipy.linspace(0,1,len(cs)))
+    for i, c in enumerate(cs):
+        dat = scipy.array([LeavesAndClades(c=c, m=m).f(*best_likelihood_sofar_params)[0] for m in ms])
+        dat = dat/dat.sum()
+        plt.plot(ms, dat, 'o--', alpha=.5, color=colors[i], label=r'$c = %d$' % c) 
+    plt.xlabel(r'$m$')
+    plt.ylabel(r'$\mathbb{P}\left(M=m\mid C=c\right)$')
+    plt.legend(numpoints=1)
+    plt.savefig(args.plot_file+'.diversification.pdf')
 
 
 if __name__ == "__main__":
