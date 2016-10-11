@@ -217,11 +217,12 @@ class CollapsedTree(LeavesAndClades):
         returns optimization result
         """
         # random initalization
-        x_0 = (random.random(), random.random())
+        #x_0 = (random.random(), random.random())
+        x_0 = (.5, .5)
         bounds = ((.001, .999), (.001, .999))
         kwargs['sign'] = -1
         #print check_grad(lambda x: self.l(x, **kwargs)[0], lambda x: self.l(x, **kwargs)[1], (.4, .5))
-        result = minimize(lambda x: self.l(x, **kwargs), x0=x_0, jac=True, method='L-BFGS-B', bounds=bounds)
+        result = minimize(lambda x: self.l(x, **kwargs), x0=x_0, jac=True, method='L-BFGS-B', options={'ftol':1e-10}, bounds=bounds)
         # update p and q if None and optimization successful
         if not result.success:
             warnings.warn('optimization not sucessful, '+result.message, RuntimeWarning)
@@ -356,12 +357,17 @@ class CollapsedForest(CollapsedTree):
         # since the l method on the CollapsedTree class returns l and grad_l...
         if Vlad_sum:
             terms = [CollapsedTree(tree=tree).l((p, q)) for tree in self._forest]
-            #sumexp = scipy.exp([x[0] for x in terms]).sum()
-            sumexp = scipy.exp(logsumexp([x[0] for x in terms]))
+            sumexp = scipy.exp([x[0] for x in terms]).sum()
+            #sumexp = scipy.exp(logsumexp([x[0] for x in terms]))
             assert sumexp != 0
+            #thing1 = [x[0]+scipy.log(x[1][0]) for x in terms if x[1][0] > 0]
+            #thing2 = [x[0]+scipy.log(x[1][1]) for x in terms if x[1][1] > 0]
+            #thing3 = [x[0] for x in terms]
+            #return sign*(-scipy.log(len(terms)) + logsumexp(thing3)), \
+            #       sign*scipy.array([scipy.exp(logsumexp(thing1) + logsumexp(thing3)), scipy.exp(logsumexp(thing2) + logsumexp(thing3))])
             return sign*(-scipy.log(len(terms)) + logsumexp([x[0] for x in terms])), \
                    sign*scipy.array([sum(scipy.exp(x[0])*x[1][0] for x in terms)/sumexp,
-                               sum(scipy.exp(x[0])*x[1][1] for x in terms)/sumexp])
+                                     sum(scipy.exp(x[0])*x[1][1] for x in terms)/sumexp])
         else:
             terms = [CollapsedTree(tree=tree).l((p, q), sign=sign) for tree in self._forest]
             return sum(x[0] for x in terms), scipy.array([sum(x[1][0] for x in terms), sum(x[1][1] for x in terms)])
@@ -522,6 +528,8 @@ def main():
     import sys, argparse
     from Bio.Seq import Seq
     from Bio.Alphabet import generic_dna
+    from collections import Counter
+    from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
     parser = argparse.ArgumentParser(description='multitype tree modeling')
     parser.add_argument('--test', action='store_true', default=False, help='run tests on library functions')
     parser.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
@@ -529,22 +537,16 @@ def main():
     parser.add_argument('--n', type=int, default=100, help='forest size for test mode')
     parser.add_argument('--plot_file', type=str, default='foo.pdf', help='output file for plots from test mode')
     parser.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
-
     parser.add_argument('--outfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
-    #parser.add_argument('--outtree', type=str, help='newick file of trees (dnapars outtree)')
-    
     args = parser.parse_args()
 
     if args.test:
         test(args.p, args.q, args.n, args.plot_file)
         return
 
-
     # parse phylip outfile
     outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(args.outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
 
-    #import dendropy, copy
-    from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
 
     # ete trees
     trees = []
@@ -585,7 +587,7 @@ def main():
             for name in parent_dict:
                 if parent_dict[name] is not None:
                     nodes[parent_dict[name]].add_child(nodes[name])
-            # reroot on germline!
+            # reroot on germline
             if args.germline is not None:
                 assert len(nodes[args.germline].children) == 0
                 tree.remove_child(nodes[args.germline])
@@ -598,17 +600,13 @@ def main():
             for node in tree.iter_descendants():
                 assert node.dist == hamming_distance(node.name[1], node.up.name[1])
 
-
             trees.append(tree)
 
     n_trees = len(trees)
 
-
-    #NOTE: stopped refactoring here
-
     print 'number of trees with integer branch lengths:', n_trees
-    # now we need to get collapsed trees, is there a less ugly way to do this in dendropy?
 
+    # now we need to get collapsed trees
     collapsed_trees = []
     parsimony_scores = []
     for tree_i, tree in enumerate(trees):
@@ -616,11 +614,13 @@ def main():
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
         # root first
         clone_leaves = sum((int(leaf.name[0].split('_')[1]) if '_' in leaf.name[0] else 1) for leaf in tree.iter_leaves() if tree.get_distance(leaf) == 0)
+            
         sequence = tree.name[1] 
         # to get mutant offspring, first consider all nodes that are distance zero
         # the mutant offspring are children of these nodes with nonzero edge length
         mutant_offspring_nodes = [child for node in tree.traverse() if tree.get_distance(node) == 0 for child in node.children if child.dist != 0]
         mutant_offspring_edge_lengths = [node.dist for node in mutant_offspring_nodes]
+        assert 0 not in mutant_offspring_edge_lengths
         #mutant_offspring = len(mutant_offspring_nodes)
         collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
         # recurse into the mutant offspring
@@ -632,6 +632,7 @@ def main():
                 clone_leaves = sum((int(leaf.name[0].split('_')[1]) if '_' in leaf.name[0] else 1) for leaf in mutant.iter_leaves() if mutant.get_distance(leaf) == 0)
                 new_mutant_offspring_nodes_from_this_mutant = [child for node in mutant.traverse() if mutant.get_distance(node) == 0 for child in node.children if child.dist != 0]
                 mutant_offspring_edge_lengths = [node.dist for node in new_mutant_offspring_nodes_from_this_mutant]
+                assert 0 not in mutant_offspring_edge_lengths
                 collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))
                 new_mutant_offspring_nodes.extend(new_mutant_offspring_nodes_from_this_mutant)
             mutant_offspring_nodes = new_mutant_offspring_nodes
@@ -643,7 +644,6 @@ def main():
 
         collapsed_trees.append(collapsed_tree)
         parsimony_scores.append(sum(node.dist for node in trees[tree_i].iter_descendants()))
-
 
         # make an ete version of collapsed tree for plotting
         nodes = [Tree(name=(sequence, clone_leaves)) for sequence, clone_leaves, mutant_offspring in collapsed_tree]
@@ -663,58 +663,44 @@ def main():
             if gen_size == 0:
                 terminated = True
 
+        for node in nodes[0].iter_descendants():
+            assert node.dist == hamming_distance(node.name[0], node.up.name[0])
+
         for node in nodes:
             nstyle = NodeStyle()
             if node.name[1] == 0:
                 nstyle['size'] = 5
                 nstyle['fgcolor'] = 'grey'
             else:
-                nstyle['size'] = 10*scipy.sqrt(node.name[1])
+                nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.name[1])
                 nstyle['fgcolor'] = 'black'
             if node.up is not None:
                 nonsyn = hamming_distance(Seq(node.name[0], generic_dna).translate(), Seq(node.up.name[0], generic_dna).translate())
                 if nonsyn > 0:
-                    nstyle['hz_line_color'] = 'orange'
-                    nstyle["hz_line_width"] = 1+2*nonsyn
-                else:
                     nstyle['hz_line_color'] = 'black'
+                    nstyle["hz_line_width"] = nonsyn
+                else:
+                    nstyle["hz_line_type"] = 1
             if '*' in Seq(node.name[0], generic_dna).translate():
                     nstyle['fgcolor'] = 'red'
             node.set_style(nstyle)
 
         ts = TreeStyle()
         ts.show_leaf_name = False
-        #ts.show_branch_length = True
         ts.rotation = 90
         def my_layout(node):
             if node.name[1] > 1:
                 N = TextFace(node.name[1], fsize=14, fgcolor='black')
                 N.rotation = -90
                 faces.add_face_to_node(N, node, 0, position='branch-top')
-            #C = CircleFace(radius=5*scipy.sqrt(node.name), color='RoyalBlue', style='sphere')
-            #C.opacity = 1#0.5
-            # And place as a float face over the tree
-            #faces.add_face_to_node(C, node, 0, position="float")
         ts.layout_fn = my_layout
-        nodes[0].render(args.plot_file+'.'+str(tree_i+1)+'.png', tree_style=ts)
+        nodes[0].render(args.plot_file+'.'+str(tree_i+1)+'.pdf', tree_style=ts)
+        # print tree nodes to file
+        with open(args.plot_file+'.'+str(tree_i+1)+'.nodes.tsv', 'w') as f:
+            for node in sorted(nodes, key=lambda node: node.name[0]):
+                f.write(node.name[0]+'\t'+str(node.name[1])+'\n')
 
-        # for each tree, let's plot the node data
-
-        #fig = plt.figure()
-        x, y = zip(*[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree])
-
-
-
-    #plt.plot(x, y, 'ko', alpha=.5)
-    #plt.xlabel('clone leaves')
-    #plt.ylabel('mutant clades')
-    #plt.xlim([0,20])
-    #plt.ylim([0,30])
-    #plt.savefig(args.plot_file+'.'+str(tree_i+1)+'nodeScatter.pdf')
-    #fig.close()
-
-
-
+    # fit p and q using all trees
     result = CollapsedForest(forest=[[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree] for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
     assert result.success
     print 'p = %f, q = %f' % tuple(result.x)
@@ -747,7 +733,6 @@ def main():
     plt.ylabel(r'$\mathbb{P}\left(M=m\mid C=c\right)$')
     plt.legend(numpoints=1)
     plt.savefig(args.plot_file+'.diversification.pdf')
-
 
 if __name__ == "__main__":
     main()
