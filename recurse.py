@@ -524,7 +524,7 @@ def hamming_distance(seq1, seq2):
     return sum(x != y for x, y in zip(seq1, seq2))
 
 def main():
-    """if "--test" option is passed, run the test suite, else load newick file and do MLEs for each tree"""
+    """if "--test" option is passed, run the test suite, else load phylip file and do MLEs for each tree"""
     import sys, argparse
     from Bio.Seq import Seq
     from Bio.Alphabet import generic_dna
@@ -537,15 +537,23 @@ def main():
     parser.add_argument('--n', type=int, default=100, help='forest size for test mode')
     parser.add_argument('--plot_file', type=str, default='foo.pdf', help='output file for plots from test mode')
     parser.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
-    parser.add_argument('--outfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
+    parser.add_argument('--phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
+    parser.add_argument('--colormap', type=str, default=None, help='optional sequence-->color mappings')
     args = parser.parse_args()
 
     if args.test:
         test(args.p, args.q, args.n, args.plot_file)
         return
 
+    if args.colormap is not None:
+        colormap = {}
+        for line in open(args.colormap, 'r'):
+            sequence, color = line.rstrip().split()
+            colormap[sequence.upper()] = color
+        #colormap = {sequence:color for line in open(args.colormap, 'r') for sequence, color in line.rstrip().split()}
+
     # parse phylip outfile
-    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(args.outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
+    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(args.phylipfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
 
 
     # ete trees
@@ -583,7 +591,12 @@ def main():
         # if integer branch (not weird ambiguous chars)
         if set(''.join([tree_sequence_dict[name] for name in names])) == set('ACGT'):
             nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
-            tree = nodes[names[0]]
+            nodes = {}
+            for name in names:
+                node =  Tree(name=name, dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)
+                node.add_feature('sequence', tree_sequence_dict[node.name])
+                nodes[name] = node
+            tree = nodes[names[0]] # GL is first
             for name in parent_dict:
                 if parent_dict[name] is not None:
                     nodes[parent_dict[name]].add_child(nodes[name])
@@ -593,12 +606,12 @@ def main():
                 tree.remove_child(nodes[args.germline])
                 for child in tree.children:
                     nodes[args.germline].add_child(child)
-                    child.dist = hamming_distance(tree_sequence_dict[child.name[0]], tree_sequence_dict[args.germline])
+                    child.dist = hamming_distance(tree_sequence_dict[child.name], tree_sequence_dict[args.germline])
                 tree = nodes[args.germline]
             
             # assert branch lengths make sense
             for node in tree.iter_descendants():
-                assert node.dist == hamming_distance(node.name[1], node.up.name[1])
+                assert node.dist == hamming_distance(node.sequence, node.up.sequence)
 
             trees.append(tree)
 
@@ -613,27 +626,25 @@ def main():
         collapsed_tree = []
         # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
         # root first
-        clone_leaves = sum((int(leaf.name[0].split('_')[1]) if '_' in leaf.name[0] else 1) for leaf in tree.iter_leaves() if tree.get_distance(leaf) == 0)
+        clone_leaves = sum((int(leaf.name.split('_')[1]) if '_' in leaf.name else 1) for leaf in tree.iter_leaves() if tree.get_distance(leaf) == 0)
             
-        sequence = tree.name[1] 
         # to get mutant offspring, first consider all nodes that are distance zero
         # the mutant offspring are children of these nodes with nonzero edge length
         mutant_offspring_nodes = [child for node in tree.traverse() if tree.get_distance(node) == 0 for child in node.children if child.dist != 0]
         mutant_offspring_edge_lengths = [node.dist for node in mutant_offspring_nodes]
         assert 0 not in mutant_offspring_edge_lengths
         #mutant_offspring = len(mutant_offspring_nodes)
-        collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
+        collapsed_tree.append((tree.sequence, clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
         # recurse into the mutant offspring
         done = False
         while not done:
             new_mutant_offspring_nodes = []
             for mutant in mutant_offspring_nodes:
-                sequence = mutant.name[1]
-                clone_leaves = sum((int(leaf.name[0].split('_')[1]) if '_' in leaf.name[0] else 1) for leaf in mutant.iter_leaves() if mutant.get_distance(leaf) == 0)
+                clone_leaves = sum((int(leaf.name.split('_')[1]) if '_' in leaf.name else 1) for leaf in mutant.iter_leaves() if mutant.get_distance(leaf) == 0)
                 new_mutant_offspring_nodes_from_this_mutant = [child for node in mutant.traverse() if mutant.get_distance(node) == 0 for child in node.children if child.dist != 0]
                 mutant_offspring_edge_lengths = [node.dist for node in new_mutant_offspring_nodes_from_this_mutant]
                 assert 0 not in mutant_offspring_edge_lengths
-                collapsed_tree.append((sequence, clone_leaves, mutant_offspring_edge_lengths))
+                collapsed_tree.append((mutant.sequence, clone_leaves, mutant_offspring_edge_lengths))
                 new_mutant_offspring_nodes.extend(new_mutant_offspring_nodes_from_this_mutant)
             mutant_offspring_nodes = new_mutant_offspring_nodes
             if len(new_mutant_offspring_nodes) == 0:
@@ -646,7 +657,11 @@ def main():
         parsimony_scores.append(sum(node.dist for node in trees[tree_i].iter_descendants()))
 
         # make an ete version of collapsed tree for plotting
-        nodes = [Tree(name=(sequence, clone_leaves)) for sequence, clone_leaves, mutant_offspring in collapsed_tree]
+        nodes = []
+        for sequence, clone_leaves, mutant_offspring in collapsed_tree:
+            node = Tree(name=sequence)
+            node.add_feature('clone_leaves', clone_leaves)
+            nodes.append(node)
         nodes[0].dist = 0 # zero length edge for root node
         gen_size = 1
         gen_start_index = 0
@@ -664,24 +679,27 @@ def main():
                 terminated = True
 
         for node in nodes[0].iter_descendants():
-            assert node.dist == hamming_distance(node.name[0], node.up.name[0])
+            assert node.dist == hamming_distance(node.name, node.up.name)
 
         for node in nodes:
             nstyle = NodeStyle()
-            if node.name[1] == 0:
+            if node.clone_leaves == 0:
                 nstyle['size'] = 5
                 nstyle['fgcolor'] = 'grey'
             else:
-                nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.name[1])
-                nstyle['fgcolor'] = 'black'
+                nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.clone_leaves)
+                if args.colormap is not None and node.name in colormap:
+                    nstyle['fgcolor'] = colormap[node.name]
+                else:
+                    nstyle['fgcolor'] = 'black'
             if node.up is not None:
-                nonsyn = hamming_distance(Seq(node.name[0], generic_dna).translate(), Seq(node.up.name[0], generic_dna).translate())
+                nonsyn = hamming_distance(Seq(node.name, generic_dna).translate(), Seq(node.up.name, generic_dna).translate())
                 if nonsyn > 0:
                     nstyle['hz_line_color'] = 'black'
                     nstyle["hz_line_width"] = nonsyn
                 else:
                     nstyle["hz_line_type"] = 1
-            if '*' in Seq(node.name[0], generic_dna).translate():
+            if '*' in Seq(node.name, generic_dna).translate():
                     nstyle['fgcolor'] = 'red'
             node.set_style(nstyle)
 
@@ -689,16 +707,16 @@ def main():
         ts.show_leaf_name = False
         ts.rotation = 90
         def my_layout(node):
-            if node.name[1] > 1:
-                N = TextFace(node.name[1], fsize=14, fgcolor='black')
+            if node.clone_leaves > 1:
+                N = TextFace(node.clone_leaves, fsize=14, fgcolor='black')
                 N.rotation = -90
                 faces.add_face_to_node(N, node, 0, position='branch-top')
         ts.layout_fn = my_layout
-        nodes[0].render(args.plot_file+'.'+str(tree_i+1)+'.pdf', tree_style=ts)
+        nodes[0].render(args.plot_file+'.'+str(tree_i+1)+'.png', tree_style=ts)
         # print tree nodes to file
-        with open(args.plot_file+'.'+str(tree_i+1)+'.nodes.tsv', 'w') as f:
-            for node in sorted(nodes, key=lambda node: node.name[0]):
-                f.write(node.name[0]+'\t'+str(node.name[1])+'\n')
+        #with open(args.plot_file+'.'+str(tree_i+1)+'.nodes.tsv', 'w') as f:
+        #    for node in sorted(nodes, key=lambda node: node.name):
+        #        f.write(node.name+'\t'+str(node.clone_leaves)+'\n')
 
     # fit p and q using all trees
     result = CollapsedForest(forest=[[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree] for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
