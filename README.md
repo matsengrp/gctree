@@ -14,7 +14,7 @@ There's going to be some simulation, validation, etc, with this project. For tha
 ## Scripts
 
 * TasParse.py - this reads the Tas data excel file, extracts the sequences from lymph node 2 germinal center 1, aligns with muscle, and prints to phyllip format.
-* recurse.py - classes for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees.
+* gctree.py - classes for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees.
 	* The main routine takes a phlyip outtree file as a command line argument, converts each tree therein to a collapsed tree, computes there likelihoods, prints the MLE tree parameters, and plots the MLE tree to a file specified with the plot_file argument.
 	* In a test mode, the main routine also performs a test of the likelihood against a by-hand calculation for a simple tree, and simulates a forest of trees and performs MLE. It outputs plot foo.pdf.
-	* "python recurse.py -h" for details on command line args
+	* "python gctree.py -h" for usage info

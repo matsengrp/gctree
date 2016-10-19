@@ -9,6 +9,10 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 from scipy.stats import probplot
+from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
+from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna
+
 
 """
 This module contains classes for simulation and inference for a binary branching process with mutation
@@ -39,7 +43,6 @@ class LeavesAndClades():
                 raise ValueError('c and m must be nonnegative integers summing greater than zero')
             self._c = c
             self._m = m
-        self._extinction_time = None # <-- number of generations clone line survives for
 
     def simulate(self):
         """simulate the number of clone leaves and mutant clades off a root node"""
@@ -153,25 +156,25 @@ class CollapsedTree(LeavesAndClades):
         For intialization, either p and q or tree (or all three) must be provided
         p: branching probability
         q: mutation probability
-        tree: Clonal leaf count and count of mutant clades are provided as tuples in
-        breadth first order.
+        tree: ete tree with frequency node feature. If uncollapsed, it will be collapsed
         """
         #if p is None and q is None and tree is None:
         #    raise ValueError('either p and q or tree (or all three) must be provided')
         LeavesAndClades.__init__(self, p=p, q=q)
         # check that tree is valid
         if tree is not None:
-            k = len(tree)
-            if k==0 or \
-               set(map(len, tree))!=set([2]) or \
-               not all(scipy.greater_equal([x for y in tree for x in y], 0)):
-                raise ValueError('"tree" must be a nonempty list of 2-element tuples of nonnegative integers')
-            cs, ms = zip(*tree)
-            if not all(scipy.greater(scipy.cumsum([x[1] for x in tree])[:-1], scipy.arange(1, k)-1)) \
-            or sum(x[1] for x in tree) != k - 1:
-                raise ValueError('inconsistent breadth first tree data')
-        self._tree = tree
-        self._extinction_time = None
+            self._tree = tree.copy()
+            if 0 in (node.dist for node in tree.iter_descendants()):
+                # iterate over the tree below root and collapse edges of zero length
+                for node in self._tree.get_descendants():
+                    if node.dist == 0:
+                        node.up.frequency += node.frequency
+                        node.delete(prevent_nondicotomic=False)
+            assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self._tree.traverse())
+            assert len(set([node.sequence for node in self._tree.traverse()])) == sum(1 for _ in self._tree.traverse())
+        else:
+            self._tree = tree
+
 
     def phi(self, x, n):
         """
@@ -203,7 +206,11 @@ class CollapsedTree(LeavesAndClades):
             raise ValueError('tree data must be defined to compute likelihood')
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
-        f_data = [LeavesAndClades(c=c, m=m).f(p, q) for (c, m) in self._tree]
+        leaves_and_clades_list = [LeavesAndClades(c=node.frequency, m=len(node.children)) for node in self._tree.traverse()]
+        if leaves_and_clades_list[0]._c == 0 and leaves_and_clades_list[0]._m == 1 and leaves_and_clades_list[0].f(p, q)[0] == 0:
+            print 'WARNING: unifurcation from root not possible under current model. This node will be ommitted from likelihood calculation'
+            leaves_and_clades_list = leaves_and_clades_list[1:]
+        f_data = [leaves_and_clades.f(p, q) for leaves_and_clades in leaves_and_clades_list]
         # extract vector of function values and gradient components
         fs = scipy.array([x[0] for x in f_data])
         dfdps = scipy.array([x[1][0] for x in f_data])
@@ -219,7 +226,7 @@ class CollapsedTree(LeavesAndClades):
         # random initalization
         #x_0 = (random.random(), random.random())
         x_0 = (.5, .5)
-        bounds = ((.001, .999), (.001, .999))
+        bounds = ((.01, .99), (.001, .999))
         kwargs['sign'] = -1
         #print check_grad(lambda x: self.l(x, **kwargs)[0], lambda x: self.l(x, **kwargs)[1], (.4, .5))
         result = minimize(lambda x: self.l(x, **kwargs), x0=x_0, jac=True, method='L-BFGS-B', options={'ftol':1e-10}, bounds=bounds)
@@ -238,48 +245,17 @@ class CollapsedTree(LeavesAndClades):
         if self._p is None or self._q is None:
             raise ValueError('p and q parameters must be defined for simulation')
 
-#        This code simulates the fine structure of the tree, possibly useful if we want extinction time
-#        # initiate with an unmutated root node (type 0)
-#        # this tree is the full tree
-#        tree = [(2 if random.random() < self._p else 0, 0)]
-#        # while termination condition not met
-#        cumsum_offspring = tree[0][0]
-#        len_tree = 0
-#        while cumsum_offspring > len_tree - 1:
-#            offspring = 2 if random.random() < self._p else 0
-#            a_type = random.random() < self._q
-#            tree.append((offspring, is_mutant))
-#            cumsum_offspring += offspring
-#            len_tree += 1
-#        assert cumsum_offspring == len_tree - 1
-#
-#        # use breadth first structure to figure out generation boundaries
-#        self._extinction_time = 1
-#        nextgen_size = tree[0][0]
-#        i = 1
-#        while i + nextgen_size < len_tree:
-#            next_nextgen_size = sum(offspring for offspring, is_mutant in tree[i:(i+nextgen_size)])
-#            i += nextgen_size
-#            nextgen_size = next_nextgen_size
-#            self._extinction_time += 1
-#
-#        # now we would need to collapse the tree given the simulated fine structure...
-        
-
         # initiate by running a LeavesAndClades simulation to get the number of clones and mutants
         # in the root node of the collapsed tree
         LeavesAndClades.simulate(self)
-        tree = [(self._c, self._m)] # <-- accessing member variable in base class (updated by base class method)
-        # now for each mutant off the root, we do a LeavesAndClades simulation, recursing
-        more_mutants = tree[0][1] # aka self._m
-        while more_mutants > 0:
-            new_nodes = []
-            for m in range(more_mutants):
-                LeavesAndClades.simulate(self)
-                new_nodes.append((self._c, self._m))
-            more_mutants = sum(x[1] for x in new_nodes) # mutant clades from this generation
-            tree += new_nodes
-        self._tree = tree # replace tree data member
+        self._tree = Tree()
+        self._tree.add_feature('frequency', self._c)
+        if self._m == 0:
+            return self
+        for _ in range(self._m):
+            # oooo, recursion
+            self._tree.add_child(CollapsedTree(p=self._p, q=self._q).simulate()._tree)
+
         return self
                 
     def get(self, param_name=None):
@@ -300,7 +276,42 @@ class CollapsedTree(LeavesAndClades):
 
     def __str__(self):
         """return a string representation for printing"""
-        return 'p = %f, q = %f\ntree: ' % (self._p, self._q) + str(self._tree)
+        return 'p = %f, q = %f\ntree:\n' % (self._p, self._q) + str(self._tree)
+
+    def render(self, plot_file, colormap=None):
+        """render to image file, filetype inferred from suffix, png for color images"""
+        for node in self._tree.traverse():
+            nstyle = NodeStyle()
+            if node.frequency == 0:
+                nstyle['size'] = 5
+                nstyle['fgcolor'] = 'grey'
+            else:
+                nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.frequency)
+                if colormap is not None and node.name in colormap:
+                    nstyle['fgcolor'] = colormap[node.name]
+                else:
+                    nstyle['fgcolor'] = 'black'
+            if node.up is not None:
+                nonsyn = hamming_distance(Seq(node.sequence, generic_dna).translate(), Seq(node.up.sequence, generic_dna).translate())
+                if nonsyn > 0:
+                    nstyle['hz_line_color'] = 'black'
+                    nstyle["hz_line_width"] = nonsyn
+                else:
+                    nstyle["hz_line_type"] = 1
+            if '*' in Seq(node.sequence, generic_dna).translate():
+                    nstyle['fgcolor'] = 'red'
+            node.set_style(nstyle)
+
+        ts = TreeStyle()
+        ts.show_leaf_name = False
+        ts.rotation = 90
+        def my_layout(node):
+            if node.frequency > 1:
+                N = TextFace(node.frequency, fsize=14, fgcolor='black')
+                N.rotation = -90
+                faces.add_face_to_node(N, node, 0, position='branch-top')
+        ts.layout_fn = my_layout
+        self._tree.render(plot_file, tree_style=ts)
 
         
 class CollapsedForest(CollapsedTree):
@@ -526,10 +537,8 @@ def hamming_distance(seq1, seq2):
 def main():
     """if "--test" option is passed, run the test suite, else load phylip file and do MLEs for each tree"""
     import sys, argparse
-    from Bio.Seq import Seq
-    from Bio.Alphabet import generic_dna
     from collections import Counter
-    from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
+
     parser = argparse.ArgumentParser(description='multitype tree modeling')
     parser.add_argument('--test', action='store_true', default=False, help='run tests on library functions')
     parser.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
@@ -593,8 +602,14 @@ def main():
             nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
             nodes = {}
             for name in names:
-                node =  Tree(name=name, dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)
+                node = Tree(name=name, dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)
                 node.add_feature('sequence', tree_sequence_dict[node.name])
+                if node.name == args.germline:
+                    node.add_feature('frequency', 0)
+                elif '_' in node.name:
+                    node.add_feature('frequency', int(node.name.split('_')[-1]))
+                else:
+                    node.add_feature('frequency', 0)
                 nodes[name] = node
             tree = nodes[names[0]] # GL is first
             for name in parent_dict:
@@ -603,11 +618,12 @@ def main():
             # reroot on germline
             if args.germline is not None:
                 assert len(nodes[args.germline].children) == 0
+                assert nodes[args.germline] in tree.children
                 tree.remove_child(nodes[args.germline])
-                for child in tree.children:
-                    nodes[args.germline].add_child(child)
-                    child.dist = hamming_distance(tree_sequence_dict[child.name], tree_sequence_dict[args.germline])
+                nodes[args.germline].add_child(tree)
+                tree.dist = nodes[args.germline].dist
                 tree = nodes[args.germline]
+                tree.dist = 0
             
             # assert branch lengths make sense
             for node in tree.iter_descendants():
@@ -623,128 +639,36 @@ def main():
     collapsed_trees = []
     parsimony_scores = []
     for tree_i, tree in enumerate(trees):
-        collapsed_tree = []
-        # the number of clonal leaf descendents is number of leaves we can get to on zero-length edges
-        # root first
-        clone_leaves = sum((int(leaf.name.split('_')[1]) if '_' in leaf.name else 1) for leaf in tree.iter_leaves() if tree.get_distance(leaf) == 0)
-            
-        # to get mutant offspring, first consider all nodes that are distance zero
-        # the mutant offspring are children of these nodes with nonzero edge length
-        mutant_offspring_nodes = [child for node in tree.traverse() if tree.get_distance(node) == 0 for child in node.children if child.dist != 0]
-        mutant_offspring_edge_lengths = [node.dist for node in mutant_offspring_nodes]
-        assert 0 not in mutant_offspring_edge_lengths
-        #mutant_offspring = len(mutant_offspring_nodes)
-        collapsed_tree.append((tree.sequence, clone_leaves, mutant_offspring_edge_lengths))#mutant_offspring))
-        # recurse into the mutant offspring
-        done = False
-        while not done:
-            new_mutant_offspring_nodes = []
-            for mutant in mutant_offspring_nodes:
-                clone_leaves = sum((int(leaf.name.split('_')[1]) if '_' in leaf.name else 1) for leaf in mutant.iter_leaves() if mutant.get_distance(leaf) == 0)
-                new_mutant_offspring_nodes_from_this_mutant = [child for node in mutant.traverse() if mutant.get_distance(node) == 0 for child in node.children if child.dist != 0]
-                mutant_offspring_edge_lengths = [node.dist for node in new_mutant_offspring_nodes_from_this_mutant]
-                assert 0 not in mutant_offspring_edge_lengths
-                collapsed_tree.append((mutant.sequence, clone_leaves, mutant_offspring_edge_lengths))
-                new_mutant_offspring_nodes.extend(new_mutant_offspring_nodes_from_this_mutant)
-            mutant_offspring_nodes = new_mutant_offspring_nodes
-            if len(new_mutant_offspring_nodes) == 0:
-                done = True
-
-        # ok, so now we have the parsimony tree in ete format and the corresponding collapsed tree in 
-        # CollapsedTree format (but with explicit edge lengths and seqs). 
-
+        collapsed_tree = CollapsedTree(tree=tree)
         collapsed_trees.append(collapsed_tree)
-        parsimony_scores.append(sum(node.dist for node in trees[tree_i].iter_descendants()))
+        parsimony_scores.append(sum(node.dist for node in tree.iter_descendants()))
 
-        # make an ete version of collapsed tree for plotting
-        nodes = []
-        for sequence, clone_leaves, mutant_offspring in collapsed_tree:
-            node = Tree(name=sequence)
-            node.add_feature('clone_leaves', clone_leaves)
-            nodes.append(node)
-        nodes[0].dist = 0 # zero length edge for root node
-        gen_size = 1
-        gen_start_index = 0
-        terminated = False
-        while not terminated:
-            k = 0
-            for i in range(gen_start_index,gen_start_index + gen_size):
-                for j in range(len(collapsed_tree[i][2])):
-                    nodes[i].add_child(nodes[gen_start_index+gen_size+k], dist=collapsed_tree[i][2][j])
-                    k += 1
-            new_gen_start_index = gen_start_index + gen_size
-            gen_size = sum(len(x[2]) for x in collapsed_tree[gen_start_index:(gen_start_index + gen_size)])
-            gen_start_index = new_gen_start_index
-            if gen_size == 0:
-                terminated = True
-
-        for node in nodes[0].iter_descendants():
-            assert node.dist == hamming_distance(node.name, node.up.name)
-
-        for node in nodes:
-            nstyle = NodeStyle()
-            if node.clone_leaves == 0:
-                nstyle['size'] = 5
-                nstyle['fgcolor'] = 'grey'
-            else:
-                nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.clone_leaves)
-                if args.colormap is not None and node.name in colormap:
-                    nstyle['fgcolor'] = colormap[node.name]
-                else:
-                    nstyle['fgcolor'] = 'black'
-            if node.up is not None:
-                nonsyn = hamming_distance(Seq(node.name, generic_dna).translate(), Seq(node.up.name, generic_dna).translate())
-                if nonsyn > 0:
-                    nstyle['hz_line_color'] = 'black'
-                    nstyle["hz_line_width"] = nonsyn
-                else:
-                    nstyle["hz_line_type"] = 1
-            if '*' in Seq(node.name, generic_dna).translate():
-                    nstyle['fgcolor'] = 'red'
-            node.set_style(nstyle)
-
-        ts = TreeStyle()
-        ts.show_leaf_name = False
-        ts.rotation = 90
-        def my_layout(node):
-            if node.clone_leaves > 1:
-                N = TextFace(node.clone_leaves, fsize=14, fgcolor='black')
-                N.rotation = -90
-                faces.add_face_to_node(N, node, 0, position='branch-top')
-        ts.layout_fn = my_layout
-        nodes[0].render(args.plot_file+'.'+str(tree_i+1)+'.png', tree_style=ts)
-        # print tree nodes to file
-        #with open(args.plot_file+'.'+str(tree_i+1)+'.nodes.tsv', 'w') as f:
-        #    for node in sorted(nodes, key=lambda node: node.name):
-        #        f.write(node.name+'\t'+str(node.clone_leaves)+'\n')
+        collapsed_tree.render(args.plot_file+'.'+str(tree_i+1)+'.png', args.colormap)
 
     # fit p and q using all trees
-    result = CollapsedForest(forest=[[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree] for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
+    # if unifurcation from GL, we omit GL (impossible under our model)
+    result = CollapsedForest(forest=[collapsed_tree.get('tree') for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
     assert result.success
     print 'p = %f, q = %f' % tuple(result.x)
 
-    print 'tree\ttotals\talleles\tparsimony\tlogLikelihood'
-    best_likelihood_sofar = None
+    print_data = []
     for i, collapsed_tree in enumerate(collapsed_trees):
-        l = CollapsedTree(tree=[(clone_leaves, len(mutant_offspring_edge_lengths)) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree]).l(result.x)[0]
-        if best_likelihood_sofar is None or l > best_likelihood_sofar:
-            best_likelihood_sofar = l
-            best_likelihood_sofar_params = result.x
-            best_i = i
-            best_tree = collapsed_tree
-        totals = sum(clone_leaves for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
-        alleles = sum(len(mutant_offspring_edge_lengths) for sequence, clone_leaves, mutant_offspring_edge_lengths in collapsed_tree)
-        print '\t'.join(map(str, [i+1, totals, alleles, parsimony_scores[i], l]))
-        sys.stdout.flush()
+        l = collapsed_tree.l(result.x)[0]
+        totals = sum(node.frequency for node in collapsed_tree._tree.traverse())
+        alleles = len(collapsed_tree.get('tree'))
+        print_data.append((i+1, totals, alleles, parsimony_scores[i], l))
 
-    print 'best tree: tree %d, l = %f' % (best_i + 1, best_likelihood_sofar)
+    print 'tree\ttotals\talleles\tparsimony\tlogLikelihood'
+    for x in sorted(print_data, key=lambda x: (-x[-1], x[0])):
+        print '\t'.join(map(str, x))
+        sys.stdout.flush()
 
     plt.figure()
     cs = scipy.arange(11)
     ms = scipy.arange(20)
     colors=plt.cm.rainbow(scipy.linspace(0,1,len(cs)))
     for i, c in enumerate(cs):
-        dat = scipy.array([LeavesAndClades(c=c, m=m).f(*best_likelihood_sofar_params)[0] for m in ms])
+        dat = scipy.array([LeavesAndClades(c=c, m=m).f(*result.x)[0] for m in ms])
         dat = dat/dat.sum()
         plt.plot(ms, dat, 'o--', alpha=.5, color=colors[i], label=r'$c = %d$' % c) 
     plt.xlabel(r'$m$')
