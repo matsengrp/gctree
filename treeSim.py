@@ -1,7 +1,9 @@
 #!/bin/env python
 
 import argparse, scipy, gctree
-from ete3 import PhyloNode
+from ete3 import TreeNode
+#from Bio.Seq import Seq
+#from Bio.Alphabet import generic_dna
 
 class MutationModel():
     """a class for a mutation model, and functions to mutate sequences"""
@@ -35,7 +37,7 @@ class MutationModel():
         assert len(kmer) == self.k
         return self._mutation_model[kmer]
 
-    def mutate(self, sequence, q=.5):
+    def mutate(self, sequence, lambda0=1):
         """mutate a sequence, with q the baseline mutability"""
         assert all(n in 'ACGT' for n in sequence)
         # mutabilities of each nucleotide
@@ -71,9 +73,9 @@ class MutationModel():
         # mean mutability
         sequence_mutability = sum(mutability[0] for mutability in mutabilities)/float(sequence_length)
         # baseline Piosson 
-        lambda_0 = -scipy.log(1-q)
+        #lambda_0 = -scipy.log(1-q)
         # poisson rate for this sequence (given its relative mutability)
-        lambda_sequence = sequence_mutability*lambda_0
+        lambda_sequence = sequence_mutability*lambda0
         # number of mutations 
         m = scipy.random.poisson(lambda_sequence)
 
@@ -102,11 +104,11 @@ class MutationModel():
         return sequence
 
 
-    def simulate(self, sequence, outbase, p=.4, q=.5):
+    def simulate(self, sequence, outbase, p=.4, lambda0=1, r=1.):
         """"simulate neutral binary branching process with mutation model"""
         if p >= .5:
             raw_input('WARNING: p = %f is not subcritical, tree termination not garanteed! [ENTER] to proceed')
-        self.tree = PhyloNode()
+        self.tree = TreeNode(dist=0)
         self.tree.add_feature('sequence', sequence)
         self.tree.add_feature('terminated', False)
         self.tree.add_feature('frequency', 0)
@@ -116,8 +118,8 @@ class MutationModel():
                 if not leaf.terminated:
                     if scipy.random.random() < p:
                         for child_count in range(2):
-                            mutated_sequence = self.mutate(leaf.sequence, q=q)
-                            child = PhyloNode(dist=sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence)))
+                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0)
+                            child = TreeNode(dist=sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence)))
                             child.add_feature('sequence', mutated_sequence)
                             child.add_feature('frequency', 0)
                             leaf.add_child(child)
@@ -129,17 +131,21 @@ class MutationModel():
 
         # each leaf gets an observation frequency of 1
         for node in self.tree.iter_leaves():
-            node.frequency = 1
+            if scipy.random.random() < r:
+                node.frequency = 1
 
         with open(outbase+'.leafdata.fa', 'w') as f:
             f.write('> GL\n')
             f.write(sequence+'\n')
-            for i, leaf in enumerate(self.tree.iter_leaves()):
-                f.write('> seq%d\n' % i)
-                f.write(leaf.sequence+'\n')
-                leaf.name = 'seq%d' % i
-        print i+1, 'simulated observed sequences'
-        self.tree.link_to_alignment(alignment=outbase+'.leafdata.fa', alg_format='fasta')
+            i = 0
+            for leaf in self.tree.iter_leaves():
+                if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
+                    i += 1
+                    f.write('> seq%d\n' % i)
+                    f.write(leaf.sequence+'\n')
+                    leaf.name = 'seq%d' % i
+        print i, 'simulated observed sequences'
+        #self.tree.link_to_alignment(alignment=outbase+'.leafdata.fa', alg_format='fasta')
         self.tree.render(outbase+'.tree.png')
 
 
@@ -157,13 +163,17 @@ def main():
     parser.add_argument('substitution', type=str, help='substitution model')
     parser.add_argument('outbase', type=str, help='base name for output')
     parser.add_argument('--p', type=float, default=.4, help='branching probability')
-    parser.add_argument('--q', type=float, default=.5, help='baseline mutation rate')
+    parser.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
+    parser.add_argument('--r', type=float, default=1., help='sampling probability')
     args = parser.parse_args()
+
+    if args.lambda0 is None:
+        args.lambda0 = max([1, int(.01*len(sequence))])
 
     args.sequence = args.sequence.upper()
 
     mutation_model = MutationModel(args.mutability, args.substitution)
-    mutation_model.simulate(args.sequence, args.outbase, p=args.p, q=args.q)
+    mutation_model.simulate(args.sequence, args.outbase, p=args.p, lambda0=args.lambda0, r=args.r)
 
 if __name__ == "__main__":
     main()

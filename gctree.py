@@ -9,7 +9,7 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 from scipy.stats import probplot
-from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
+from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, nexml
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 
@@ -161,7 +161,6 @@ class CollapsedTree(LeavesAndClades):
         #if p is None and q is None and tree is None:
         #    raise ValueError('either p and q or tree (or all three) must be provided')
         LeavesAndClades.__init__(self, p=p, q=q)
-        # check that tree is valid
         if tree is not None:
             self._tree = tree.copy()
             if 0 in (node.dist for node in tree.iter_descendants()):
@@ -224,8 +223,8 @@ class CollapsedTree(LeavesAndClades):
         returns optimization result
         """
         # random initalization
-        #x_0 = (random.random(), random.random())
-        x_0 = (.5, .5)
+        x_0 = (random.random(), random.random())
+        #x_0 = (.5, .5)
         bounds = ((.01, .99), (.001, .999))
         kwargs['sign'] = -1
         #print check_grad(lambda x: self.l(x, **kwargs)[0], lambda x: self.l(x, **kwargs)[1], (.4, .5))
@@ -299,7 +298,7 @@ class CollapsedTree(LeavesAndClades):
                 else:
                     nstyle["hz_line_type"] = 1
             if '*' in Seq(node.sequence, generic_dna).translate():
-                    nstyle['fgcolor'] = 'red'
+                nstyle['bgcolor'] = 'red'
             node.set_style(nstyle)
 
         ts = TreeStyle()
@@ -312,6 +311,9 @@ class CollapsedTree(LeavesAndClades):
                 faces.add_face_to_node(N, node, 0, position='branch-top')
         ts.layout_fn = my_layout
         self._tree.render(plot_file, tree_style=ts)
+
+    def write(self, file_name):
+        self._tree.write(features=[], outfile=file_name)
 
         
 class CollapsedForest(CollapsedTree):
@@ -599,7 +601,7 @@ def main():
 
         # if integer branch (not weird ambiguous chars)
         if set(''.join([tree_sequence_dict[name] for name in names])) == set('ACGT'):
-            nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
+            #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
             nodes = {}
             for name in names:
                 node = Tree(name=name, dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)
@@ -608,6 +610,7 @@ def main():
                     node.add_feature('frequency', 0)
                 elif '_' in node.name:
                     node.add_feature('frequency', int(node.name.split('_')[-1]))
+                    node.name = '_'.join(node.name.split('_')[:-1])
                 else:
                     node.add_feature('frequency', 0)
                 nodes[name] = node
@@ -644,9 +647,9 @@ def main():
         parsimony_scores.append(sum(node.dist for node in tree.iter_descendants()))
 
         collapsed_tree.render(args.plot_file+'.'+str(tree_i+1)+'.png', args.colormap)
+        collapsed_tree.write(args.plot_file+'.'+str(tree_i+1)+'.newick')
 
     # fit p and q using all trees
-    # if unifurcation from GL, we omit GL (impossible under our model)
     result = CollapsedForest(forest=[collapsed_tree.get('tree') for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
     assert result.success
     print 'p = %f, q = %f' % tuple(result.x)

@@ -8,19 +8,19 @@ germline=$3
 
 # parse fasta data to phylip file
 phylip=${fasta}.phylip
-python gctree/TasParse.py ${fasta} > ${phylip}
+python gctree/TasParse.py ${fasta} ${germline} > ${phylip}
 
-rm outfile
-rm outtree
-rm ${gctree_outdir}/*png
+rm -f outfile
+rm -f outtree
 
+echo -n "computing parsimony trees... "
 # run phylip's dna parsimony program and rename its outputs
-dnapars <<STDIN
+dnapars <<STDIN > /dev/null
 `pwd`/${phylip}
 O
 1
 V
-100000
+10000
 J
 13
 10
@@ -30,6 +30,7 @@ J
 Y
 
 STDIN
+echo "done"
 
 outfile=${phylip}.dnapars.outfile
 outtree=${phylip}.dnapars.outtree
@@ -37,7 +38,8 @@ outtree=${phylip}.dnapars.outtree
 mv outfile ${outfile}
 mv outtree ${outtree}
 
+rm -f ${gctree_outdir}/*
 mkdir -p ${gctree_outdir}
 
-# branching process likelihoods of parsimony results
+echo "branching process likelihood ranking of parsimony trees:"
 python gctree/gctree.py --phylipfile ${outfile} --plot_file ${gctree_outdir}/gctree --germline ${germline}
