@@ -2,9 +2,10 @@
 
 # this assumes scripts live in a dir "GH" and data in a dir "data"
 
-fasta=$1
-gctree_outdir=$2
-germline=$3
+parsimony_program=$1 #like dnapars or pars
+fasta=$2
+gctree_outdir=$3
+germline=$4 # germline seq name in fasta file
 
 # parse fasta data to phylip file
 phylip=${fasta}.phylip
@@ -15,12 +16,10 @@ rm -f outtree
 
 echo -n "computing parsimony trees... "
 # run phylip's dna parsimony program and rename its outputs
-dnapars <<STDIN > /dev/null
+${parsimony_program} <<STDIN 1> /dev/null
 `pwd`/${phylip}
 O
 1
-V
-10000
 J
 13
 10

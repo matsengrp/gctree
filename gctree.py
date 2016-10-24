@@ -170,7 +170,8 @@ class CollapsedTree(LeavesAndClades):
                         node.up.frequency += node.frequency
                         node.delete(prevent_nondicotomic=False)
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self._tree.traverse())
-            assert len(set([node.sequence for node in self._tree.traverse()])) == sum(1 for _ in self._tree.traverse())
+            if len(set([node.sequence for node in self._tree.traverse()])) != sum(1 for _ in self._tree.traverse()):
+                warnings.warn('repeated sequences in collapsed tree, possible backmutation', RuntimeWarning)
         else:
             self._tree = tree
 
@@ -291,14 +292,16 @@ class CollapsedTree(LeavesAndClades):
                 else:
                     nstyle['fgcolor'] = 'black'
             if node.up is not None:
-                nonsyn = hamming_distance(Seq(node.sequence, generic_dna).translate(), Seq(node.up.sequence, generic_dna).translate())
-                if nonsyn > 0:
-                    nstyle['hz_line_color'] = 'black'
-                    nstyle["hz_line_width"] = nonsyn
-                else:
-                    nstyle["hz_line_type"] = 1
-            if '*' in Seq(node.sequence, generic_dna).translate():
-                nstyle['bgcolor'] = 'red'
+                if set(node.sequence.upper()) == set('ACGT'):
+                    nonsyn = hamming_distance(Seq(node.sequence, generic_dna).translate(), Seq(node.up.sequence, generic_dna).translate())
+                    if nonsyn > 0:
+                        nstyle['hz_line_color'] = 'black'
+                        nstyle["hz_line_width"] = nonsyn
+                    else:
+                        nstyle["hz_line_type"] = 1
+                    if '*' in Seq(node.sequence, generic_dna).translate():
+                        nstyle['bgcolor'] = 'red'
+
             node.set_style(nstyle)
 
         ts = TreeStyle()
@@ -372,7 +375,7 @@ class CollapsedForest(CollapsedTree):
             terms = [CollapsedTree(tree=tree).l((p, q)) for tree in self._forest]
             sumexp = scipy.exp([x[0] for x in terms]).sum()
             #sumexp = scipy.exp(logsumexp([x[0] for x in terms]))
-            assert sumexp != 0
+            #assert sumexp != 0
             #thing1 = [x[0]+scipy.log(x[1][0]) for x in terms if x[1][0] > 0]
             #thing2 = [x[0]+scipy.log(x[1][1]) for x in terms if x[1][1] > 0]
             #thing3 = [x[0] for x in terms]
@@ -536,6 +539,82 @@ def hamming_distance(seq1, seq2):
     """Hamming distance between two sequences of equal length"""
     return sum(x != y for x, y in zip(seq1, seq2))
 
+
+def phylip_parse(phylip_outfile, germline=None):
+    """parse phylip outfile and return ete trees"""
+    # parse phylip outfile
+    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
+
+    # ete trees
+    trees = []
+    for i, tree in enumerate(outfiledat):
+        tree_sequence_dict = {}
+        parent_dict = {}
+        names = []
+        for j, block in enumerate(tree):
+            if j == 0:
+                for line in block.split('\n'):
+                    fields = line.split()
+                    if len(fields) == 0:
+                        continue
+                    name = fields[1]
+                    names.append(name)
+                    if fields[0] == 'root':
+                        seq = ''.join(fields[2:])
+                        parent = None
+                    else:
+                        seq = ''.join(fields[3:])
+                        parent = fields[0]
+                    tree_sequence_dict[name] = seq
+                    parent_dict[name] = parent
+            else:
+                for line in block.split('\n'):
+                    fields = line.split()
+                    name = fields[1]
+                    if fields[0] == 'root':
+                        seq = ''.join(fields[2:])
+                    else:
+                        seq = ''.join(fields[3:])
+                    tree_sequence_dict[name] += seq
+
+        # if integer branch (not weird ambiguous chars)
+        if set(''.join([tree_sequence_dict[name] for name in names])) == set('ACGT'):
+            #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
+            nodes = {}
+            for name in names:
+                node = Tree(name=name, dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)
+                node.add_feature('sequence', tree_sequence_dict[node.name])
+                if node.name == germline:
+                    node.add_feature('frequency', 0)
+                elif '_' in node.name:
+                    node.add_feature('frequency', int(node.name.split('_')[-1]))
+                    node.name = '_'.join(node.name.split('_')[:-1])
+                else:
+                    node.add_feature('frequency', 0)
+                nodes[name] = node
+            tree = nodes[names[0]] # GL is first
+            for name in parent_dict:
+                if parent_dict[name] is not None:
+                    nodes[parent_dict[name]].add_child(nodes[name])
+            # reroot on germline
+            if germline is not None:
+                assert len(nodes[germline].children) == 0
+                assert nodes[germline] in tree.children
+                tree.remove_child(nodes[germline])
+                nodes[germline].add_child(tree)
+                tree.dist = nodes[germline].dist
+                tree = nodes[germline]
+                tree.dist = 0
+
+            # assert branch lengths make sense
+            for node in tree.iter_descendants():
+                assert node.dist == hamming_distance(node.sequence, node.up.sequence)
+
+            trees.append(tree)
+
+    return trees
+
+
 def main():
     """if "--test" option is passed, run the test suite, else load phylip file and do MLEs for each tree"""
     import sys, argparse
@@ -563,77 +642,7 @@ def main():
             colormap[sequence.upper()] = color
         #colormap = {sequence:color for line in open(args.colormap, 'r') for sequence, color in line.rstrip().split()}
 
-    # parse phylip outfile
-    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(args.phylipfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
-
-
-    # ete trees
-    trees = []
-    for i, tree in enumerate(outfiledat):
-        tree_sequence_dict = {}
-        parent_dict = {}
-        names = []
-        for j, block in enumerate(tree):
-            if j == 0:
-                for line in block.split('\n'):
-                    fields = line.split()
-                    if len(fields) == 0:
-                        continue
-                    name = fields[1]
-                    names.append(name)
-                    if fields[0] == 'root':
-                        seq = ''.join(fields[2:])
-                        parent = None
-                    else:
-                        seq = ''.join(fields[3:]) 
-                        parent = fields[0]
-                    tree_sequence_dict[name] = seq
-                    parent_dict[name] = parent
-            else:
-                for line in block.split('\n'):
-                    fields = line.split()
-                    name = fields[1]
-                    if fields[0] == 'root':
-                        seq = ''.join(fields[2:])
-                    else:
-                        seq = ''.join(fields[3:])
-                    tree_sequence_dict[name] += seq
-
-        # if integer branch (not weird ambiguous chars)
-        if set(''.join([tree_sequence_dict[name] for name in names])) == set('ACGT'):
-            #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
-            nodes = {}
-            for name in names:
-                node = Tree(name=name, dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)
-                node.add_feature('sequence', tree_sequence_dict[node.name])
-                if node.name == args.germline:
-                    node.add_feature('frequency', 0)
-                elif '_' in node.name:
-                    node.add_feature('frequency', int(node.name.split('_')[-1]))
-                    node.name = '_'.join(node.name.split('_')[:-1])
-                else:
-                    node.add_feature('frequency', 0)
-                nodes[name] = node
-            tree = nodes[names[0]] # GL is first
-            for name in parent_dict:
-                if parent_dict[name] is not None:
-                    nodes[parent_dict[name]].add_child(nodes[name])
-            # reroot on germline
-            if args.germline is not None:
-                assert len(nodes[args.germline].children) == 0
-                assert nodes[args.germline] in tree.children
-                tree.remove_child(nodes[args.germline])
-                nodes[args.germline].add_child(tree)
-                tree.dist = nodes[args.germline].dist
-                tree = nodes[args.germline]
-                tree.dist = 0
-            
-            # assert branch lengths make sense
-            for node in tree.iter_descendants():
-                assert node.dist == hamming_distance(node.sequence, node.up.sequence)
-
-            trees.append(tree)
-
+    trees = phylip_parse(args.phylipfile, args.germline)
     n_trees = len(trees)
 
     print 'number of trees with integer branch lengths:', n_trees
