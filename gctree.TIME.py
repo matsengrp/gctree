@@ -9,7 +9,7 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 from scipy.stats import probplot
-from ete3 import NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, nexml
+from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, nexml
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 
@@ -22,66 +22,141 @@ in which the tree is collapsed to nodes that count the number of clonal leaves o
 class LeavesAndClades():
     """
     This is a base class for simulating, and computing likelihood for, a binary infinite type branching
-    process with branching probability p, mutation probability q, and we collapse mutant clades off the
-    root type and consider just the number of clone leaves, c, and mutant clades, m.
-
-      /\            
-     /\ ^          (3)
-      /\     ==>   / \\
-       /\\
-        ^
+    process with branching probability b, death probability d, mutation probability q, and we collapse mutant clades off the
+    root type and consider just the number of clone leaves at time t, c, and the series mutant clades at each time from 1 to t, m.
     """
-    def __init__(self, p=None, q=None, c=None, m=None):
+    def __init__(self, b=None, d=None, q=None, c=None, m=None):
         """initialize with branching probability p and mutation probability q, both in the unit interval"""
-        if p is not None or q is not None:
-            if not (0 <= p <= 1 and 0 <= q <= 1):
+        if b is not None or q is not None or d is not None:
+            if not (0 <= b <= 1 and 0 <= q <= 1 and 0 <= d <= 1 and b + d <= 1):
                 raise ValueError('p and q must be in the unit interval')
-        self._p = p
+        self._b = b
+        self._d = d
         self._q = q
         if c is not None or m is not None:
-            if not (c >= 0) and (m >= 0) and (c+m > 0):
+            if not (c >= 0) and all([x >= 0 for x in m]):
                 raise ValueError('c and m must be nonnegative integers summing greater than zero')
             self._c = c
             self._m = m
 
-    def simulate(self):
+    def simulate(self, t):
         """simulate the number of clone leaves and mutant clades off a root node"""
-        if self._p>=.5:
-            warnings.warn('p >= .5 is not subcritical, tree simulations not garanteed to terminate')
-        if self._p is None or self._q is None:
-            raise ValueError('p and q parameters must be defined for simulation\n')
+        if self._b is None or self._q is None or self._d is None:
+            raise ValueError('b, d, and q must be defined for simulation\n')
 
-        # let's track the tree in breadth first order, listing number clone and mutant descendants of each node
-        # mutant clades terminate in this view
-        cumsum_clones = 0
-        len_tree = 0
-        self._c = 0
-        self._m = 0
-        # while termination condition not met
-        while cumsum_clones > len_tree - 1:
-            if random.random() < self._p:
-                mutants = sum(random.random() < self._q for child in range(2))
-                clones = 2 - mutants 
-                self._m += mutants
+        if t == 0:
+            self._c = 1
+            self._m = []
+        elif t == 1:
+            draw = random.random()
+            # one clone offspring
+            if draw > self._b + self._d:
+                self._c = 1
+                self._m = [0]
+            # death
+            elif draw < self._d:
+                self._c = 0
+                self._m = [0]
+            # birth
             else:
-                mutants = 0
-                clones = 0
-                self._c += 1
-            cumsum_clones += clones
-            len_tree += 1
-        assert cumsum_clones == len_tree - 1
+                draw1 = random.random()
+                draw2 = random.random()
+                if draw1 < self._q and draw2 < self._q:
+                    self._c = 0
+                    self._m = [2]
+                elif draw1 > self._q and draw2 > self._q:
+                    self._c = 2
+                    self._m = [0]
+                else:
+                    self._c = 1
+                    self._m = [1]
+        else:
+            child1 = LeavesAndClades(b=self._b, d=self._d, q=self._q).simulate(t-1)
+            child2 = LeavesAndClades(b=self._b, d=self._d, q=self._q).simulate(t-1)
+            self._c = child1._c + child2._c
+            self._m = [x+y for x, y in zip(child1._m, child2._m)]
+
+        return self
+                
+
 
     f_hash = {} # <--- class variable for hashing calls to the following function
-    def f(self, p, q, sign=1):
+    def f(self, b, d, q, sign=1):
         """
         Probability of getting c leaves that are clones of the root and m mutant clades off
-        the root line, given branching probability p and mutation probability q 
-        Also returns gradient wrt (p, q)
+        the root line
+        Also returns gradient
         Computed by dynamic programming
         """
         c, m = self._c, self._m
-        if (p, q, c, m) not in LeavesAndClades.f_hash:
-            if c==m==0 or (c==0 and m==1):
+        if (b, d, q, c, m) not in LeavesAndClades.f_hash:
+            t = len(m)
+            if t == 0:
+                if c == 1:
+                    f_result = 1
+                else:
+                    f_result = 0
+                dfdb_result = 0
+                dfdd_result = 0
+                dfdq_result = 0
+            if t == 1:
+                if c == 0:
+                    if m == [2]:
+                        f_result = b*q**2
+                        dfdb_result = q**2
+                        dfdd_result = 0
+                        dfdq_result = 2*b*q
+                    elif m == [0]:
+                        f_result = d
+                        dfdb_result = 0
+                        dfdd_result = 1
+                        dfdq_result = 0
+                    else:
+                        f_result = 0
+                        dfdb_result = 0
+                        dfdd_result = 0
+                        dfdq_result = 0
+                elif c == 1:
+                    if m == [0]:
+                        f_result = 1-b-d
+                        dfdb_result = -1
+                        dfdd_result = -1
+                        dfdq_result = 0
+                    elif m == [1]:
+                        f_result = 2*b*q*(1-q)
+                        dfdb_result = 2*q*(1-q)
+                        dfdd_result = 0
+                        dfdq_result = 2*b - 4*b*q
+                    else:
+                        f_result = 0
+                        dfdb_result = 0
+                        dfdd_result = 0
+                        dfdq_result = 0
+                elif c == 2:
+                    if m = [0]:
+                        f_result = b*(1-q)**2
+                        dfdb_result = (1-q)**2
+                        dfdd_result = 0
+                        dfdq_result = -2*b*(1-q)
+                    else:
+                        f_result = 0
+                        dfdb_result = 0
+                        dfdd_result = 0
+                        dfdq_result = 0 
+            else:
+                if m[0] == 0:
+
+
+                elif m[0] == 1:
+
+                elif m[0] == 2:
+                    if 
+
+
+
+
+
+            if c==0 and m==[] or (c==0 and m==1):
                 f_result = 0
                 dfdp_result = 0
                 dfdq_result = 0
@@ -248,7 +323,7 @@ class CollapsedTree(LeavesAndClades):
         # initiate by running a LeavesAndClades simulation to get the number of clones and mutants
         # in the root node of the collapsed tree
         LeavesAndClades.simulate(self)
-        self._tree = nexml.NexmlTree()
+        self._tree = Tree()
         self._tree.add_feature('frequency', self._c)
         if self._m == 0:
             return self
@@ -278,7 +353,7 @@ class CollapsedTree(LeavesAndClades):
         """return a string representation for printing"""
         return 'p = %f, q = %f\ntree:\n' % (self._p, self._q) + str(self._tree)
 
-    def render(self, outfile, colormap=None):
+    def render(self, plot_file, colormap=None):
         """render to image file, filetype inferred from suffix, png for color images"""
         for node in self._tree.traverse():
             nstyle = NodeStyle()
@@ -313,17 +388,10 @@ class CollapsedTree(LeavesAndClades):
                 N.rotation = -90
                 faces.add_face_to_node(N, node, 0, position='branch-top')
         ts.layout_fn = my_layout
-        self._tree.render(outfile, tree_style=ts)
+        self._tree.render(plot_file, tree_style=ts)
 
     def write(self, file_name):
-        """NeXML output"""
-        #nexml_project = nexml.Nexml()
-        #tree_collection = nexml.Trees()
-        #tree_collection.add_tree(self._tree)
-        #nexml_project.add_trees(tree_collection)
-        #nexml_project.export(outfile=open(file_name, 'w'))
-        self._tree.export(outfile=open(file_name, 'w'), level=0)
-        #self._tree.write(features=[], outfile=file_name)
+        self._tree.write(features=[], outfile=file_name)
 
         
 class CollapsedForest(CollapsedTree):
@@ -589,9 +657,7 @@ def phylip_parse(phylip_outfile, germline=None):
             #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
             nodes = {}
             for name in names:
-                node = nexml.NexmlTree()
-                node.name = name
-                node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None
+                node = Tree(name=name, dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)
                 node.add_feature('sequence', tree_sequence_dict[node.name])
                 if node.name == germline:
                     node.add_feature('frequency', 0)
@@ -634,14 +700,14 @@ def main():
     parser.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
     parser.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
     parser.add_argument('--n', type=int, default=100, help='forest size for test mode')
-    parser.add_argument('--outfile', type=str, default='foo', help='output file base name')
+    parser.add_argument('--plot_file', type=str, default='foo.pdf', help='output file for plots from test mode')
     parser.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
     parser.add_argument('--phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser.add_argument('--colormap', type=str, default=None, help='optional sequence-->color mappings')
     args = parser.parse_args()
 
     if args.test:
-        test(args.p, args.q, args.n, args.outfile)
+        test(args.p, args.q, args.n, args.plot_file)
         return
 
     if args.colormap is not None:
@@ -664,8 +730,8 @@ def main():
         collapsed_trees.append(collapsed_tree)
         parsimony_scores.append(sum(node.dist for node in tree.iter_descendants()))
 
-        collapsed_tree.render(args.outfile+'.'+str(tree_i+1)+'.png', args.colormap)
-        collapsed_tree.write(args.outfile+'.'+str(tree_i+1)+'.nexml')
+        collapsed_tree.render(args.plot_file+'.'+str(tree_i+1)+'.png', args.colormap)
+        collapsed_tree.write(args.plot_file+'.'+str(tree_i+1)+'.newick')
 
     # fit p and q using all trees
     result = CollapsedForest(forest=[collapsed_tree.get('tree') for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
@@ -695,7 +761,7 @@ def main():
     plt.xlabel(r'$m$')
     plt.ylabel(r'$\mathbb{P}\left(M=m\mid C=c\right)$')
     plt.legend(numpoints=1)
-    plt.savefig(args.outfile+'.diversification.pdf')
+    plt.savefig(args.plot_file+'.diversification.pdf')
 
 if __name__ == "__main__":
     main()
