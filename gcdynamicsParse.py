@@ -26,9 +26,11 @@ sequences = {sequence_id:sequence for sequence_id, sequence in c.execute('SELECT
 bcells = {x[0]:x[1:] for x in c.execute('SELECT * FROM bcells')}
 #print set([bcells[bcell][1] for bcell in bcells])
 
-#bcell_affinities = {x[0]:x[5] for x in c.execute('SELECT * FROM effectiveAffinity')}
+bcell_affinities = {x[1]:x[5] for x in c.execute('SELECT * FROM affinity')}
 
-#print set(bcells.keys()) - set(bcell_affinities.keys())
+print len(sequences), len(bcell_affinities)
+raw_input(set(bcells.keys()) - set(bcell_affinities.keys()))
+
 
 # compute sequence affinities as average among cells with that sequence
 #sequence_affinities = {seq_id:mean([bcell_affinities[bcell] for bcell in bcells if bcells[bcell][2] == seq_id]) for seq_id in sequences}
@@ -50,7 +52,7 @@ for bcell in bcells:
     if bcells[bcell][0] is not None:
         nodes[bcells[bcell][0]].add_child(nodes[bcell])
         nodes[bcell].dist = gctree.hamming_distance(nodes[bcell].sequence, nodes[bcell].up.sequence)
-        nodes[bcells[bcell][0]].add_feature('frequency', 0)
+        nodes[bcells[bcell][0]].frequency = 0 #add_feature('frequency', 0)
     else:
         nodes[bcell].dist = 0
 
