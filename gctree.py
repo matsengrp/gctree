@@ -25,7 +25,7 @@ class LeavesAndClades():
     process with branching probability p, mutation probability q, and we collapse mutant clades off the
     root type and consider just the number of clone leaves, c, and mutant clades, m.
 
-      /\            
+      /\
      /\ ^          (3)
       /\     ==>   / \\
        /\\
@@ -62,7 +62,7 @@ class LeavesAndClades():
         while cumsum_clones > len_tree - 1:
             if random.random() < self._params[0]:
                 mutants = sum(random.random() < self._params[1] for child in range(2))
-                clones = 2 - mutants 
+                clones = 2 - mutants
                 self._m += mutants
             else:
                 mutants = 0
@@ -73,10 +73,10 @@ class LeavesAndClades():
         assert cumsum_clones == len_tree - 1
 
     f_hash = {} # <--- class variable for hashing calls to the following function
-    def f(self, params, sign=1):
+    def f(self, params):
         """
         Probability of getting c leaves that are clones of the root and m mutant clades off
-        the root line, given branching probability p and mutation probability q 
+        the root line, given branching probability p and mutation probability q
         Also returns gradient wrt (p, q)
         Computed by dynamic programming
         """
@@ -101,7 +101,7 @@ class LeavesAndClades():
                     neighbor_f, (neighbor_dfdp, neighbor_dfdq) = neighbor.f(params)
                     f_result = 2*p*q*(1-q)*neighbor_f
                     dfdp_result =   2*q*(1-q) * neighbor_f + \
-                                  2*p*q*(1-q) * neighbor_dfdp 
+                                  2*p*q*(1-q) * neighbor_dfdp
                     dfdq_result = (2*p - 4*p*q) * neighbor_f + \
                                    2*p*q*(1-q)  * neighbor_dfdq
                 else:
@@ -190,9 +190,14 @@ class CollapsedTree(LeavesAndClades):
             leaves_and_clades_list = leaves_and_clades_list[1:]
         # extract vector of function values and gradient components
         f_data = [leaves_and_clades.f(params) for leaves_and_clades in leaves_and_clades_list]
-        fs = scipy.log(scipy.array([x[0] for x in f_data]))
-        grad_f = scipy.array([(scipy.array([x[1][i] for x in f_data])/fs).sum() for i in range(self._nparams)])
-        return sign*fs.sum(), sign*grad_f
+        #print params
+        #print [(x._c, x._m, x.f(params)[0]) for x in leaves_and_clades_list]
+        #print f_data
+        fs = scipy.array([[x[0]] for x in f_data])
+        logf = scipy.log(fs).sum()
+        grad_fs = scipy.array([x[1] for x in f_data])
+        grad_logf = (grad_fs/fs).sum(axis=0)
+        return sign*logf, sign*grad_logf
 
     def mle(self, **kwargs):
         """
@@ -238,7 +243,7 @@ class CollapsedTree(LeavesAndClades):
             self._tree.add_child(child)
 
         return self
-                
+
     def get(self, param_name=None):
         """
         return a dictionary of member variables, or a single parameter indicated by param_name
@@ -304,7 +309,7 @@ class CollapsedTree(LeavesAndClades):
         self._tree.export(outfile=open(file_name, 'w'), level=0)
         #self._tree.write(features=[], outfile=file_name)
 
-        
+
 class CollapsedForest(CollapsedTree):
     """
     simply a set of CollapsedTrees, with the same p and q parameters
@@ -333,7 +338,7 @@ class CollapsedForest(CollapsedTree):
         if n_trees is None and forest is not None:
             self._n_trees = len(forest)
         self._n_trees = n_trees
-        
+
     def simulate(self):
         """
         simulate a forest of collapsed trees given params and number of trees
@@ -397,7 +402,7 @@ class CollapsedForest(CollapsedTree):
         return ('params = ' + str(params) + ', n_trees = %d\n'+
                 '\n'.join([str(tree) for tree in self._forest])) % (self._p, self._q, self._n_trees)
 
-        
+
 def test(p, q, n, plot_file):
     """
     checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to plot_file
@@ -418,11 +423,15 @@ def test(p, q, n, plot_file):
     child.name = child.frequency
     parent.add_child(child)
     tree = CollapsedTree(tree=parent)
-    print '    T =', str(tree.get('tree'))
-    print '    Summing the probabilities of the two possible fine structures, we have'
-    print '    Pr(T) = 6 p^2 (1-p)^3 q (1-q)^3 =', 6*p**2*(1-p)**3*q*(1-q)**3
-    print '    Now, our dynamic programming algorithm gives'
-    print '    Pr(T) =', scipy.exp(tree.l((p, q))[0])
+    f = 6*p**2*(1-p)**3*q*(1-q)**3
+    dfdp = 6*(1 - p)**2*p*(-2 + 5*p)*(-1 + q)**3*q #6*q*(1-q)**3*(2*p*(1-p)**3-3*p**2*(1-p)**2)
+    dfdq = 6*(-1 + p)**3*p**2*(1 - q)**2*(-1 + 4*q) #6*p**2*(1-p)**3*((1-q)**3-3*q*(1-q)**2)
+    print  '    T =', tree.get('tree').get_ascii(show_internal=True)
+    print  '    Summing the probabilities of the two possible fine structures, we have'
+    print  '    logP =', scipy.log(f)
+    print u'    \u2207logP = ', (dfdp/f, dfdq/f)
+    print  '    Now, our dynamic programming algorithm gives'
+    print u'    logP , \u2207logP =', tree.l((p, q))
     print ''
 
     print 'Simulating a forest of %d trees' % n
@@ -532,7 +541,7 @@ def test(p, q, n, plot_file):
 
     ax.clabel(contour, fontsize=9, inline=1)
     ax.plot([p], [q], 'k+', label='true parameters')
-    ax.plot(mle[0], mle[1], 'ko', markerfacecolor='none', label='MLE parameters')
+    ax.plot(mle.x[0], mle.x[1], 'ko', markerfacecolor='none', label='MLE parameters')
     ax.set_xlabel(r'$p$')
     ax.set_ylabel(r'$q$')
     ax.set_aspect('equal')
@@ -690,7 +699,7 @@ def main():
     for i, c in enumerate(cs):
         dat = scipy.array([LeavesAndClades(c=c, m=m).f(result.x)[0] for m in ms])
         dat = dat/dat.sum()
-        plt.plot(ms, dat, 'o--', alpha=.5, color=colors[i], label=r'$c = %d$' % c) 
+        plt.plot(ms, dat, 'o--', alpha=.5, color=colors[i], label=r'$c = %d$' % c)
     plt.xlabel(r'$m$')
     plt.ylabel(r'$\mathbb{P}\left(M=m\mid C=c\right)$')
     plt.legend(numpoints=1)
@@ -698,8 +707,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
