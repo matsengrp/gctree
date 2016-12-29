@@ -444,12 +444,14 @@ def test(p, q, n, plot_file):
     max_total = max(total_data)
     len_total = len(total_data)
 
-    totals = freq = log_prob = []
+    totals = []
+    freq = []
+    log_prob = []
     for x in range(1, max_total+1):
         totals.append(x)
         freq.append(total_data.count(x))
         tmp_tree = nexml.NexmlTree(format=1)
-        tmp_tree.add_feature('frequency', 2)
+        tmp_tree.add_feature('frequency', x)
         log_prob.append(CollapsedTree(tree=tmp_tree).l((p, 0))[0])
     theoretical_cdf = scipy.cumsum(scipy.exp(log_prob))
     empirical_cdf = scipy.cumsum(freq)/float(len_total)
@@ -483,8 +485,8 @@ def test(p, q, n, plot_file):
     theoretical_quantiles = []
     for x in total_data:
         empirical_quantiles.append(sum(y <= x for y in total_data)/float(len_total))
+        to_add = 0.
         for y in range(1, x+1):
-            to_add = 0.
             tmp_tree = nexml.NexmlTree(format=1)
             tmp_tree.add_feature('frequency', y)
             to_add += scipy.exp(CollapsedTree(tree=tmp_tree).l((p, 0))[0])
