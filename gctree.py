@@ -263,7 +263,7 @@ class CollapsedTree(LeavesAndClades):
         return 'params = ' + str(self._params)+ '\ntree:\n' + str(self._tree)
 
     def render(self, outfile, colormap=None):
-        """render to image file, filetype inferred from suffix, png for color images"""
+        """render to image file, filetype inferred from suffix, svg for color images"""
         for node in self._tree.traverse():
             nstyle = NodeStyle()
             if node.frequency == 0:
@@ -628,12 +628,12 @@ class MutationModel():
                     leaf.name = 'seq%d' % i
         print i, 'simulated observed sequences'
         #self.tree.link_to_alignment(alignment=outbase+'.leafdata.fa', alg_format='fasta')
-        self.tree.render(outbase+'.tree.png')
+        self.tree.render(outbase+'.tree.svg')
 
 
         # get collapsed tree
         self.collapsed_tree = CollapsedTree(tree=self.tree)
-        self.collapsed_tree.render(outbase+'.collapsed_tree.png')
+        self.collapsed_tree.render(outbase+'.collapsed_tree.svg')
 
         return self
 
@@ -814,7 +814,7 @@ def infer(args):
         collapsed_trees.append(collapsed_tree)
         parsimony_scores.append(sum(node.dist for node in tree.iter_descendants()))
 
-        collapsed_tree.render(args.outbase+'.'+str(tree_i+1)+'.png', args.colormap)
+        collapsed_tree.render(args.outbase+'.'+str(tree_i+1)+'.svg', args.colormap)
         collapsed_tree.write(args.outbase+'.'+str(tree_i+1)+'.nexml')
 
     # fit p and q using all trees
@@ -832,7 +832,7 @@ def infer(args):
     print 'tree\ttotals\talleles\tparsimony\tlogLikelihood'
     for x in sorted(print_data, key=lambda x: (-x[-1], x[0])):
         print '\t'.join(map(str, x))
-        sys.stdout.flush()
+        #sys.stdout.flush()
 
     plt.figure()
     cs = scipy.arange(11)
