@@ -403,11 +403,250 @@ class CollapsedForest(CollapsedTree):
                 '\n'.join([str(tree) for tree in self._forest])) % (self._p, self._q, self._n_trees)
 
 
-def test(p, q, n, plot_file):
+def hamming_distance(seq1, seq2):
+    """Hamming distance between two sequences of equal length"""
+    return sum(x != y for x, y in zip(seq1, seq2))
+
+
+def phylip_parse(phylip_outfile, germline=None):
+    """parse phylip outfile and return ete trees"""
+    # parse phylip outfile
+    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
+
+    # ete trees
+    trees = []
+    for i, tree in enumerate(outfiledat):
+        tree_sequence_dict = {}
+        parent_dict = {}
+        names = []
+        for j, block in enumerate(tree):
+            if j == 0:
+                for line in block.split('\n'):
+                    fields = line.split()
+                    if len(fields) == 0:
+                        continue
+                    name = fields[1]
+                    names.append(name)
+                    if fields[0] == 'root':
+                        seq = ''.join(fields[2:])
+                        parent = None
+                    else:
+                        seq = ''.join(fields[3:])
+                        parent = fields[0]
+                    tree_sequence_dict[name] = seq
+                    parent_dict[name] = parent
+            else:
+                for line in block.split('\n'):
+                    fields = line.split()
+                    name = fields[1]
+                    if fields[0] == 'root':
+                        seq = ''.join(fields[2:])
+                    else:
+                        seq = ''.join(fields[3:])
+                    tree_sequence_dict[name] += seq
+
+        # if integer branch (not weird ambiguous chars)
+        if set(''.join([tree_sequence_dict[name] for name in names])) == set('ACGT'):
+            #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
+            nodes = {}
+            for name in names:
+                node = nexml.NexmlTree()
+                node.name = name
+                node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None
+                node.add_feature('sequence', tree_sequence_dict[node.name])
+                if node.name == germline:
+                    node.add_feature('frequency', 0)
+                elif '_' in node.name:
+                    node.add_feature('frequency', int(node.name.split('_')[-1]))
+                    node.name = '_'.join(node.name.split('_')[:-1])
+                else:
+                    node.add_feature('frequency', 0)
+                nodes[name] = node
+            tree = nodes[names[0]] # GL is first
+            for name in parent_dict:
+                if parent_dict[name] is not None:
+                    nodes[parent_dict[name]].add_child(nodes[name])
+            # reroot on germline
+            if germline is not None:
+                assert len(nodes[germline].children) == 0
+                assert nodes[germline] in tree.children
+                tree.remove_child(nodes[germline])
+                nodes[germline].add_child(tree)
+                tree.dist = nodes[germline].dist
+                tree = nodes[germline]
+                tree.dist = 0
+
+            # assert branch lengths make sense
+            for node in tree.iter_descendants():
+                assert node.dist == hamming_distance(node.sequence, node.up.sequence)
+
+            trees.append(tree)
+
+    return trees
+
+
+class MutationModel():
+    """a class for a mutation model, and functions to mutate sequences"""
+    def __init__(self, mutability_file, substitution_file):
+        """initialized with input files of the S5F format"""
+        self._mutation_model = {}
+        with open(mutability_file, 'r') as f:
+            # eat header
+            f.readline()
+            for line in f:
+                motif, score = line.replace('"', '').split()[:2]
+                self._mutation_model[motif] = float(score)
+
+        # kmer k
+        self.k = None
+        with open(substitution_file, 'r') as f:
+            # eat header
+            f.readline()
+            for line in f:
+                fields = line.replace('"', '').split()
+                motif = fields[0]
+                if self.k is None:
+                    self.k = len(motif)
+                    assert self.k % 2 == 1
+                else:
+                    assert len(motif) == self.k
+                self._mutation_model[motif] = (self._mutation_model[motif], {b:float(x) for b, x in zip('ACGT', fields[1:5])})
+
+    def mutability(self, kmer):
+        """"returns the mutability of a kmer, along with nucleotide biases"""
+        assert len(kmer) == self.k
+        return self._mutation_model[kmer]
+
+    def mutate(self, sequence, lambda0=1):
+        """mutate a sequence, with q the baseline mutability"""
+        assert all(n in 'ACGT' for n in sequence)
+        # mutabilities of each nucleotide
+        mutabilities = []
+        sequence_length = len(sequence)
+        assert sequence_length >= 5
+        # ambiguous left end motifs
+        for i in range(self.k//2 + 1):
+            kmer_suffix = sequence[:(i+self.k//2+1)]
+            matches = [value for key, value in self._mutation_model.iteritems() if key.endswith(kmer_suffix)]
+            len_matches = len(matches)
+            assert len_matches == 4**(self.k - len(kmer_suffix))
+            # use mean over matches
+            mutability = sum(match[0] for match in matches)/float(len_matches)
+            substitution = {n:sum(d[1][n] for d in matches)/float(len_matches) for n in 'ACGT'}
+            mutabilities.append((mutability, substitution))
+        # unambiguous internal kmers
+        for i in range(self.k//2, sequence_length - self.k//2):
+            mutabilities.append(self.mutability(sequence[(i-self.k//2):(i+self.k//2+1)]))
+        # ambiguous right end motifs
+        for i in range(sequence_length - self.k//2 + 1, sequence_length):
+            kmer_prefix = sequence[(i-self.k//2):]
+            matches = [value for key, value in self._mutation_model.iteritems() if key.startswith(kmer_prefix)]
+            len_matches = len(matches)
+            assert len_matches == 4**(self.k - len(kmer_prefix))
+            # use mean over matches
+            mutability = sum(match[0] for match in matches)/float(len_matches)
+            substitution = {n:sum(d[1][n] for d in matches)/float(len_matches) for n in 'ACGT'}
+            mutabilities.append((mutability, substitution))
+
+        assert len(mutabilities) == sequence_length
+
+        # mean mutability
+        sequence_mutability = sum(mutability[0] for mutability in mutabilities)/float(sequence_length)
+        # baseline Piosson
+        #lambda_0 = -scipy.log(1-q)
+        # poisson rate for this sequence (given its relative mutability)
+        lambda_sequence = sequence_mutability*lambda0
+        # number of mutations
+        m = scipy.random.poisson(lambda_sequence)
+
+        if m > 0:
+            # now we choose random positions for the m mutations, weighted by mutabilities
+            # invoking a long sequence limit, we don't allow back mutations
+            # draw a multinomial rv for the number of mutations in each site
+            p = [mutability[0]/(sequence_length*sequence_mutability) for mutability in mutabilities]
+            assert 0 <= abs(sum(p) - 1.) < 1e-10
+            mutated_sites = scipy.random.multinomial(m, p)
+            trial = 0
+            while max(mutated_sites) > 1:
+                print 'repeated mutations, trying again'
+                trial += 1
+                if trial > 5:
+                    raise RuntimeError('mutations saturating')
+                mutated_sites = scipy.random.multinomial(m, p)
+            sequence = list(sequence) # mutable
+            for i in range(sequence_length):
+                if mutated_sites[i]:
+                    p = [mutabilities[i][1][n] for n in 'ACGT']
+                    assert 0 <= abs(sum(p) - 1.) < 1e-10
+                    sequence[i] = 'ACGT'[scipy.nonzero(scipy.random.multinomial(1, p))[0][0]]
+            sequence = "".join(sequence)
+
+        return sequence
+
+
+    def simulate(self, sequence, outbase, p=.4, lambda0=1, r=1.):
+        """"simulate neutral binary branching process with mutation model"""
+        if p >= .5:
+            raw_input('WARNING: p = %f is not subcritical, tree termination not garanteed! [ENTER] to proceed')
+        self.tree = nexml.NexmlTree()
+        self.tree.dist = 0
+        self.tree.add_feature('sequence', sequence)
+        self.tree.add_feature('terminated', False)
+        self.tree.add_feature('frequency', 0)
+        nodes_unterminated = 1
+        while nodes_unterminated > 0:
+            for leaf in self.tree.iter_leaves():
+                if not leaf.terminated:
+                    if scipy.random.random() < p:
+                        for child_count in range(2):
+                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0)
+                            child = nexml.NexmlTree()
+                            child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
+                            child.add_feature('sequence', mutated_sequence)
+                            child.add_feature('frequency', 0)
+                            leaf.add_child(child)
+                            child.add_feature('terminated' ,False)
+                        nodes_unterminated += 1
+                    else:
+                        leaf.terminated = True
+                        nodes_unterminated -= 1
+
+        # each leaf gets an observation frequency of 1
+        for node in self.tree.iter_leaves():
+            if scipy.random.random() < r:
+                node.frequency = 1
+
+        with open(outbase+'.leafdata.fa', 'w') as f:
+            f.write('> GL\n')
+            f.write(sequence+'\n')
+            i = 0
+            for leaf in self.tree.iter_leaves():
+                if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
+                    i += 1
+                    f.write('> seq%d\n' % i)
+                    f.write(leaf.sequence+'\n')
+                    leaf.name = 'seq%d' % i
+        print i, 'simulated observed sequences'
+        #self.tree.link_to_alignment(alignment=outbase+'.leafdata.fa', alg_format='fasta')
+        self.tree.render(outbase+'.tree.png')
+
+
+        # get collapsed tree
+        self.collapsed_tree = CollapsedTree(tree=self.tree)
+        self.collapsed_tree.render(outbase+'.collapsed_tree.png')
+
+        return self
+
+
+def test(args):
     """
     checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to plot_file
     command line arguments are p, q, number of trees to simulate, and plot file name
     """
+    p = args.p
+    q = args.q
+    n = args.n
+    plot_file = args.outbase
 
     if plot_file[-4:] != '.pdf':
         plot_file += '.pdf'
@@ -552,107 +791,8 @@ def test(p, q, n, plot_file):
     plt.savefig(plot_file)
     print 'plot saved to', plot_file
 
-def hamming_distance(seq1, seq2):
-    """Hamming distance between two sequences of equal length"""
-    return sum(x != y for x, y in zip(seq1, seq2))
 
-
-def phylip_parse(phylip_outfile, germline=None):
-    """parse phylip outfile and return ete trees"""
-    # parse phylip outfile
-    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
-
-    # ete trees
-    trees = []
-    for i, tree in enumerate(outfiledat):
-        tree_sequence_dict = {}
-        parent_dict = {}
-        names = []
-        for j, block in enumerate(tree):
-            if j == 0:
-                for line in block.split('\n'):
-                    fields = line.split()
-                    if len(fields) == 0:
-                        continue
-                    name = fields[1]
-                    names.append(name)
-                    if fields[0] == 'root':
-                        seq = ''.join(fields[2:])
-                        parent = None
-                    else:
-                        seq = ''.join(fields[3:])
-                        parent = fields[0]
-                    tree_sequence_dict[name] = seq
-                    parent_dict[name] = parent
-            else:
-                for line in block.split('\n'):
-                    fields = line.split()
-                    name = fields[1]
-                    if fields[0] == 'root':
-                        seq = ''.join(fields[2:])
-                    else:
-                        seq = ''.join(fields[3:])
-                    tree_sequence_dict[name] += seq
-
-        # if integer branch (not weird ambiguous chars)
-        if set(''.join([tree_sequence_dict[name] for name in names])) == set('ACGT'):
-            #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
-            nodes = {}
-            for name in names:
-                node = nexml.NexmlTree()
-                node.name = name
-                node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None
-                node.add_feature('sequence', tree_sequence_dict[node.name])
-                if node.name == germline:
-                    node.add_feature('frequency', 0)
-                elif '_' in node.name:
-                    node.add_feature('frequency', int(node.name.split('_')[-1]))
-                    node.name = '_'.join(node.name.split('_')[:-1])
-                else:
-                    node.add_feature('frequency', 0)
-                nodes[name] = node
-            tree = nodes[names[0]] # GL is first
-            for name in parent_dict:
-                if parent_dict[name] is not None:
-                    nodes[parent_dict[name]].add_child(nodes[name])
-            # reroot on germline
-            if germline is not None:
-                assert len(nodes[germline].children) == 0
-                assert nodes[germline] in tree.children
-                tree.remove_child(nodes[germline])
-                nodes[germline].add_child(tree)
-                tree.dist = nodes[germline].dist
-                tree = nodes[germline]
-                tree.dist = 0
-
-            # assert branch lengths make sense
-            for node in tree.iter_descendants():
-                assert node.dist == hamming_distance(node.sequence, node.up.sequence)
-
-            trees.append(tree)
-
-    return trees
-
-
-def main():
-    """if "--test" option is passed, run the test suite, else load phylip file and do MLEs for each tree"""
-    import sys, argparse
-    from collections import Counter
-
-    parser = argparse.ArgumentParser(description='multitype tree modeling')
-    parser.add_argument('--test', action='store_true', default=False, help='run tests on library functions')
-    parser.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
-    parser.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
-    parser.add_argument('--n', type=int, default=100, help='forest size for test mode')
-    parser.add_argument('--outfile', type=str, default='foo', help='output file base name')
-    parser.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
-    parser.add_argument('--phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
-    parser.add_argument('--colormap', type=str, default=None, help='optional sequence-->color mappings')
-    args = parser.parse_args()
-
-    if args.test:
-        test(args.p, args.q, args.n, args.outfile)
-        return
+def infer(args):
 
     if args.colormap is not None:
         colormap = {}
@@ -674,8 +814,8 @@ def main():
         collapsed_trees.append(collapsed_tree)
         parsimony_scores.append(sum(node.dist for node in tree.iter_descendants()))
 
-        collapsed_tree.render(args.outfile+'.'+str(tree_i+1)+'.png', args.colormap)
-        collapsed_tree.write(args.outfile+'.'+str(tree_i+1)+'.nexml')
+        collapsed_tree.render(args.outbase+'.'+str(tree_i+1)+'.png', args.colormap)
+        collapsed_tree.write(args.outbase+'.'+str(tree_i+1)+'.nexml')
 
     # fit p and q using all trees
     result = CollapsedForest(forest=[collapsed_tree.get('tree') for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
@@ -705,7 +845,53 @@ def main():
     plt.xlabel(r'$m$')
     plt.ylabel(r'$\mathbb{P}\left(M=m\mid C=c\right)$')
     plt.legend(numpoints=1)
-    plt.savefig(args.outfile+'.diversification.pdf')
+    plt.savefig(args.outbase+'.diversification.pdf')
+
+
+def simulate(args):
+    if args.lambda0 is None:
+        args.lambda0 = max([1, int(.01*len(args.sequence))])
+    args.sequence = args.sequence.upper()
+    mutation_model = MutationModel(args.mutability, args.substitution)
+    mutation_model.simulate(args.sequence, args.outbase, p=args.p, lambda0=args.lambda0, r=args.r)
+
+def main():
+    import sys, argparse
+    from collections import Counter
+
+    parser = argparse.ArgumentParser(description='germinal center tree inference and simulation')
+    subparsers = parser.add_subparsers(help='which program to run')
+
+    # parser for test mode
+    parser_test = subparsers.add_parser('test', help='run tests on library functions')
+    parser_test.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
+    parser_test.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
+    parser_test.add_argument('--n', type=int, default=100, help='forest size for test mode')
+    parser_test.set_defaults(func=test)
+
+    # parser for inference mode
+    parser_infer = subparsers.add_parser('infer', help='likelihood ranking of parsimony trees')
+    parser_infer.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
+    parser_infer.add_argument('--phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
+    parser_infer.add_argument('--colormap', type=str, default=None, help='optional sequence-->color mappings')
+    parser_infer.set_defaults(func=infer)
+
+    # parser for simulation mode
+    parser_sim = subparsers.add_parser('simulate', help='neutral model gctree simulation')
+    parser_sim.add_argument('sequence', type=str, help='seed germline nucleotide sequence')
+    parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
+    parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
+    parser_sim.add_argument('--p', type=float, default=.4, help='branching probability')
+    parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
+    parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
+    parser_sim.set_defaults(func=simulate)
+
+    # a common outbase parameter
+    for subparser in [parser_test, parser_infer, parser_sim]:
+        subparser.add_argument('--outbase', type=str, default='gctree.out', help='output file base name')
+
+    args = parser.parse_args()
+    args.func(args)
 
 if __name__ == "__main__":
     main()
