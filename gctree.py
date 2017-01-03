@@ -1,4 +1,10 @@
 #! /bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+This module contains classes for simulation and inference for a binary branching process with mutation
+in which the tree is collapsed to nodes that count the number of clonal leaves of each type
+"""
 
 from __future__ import division, print_function
 import scipy, warnings, random
@@ -13,12 +19,6 @@ from scipy.stats import probplot
 from ete3 import NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, nexml
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
-
-
-"""
-This module contains classes for simulation and inference for a binary branching process with mutation
-in which the tree is collapsed to nodes that count the number of clonal leaves of each type
-"""
 
 class LeavesAndClades():
     """
