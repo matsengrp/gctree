@@ -1,5 +1,6 @@
 #! /bin/env python
 
+from __future__ import division, print_function
 import scipy, warnings, random
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad
@@ -186,13 +187,13 @@ class CollapsedTree(LeavesAndClades):
             raise ValueError('sign must be 1 or -1')
         leaves_and_clades_list = [LeavesAndClades(c=node.frequency, m=len(node.children)) for node in self._tree.traverse()]
         if leaves_and_clades_list[0]._c == 0 and leaves_and_clades_list[0]._m == 1 and leaves_and_clades_list[0].f(params)[0] == 0:
-            print 'WARNING: unifurcation from root not possible under current model. This node will be ommitted from likelihood calculation'
+            print('WARNING: unifurcation from root not possible under current model. This node will be ommitted from likelihood calculation')
             leaves_and_clades_list = leaves_and_clades_list[1:]
         # extract vector of function values and gradient components
         f_data = [leaves_and_clades.f(params) for leaves_and_clades in leaves_and_clades_list]
-        #print params
-        #print [(x._c, x._m, x.f(params)[0]) for x in leaves_and_clades_list]
-        #print f_data
+        #print(params)
+        #print([(x._c, x._m, x.f(params)[0]) for x in leaves_and_clades_list])
+        #print(f_data)
         fs = scipy.array([[x[0]] for x in f_data])
         logf = scipy.log(fs).sum()
         grad_fs = scipy.array([x[1] for x in f_data])
@@ -531,8 +532,8 @@ class MutationModel():
             len_matches = len(matches)
             assert len_matches == 4**(self.k - len(kmer_suffix))
             # use mean over matches
-            mutability = sum(match[0] for match in matches)/float(len_matches)
-            substitution = {n:sum(d[1][n] for d in matches)/float(len_matches) for n in 'ACGT'}
+            mutability = sum(match[0] for match in matches)/len_matches
+            substitution = {n:sum(d[1][n] for d in matches)/len_matches for n in 'ACGT'}
             mutabilities.append((mutability, substitution))
         # unambiguous internal kmers
         for i in range(self.k//2, sequence_length - self.k//2):
@@ -568,7 +569,7 @@ class MutationModel():
             mutated_sites = scipy.random.multinomial(m, p)
             trial = 0
             while max(mutated_sites) > 1:
-                print 'repeated mutations, trying again'
+                print('repeated mutations, trying again')
                 trial += 1
                 if trial > 5:
                     raise RuntimeError('mutations saturating')
@@ -626,7 +627,7 @@ class MutationModel():
                     f.write('> seq%d\n' % i)
                     f.write(leaf.sequence+'\n')
                     leaf.name = 'seq%d' % i
-        print i, 'simulated observed sequences'
+        print(i, 'simulated observed sequences')
         #self.tree.link_to_alignment(alignment=outbase+'.leafdata.fa', alg_format='fasta')
         self.tree.render(outbase+'.tree.svg')
 
@@ -651,7 +652,7 @@ def test(args):
     if plot_file[-4:] != '.pdf':
         plot_file += '.pdf'
 
-    print 'Let''s check our likelihood against a by-hand calculation for the following simple tree'
+    print('Let''s check our likelihood against a by-hand calculation for the following simple tree')
     # ete tree
     parent = nexml.NexmlTree(format=1)
     parent.add_feature('frequency', 2)
@@ -665,17 +666,17 @@ def test(args):
     f = 6*p**2*(1-p)**3*q*(1-q)**3
     dfdp = 6*(1 - p)**2*p*(-2 + 5*p)*(-1 + q)**3*q #6*q*(1-q)**3*(2*p*(1-p)**3-3*p**2*(1-p)**2)
     dfdq = 6*(-1 + p)**3*p**2*(1 - q)**2*(-1 + 4*q) #6*p**2*(1-p)**3*((1-q)**3-3*q*(1-q)**2)
-    print  '    T =', tree.get('tree').get_ascii(show_internal=True)
-    print  '    Summing the probabilities of the two possible fine structures, we have'
-    print  '    logP =', scipy.log(f)
-    print u'    \u2207logP = ', (dfdp/f, dfdq/f)
-    print  '    Now, our dynamic programming algorithm gives'
-    print u'    logP , \u2207logP =', tree.l((p, q))
-    print ''
+    print( '    T =', tree.get('tree').get_ascii(show_internal=True))
+    print( '    Summing the probabilities of the two possible fine structures, we have')
+    print( '    logP =', scipy.log(f))
+    print(u'    \u2207logP = ', (dfdp/f, dfdq/f))
+    print( '    Now, our dynamic programming algorithm gives')
+    print(u'    logP , \u2207logP =', tree.l((p, q)))
+    print('')
 
-    print 'Simulating a forest of %d trees' % n
+    print('Simulating a forest of %d trees' % n)
     forest = CollapsedForest((p, q), n)
-    print '    true parameters: p = %f, q = %f' % (p, q)
+    print('    true parameters: p = %f, q = %f' % (p, q))
     forest.simulate()
 
     # total leaf counts
@@ -743,11 +744,11 @@ def test(args):
 
     mle = forest.mle()
     #for tree in forest.get('forest'):
-    #    print tree
-    print '    MLE parameters:  p = %f, q = %f' % tuple(mle.x.tolist())
+    #    print(tree)
+    print('    MLE parameters:  p = %f, q = %f' % tuple(mle.x.tolist()))
 
     # plot the 2-norm of the difference between the gradient and its finite difference approximation
-    print 'computing plot data...'
+    print('computing plot data...')
     X, Y = scipy.mgrid[slice(.05, 1, .05),
                        slice(.05, 1, .05)]
     Z = scipy.zeros((X.shape[0], X.shape[1]))
@@ -755,7 +756,7 @@ def test(args):
         for j in range(Z.shape[1]):
             Z[i, j] = check_grad(lambda x: forest.l(x)[0], lambda x: forest.l(x)[1], (X[i, j], Y[i, j]))
 
-    print 'done'
+    print('done')
     ax = fig.add_subplot(2,2,3)
     ax.set_title(r'$||\nabla \ell(p, q) - \Delta \ell(p, q)||_2$')
     im = ax.contourf(X, Y, Z, locator=ticker.LogLocator(), cmap='Greys')
@@ -789,7 +790,7 @@ def test(args):
     ax.legend(numpoints = 1, fontsize='small')
 
     plt.savefig(plot_file)
-    print 'plot saved to', plot_file
+    print('plot saved to', plot_file)
 
 
 def infer(args):
@@ -804,7 +805,7 @@ def infer(args):
     trees = phylip_parse(args.phylipfile, args.germline)
     n_trees = len(trees)
 
-    print 'number of trees with integer branch lengths:', n_trees
+    print('number of trees with integer branch lengths:', n_trees)
 
     # now we need to get collapsed trees
     collapsed_trees = []
@@ -820,7 +821,7 @@ def infer(args):
     # fit p and q using all trees
     result = CollapsedForest(forest=[collapsed_tree.get('tree') for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
     assert result.success
-    print 'p = %f, q = %f' % tuple(result.x)
+    print('p = %f, q = %f' % tuple(result.x))
 
     print_data = []
     for i, collapsed_tree in enumerate(collapsed_trees):
@@ -829,9 +830,9 @@ def infer(args):
         alleles = len(collapsed_tree.get('tree'))
         print_data.append((i+1, totals, alleles, parsimony_scores[i], l))
 
-    print 'tree\ttotals\talleles\tparsimony\tlogLikelihood'
+    print('tree\ttotals\talleles\tparsimony\tlogLikelihood')
     for x in sorted(print_data, key=lambda x: (-x[-1], x[0])):
-        print '\t'.join(map(str, x))
+        print('\t'.join(map(str, x)))
         #sys.stdout.flush()
 
     plt.figure()
