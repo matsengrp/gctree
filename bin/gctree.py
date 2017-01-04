@@ -1,10 +1,10 @@
 #! /bin/env python
 # -*- coding: utf-8 -*-
 
-"""
+'''
 This module contains classes for simulation and inference for a binary branching process with mutation
 in which the tree is collapsed to nodes that count the number of clonal leaves of each type
-"""
+'''
 
 from __future__ import division, print_function
 import scipy, warnings, random
@@ -21,7 +21,7 @@ from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 
 class LeavesAndClades():
-    """
+    '''
     This is a base class for simulating, and computing likelihood for, an infinite type branching
     process with branching probability p, mutation probability q, and we collapse mutant clades off the
     root type and consider just the number of clone leaves, c, and mutant clades, m.
@@ -31,9 +31,9 @@ class LeavesAndClades():
       /\     ==>   / \\
        /\\
         ^
-    """
+    '''
     def __init__(self, params=None, c=None, m=None):
-        """initialize with branching probability p and mutation probability q, both in the unit interval"""
+        '''initialize with branching probability p and mutation probability q, both in the unit interval'''
         if params is not None:
             p, q = params
             if not (0 <= p <= 1 and 0 <= q <= 1):
@@ -47,11 +47,11 @@ class LeavesAndClades():
             self._m = m
 
     def simulate(self):
-        """simulate the number of clone leaves and mutant clades off a root node"""
+        '''simulate the number of clone leaves and mutant clades off a root node'''
         if self._params[0]>=.5:
             warnings.warn('p >= .5 is not subcritical, tree simulations not garanteed to terminate')
         if self._params is None:
-            raise ValueError('paramss must be defined for simulation\n')
+            raise ValueError('params must be defined for simulation\n')
 
         # let's track the tree in breadth first order, listing number clone and mutant descendants of each node
         # mutant clades terminate in this view
@@ -75,12 +75,12 @@ class LeavesAndClades():
 
     f_hash = {} # <--- class variable for hashing calls to the following function
     def f(self, params):
-        """
+        '''
         Probability of getting c leaves that are clones of the root and m mutant clades off
         the root line, given branching probability p and mutation probability q
         Also returns gradient wrt (p, q)
         Computed by dynamic programming
-        """
+        '''
         p, q = params
         c, m = self._c, self._m
         if (p, q, c, m) not in LeavesAndClades.f_hash:
@@ -127,10 +127,10 @@ class LeavesAndClades():
         return LeavesAndClades.f_hash[(p, q, c, m)]
 
     def get(self, param_name=None):
-        """
+        '''
         return a dictionary of member variables, or a single parameter indicated by param_name
         param_name may equal 'p', 'q', or 'tree', or None.
-        """
+        '''
         if param_name is None:
             return {'params':self._params, 'c':self._c, 'm':self._m}
         elif param_name is 'params':
@@ -144,20 +144,20 @@ class LeavesAndClades():
 
 
 class CollapsedTree(LeavesAndClades):
-    """
+    '''
     Here's a derived class for a collapsed tree, where we recurse into the mutant clades
           (4)
          / | \\
        (3)(1)(2)
            |   \\
           (2)  (1)
-    """
+    '''
     def __init__(self, params=None, tree=None):
-        """
+        '''
         For intialization, either params or tree (or both) must be provided
         params: offspring distribution parameters
         tree: ete tree with frequency node feature. If uncollapsed, it will be collapsed
-        """
+        '''
         #if params is None and tree is None:
         #    raise ValueError('either params or tree (or both) must be provided')
         LeavesAndClades.__init__(self, params=params)
@@ -177,10 +177,10 @@ class CollapsedTree(LeavesAndClades):
 
 
     def l(self, params, sign=1):
-        """
+        '''
         log likelihood of params, conditioned on collapsed tree, and its gradient wrt params
         optional parameter sign must be 1 or -1, with the latter useful for MLE by minimization
-        """
+        '''
         if self._tree is None:
             raise ValueError('tree data must be defined to compute likelihood')
         if sign not in (-1, 1):
@@ -201,11 +201,11 @@ class CollapsedTree(LeavesAndClades):
         return sign*logf, sign*grad_logf
 
     def mle(self, **kwargs):
-        """
+        '''
         Maximum likelihood estimate for params given tree
         updates params if not None
         returns optimization result
-        """
+        '''
         # random initalization
         x_0 = (random.random(), random.random())
         #x_0 = (.5, .5)
@@ -223,10 +223,10 @@ class CollapsedTree(LeavesAndClades):
         return result
 
     def simulate(self):
-        """
+        '''
         simulate a collapsed tree given params
         replaces existing tree data member with simulation result, and returns self
-        """
+        '''
         if self._params is None:
             raise ValueError('params must be defined for simulation')
 
@@ -246,10 +246,10 @@ class CollapsedTree(LeavesAndClades):
         return self
 
     def get(self, param_name=None):
-        """
+        '''
         return a dictionary of member variables, or a single parameter indicated by param_name
         param_name may equal 'params', 'tree', or None.
-        """
+        '''
         if param_name is None:
             return {'params':self._params, 'tree':self._tree}
         elif param_name is 'params':
@@ -257,14 +257,14 @@ class CollapsedTree(LeavesAndClades):
         elif param_name is 'tree':
             return self._tree
         else:
-            raise ValueError("param_name may equal 'params', 'tree', or None.")
+            raise ValueError("param_name may equal 'params, 'tree', or None.")
 
     def __str__(self):
-        """return a string representation for printing"""
+        '''return a string representation for printing'''
         return 'params = ' + str(self._params)+ '\ntree:\n' + str(self._tree)
 
     def render(self, outfile, colormap=None):
-        """render to image file, filetype inferred from suffix, svg for color images"""
+        '''render to image file, filetype inferred from suffix, svg for color images'''
         for node in self._tree.traverse():
             nstyle = NodeStyle()
             if node.frequency == 0:
@@ -281,9 +281,9 @@ class CollapsedTree(LeavesAndClades):
                     nonsyn = hamming_distance(Seq(node.sequence, generic_dna).translate(), Seq(node.up.sequence, generic_dna).translate())
                     if nonsyn > 0:
                         nstyle['hz_line_color'] = 'black'
-                        nstyle["hz_line_width"] = nonsyn
+                        nstyle['hz_line_width'] = nonsyn
                     else:
-                        nstyle["hz_line_type"] = 1
+                        nstyle['hz_line_type'] = 1
                     if '*' in Seq(node.sequence, generic_dna).translate():
                         nstyle['bgcolor'] = 'red'
 
@@ -301,7 +301,7 @@ class CollapsedTree(LeavesAndClades):
         self._tree.render(outfile, tree_style=ts)
 
     def write(self, file_name):
-        """NeXML output"""
+        '''NeXML output'''
         #nexml_project = nexml.Nexml()
         #tree_collection = nexml.Trees()
         #tree_collection.add_tree(self._tree)
@@ -312,19 +312,19 @@ class CollapsedTree(LeavesAndClades):
 
 
 class CollapsedForest(CollapsedTree):
-    """
+    '''
     simply a set of CollapsedTrees, with the same p and q parameters
           (4)          (3)
          / | \\         / \\
        (3)(1)(2)     (1) (2)
            |   \\  ,          , ...
           (2)  (1)
-    """
+    '''
     def __init__(self, params=None, n_trees=None, forest=None):
-        """
+        '''
         in addition to p and q, we need number of trees
         can also intialize with forest, a list of trees, each same format as tree member of CollapsedTree
-        """
+        '''
         CollapsedTree.__init__(self, params=params)
         if forest is None and params is None:
             raise ValueError('either params or forest (or both) must be provided')
@@ -341,10 +341,10 @@ class CollapsedForest(CollapsedTree):
         self._n_trees = n_trees
 
     def simulate(self):
-        """
+        '''
         simulate a forest of collapsed trees given params and number of trees
         replaces existing forest data member with simulation result, and returns self
-        """
+        '''
         if self._params is None or self._n_trees is None:
             raise ValueError('params and n_trees parameters must be defined for simulation')
         tree = CollapsedTree(self._params)
@@ -352,12 +352,12 @@ class CollapsedForest(CollapsedTree):
         return self
 
     def l(self, params, sign=1, Vlad_sum=False):
-        """
+        '''
         likelihood of params, given forest, and it's gradient wrt params
         optional parameter sign must be 1 or -1, with the latter useful for MLE by minimization
         if optional parameter Vlad_sum is true, we're doing the Vlad sum for estimating params for
         as set of parsimony trees
-        """
+        '''
         if self._forest is None:
             raise ValueError('forest data must be defined to compute likelihood')
         if sign not in (-1, 1):
@@ -383,10 +383,10 @@ class CollapsedForest(CollapsedTree):
     # NOTE: we get mle() method for free by inheritance/polymorphism magic
 
     def get(self, param_name=None):
-        """
+        '''
         return a dictionary of member variables (None argument), or a single parameter indicated by param_name
         param_name may equal 'params', 'n_trees', or 'forest'.
-        """
+        '''
         if param_name is None:
             return {'params':self._params, 'n_trees':self._n_trees, 'forest':self._forest}
         elif param_name is 'params':
@@ -399,18 +399,18 @@ class CollapsedForest(CollapsedTree):
             raise ValueError("param_name may equal 'params', or 'tree', or None.")
 
     def __str__(self):
-        """return a string representation for printing"""
+        '''return a string representation for printing'''
         return ('params = ' + str(params) + ', n_trees = %d\n'+
                 '\n'.join([str(tree) for tree in self._forest])) % (self._p, self._q, self._n_trees)
 
 
 def hamming_distance(seq1, seq2):
-    """Hamming distance between two sequences of equal length"""
+    '''Hamming distance between two sequences of equal length'''
     return sum(x != y for x, y in zip(seq1, seq2))
 
 
 def phylip_parse(phylip_outfile, germline=None):
-    """parse phylip outfile and return ete trees"""
+    '''parse phylip outfile and return ete trees'''
     # parse phylip outfile
     outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
 
@@ -487,9 +487,9 @@ def phylip_parse(phylip_outfile, germline=None):
 
 
 class MutationModel():
-    """a class for a mutation model, and functions to mutate sequences"""
+    '''a class for a mutation model, and functions to mutate sequences'''
     def __init__(self, mutability_file, substitution_file):
-        """initialized with input files of the S5F format"""
+        '''initialized with input files of the S5F format'''
         self._mutation_model = {}
         with open(mutability_file, 'r') as f:
             # eat header
@@ -514,12 +514,12 @@ class MutationModel():
                 self._mutation_model[motif] = (self._mutation_model[motif], {b:float(x) for b, x in zip('ACGT', fields[1:5])})
 
     def mutability(self, kmer):
-        """"returns the mutability of a kmer, along with nucleotide biases"""
+        '''returns the mutability of a kmer, along with nucleotide biases'''
         assert len(kmer) == self.k
         return self._mutation_model[kmer]
 
     def mutate(self, sequence, lambda0=1):
-        """mutate a sequence, with q the baseline mutability"""
+        '''mutate a sequence, with q the baseline mutability'''
         assert all(n in 'ACGT' for n in sequence)
         # mutabilities of each nucleotide
         mutabilities = []
@@ -580,13 +580,13 @@ class MutationModel():
                     p = [mutabilities[i][1][n] for n in 'ACGT']
                     assert 0 <= abs(sum(p) - 1.) < 1e-10
                     sequence[i] = 'ACGT'[scipy.nonzero(scipy.random.multinomial(1, p))[0][0]]
-            sequence = "".join(sequence)
+            sequence = ''.join(sequence)
 
         return sequence
 
 
     def simulate(self, sequence, outbase, p=.4, lambda0=1, r=1.):
-        """"simulate neutral binary branching process with mutation model"""
+        '''simulate neutral binary branching process with mutation model'''
         if p >= .5:
             raw_input('WARNING: p = %f is not subcritical, tree termination not garanteed! [ENTER] to proceed')
         self.tree = nexml.NexmlTree()
@@ -640,10 +640,11 @@ class MutationModel():
 
 
 def test(args):
-    """
+    '''
+    test subprogram
     checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to plot_file
     command line arguments are p, q, number of trees to simulate, and plot file name
-    """
+    '''
     p = args.p
     q = args.q
     n = args.n
@@ -794,7 +795,7 @@ def test(args):
 
 
 def infer(args):
-
+    '''inference subprogram'''
     if args.colormap is not None:
         colormap = {}
         for line in open(args.colormap, 'r'):
@@ -850,6 +851,7 @@ def infer(args):
 
 
 def simulate(args):
+    '''simulation subprogram'''
     if args.lambda0 is None:
         args.lambda0 = max([1, int(.01*len(args.sequence))])
     args.sequence = args.sequence.upper()
@@ -863,21 +865,21 @@ def main():
     parser = argparse.ArgumentParser(description='germinal center tree inference and simulation')
     subparsers = parser.add_subparsers(help='which program to run')
 
-    # parser for test mode
+    # parser for test subprogram
     parser_test = subparsers.add_parser('test', help='run tests on library functions')
     parser_test.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
     parser_test.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
     parser_test.add_argument('--n', type=int, default=100, help='forest size for test mode')
     parser_test.set_defaults(func=test)
 
-    # parser for inference mode
+    # parser for inference subprogram
     parser_infer = subparsers.add_parser('infer', help='likelihood ranking of parsimony trees')
     parser_infer.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
     parser_infer.add_argument('--phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.add_argument('--colormap', type=str, default=None, help='optional sequence-->color mappings')
     parser_infer.set_defaults(func=infer)
 
-    # parser for simulation mode
+    # parser for simulation subprogram
     parser_sim = subparsers.add_parser('simulate', help='neutral model gctree simulation')
     parser_sim.add_argument('sequence', type=str, help='seed germline nucleotide sequence')
     parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
@@ -894,5 +896,5 @@ def main():
     args = parser.parse_args()
     args.func(args)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
