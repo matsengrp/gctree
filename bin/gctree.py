@@ -836,18 +836,19 @@ def infer(args):
         print('\t'.join(map(str, x)))
         #sys.stdout.flush()
 
-    plt.figure()
-    cs = scipy.arange(11)
-    ms = scipy.arange(20)
-    colors=plt.cm.rainbow(scipy.linspace(0,1,len(cs)))
-    for i, c in enumerate(cs):
-        dat = scipy.array([LeavesAndClades(c=c, m=m).f(result.x)[0] for m in ms])
-        dat = dat/dat.sum()
-        plt.plot(ms, dat, 'o--', alpha=.5, color=colors[i], label=r'$c = %d$' % c)
-    plt.xlabel(r'$m$')
-    plt.ylabel(r'$\mathbb{P}\left(M=m\mid C=c\right)$')
-    plt.legend(numpoints=1)
-    plt.savefig(args.outbase+'.diversification.pdf')
+    # # makes a plot of branching vs frequency
+    # plt.figure()
+    # cs = scipy.arange(11)
+    # ms = scipy.arange(20)
+    # colors=plt.cm.rainbow(scipy.linspace(0,1,len(cs)))
+    # for i, c in enumerate(cs):
+    #     dat = scipy.array([LeavesAndClades(c=c, m=m).f(result.x)[0] for m in ms])
+    #     dat = dat/dat.sum()
+    #     plt.plot(ms, dat, 'o--', alpha=.5, color=colors[i], label=r'$c = %d$' % c)
+    # plt.xlabel(r'$m$')
+    # plt.ylabel(r'$\mathbb{P}\left(M=m\mid C=c\right)$')
+    # plt.legend(numpoints=1)
+    # plt.savefig(args.outbase+'.diversification.pdf')
 
 
 def simulate(args):

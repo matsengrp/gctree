@@ -84,6 +84,23 @@ phylip = env.Command(path.join(outdir_base, path.basename(fasta)) + '.phylip',
                      fasta,
                      'python bin/TasParse.py $SOURCE ' + germline + ' > $TARGET')
 
+dnapars_config = env.Command(path.join(outdir_base, 'dnapars.cfg'),
+                             phylip,
+                             'python bin/mkdnamlconfig.py $SOURCE --germline {} > $TARGET'.format(germline))
+
+# run dnapars (from phylip package) to generate parsimony trees
+dnapars = env.Command(map(lambda x: path.join(outdir_base, x), ['outtree', 'outfile', 'dnapars.log']),
+                   dnapars_config,
+                   'cd ' + outdir_base + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
+# Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
+# only get rerun if one of the targets are removed or if the iput dnaml_config file is changed).
+env.Depends(dnapars, phylip)
+
+# gctree = env.Command(map(lambda x: path.join(outdir_base, x), ['outtree', 'outfile', 'dnapars.log']),
+#                      dnapars_config,
+#                      'cd ' + outdir_base + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
+
+
 #
 #
 # # NOTE: below pilfered from cft
