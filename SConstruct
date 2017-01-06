@@ -5,18 +5,17 @@ Infer trees from germinal center data
 '''
 from __future__ import print_function
 import os
-import re
+# import re
 import sys
 import subprocess
-import glob
-import shutil
-import functools
+#import glob
+#import shutil
+#import functools
 from os import path
 from warnings import warn
 #from nestly import Nest
 #from nestly.scons import SConsWrap
 from SCons.Script import Environment
-import json
 
 # Setting up command line arguments/options
 AddOption('--fasta',
@@ -83,7 +82,7 @@ print('germline = {}'.format(germline))
 # parse fasta file to phylip, interpreting integer names as frequencies
 phylip = env.Command(path.join(outdir_base, path.splitext(path.basename(fasta))[0]) + '.phylip',
                      fasta,
-                     'python bin/fasta2phylip.py $SOURCE ' + germline + ' > $TARGET')
+                     'python bin/fasta2phylip.py $SOURCE > $TARGET')
 
 # make config file for dnapars
 dnapars_config = env.Command(path.join(outdir_base, 'dnapars.cfg'),

@@ -782,8 +782,7 @@ def simulate(args):
     collapsed_tree.render(args.outbase+'.collapsed_tree.svg')
 
 def main():
-    import sys, argparse
-    from collections import Counter
+    import argparse
 
     parser = argparse.ArgumentParser(description='germinal center tree inference and simulation')
     subparsers = parser.add_subparsers(help='which program to run')
