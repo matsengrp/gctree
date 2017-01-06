@@ -1,2 +1,5 @@
 # ignore mac finder system file
 .DS_Store
+
+.sconsign.dblite
+.ipynb_checkpoints
