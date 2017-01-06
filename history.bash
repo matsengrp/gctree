@@ -8,7 +8,7 @@ germline=$3 # germline seq name in fasta file
 
 # parse fasta data to phylip file
 phylip=${fasta}.phylip
-python TasParse.py ${fasta} ${germline} > ${phylip}
+python fasta2phylip.py ${fasta} ${germline} > ${phylip}
 
 rm -f outfile
 rm -f outtree

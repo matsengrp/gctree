@@ -12,7 +12,7 @@ from Bio import Phylo
 from Bio.Phylo.TreeConstruction import *
 #from Bio.Emboss.Applications import FDNAParsCommandline
 
-# Tas data file, fasta
+# fasta
 infile = sys.argv[1]
 germline = sys.argv[2]
 ## outfile basename
@@ -30,8 +30,9 @@ seqs_unique_counts = {}
 for seq in aln:
     if seq.id == germline:
         germline_seq = seq
-    elif seq.id == '17':
-        seqs_unique_counts[str(seq.seq)] = 17
+    # if id is just an integer, assume it represents count of that sequence
+    elif seq.id.isdigit():
+        seqs_unique_counts[str(seq.seq)] = int(seq.id)
     elif str(seq.seq) not in seqs_unique_counts:
         seqs_unique_counts[str(seq.seq)] = 1
     else:
