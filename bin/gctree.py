@@ -7,7 +7,7 @@ in which the tree is collapsed to nodes that count the number of clonal leaves o
 '''
 
 from __future__ import division, print_function
-import scipy, warnings, random
+import scipy, warnings, random, cPickle
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad
 
@@ -16,9 +16,11 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 from scipy.stats import probplot
-from ete3 import NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, nexml
+from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
+
+scipy.seterr(all='raise')
 
 class LeavesAndClades():
     '''
@@ -39,36 +41,36 @@ class LeavesAndClades():
             if not (0 <= p <= 1 and 0 <= q <= 1):
                 raise ValueError('p and q must be in the unit interval')
         self._nparams = 2#len(params)
-        self._params = params
+        self.params = params
         if c is not None or m is not None:
             if not (c >= 0) and (m >= 0) and (c+m > 0):
                 raise ValueError('c and m must be nonnegative integers summing greater than zero')
-            self._c = c
-            self._m = m
+            self.c = c
+            self.m = m
 
     def simulate(self):
         '''simulate the number of clone leaves and mutant clades off a root node'''
-        if self._params[0]>=.5:
+        if self.params[0]>=.5:
             warnings.warn('p >= .5 is not subcritical, tree simulations not garanteed to terminate')
-        if self._params is None:
+        if self.params is None:
             raise ValueError('params must be defined for simulation\n')
 
         # let's track the tree in breadth first order, listing number clone and mutant descendants of each node
         # mutant clades terminate in this view
         cumsum_clones = 0
         len_tree = 0
-        self._c = 0
-        self._m = 0
+        self.c = 0
+        self.m = 0
         # while termination condition not met
         while cumsum_clones > len_tree - 1:
-            if random.random() < self._params[0]:
-                mutants = sum(random.random() < self._params[1] for child in range(2))
+            if random.random() < self.params[0]:
+                mutants = sum(random.random() < self.params[1] for child in range(2))
                 clones = 2 - mutants
-                self._m += mutants
+                self.m += mutants
             else:
                 mutants = 0
                 clones = 0
-                self._c += 1
+                self.c += 1
             cumsum_clones += clones
             len_tree += 1
         assert cumsum_clones == len_tree - 1
@@ -82,7 +84,7 @@ class LeavesAndClades():
         Computed by dynamic programming
         '''
         p, q = params
-        c, m = self._c, self._m
+        c, m = self.c, self.m
         if (p, q, c, m) not in LeavesAndClades.f_hash:
             if c==m==0 or (c==0 and m==1):
                 f_result = 0
@@ -126,22 +128,6 @@ class LeavesAndClades():
             LeavesAndClades.f_hash[(p, q, c, m)] = (f_result, scipy.array([dfdp_result, dfdq_result]))
         return LeavesAndClades.f_hash[(p, q, c, m)]
 
-    def get(self, param_name=None):
-        '''
-        return a dictionary of member variables, or a single parameter indicated by param_name
-        param_name may equal 'p', 'q', or 'tree', or None.
-        '''
-        if param_name is None:
-            return {'params':self._params, 'c':self._c, 'm':self._m}
-        elif param_name is 'params':
-            return self._params
-        elif param_name is 'c':
-            return self._c
-        elif param_name is 'm':
-            return self._m
-        else:
-            raise ValueError("param_name may equal 'params', 'c', 'm', or None.")
-
 
 class CollapsedTree(LeavesAndClades):
     '''
@@ -162,18 +148,18 @@ class CollapsedTree(LeavesAndClades):
         #    raise ValueError('either params or tree (or both) must be provided')
         LeavesAndClades.__init__(self, params=params)
         if tree is not None:
-            self._tree = tree.copy()
+            self.tree = tree.copy()
             if 0 in (node.dist for node in tree.iter_descendants()):
                 # iterate over the tree below root and collapse edges of zero length
-                for node in self._tree.get_descendants():
+                for node in self.tree.get_descendants():
                     if node.dist == 0:
                         node.up.frequency += node.frequency
                         node.delete(prevent_nondicotomic=False)
-            assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self._tree.traverse())
-            if 'sequence' in tree.features and len(set([node.sequence for node in self._tree.traverse()])) != sum(1 for _ in self._tree.traverse()):
+            assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
+            if 'sequence' in tree.features and len(set([node.sequence for node in self.tree.traverse()])) != sum(1 for _ in self.tree.traverse()):
                 warnings.warn('repeated sequences in collapsed tree, possible backmutation', RuntimeWarning)
         else:
-            self._tree = tree
+            self.tree = tree
 
 
     def l(self, params, sign=1):
@@ -181,19 +167,16 @@ class CollapsedTree(LeavesAndClades):
         log likelihood of params, conditioned on collapsed tree, and its gradient wrt params
         optional parameter sign must be 1 or -1, with the latter useful for MLE by minimization
         '''
-        if self._tree is None:
+        if self.tree is None:
             raise ValueError('tree data must be defined to compute likelihood')
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
-        leaves_and_clades_list = [LeavesAndClades(c=node.frequency, m=len(node.children)) for node in self._tree.traverse()]
-        if leaves_and_clades_list[0]._c == 0 and leaves_and_clades_list[0]._m == 1 and leaves_and_clades_list[0].f(params)[0] == 0:
-            print('WARNING: unifurcation from root not possible under current model. This node will be ommitted from likelihood calculation')
+        leaves_and_clades_list = [LeavesAndClades(c=node.frequency, m=len(node.children)) for node in self.tree.traverse()]
+        if leaves_and_clades_list[0].c == 0 and leaves_and_clades_list[0].m == 1 and leaves_and_clades_list[0].f(params)[0] == 0:
+            # if unifurcation not possible under current model, omit root
             leaves_and_clades_list = leaves_and_clades_list[1:]
         # extract vector of function values and gradient components
         f_data = [leaves_and_clades.f(params) for leaves_and_clades in leaves_and_clades_list]
-        #print(params)
-        #print([(x._c, x._m, x.f(params)[0]) for x in leaves_and_clades_list])
-        #print(f_data)
         fs = scipy.array([[x[0]] for x in f_data])
         logf = scipy.log(fs).sum()
         grad_fs = scipy.array([x[1] for x in f_data])
@@ -218,8 +201,8 @@ class CollapsedTree(LeavesAndClades):
         # update params if None and optimization successful
         if not result.success:
             warnings.warn('optimization not sucessful, '+result.message, RuntimeWarning)
-        elif self._params is None:
-            self._params = result.x
+        elif self.params is None:
+            self.params = result.x.tolist()
         return result
 
     def simulate(self):
@@ -227,55 +210,39 @@ class CollapsedTree(LeavesAndClades):
         simulate a collapsed tree given params
         replaces existing tree data member with simulation result, and returns self
         '''
-        if self._params is None:
+        if self.params is None:
             raise ValueError('params must be defined for simulation')
 
         # initiate by running a LeavesAndClades simulation to get the number of clones and mutants
         # in the root node of the collapsed tree
         LeavesAndClades.simulate(self)
-        self._tree = nexml.NexmlTree()
-        self._tree.add_feature('frequency', self._c)
-        if self._m == 0:
+        self.tree = TreeNode()
+        self.tree.add_feature('frequency', self.c)
+        if self.m == 0:
             return self
-        for _ in range(self._m):
+        for _ in range(self.m):
             # ooooh, recursion
-            child = CollapsedTree(params=self._params).simulate()._tree
+            child = CollapsedTree(params=self.params).simulate().tree
             child.dist = 1
-            self._tree.add_child(child)
+            self.tree.add_child(child)
 
         return self
 
-    def get(self, param_name=None):
-        '''
-        return a dictionary of member variables, or a single parameter indicated by param_name
-        param_name may equal 'params', 'tree', or None.
-        '''
-        if param_name is None:
-            return {'params':self._params, 'tree':self._tree}
-        elif param_name is 'params':
-            return self._params
-        elif param_name is 'tree':
-            return self._tree
-        else:
-            raise ValueError("param_name may equal 'params, 'tree', or None.")
 
     def __str__(self):
         '''return a string representation for printing'''
-        return 'params = ' + str(self._params)+ '\ntree:\n' + str(self._tree)
+        return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
-    def render(self, outfile, colormap=None):
+    def render(self, outfile):
         '''render to image file, filetype inferred from suffix, svg for color images'''
-        for node in self._tree.traverse():
+        for node in self.tree.traverse():
             nstyle = NodeStyle()
             if node.frequency == 0:
                 nstyle['size'] = 5
                 nstyle['fgcolor'] = 'grey'
             else:
                 nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.frequency)
-                if colormap is not None and node.name in colormap:
-                    nstyle['fgcolor'] = colormap[node.name]
-                else:
-                    nstyle['fgcolor'] = 'black'
+                nstyle['fgcolor'] = 'black'
             if node.up is not None:
                 if set(node.sequence.upper()) == set('ACGT'):
                     nonsyn = hamming_distance(Seq(node.sequence, generic_dna).translate(), Seq(node.up.sequence, generic_dna).translate())
@@ -298,17 +265,12 @@ class CollapsedTree(LeavesAndClades):
                 N.rotation = -90
                 faces.add_face_to_node(N, node, 0, position='branch-top')
         ts.layout_fn = my_layout
-        self._tree.render(outfile, tree_style=ts)
+        self.tree.render(outfile, tree_style=ts)
 
     def write(self, file_name):
-        '''NeXML output'''
-        #nexml_project = nexml.Nexml()
-        #tree_collection = nexml.Trees()
-        #tree_collection.add_tree(self._tree)
-        #nexml_project.add_trees(tree_collection)
-        #nexml_project.export(outfile=open(file_name, 'w'))
-        self._tree.export(outfile=open(file_name, 'w'), level=0)
-        #self._tree.write(features=[], outfile=file_name)
+        '''serialize tree to file'''
+        with open(file_name, 'wb') as f:
+            cPickle.dump(self.tree, f)
 
 
 class CollapsedForest(CollapsedTree):
@@ -323,7 +285,7 @@ class CollapsedForest(CollapsedTree):
     def __init__(self, params=None, n_trees=None, forest=None):
         '''
         in addition to p and q, we need number of trees
-        can also intialize with forest, a list of trees, each same format as tree member of CollapsedTree
+        can also intialize with forest, a list of trees, each an instance of CollapsedTree
         '''
         CollapsedTree.__init__(self, params=params)
         if forest is None and params is None:
@@ -333,22 +295,22 @@ class CollapsedForest(CollapsedTree):
                 raise ValueError('passed empty tree list')
             if n_trees is not None and len(forest) != n_trees:
                 raise ValueError('n_trees not consistent with forest')
-            self._forest = forest
-        if n_trees is not None and n_trees < 1:
-            raise ValueError('number of trees must be at least one')
+            self.forest = forest
+        if n_trees is not None:
+            if type(n_trees) is not int or n_trees < 1:
+                raise ValueError('number of trees must be at least one')
+            self.n_trees = n_trees
         if n_trees is None and forest is not None:
-            self._n_trees = len(forest)
-        self._n_trees = n_trees
+            self.n_trees = len(forest)
 
     def simulate(self):
         '''
         simulate a forest of collapsed trees given params and number of trees
         replaces existing forest data member with simulation result, and returns self
         '''
-        if self._params is None or self._n_trees is None:
+        if self.params is None or self.n_trees is None:
             raise ValueError('params and n_trees parameters must be defined for simulation')
-        tree = CollapsedTree(self._params)
-        self._forest = [tree.simulate().get('tree') for x in range(self._n_trees)]
+        self.forest = [CollapsedTree(self.params).simulate() for x in range(self.n_trees)]
         return self
 
     def l(self, params, sign=1, Vlad_sum=False):
@@ -358,13 +320,13 @@ class CollapsedForest(CollapsedTree):
         if optional parameter Vlad_sum is true, we're doing the Vlad sum for estimating params for
         as set of parsimony trees
         '''
-        if self._forest is None:
+        if self.forest is None:
             raise ValueError('forest data must be defined to compute likelihood')
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
         # since the l method on the CollapsedTree class returns l and grad_l...
         if Vlad_sum:
-            terms = [CollapsedTree(tree=tree).l(params) for tree in self._forest]
+            terms = [tree.l(params) for tree in self.forest]
             sumexp = scipy.exp([x[0] for x in terms]).sum()
             #sumexp = scipy.exp(logsumexp([x[0] for x in terms]))
             #assert sumexp != 0
@@ -377,31 +339,17 @@ class CollapsedForest(CollapsedTree):
                    sign*scipy.array([sum(scipy.exp(x[0])*x[1][0] for x in terms)/sumexp,
                                      sum(scipy.exp(x[0])*x[1][1] for x in terms)/sumexp])
         else:
-            terms = [CollapsedTree(tree=tree).l(params, sign=sign) for tree in self._forest]
+            terms = [tree.l(params, sign=sign) for tree in self.forest]
             return sum(x[0] for x in terms), scipy.array([sum(x[1][0] for x in terms), sum(x[1][1] for x in terms)])
+
 
     # NOTE: we get mle() method for free by inheritance/polymorphism magic
 
-    def get(self, param_name=None):
-        '''
-        return a dictionary of member variables (None argument), or a single parameter indicated by param_name
-        param_name may equal 'params', 'n_trees', or 'forest'.
-        '''
-        if param_name is None:
-            return {'params':self._params, 'n_trees':self._n_trees, 'forest':self._forest}
-        elif param_name is 'params':
-            return self._params
-        elif param_name is 'n_trees':
-            return self._n_trees
-        elif param_name is 'forest':
-            return self._forest
-        else:
-            raise ValueError("param_name may equal 'params', or 'tree', or None.")
 
     def __str__(self):
         '''return a string representation for printing'''
-        return ('params = ' + str(params) + ', n_trees = %d\n'+
-                '\n'.join([str(tree) for tree in self._forest])) % (self._p, self._q, self._n_trees)
+        return 'params = {}, n_trees = {}\n'.format(self.params, self.n_trees) + \
+                '\n'.join([str(tree) for tree in self.forest])
 
 
 def hamming_distance(seq1, seq2):
@@ -451,9 +399,9 @@ def phylip_parse(phylip_outfile, germline=None):
             #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
             nodes = {}
             for name in names:
-                node = nexml.NexmlTree()
+                node = TreeNode()
                 node.name = name
-                node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None
+                node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else 0
                 node.add_feature('sequence', tree_sequence_dict[node.name])
                 if node.name == germline:
                     node.add_feature('frequency', 0)
@@ -490,13 +438,13 @@ class MutationModel():
     '''a class for a mutation model, and functions to mutate sequences'''
     def __init__(self, mutability_file, substitution_file):
         '''initialized with input files of the S5F format'''
-        self._mutation_model = {}
+        self.mutation_model = {}
         with open(mutability_file, 'r') as f:
             # eat header
             f.readline()
             for line in f:
                 motif, score = line.replace('"', '').split()[:2]
-                self._mutation_model[motif] = float(score)
+                self.mutation_model[motif] = float(score)
 
         # kmer k
         self.k = None
@@ -511,12 +459,12 @@ class MutationModel():
                     assert self.k % 2 == 1
                 else:
                     assert len(motif) == self.k
-                self._mutation_model[motif] = (self._mutation_model[motif], {b:float(x) for b, x in zip('ACGT', fields[1:5])})
+                self.mutation_model[motif] = (self.mutation_model[motif], {b:float(x) for b, x in zip('ACGT', fields[1:5])})
 
     def mutability(self, kmer):
         '''returns the mutability of a kmer, along with nucleotide biases'''
         assert len(kmer) == self.k
-        return self._mutation_model[kmer]
+        return self.mutation_model[kmer]
 
     def mutate(self, sequence, lambda0=1):
         '''mutate a sequence, with q the baseline mutability'''
@@ -528,7 +476,7 @@ class MutationModel():
         # ambiguous left end motifs
         for i in range(self.k//2 + 1):
             kmer_suffix = sequence[:(i+self.k//2+1)]
-            matches = [value for key, value in self._mutation_model.iteritems() if key.endswith(kmer_suffix)]
+            matches = [value for key, value in self.mutation_model.iteritems() if key.endswith(kmer_suffix)]
             len_matches = len(matches)
             assert len_matches == 4**(self.k - len(kmer_suffix))
             # use mean over matches
@@ -541,7 +489,7 @@ class MutationModel():
         # ambiguous right end motifs
         for i in range(sequence_length - self.k//2 + 1, sequence_length):
             kmer_prefix = sequence[(i-self.k//2):]
-            matches = [value for key, value in self._mutation_model.iteritems() if key.startswith(kmer_prefix)]
+            matches = [value for key, value in self.mutation_model.iteritems() if key.startswith(kmer_prefix)]
             len_matches = len(matches)
             assert len_matches == 4**(self.k - len(kmer_prefix))
             # use mean over matches
@@ -585,23 +533,23 @@ class MutationModel():
         return sequence
 
 
-    def simulate(self, sequence, outbase, p=.4, lambda0=1, r=1.):
+    def simulate(self, sequence, p=.4, lambda0=1, r=1.):
         '''simulate neutral binary branching process with mutation model'''
         if p >= .5:
-            raw_input('WARNING: p = %f is not subcritical, tree termination not garanteed! [ENTER] to proceed')
-        self.tree = nexml.NexmlTree()
-        self.tree.dist = 0
-        self.tree.add_feature('sequence', sequence)
-        self.tree.add_feature('terminated', False)
-        self.tree.add_feature('frequency', 0)
+            raw_input('WARNING: p = {} is not subcritical, tree termination not garanteed! [ENTER] to proceed'.format(p))
+        tree = TreeNode()
+        tree.dist = 0
+        tree.add_feature('sequence', sequence)
+        tree.add_feature('terminated', False)
+        tree.add_feature('frequency', 0)
         nodes_unterminated = 1
         while nodes_unterminated > 0:
-            for leaf in self.tree.iter_leaves():
+            for leaf in tree.iter_leaves():
                 if not leaf.terminated:
                     if scipy.random.random() < p:
                         for child_count in range(2):
                             mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0)
-                            child = nexml.NexmlTree()
+                            child = TreeNode()
                             child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
                             child.add_feature('sequence', mutated_sequence)
                             child.add_feature('frequency', 0)
@@ -613,30 +561,12 @@ class MutationModel():
                         nodes_unterminated -= 1
 
         # each leaf gets an observation frequency of 1
-        for node in self.tree.iter_leaves():
+        for node in tree.iter_leaves():
             if scipy.random.random() < r:
                 node.frequency = 1
 
-        with open(outbase+'.leafdata.fa', 'w') as f:
-            f.write('> GL\n')
-            f.write(sequence+'\n')
-            i = 0
-            for leaf in self.tree.iter_leaves():
-                if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
-                    i += 1
-                    f.write('> seq%d\n' % i)
-                    f.write(leaf.sequence+'\n')
-                    leaf.name = 'seq%d' % i
-        print(i, 'simulated observed sequences')
-        #self.tree.link_to_alignment(alignment=outbase+'.leafdata.fa', alg_format='fasta')
-        self.tree.render(outbase+'.tree.svg')
-
-
-        # get collapsed tree
-        self.collapsed_tree = CollapsedTree(tree=self.tree)
-        self.collapsed_tree.render(outbase+'.collapsed_tree.svg')
-
-        return self
+        # return the fine (uncollapsed) tree
+        return tree
 
 
 def test(args):
@@ -655,10 +585,10 @@ def test(args):
 
     print('Let''s check our likelihood against a by-hand calculation for the following simple tree')
     # ete tree
-    parent = nexml.NexmlTree(format=1)
+    parent = TreeNode(format=1)
     parent.add_feature('frequency', 2)
     parent.name = parent.frequency
-    child = nexml.NexmlTree()
+    child = TreeNode()
     child.add_feature('frequency', 1)
     child.dist = 1
     child.name = child.frequency
@@ -667,7 +597,7 @@ def test(args):
     f = 6*p**2*(1-p)**3*q*(1-q)**3
     dfdp = 6*(1 - p)**2*p*(-2 + 5*p)*(-1 + q)**3*q #6*q*(1-q)**3*(2*p*(1-p)**3-3*p**2*(1-p)**2)
     dfdq = 6*(-1 + p)**3*p**2*(1 - q)**2*(-1 + 4*q) #6*p**2*(1-p)**3*((1-q)**3-3*q*(1-q)**2)
-    print( '    T =', tree.get('tree').get_ascii(show_internal=True))
+    print( '    T =', tree.tree.get_ascii(show_internal=True))
     print( '    Summing the probabilities of the two possible fine structures, we have')
     print( '    logP =', scipy.log(f))
     print(u'    \u2207logP = ', (dfdp/f, dfdq/f))
@@ -675,13 +605,13 @@ def test(args):
     print(u'    logP , \u2207logP =', tree.l((p, q)))
     print('')
 
-    print('Simulating a forest of %d trees' % n)
+    print('Simulating a forest of {} trees'.format(n))
     forest = CollapsedForest((p, q), n)
-    print('    true parameters: p = %f, q = %f' % (p, q))
+    print('    true parameters: p = {}, q = {}'.format(p, q))
     forest.simulate()
 
     # total leaf counts
-    total_data = sorted([sum(node.frequency for node in tree.traverse()) for tree in forest.get('forest')])
+    total_data = sorted([sum(node.frequency for node in tree.tree.traverse()) for tree in forest.forest])
     max_total = max(total_data)
     len_total = len(total_data)
 
@@ -691,7 +621,7 @@ def test(args):
     for x in range(1, max_total+1):
         totals.append(x)
         freq.append(total_data.count(x))
-        tmp_tree = nexml.NexmlTree(format=1)
+        tmp_tree = TreeNode(format=1)
         tmp_tree.add_feature('frequency', x)
         log_prob.append(CollapsedTree(tree=tmp_tree).l((p, 0))[0])
     theoretical_cdf = scipy.cumsum(scipy.exp(log_prob))
@@ -728,7 +658,7 @@ def test(args):
         empirical_quantiles.append(sum(y <= x for y in total_data)/float(len_total))
         to_add = 0.
         for y in range(1, x+1):
-            tmp_tree = nexml.NexmlTree(format=1)
+            tmp_tree = TreeNode(format=1)
             tmp_tree.add_feature('frequency', y)
             to_add += scipy.exp(CollapsedTree(tree=tmp_tree).l((p, 0))[0])
         theoretical_quantiles.append(to_add)
@@ -744,9 +674,10 @@ def test(args):
     ax.set_aspect('equal')
 
     mle = forest.mle()
-    #for tree in forest.get('forest'):
+
+    #for tree in forest.forest:
     #    print(tree)
-    print('    MLE parameters:  p = %f, q = %f' % tuple(mle.x.tolist()))
+    print('    MLE parameters:  p = {}, q = {}'.format(*mle.x.tolist()))
 
     # plot the 2-norm of the difference between the gradient and its finite difference approximation
     print('computing plot data...')
@@ -796,59 +727,35 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    if args.colormap is not None:
-        colormap = {}
-        for line in open(args.colormap, 'r'):
-            sequence, color = line.rstrip().split()
-            colormap[sequence.upper()] = color
-        #colormap = {sequence:color for line in open(args.colormap, 'r') for sequence, color in line.rstrip().split()}
+    forest = CollapsedForest(forest=[CollapsedTree(tree=tree) for tree in phylip_parse(args.phylipfile, args.germline)])
 
-    trees = phylip_parse(args.phylipfile, args.germline)
-    n_trees = len(trees)
+    print('number of trees with integer branch lengths:', forest.n_trees)
 
-    print('number of trees with integer branch lengths:', n_trees)
-
-    # now we need to get collapsed trees
-    collapsed_trees = []
-    parsimony_scores = []
-    for tree_i, tree in enumerate(trees):
-        collapsed_tree = CollapsedTree(tree=tree)
-        collapsed_trees.append(collapsed_tree)
-        parsimony_scores.append(sum(node.dist for node in tree.iter_descendants()))
-
-        collapsed_tree.render(args.outbase+'.'+str(tree_i+1)+'.svg', args.colormap)
-        collapsed_tree.write(args.outbase+'.'+str(tree_i+1)+'.nexml')
+    # check for unifurcations at root
+    unifurcations = sum(tree.tree.frequency == 0 and len(tree.tree.children) == 1 for tree in forest.forest)
+    if unifurcations:
+        print('WARNING: {} trees exhibit unifurcation from root, which is not possible under current model. Such nodes will be ommitted from likelihood calculation'.format(unifurcations))
 
     # fit p and q using all trees
-    result = CollapsedForest(forest=[collapsed_tree.get('tree') for collapsed_tree in collapsed_trees]).mle(Vlad_sum=True)
-    assert result.success
-    print('p = %f, q = %f' % tuple(result.x))
+    forest.mle(Vlad_sum=True)
+    print('params = {}'.format(forest.params))
+
+    with open(args.outbase+'.parsimony_forest.p', 'wb') as f:
+        cPickle.dump(forest, f)
 
     print_data = []
-    for i, collapsed_tree in enumerate(collapsed_trees):
-        l = collapsed_tree.l(result.x)[0]
-        totals = sum(node.frequency for node in collapsed_tree._tree.traverse())
-        alleles = len(collapsed_tree.get('tree'))
-        print_data.append((i+1, totals, alleles, parsimony_scores[i], l))
+    max_l = None
+    for collapsed_tree in forest.forest:
+        alleles = len(collapsed_tree.tree)
+        l = collapsed_tree.l(forest.params)[0]
+        if max_l is None or l > max_l:
+            mle_tree = collapsed_tree
+        print_data.append((alleles, l))
+    mle_tree.render(args.outbase+'.MLtree.svg')
 
-    print('tree\ttotals\talleles\tparsimony\tlogLikelihood')
+    print('alleles\tlogLikelihood')
     for x in sorted(print_data, key=lambda x: (-x[-1], x[0])):
         print('\t'.join(map(str, x)))
-        #sys.stdout.flush()
-
-    # # makes a plot of branching vs frequency
-    # plt.figure()
-    # cs = scipy.arange(11)
-    # ms = scipy.arange(20)
-    # colors=plt.cm.rainbow(scipy.linspace(0,1,len(cs)))
-    # for i, c in enumerate(cs):
-    #     dat = scipy.array([LeavesAndClades(c=c, m=m).f(result.x)[0] for m in ms])
-    #     dat = dat/dat.sum()
-    #     plt.plot(ms, dat, 'o--', alpha=.5, color=colors[i], label=r'$c = %d$' % c)
-    # plt.xlabel(r'$m$')
-    # plt.ylabel(r'$\mathbb{P}\left(M=m\mid C=c\right)$')
-    # plt.legend(numpoints=1)
-    # plt.savefig(args.outbase+'.diversification.pdf')
 
 
 def simulate(args):
@@ -857,7 +764,22 @@ def simulate(args):
         args.lambda0 = max([1, int(.01*len(args.sequence))])
     args.sequence = args.sequence.upper()
     mutation_model = MutationModel(args.mutability, args.substitution)
-    mutation_model.simulate(args.sequence, args.outbase, p=args.p, lambda0=args.lambda0, r=args.r)
+    tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
+    with open(args.outbase+'.leafdata.fa', 'w') as f:
+        f.write('> GL\n')
+        f.write(sequence+'\n')
+        i = 0
+        for leaf in tree.iter_leaves():
+            if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
+                i += 1
+                f.write('> seq{}\n'.format(i))
+                f.write(leaf.sequence+'\n')
+                leaf.name = 'seq{}'.format(i)
+    print(i, 'simulated observed sequences')
+    #tree.render(args.outbase+'.tree.svg')
+    collapsed_tree = CollapsedTree(tree=tree)
+    collapsed_tree.write( args.outbase+'.collapsed_tree.p')
+    collapsed_tree.render(args.outbase+'.collapsed_tree.svg')
 
 def main():
     import sys, argparse
@@ -876,8 +798,7 @@ def main():
     # parser for inference subprogram
     parser_infer = subparsers.add_parser('infer', help='likelihood ranking of parsimony trees')
     parser_infer.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
-    parser_infer.add_argument('--phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
-    parser_infer.add_argument('--colormap', type=str, default=None, help='optional sequence-->color mappings')
+    parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram

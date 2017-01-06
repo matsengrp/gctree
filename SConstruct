@@ -80,10 +80,12 @@ print('fasta = {}'.format(fasta))
 print('outdir = {}'.format(outdir_base))
 print('germline = {}'.format(germline))
 
-phylip = env.Command(path.join(outdir_base, path.basename(fasta)) + '.phylip',
+# parse fasta file to phylip, interpreting integer names as frequencies
+phylip = env.Command(path.join(outdir_base, path.splitext(path.basename(fasta))[0]) + '.phylip',
                      fasta,
-                     'python bin/TasParse.py $SOURCE ' + germline + ' > $TARGET')
+                     'python bin/fasta2phylip.py $SOURCE ' + germline + ' > $TARGET')
 
+# make config file for dnapars
 dnapars_config = env.Command(path.join(outdir_base, 'dnapars.cfg'),
                              phylip,
                              'python bin/mkdnamlconfig.py $SOURCE --germline {} > $TARGET'.format(germline))
@@ -96,9 +98,12 @@ dnapars = env.Command(map(lambda x: path.join(outdir_base, x), ['outtree', 'outf
 # only get rerun if one of the targets are removed or if the iput dnaml_config file is changed).
 env.Depends(dnapars, phylip)
 
-# gctree = env.Command(map(lambda x: path.join(outdir_base, x), ['outtree', 'outfile', 'dnapars.log']),
-#                      dnapars_config,
-#                      'cd ' + outdir_base + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
+# ML tree from parsimony trees
+# NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
+gctree_outbase = path.join(outdir_base, 'gctree')
+gctree = env.Command([gctree_outbase+'.parsimony_forest.p', gctree_outbase+'.MLtree.svg', gctree_outbase+'.log'],
+                     dnapars[1],
+                     'xvfb-run -a python bin/gctree.py infer $SOURCE --germline '+germline+' --outbase '+gctree_outbase+' > ${TARGETS[2]}')
 
 
 #
