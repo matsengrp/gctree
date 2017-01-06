@@ -82,7 +82,7 @@ print('germline = {}'.format(germline))
 # parse fasta file to phylip, interpreting integer names as frequencies
 phylip = env.Command(path.join(outdir_base, path.splitext(path.basename(fasta))[0]) + '.phylip',
                      fasta,
-                     'python bin/fasta2phylip.py $SOURCE > $TARGET')
+                     'python bin/fasta2phylip.py $SOURCE --germline {} > $TARGET'.format(germline))
 
 # make config file for dnapars
 dnapars_config = env.Command(path.join(outdir_base, 'dnapars.cfg'),

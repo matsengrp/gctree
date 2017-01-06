@@ -23,6 +23,7 @@ def extract_germline(file, germline):
         for lineno, line in enumerate(fh):
             if re.match(germline, line):
                 return lineno
+        raise RuntimeError('germline match not found')
 
 def main():
 

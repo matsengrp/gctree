@@ -737,7 +737,19 @@ def infer(args):
         print('WARNING: {} trees exhibit unifurcation from root, which is not possible under current model. Such nodes will be ommitted from likelihood calculation'.format(unifurcations))
 
     # fit p and q using all trees
-    forest.mle(Vlad_sum=True)
+    # if we get floating point errors, try a few more times (starting params are random)
+    max_tries = 10
+    for tries in range(max_tries):
+        try:
+            forest.mle(Vlad_sum=True)
+            break
+        except FloatingPointError as e:
+            print('floating point error in MLE: {0}. Rerunning with different random start.'.format(e))
+        else:
+            raise
+    if tries == max_tries - 1:
+        raise RuntimeError('unable to maximize likelihood, too many floating point errors')
+
     print('params = {}'.format(forest.params))
 
     with open(args.outbase+'.parsimony_forest.p', 'wb') as f:
