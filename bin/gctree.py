@@ -542,6 +542,7 @@ class MutationModel():
         tree.add_feature('sequence', sequence)
         tree.add_feature('terminated', False)
         tree.add_feature('frequency', 0)
+
         nodes_unterminated = 1
         while nodes_unterminated > 0:
             for leaf in tree.iter_leaves():
@@ -729,6 +730,9 @@ def infer(args):
     '''inference subprogram'''
     forest = CollapsedForest(forest=[CollapsedTree(tree=tree) for tree in phylip_parse(args.phylipfile, args.germline)])
 
+    if forest.n_trees == 1:
+        raise RuntimeError('only one parsimony tree reported from dnapars')
+
     print('number of trees with integer branch lengths:', forest.n_trees)
 
     # check for unifurcations at root
@@ -748,7 +752,7 @@ def infer(args):
         else:
             raise
     if tries == max_tries - 1:
-        raise RuntimeError('unable to maximize likelihood, too many floating point errors')
+        raise RuntimeError('unable to maximize likelihood, floating point errors on {} attempts'.format(max_tries))
 
     print('params = {}'.format(forest.params))
 
@@ -777,9 +781,9 @@ def simulate(args):
     args.sequence = args.sequence.upper()
     mutation_model = MutationModel(args.mutability, args.substitution)
     tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
-    with open(args.outbase+'.leafdata.fa', 'w') as f:
+    with open(args.outbase+'.fasta', 'w') as f:
         f.write('> GL\n')
-        f.write(sequence+'\n')
+        f.write(args.sequence+'\n')
         i = 0
         for leaf in tree.iter_leaves():
             if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
@@ -792,6 +796,18 @@ def simulate(args):
     collapsed_tree = CollapsedTree(tree=tree)
     collapsed_tree.write( args.outbase+'.collapsed_tree.p')
     collapsed_tree.render(args.outbase+'.collapsed_tree.svg')
+
+
+def validate(args):
+    with open(args.truetree, 'rb') as f:
+        true_tree = cPickle.load(f)
+    with open(args.parfor, 'rb') as f:
+        parsimony_forest = cPickle.load(f)
+
+    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree, attr_t1='sequence', attr_t2='sequence')[0], tree.l(parsimony_forest.params)) for tree in parsimony_forest.forest])
+
+    print(distances, likelihoods)
+
 
 def main():
     import argparse
@@ -822,9 +838,16 @@ def main():
     parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
     parser_sim.set_defaults(func=simulate)
 
+    # parser for validation subprogram
+    parser_val = subparsers.add_parser('validate', help='validate results of inference on simulation data')
+    parser_val.add_argument('truetree', type=str, help='.p file containing true tree')
+    parser_val.add_argument('parfor', type=str, help='.p file containing parsimony forest from inference')
+    parser_val.set_defaults(func=validate)
+
     # a common outbase parameter
-    for subparser in [parser_test, parser_infer, parser_sim]:
+    for subparser in [parser_test, parser_infer, parser_sim, parser_val]:
         subparser.add_argument('--outbase', type=str, default='gctree.out', help='output file base name')
+
 
     args = parser.parse_args()
     args.func(args)
