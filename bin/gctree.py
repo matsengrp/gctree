@@ -196,7 +196,7 @@ class CollapsedTree(LeavesAndClades):
         kwargs['sign'] = -1
         grad_check = check_grad(lambda x: self.l(x, **kwargs)[0], lambda x: self.l(x, **kwargs)[1], (.4, .5))
         if grad_check > 1e-3:
-            warnings.warn('gradient bad, '+str(grad_check), RuntimeWarning)
+            warnings.warn('gradient mismatches finite difference approximation by {}'.format(grad_check), RuntimeWarning)
         result = minimize(lambda x: self.l(x, **kwargs), x0=x_0, jac=True, method='L-BFGS-B', options={'ftol':1e-10}, bounds=bounds)
         # update params if None and optimization successful
         if not result.success:
@@ -270,7 +270,7 @@ class CollapsedTree(LeavesAndClades):
     def write(self, file_name):
         '''serialize tree to file'''
         with open(file_name, 'wb') as f:
-            cPickle.dump(self.tree, f)
+            cPickle.dump(self, f)
 
 
 class CollapsedForest(CollapsedTree):
@@ -325,22 +325,22 @@ class CollapsedForest(CollapsedTree):
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
         # since the l method on the CollapsedTree class returns l and grad_l...
+        terms = [tree.l(params) for tree in self.forest]
+        ls = scipy.array([term[0] for term in terms])
+        grad_ls = scipy.array([term[1] for term in terms])
         if Vlad_sum:
-            terms = [tree.l(params) for tree in self.forest]
-            sumexp = scipy.exp([x[0] for x in terms]).sum()
-            #sumexp = scipy.exp(logsumexp([x[0] for x in terms]))
-            #assert sumexp != 0
-            #thing1 = [x[0]+scipy.log(x[1][0]) for x in terms if x[1][0] > 0]
-            #thing2 = [x[0]+scipy.log(x[1][1]) for x in terms if x[1][1] > 0]
-            #thing3 = [x[0] for x in terms]
-            #return sign*(-scipy.log(len(terms)) + logsumexp(thing3)), \
-            #       sign*scipy.array([scipy.exp(logsumexp(thing1) + logsumexp(thing3)), scipy.exp(logsumexp(thing2) + logsumexp(thing3))])
-            return sign*(-scipy.log(len(terms)) + logsumexp([x[0] for x in terms])), \
-                   sign*scipy.array([sum(scipy.exp(x[0])*x[1][0] for x in terms)/sumexp,
-                                     sum(scipy.exp(x[0])*x[1][1] for x in terms)/sumexp])
+            # we need to find the smallest derivative component for each
+            # coordinate, then subtract off to get positive things to logsumexp
+            grad_l = []
+            for j in range(len(params)):
+                i_prime = grad_ls[:,j].argmin()
+                grad_l.append(grad_ls[i_prime,j] +
+                              scipy.exp(logsumexp(ls - ls[i_prime],
+                                                  b=grad_ls[:,j]-grad_ls[i_prime,j]) -
+                                        logsumexp(ls - ls[i_prime])))
+            return sign*(-scipy.log(len(ls)) + logsumexp(ls)), sign*scipy.array(grad_l)
         else:
-            terms = [tree.l(params, sign=sign) for tree in self.forest]
-            return sum(x[0] for x in terms), scipy.array([sum(x[1][0] for x in terms), sum(x[1][1] for x in terms)])
+            return sign*ls.sum(), sign*grad_ls.sum(axis=0)
 
 
     # NOTE: we get mle() method for free by inheritance/polymorphism magic
@@ -742,17 +742,18 @@ def infer(args):
 
     # fit p and q using all trees
     # if we get floating point errors, try a few more times (starting params are random)
-    max_tries = 10
+    max_tries = 1
     for tries in range(max_tries):
         try:
             forest.mle(Vlad_sum=True)
             break
         except FloatingPointError as e:
-            print('floating point error in MLE: {0}. Rerunning with different random start.'.format(e))
+            if tries + 1 < max_tries:
+                print('floating point error in MLE: {}. Attempt {} of {}. Rerunning with new random start.'.format(e, tries+1, max_tries))
+            else:
+                raise
         else:
             raise
-    if tries == max_tries - 1:
-        raise RuntimeError('unable to maximize likelihood, floating point errors on {} attempts'.format(max_tries))
 
     print('params = {}'.format(forest.params))
 
@@ -804,7 +805,8 @@ def validate(args):
     with open(args.parfor, 'rb') as f:
         parsimony_forest = cPickle.load(f)
 
-    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree, attr_t1='sequence', attr_t2='sequence')[0], tree.l(parsimony_forest.params)) for tree in parsimony_forest.forest])
+    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence')[0],
+                                    tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
     print(distances, likelihoods)
 
