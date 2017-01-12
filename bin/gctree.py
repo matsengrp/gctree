@@ -781,7 +781,10 @@ def simulate(args):
         args.lambda0 = max([1, int(.01*len(args.sequence))])
     args.sequence = args.sequence.upper()
     mutation_model = MutationModel(args.mutability, args.substitution)
-    tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
+    size = 0
+    while size < args.n:
+        tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
+        size = sum(node.frequency for node in tree)
     with open(args.outbase+'.fasta', 'w') as f:
         f.write('> GL\n')
         f.write(args.sequence+'\n')
@@ -808,8 +811,17 @@ def validate(args):
     distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence')[0],
                                     tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
-    print(distances, likelihoods)
+    with open(args.outbase+'.validation.tsv', 'w') as f:
+        f.write('RF\tl\n')
+        for d, l in zip(distances, likelihoods):
+            f.write('{}\t{}\n'.format(d, l))
 
+    plt.plot(likelihoods, distances, 'ko')
+    plt.rc('text', usetex=True)
+    plt.xlabel('$\ell$')
+    plt.ylabel('$d_{\text{RF}}$')
+    plt.grid(True)
+    plt.savefig(args.outbase+'.validation.pdf')
 
 def main():
     import argparse
@@ -838,6 +850,7 @@ def main():
     parser_sim.add_argument('--p', type=float, default=.4, help='branching probability')
     parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
     parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
+    parser_sim.add_argument('--n', type=int, default=1, help='minimum simulation size')
     parser_sim.set_defaults(func=simulate)
 
     # parser for validation subprogram
