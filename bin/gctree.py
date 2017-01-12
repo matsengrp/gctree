@@ -15,6 +15,8 @@ import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
+import pandas as pd
+import seaborn as sns
 from scipy.stats import probplot
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
 from Bio.Seq import Seq
@@ -811,17 +813,9 @@ def validate(args):
     distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence')[0],
                                     tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
-    with open(args.outbase+'.validation.tsv', 'w') as f:
-        f.write('RF\tl\n')
-        for d, l in zip(distances, likelihoods):
-            f.write('{}\t{}\n'.format(d, l))
-
-    plt.plot(likelihoods, distances, 'ko')
-    plt.rc('text', usetex=True)
-    plt.xlabel('$\ell$')
-    plt.ylabel('$d_{\text{RF}}$')
-    plt.grid(True)
-    plt.savefig(args.outbase+'.validation.pdf')
+    df = pd.DataFrame({'distance':distances, 'log-likelihood':likelihoods})
+    df.to_csv(args.outbase+'.validation.tsv', sep='\t')
+    sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(args.outbase+'.validation.pdf')
 
 def main():
     import argparse
