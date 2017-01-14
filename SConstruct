@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
-Infer trees from germinal center data
+Infer trees from germinal center data, and validate inference method
 '''
 from __future__ import print_function
 import os
@@ -11,36 +11,11 @@ import subprocess
 #import glob
 #import shutil
 #import functools
-from os import path
 from warnings import warn
 #from nestly import Nest
 #from nestly.scons import SConsWrap
 from SCons.Script import Environment
 
-# Setting up command line arguments/options
-AddOption('--fasta',
-          dest='fasta',
-          type='string',
-          nargs=1,
-          action='store',
-          metavar='PATH',
-          help='path to input fasta')
-AddOption('--outdir',
-          dest='outdir',
-          type='string',
-          nargs=1,
-          action='store',
-          metavar='DIR',
-          default='output',
-          help="directory in which to output results")
-AddOption('--germline',
-          dest='germline',
-          type='string',
-          nargs=1,
-          action='store',
-          metavar='GERMLINE ID',
-          default='GL',
-          help='id of germline sequence')
 
 # Set up SCons environment
 environ = os.environ.copy()
@@ -49,60 +24,79 @@ env = Environment(ENV=environ)
 # Add stuff to PATH
 env.PrependENVPath('PATH', 'bin')
 
-# Some environment sanity checks to make sure we have all prerequisits
-def cmd_exists(cmd):
-    return subprocess.call("type " + cmd, shell=True,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+# Setting up command line arguments/options
+AddOption('--validate',
+          action='store_true',
+          help='validation subprogram, instead of inference')
+AddOption('--outdir',
+          type='string',
+          help="directory in which to output results")
+outdir = GetOption('outdir')
 
-# only check for dependencies if we aren't in a dry-run.
-if not GetOption('no_exec'):
-    msg = ""
-    if not cmd_exists('dnapars'):
-        msg += '''
-               Required dependency command,
-               `dnapars` not found on PATH
-               Consider using,
-                $ module use ~matsengrp/modules
-                $ module load phylip
-                '''
+if GetOption('validate'):
+    AddOption('--naive',
+              type='string',
+              default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'+
+                      'gcgactccatcaccagtggttactggaactggatccggaaattcccagggaataa'+
+                      'acttgagtacatggggtacataagctacagtggtagcacttactacaatccatct'+
+                      'ctcaaaagtcgaatctccatcactcgagacacatccaagaaccagtactacctgc'+
+                      'agttgaattctgtgactactgaggacacagccacatattactgt',
+              help='sequence of naive from which to simulate')
+    AddOption('--mutability',
+              type='string',
+              metavar='PATH',
+              default='S5F/Mutability.csv',
+              help='path to S5F mutability data')
+    AddOption('--substitution',
+              type='string',
+              metavar='PATH',
+              default='S5F/Substitution.csv',
+              help='path to S5F substitution data')
+    AddOption('--p',
+              type='float',
+              action='store',
+              default=.49,
+              help='branching probabliity for simulation')
+    AddOption('--lambda0',
+              type='float',
+              default=.3,
+              help='baseline mutation rate')
+    AddOption('--r',
+              type='float',
+              default=1.,
+              help='sampling probability')
+    AddOption('--n',
+              type='int',
+              default=100,
+              help='minimum simulation size')
 
-    # if we are missing any prerequisites, print a message and exit
-    if len(msg):
-        warn(msg)
-        sys.exit(1)
+    naive = GetOption('naive')
+    mutability = GetOption('mutability')
+    substitution = GetOption('substitution')
+    p = GetOption('p')
+    lambda0 = GetOption('lambda0')
+    r = GetOption('r')
+    n = GetOption('n')
 
-# Grab our cli options
-fasta = GetOption('fasta')
-outdir_base = GetOption('outdir') # we call this outdir_base in order to not conflict with nestly fns outdir arg
-germline = GetOption('germline')
-print('fasta = {}'.format(fasta))
-print('outdir = {}'.format(outdir_base))
-print('germline = {}'.format(germline))
+    SConscript('SConscript.simulation',
+                exports='env outdir naive mutability substitution p lambda0 r n')
 
-# parse fasta file to phylip, interpreting integer names as frequencies
-phylip = env.Command(path.join(outdir_base, path.splitext(path.basename(fasta))[0]) + '.phylip',
-                     fasta,
-                     'python bin/fasta2phylip.py $SOURCE --germline {} > $TARGET'.format(germline))
+else:
+    AddOption('--fasta',
+              dest='fasta',
+              type='string',
+              metavar='PATH',
+              help='path to input fasta')
+    AddOption('--naiveID',
+              type='string',
+              metavar='seqID',
+              default='naive',
+              help='id of naive sequence')
 
-# make config file for dnapars
-dnapars_config = env.Command(path.join(outdir_base, 'dnapars.cfg'),
-                             phylip,
-                             'python bin/mkdnamlconfig.py $SOURCE --germline {} > $TARGET'.format(germline))
+    fasta = GetOption('fasta')
+    naiveID = GetOption('naiveID')
 
-# run dnapars (from phylip package) to generate parsimony trees
-dnapars = env.Command(map(lambda x: path.join(outdir_base, x), ['outtree', 'outfile', 'dnapars.log']),
-                   dnapars_config,
-                   'cd ' + outdir_base + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
-# Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
-# only get rerun if one of the targets are removed or if the iput dnaml_config file is changed).
-env.Depends(dnapars, phylip)
-
-# ML tree from parsimony trees
-# NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
-gctree_outbase = path.join(outdir_base, 'gctree')
-gctree = env.Command([gctree_outbase+'.parsimony_forest.p', gctree_outbase+'.MLtree.svg', gctree_outbase+'.log'],
-                     dnapars[1],
-                     'xvfb-run -a python bin/gctree.py infer $SOURCE --germline '+germline+' --outbase '+gctree_outbase+' > ${TARGETS[2]}')
+    SConscript('SConscript.inference', exports='env fasta outdir naiveID')
 
 
 #

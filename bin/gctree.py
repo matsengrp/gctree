@@ -1,4 +1,4 @@
-#! /bin/env python
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 '''
@@ -359,7 +359,7 @@ def hamming_distance(seq1, seq2):
     return sum(x != y for x, y in zip(seq1, seq2))
 
 
-def phylip_parse(phylip_outfile, germline=None):
+def phylip_parse(phylip_outfile, naive=None):
     '''parse phylip outfile and return ete trees'''
     # parse phylip outfile
     outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
@@ -405,7 +405,7 @@ def phylip_parse(phylip_outfile, germline=None):
                 node.name = name
                 node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else 0
                 node.add_feature('sequence', tree_sequence_dict[node.name])
-                if node.name == germline:
+                if node.name == naive:
                     node.add_feature('frequency', 0)
                 elif '_' in node.name:
                     node.add_feature('frequency', int(node.name.split('_')[-1]))
@@ -413,18 +413,18 @@ def phylip_parse(phylip_outfile, germline=None):
                 else:
                     node.add_feature('frequency', 0)
                 nodes[name] = node
-            tree = nodes[names[0]] # GL is first
+            tree = nodes[names[0]] # naive is first
             for name in parent_dict:
                 if parent_dict[name] is not None:
                     nodes[parent_dict[name]].add_child(nodes[name])
-            # reroot on germline
-            if germline is not None:
-                assert len(nodes[germline].children) == 0
-                assert nodes[germline] in tree.children
-                tree.remove_child(nodes[germline])
-                nodes[germline].add_child(tree)
-                tree.dist = nodes[germline].dist
-                tree = nodes[germline]
+            # reroot on naive
+            if naive is not None:
+                assert len(nodes[naive].children) == 0
+                assert nodes[naive] in tree.children
+                tree.remove_child(nodes[naive])
+                nodes[naive].add_child(tree)
+                tree.dist = nodes[naive].dist
+                tree = nodes[naive]
                 tree.dist = 0
 
             # assert branch lengths make sense
@@ -730,7 +730,7 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    forest = CollapsedForest(forest=[CollapsedTree(tree=tree) for tree in phylip_parse(args.phylipfile, args.germline)])
+    forest = CollapsedForest(forest=[CollapsedTree(tree=tree) for tree in phylip_parse(args.phylipfile, args.naive)])
 
     if forest.n_trees == 1:
         raise RuntimeError('only one parsimony tree reported from dnapars')
@@ -788,7 +788,7 @@ def simulate(args):
         tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
         size = sum(node.frequency for node in tree)
     with open(args.outbase+'.fasta', 'w') as f:
-        f.write('> GL\n')
+        f.write('> naive\n')
         f.write(args.sequence+'\n')
         i = 0
         for leaf in tree.iter_leaves():
@@ -832,13 +832,13 @@ def main():
 
     # parser for inference subprogram
     parser_infer = subparsers.add_parser('infer', help='likelihood ranking of parsimony trees')
-    parser_infer.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
+    parser_infer.add_argument('--naive', type=str, default=None, help='name of naive sequence (outgroup root)')
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram
     parser_sim = subparsers.add_parser('simulate', help='neutral model gctree simulation')
-    parser_sim.add_argument('sequence', type=str, help='seed germline nucleotide sequence')
+    parser_sim.add_argument('sequence', type=str, help='seed naive nucleotide sequence')
     parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
     parser_sim.add_argument('--p', type=float, default=.4, help='branching probability')
