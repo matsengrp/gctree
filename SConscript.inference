@@ -28,8 +28,8 @@ env.Depends(dnapars, phylip)
 # ML tree from parsimony trees
 # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
 gctree_outbase = os.path.join(outdir, 'gctree')
-gctree = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.MLtree.svg', gctree_outbase+'.inference.log'],
-                     dnapars[1],
-                     'xvfb-run -a bin/gctree.py infer $SOURCE --naive '+naiveID+' --outbase '+gctree_outbase+' > ${TARGETS[2]}')
+gctree_infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.MLtree.svg', gctree_outbase+'.inference.log'],
+                           dnapars[1],
+                           'xvfb-run -a bin/gctree.py infer $SOURCE --naive '+naiveID+' --outbase '+gctree_outbase+' > ${TARGETS[2]}')
 
-Return(gctree[0])
+Return('gctree_infer')

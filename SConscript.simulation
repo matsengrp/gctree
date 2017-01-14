@@ -10,23 +10,23 @@ Import('env outdir naive mutability substitution p lambda0 r n')
 # GCtree simulation
 # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
 gctree_outbase = os.path.join(outdir, 'gctree')
-gctree = env.Command([gctree_outbase+'.simulation.collapsed_tree.fasta',
-                      gctree_outbase+'.simulation.collapsed_tree.p',
-                      gctree_outbase+'.simulation.collapsed_tree.svg',
-                      gctree_outbase+'.simulation.log'],
-                     [mutability, substitution],
-                     'xvfb-run -a bin/gctree.py simulate '+naive+
-                     ' ${SOURCES[0]} ${SOURCES[1]}'+
-                     ' --outbase '+gctree_outbase+
-                     ' --p {} --lambda0 {} --r {} --n {}'.format(p, lambda0, r, n)+
-                     ' > ${TARGETS[2]}')
+gctree_sim = env.Command([gctree_outbase+'.simulation.fasta',
+                          gctree_outbase+'.simulation.collapsed_tree.p',
+                          gctree_outbase+'.simulation.collapsed_tree.svg',
+                          gctree_outbase+'.simulation.log'],
+                         [mutability, substitution],
+                         'xvfb-run -a bin/gctree.py simulate '+naive+
+                         ' ${SOURCES[0]} ${SOURCES[1]}'+
+                         ' --outbase '+gctree_outbase+
+                         ' --p {} --lambda0 {} --r {} --n {}'.format(p, lambda0, r, n)+
+                         ' > ${TARGETS[3]}')
 
 # now do inference on the simulation results
-fasta = gctree[0]
+fasta = gctree_outbase+'.simulation.fasta'
 naiveID = 'naive' # this is what the simulation routine names the naive
-parsimony_forest = SConscript('SConscript.inference', exports='env fasta outdir naiveID')
+gctree_infer = SConscript('SConscript.inference', exports='env fasta outdir naiveID')
 
 # do validation
-gctree = env.Command([gctree_outbase+'.validation.tsv', gctree_outbase+'.validation.pdf', gctree_outbase+'.validation.log'],
-                     [gctree[1], parsimony_forest],
-                     'xvfb-run -a bin/gctree.py validate ${SOURCES[0]} ${SOURCES[1]} --outbase '+gctree_outbase+' > ${TARGETS[2]}')
+gctree_validate = env.Command([gctree_outbase+'.validation.tsv', gctree_outbase+'.validation.pdf', gctree_outbase+'.validation.log'],
+                              [gctree_sim[1], gctree_infer[0]],
+                              'xvfb-run -a bin/gctree.py validate ${SOURCES[0]} ${SOURCES[1]} --outbase '+gctree_outbase+' > ${TARGETS[2]}')

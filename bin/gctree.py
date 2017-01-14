@@ -759,7 +759,7 @@ def infer(args):
 
     print('params = {}'.format(forest.params))
 
-    with open(args.outbase+'.parsimony_forest.p', 'wb') as f:
+    with open(args.outbase+'.inference.parsimony_forest.p', 'wb') as f:
         cPickle.dump(forest, f)
 
     print_data = []
@@ -770,7 +770,7 @@ def infer(args):
         if max_l is None or l > max_l:
             mle_tree = collapsed_tree
         print_data.append((alleles, l))
-    mle_tree.render(args.outbase+'.MLtree.svg')
+    mle_tree.render(args.outbase+'.inference.MLtree.svg')
 
     print('alleles\tlogLikelihood')
     for x in sorted(print_data, key=lambda x: (-x[-1], x[0])):
@@ -787,7 +787,7 @@ def simulate(args):
     while size < args.n:
         tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
         size = sum(node.frequency for node in tree)
-    with open(args.outbase+'.fasta', 'w') as f:
+    with open(args.outbase+'.simulation.fasta', 'w') as f:
         f.write('> naive\n')
         f.write(args.sequence+'\n')
         i = 0
@@ -800,8 +800,8 @@ def simulate(args):
     print(i, 'simulated observed sequences')
     #tree.render(args.outbase+'.tree.svg')
     collapsed_tree = CollapsedTree(tree=tree)
-    collapsed_tree.write( args.outbase+'.collapsed_tree.p')
-    collapsed_tree.render(args.outbase+'.collapsed_tree.svg')
+    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
+    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')
 
 
 def validate(args):
@@ -810,7 +810,7 @@ def validate(args):
     with open(args.parfor, 'rb') as f:
         parsimony_forest = cPickle.load(f)
 
-    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence')[0],
+    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
                                     tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
     df = pd.DataFrame({'distance':distances, 'log-likelihood':likelihoods})
