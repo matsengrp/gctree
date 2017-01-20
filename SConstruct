@@ -7,9 +7,11 @@ from __future__ import print_function
 import os
 import sys
 import subprocess
-#import sconsutils
+import sconsutils
 from warnings import warn
 from SCons.Script import Environment, AddOption
+
+sconsutils
 
 # Set up SCons environment
 environ = os.environ.copy()
@@ -48,7 +50,6 @@ if GetOption('validate'):
               help='path to S5F substitution data')
     AddOption('--p',
               type='float',
-              action='store',
               default=.49,
               help='branching probabliity for simulation')
     AddOption('--lambda0',

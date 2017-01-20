@@ -11,10 +11,12 @@ The "bright line" dividing the class of models of interest to us are those for w
 
 There's going to be some simulation, validation, etc, with this project. For that we use [nestly] (http://nestly.readthedocs.io/en/latest/).
 
-## Scripts
+## scons pipelines
 
-* TasParse.py - this reads the Tas data excel file, extracts the sequences from lymph node 2 germinal center 1, aligns with muscle, and prints to phyllip format.
-* gctree.py - classes for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees.
-	* The main routine takes a phlyip outtree file as a command line argument, converts each tree therein to a collapsed tree, computes there likelihoods, prints the MLE tree parameters, and plots the MLE tree to a file specified with the plot_file argument.
-	* In a test mode, the main routine also performs a test of the likelihood against a by-hand calculation for a simple tree, and simulates a forest of trees and performs MLE. It outputs plot foo.pdf.
-	* "python gctree.py -h" for usage info
+* Inference pipeline: `scons --outdir=[path to output] --fasta=[path to Tas et al. style fasta] --naiveID=[ID of naive sequence in fasta file, default 'naive']`
+* Simulation/validation pipeline: `scons --validation --outdir=[path to output] --naive=[DNA seq of naive sequence from which to start simulating, used default if omitted] --mutability=[path to S5F mutability file, default 'S5F/mutability'] --substitution=[path to S5F substitution file, default 'S5F/substitution'] --p=[branching probability for simulation, default 0.49] --lambda0=[baseline mutation rate, default .3] --r=[sampling probability, default 1.] --n=[minimum simulation sequence set size, default 100]`
+* gctree.py - library for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree.py --help`. There are three subprograms, each of which has usage info:
+	* `gctree.py inference --help`: takes an `outfile` file made by phylip's `dnapars` as a command line argument, converts each tree therein to a collapsed tree, and ranks by likelihood under our model.
+	* `gctree.py simulation --help`: simulate data under branching model, plus S5F and imperfect sampling.
+	* `gctree.py validation --help`
+	* `gctree.py test --help`: performs a test of the likelihood against a by-hand calculation for a simple tree, and simulates a forest of trees and performs MLE, outputting plots validating MLE and gradients.
