@@ -34,7 +34,7 @@ raw_input(set(bcells.keys()) - set(bcell_affinities.keys()))
 
 # compute sequence affinities as average among cells with that sequence
 #sequence_affinities = {seq_id:mean([bcell_affinities[bcell] for bcell in bcells if bcells[bcell][2] == seq_id]) for seq_id in sequences}
-    
+
 
 #assert set([bcells[x][2] for x in bcells]) == set(sequences.keys())
 
@@ -60,7 +60,7 @@ for bcell in bcells:
 for tree_i, tree in enumerate(trees):
     # write leaf data
     with open(args.outbase+'.'+str(tree_i)+'.leafdata.fa', 'w') as f:
-        f.write('> GL\n')
+        f.write('> naive\n')
         f.write(tree.sequence+'\n')
         i = 0
         for leaf in tree.iter_leaves():

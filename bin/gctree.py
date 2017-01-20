@@ -1,4 +1,4 @@
-#! /bin/env python
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 '''
@@ -15,6 +15,8 @@ import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
+import pandas as pd
+import seaborn as sns
 from scipy.stats import probplot
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
 from Bio.Seq import Seq
@@ -196,7 +198,7 @@ class CollapsedTree(LeavesAndClades):
         kwargs['sign'] = -1
         grad_check = check_grad(lambda x: self.l(x, **kwargs)[0], lambda x: self.l(x, **kwargs)[1], (.4, .5))
         if grad_check > 1e-3:
-            warnings.warn('gradient bad, '+str(grad_check), RuntimeWarning)
+            warnings.warn('gradient mismatches finite difference approximation by {}'.format(grad_check), RuntimeWarning)
         result = minimize(lambda x: self.l(x, **kwargs), x0=x_0, jac=True, method='L-BFGS-B', options={'ftol':1e-10}, bounds=bounds)
         # update params if None and optimization successful
         if not result.success:
@@ -270,7 +272,7 @@ class CollapsedTree(LeavesAndClades):
     def write(self, file_name):
         '''serialize tree to file'''
         with open(file_name, 'wb') as f:
-            cPickle.dump(self.tree, f)
+            cPickle.dump(self, f)
 
 
 class CollapsedForest(CollapsedTree):
@@ -325,22 +327,22 @@ class CollapsedForest(CollapsedTree):
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
         # since the l method on the CollapsedTree class returns l and grad_l...
+        terms = [tree.l(params) for tree in self.forest]
+        ls = scipy.array([term[0] for term in terms])
+        grad_ls = scipy.array([term[1] for term in terms])
         if Vlad_sum:
-            terms = [tree.l(params) for tree in self.forest]
-            sumexp = scipy.exp([x[0] for x in terms]).sum()
-            #sumexp = scipy.exp(logsumexp([x[0] for x in terms]))
-            #assert sumexp != 0
-            #thing1 = [x[0]+scipy.log(x[1][0]) for x in terms if x[1][0] > 0]
-            #thing2 = [x[0]+scipy.log(x[1][1]) for x in terms if x[1][1] > 0]
-            #thing3 = [x[0] for x in terms]
-            #return sign*(-scipy.log(len(terms)) + logsumexp(thing3)), \
-            #       sign*scipy.array([scipy.exp(logsumexp(thing1) + logsumexp(thing3)), scipy.exp(logsumexp(thing2) + logsumexp(thing3))])
-            return sign*(-scipy.log(len(terms)) + logsumexp([x[0] for x in terms])), \
-                   sign*scipy.array([sum(scipy.exp(x[0])*x[1][0] for x in terms)/sumexp,
-                                     sum(scipy.exp(x[0])*x[1][1] for x in terms)/sumexp])
+            # we need to find the smallest derivative component for each
+            # coordinate, then subtract off to get positive things to logsumexp
+            grad_l = []
+            for j in range(len(params)):
+                i_prime = grad_ls[:,j].argmin()
+                grad_l.append(grad_ls[i_prime,j] +
+                              scipy.exp(logsumexp(ls - ls[i_prime],
+                                                  b=grad_ls[:,j]-grad_ls[i_prime,j]) -
+                                        logsumexp(ls - ls[i_prime])))
+            return sign*(-scipy.log(len(ls)) + logsumexp(ls)), sign*scipy.array(grad_l)
         else:
-            terms = [tree.l(params, sign=sign) for tree in self.forest]
-            return sum(x[0] for x in terms), scipy.array([sum(x[1][0] for x in terms), sum(x[1][1] for x in terms)])
+            return sign*ls.sum(), sign*grad_ls.sum(axis=0)
 
 
     # NOTE: we get mle() method for free by inheritance/polymorphism magic
@@ -357,7 +359,7 @@ def hamming_distance(seq1, seq2):
     return sum(x != y for x, y in zip(seq1, seq2))
 
 
-def phylip_parse(phylip_outfile, germline=None):
+def phylip_parse(phylip_outfile, naive=None):
     '''parse phylip outfile and return ete trees'''
     # parse phylip outfile
     outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
@@ -403,7 +405,7 @@ def phylip_parse(phylip_outfile, germline=None):
                 node.name = name
                 node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else 0
                 node.add_feature('sequence', tree_sequence_dict[node.name])
-                if node.name == germline:
+                if node.name == naive:
                     node.add_feature('frequency', 0)
                 elif '_' in node.name:
                     node.add_feature('frequency', int(node.name.split('_')[-1]))
@@ -411,18 +413,18 @@ def phylip_parse(phylip_outfile, germline=None):
                 else:
                     node.add_feature('frequency', 0)
                 nodes[name] = node
-            tree = nodes[names[0]] # GL is first
+            tree = nodes[names[0]] # naive is first
             for name in parent_dict:
                 if parent_dict[name] is not None:
                     nodes[parent_dict[name]].add_child(nodes[name])
-            # reroot on germline
-            if germline is not None:
-                assert len(nodes[germline].children) == 0
-                assert nodes[germline] in tree.children
-                tree.remove_child(nodes[germline])
-                nodes[germline].add_child(tree)
-                tree.dist = nodes[germline].dist
-                tree = nodes[germline]
+            # reroot on naive
+            if naive is not None:
+                assert len(nodes[naive].children) == 0
+                assert nodes[naive] in tree.children
+                tree.remove_child(nodes[naive])
+                nodes[naive].add_child(tree)
+                tree.dist = nodes[naive].dist
+                tree = nodes[naive]
                 tree.dist = 0
 
             # assert branch lengths make sense
@@ -542,6 +544,7 @@ class MutationModel():
         tree.add_feature('sequence', sequence)
         tree.add_feature('terminated', False)
         tree.add_feature('frequency', 0)
+
         nodes_unterminated = 1
         while nodes_unterminated > 0:
             for leaf in tree.iter_leaves():
@@ -727,7 +730,10 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    forest = CollapsedForest(forest=[CollapsedTree(tree=tree) for tree in phylip_parse(args.phylipfile, args.germline)])
+    forest = CollapsedForest(forest=[CollapsedTree(tree=tree) for tree in phylip_parse(args.phylipfile, args.naive)])
+
+    if forest.n_trees == 1:
+        warnings.warn('only one parsimony tree reported from dnapars')
 
     print('number of trees with integer branch lengths:', forest.n_trees)
 
@@ -737,10 +743,23 @@ def infer(args):
         print('WARNING: {} trees exhibit unifurcation from root, which is not possible under current model. Such nodes will be ommitted from likelihood calculation'.format(unifurcations))
 
     # fit p and q using all trees
-    forest.mle(Vlad_sum=True)
+    # if we get floating point errors, try a few more times (starting params are random)
+    max_tries = 1
+    for tries in range(max_tries):
+        try:
+            forest.mle(Vlad_sum=True)
+            break
+        except FloatingPointError as e:
+            if tries + 1 < max_tries:
+                print('floating point error in MLE: {}. Attempt {} of {}. Rerunning with new random start.'.format(e, tries+1, max_tries))
+            else:
+                raise
+        else:
+            raise
+
     print('params = {}'.format(forest.params))
 
-    with open(args.outbase+'.parsimony_forest.p', 'wb') as f:
+    with open(args.outbase+'.inference.parsimony_forest.p', 'wb') as f:
         cPickle.dump(forest, f)
 
     print_data = []
@@ -751,7 +770,7 @@ def infer(args):
         if max_l is None or l > max_l:
             mle_tree = collapsed_tree
         print_data.append((alleles, l))
-    mle_tree.render(args.outbase+'.MLtree.svg')
+    mle_tree.render(args.outbase+'.inference.MLtree.svg')
 
     print('alleles\tlogLikelihood')
     for x in sorted(print_data, key=lambda x: (-x[-1], x[0])):
@@ -764,10 +783,13 @@ def simulate(args):
         args.lambda0 = max([1, int(.01*len(args.sequence))])
     args.sequence = args.sequence.upper()
     mutation_model = MutationModel(args.mutability, args.substitution)
-    tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
-    with open(args.outbase+'.leafdata.fa', 'w') as f:
-        f.write('> GL\n')
-        f.write(sequence+'\n')
+    size = 0
+    while size < args.n:
+        tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
+        size = sum(node.frequency for node in tree)
+    with open(args.outbase+'.simulation.fasta', 'w') as f:
+        f.write('> naive\n')
+        f.write(args.sequence+'\n')
         i = 0
         for leaf in tree.iter_leaves():
             if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
@@ -778,12 +800,35 @@ def simulate(args):
     print(i, 'simulated observed sequences')
     #tree.render(args.outbase+'.tree.svg')
     collapsed_tree = CollapsedTree(tree=tree)
-    collapsed_tree.write( args.outbase+'.collapsed_tree.p')
-    collapsed_tree.render(args.outbase+'.collapsed_tree.svg')
+    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
+    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')
+
+
+def validate(args):
+    with open(args.truetree, 'rb') as f:
+        true_tree = cPickle.load(f)
+    with open(args.parfor, 'rb') as f:
+        parsimony_forest = cPickle.load(f)
+
+    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence')[0],
+                                    tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
+
+    df = pd.DataFrame({'distance':distances, 'log-likelihood':likelihoods})
+    df.to_csv(args.outbase+'.validation.tsv', sep='\t', index=False)
+    maxl_idx = df['log-likelihood'].idxmax()
+    minl_idx = df['log-likelihood'].idxmin()
+    d_ranks = df['distance'].rank(method='min')
+    print('parsimony forest size: {}'.format(len(df.index)))
+    print('                l_max: {}'.format(df['log-likelihood'][maxl_idx]))
+    print('      d of l_max tree: {}'.format(df['distance'][maxl_idx]))
+    print(' rank d of l_max tree: {}'.format(d_ranks[maxl_idx]))
+    print('                l_min: {}'.format(df['log-likelihood'][minl_idx]))
+    print('      d of l_min tree: {}'.format(df['distance'][minl_idx]))
+    print(' rank d of l_min tree: {}'.format(d_ranks[minl_idx]))
+    sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(args.outbase+'.validation.pdf')
 
 def main():
-    import sys, argparse
-    from collections import Counter
+    import argparse
 
     parser = argparse.ArgumentParser(description='germinal center tree inference and simulation')
     subparsers = parser.add_subparsers(help='which program to run')
@@ -797,23 +842,31 @@ def main():
 
     # parser for inference subprogram
     parser_infer = subparsers.add_parser('infer', help='likelihood ranking of parsimony trees')
-    parser_infer.add_argument('--germline', type=str, default=None, help='name of germline sequence (outgroup root)')
+    parser_infer.add_argument('--naive', type=str, default=None, help='name of naive sequence (outgroup root)')
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram
     parser_sim = subparsers.add_parser('simulate', help='neutral model gctree simulation')
-    parser_sim.add_argument('sequence', type=str, help='seed germline nucleotide sequence')
+    parser_sim.add_argument('sequence', type=str, help='seed naive nucleotide sequence')
     parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
     parser_sim.add_argument('--p', type=float, default=.4, help='branching probability')
     parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
     parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
+    parser_sim.add_argument('--n', type=int, default=1, help='minimum simulation size')
     parser_sim.set_defaults(func=simulate)
 
+    # parser for validation subprogram
+    parser_val = subparsers.add_parser('validate', help='validate results of inference on simulation data')
+    parser_val.add_argument('truetree', type=str, help='.p file containing true tree')
+    parser_val.add_argument('parfor', type=str, help='.p file containing parsimony forest from inference')
+    parser_val.set_defaults(func=validate)
+
     # a common outbase parameter
-    for subparser in [parser_test, parser_infer, parser_sim]:
+    for subparser in [parser_test, parser_infer, parser_sim, parser_val]:
         subparser.add_argument('--outbase', type=str, default='gctree.out', help='output file base name')
+
 
     args = parser.parse_args()
     args.func(args)

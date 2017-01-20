@@ -1,0 +1,35 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+'''
+Infer trees from germinal center data
+'''
+import os
+# the following must be exported by parent SConstruct/SConscript
+Import('env fasta outdir naiveID')
+
+# parse fasta file to phylip, interpreting integer names as frequencies
+phylip = env.Command(os.path.splitext(os.path.basename(fasta))[0] + '.phylip' if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
+                     fasta,
+                     'bin/fasta2phylip.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+
+# make config file for dnapars
+dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
+                             phylip,
+                             'bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+
+# run dnapars (from phylip package) to generate parsimony trees
+dnapars = env.SRun(map(lambda x: os.path.join(outdir, x), ['outtree', 'outfile', 'dnapars.log']),
+                   dnapars_config,
+                   'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
+# Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
+# only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
+env.Depends(dnapars, phylip)
+
+# ML tree from parsimony trees
+# NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
+gctree_outbase = os.path.join(outdir, 'gctree')
+gctree_infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.MLtree.svg', gctree_outbase+'.inference.log'],
+                           dnapars[1],
+                           'xvfb-run -a bin/gctree.py infer $SOURCE --naive '+naiveID+' --outbase '+gctree_outbase+' > ${TARGETS[2]}')
+
+Return('gctree_infer')

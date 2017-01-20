@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Read a PHYLIP-format file and produce an appropriate config file for passing to `dnapars`.
@@ -10,7 +10,7 @@ meant to mimic the responses to the expected prompts.
 
 Typical usage is,
 
-     $ mkdnamlconfig.py sequence.phy --germline GLid > dnapars.cfg
+     $ mkdnaparsconfig.py sequence.phy --naive naive_id > dnapars.cfg
      $ dnapars < dnapars.cfg
 """
 import re
@@ -18,23 +18,24 @@ import os
 import argparse
 from warnings import warn
 
-def extract_germline(file, germline):
+def extract_naive(file, naive):
     with open(file, 'r') as fh:
         for lineno, line in enumerate(fh):
-            if re.match(germline, line):
+            if re.match(naive, line):
                 return lineno
+        raise RuntimeError('naive match not found')
 
 def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('phylip', help='PHYLIP input', type=str)
-    parser.add_argument('--germline', default='GL', help='germline sequence id', type=str)
+    parser.add_argument('--naive', default='naive', help='naive sequence id', type=str)
     args = parser.parse_args()
 
-    germline_idx = extract_germline(args.phylip, args.germline)
-    print(args.phylip)	    # phylip input file
+    naive_idx = extract_naive(args.phylip, args.naive)
+    print(os.path.abspath(args.phylip))	    # phylip input file
     print('O')		        # Outgroup root
-    print(germline_idx)	    # naive index in phylip
+    print(naive_idx)	    # naive index in phylip
     print('J')              # jumble
     print('13')
     print('10')
