@@ -733,7 +733,7 @@ def infer(args):
     forest = CollapsedForest(forest=[CollapsedTree(tree=tree) for tree in phylip_parse(args.phylipfile, args.naive)])
 
     if forest.n_trees == 1:
-        raise RuntimeError('only one parsimony tree reported from dnapars')
+        warnings.warn('only one parsimony tree reported from dnapars')
 
     print('number of trees with integer branch lengths:', forest.n_trees)
 
@@ -810,11 +810,21 @@ def validate(args):
     with open(args.parfor, 'rb') as f:
         parsimony_forest = cPickle.load(f)
 
-    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
+    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence')[0],
                                     tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
     df = pd.DataFrame({'distance':distances, 'log-likelihood':likelihoods})
-    df.to_csv(args.outbase+'.validation.tsv', sep='\t')
+    df.to_csv(args.outbase+'.validation.tsv', sep='\t', index=False)
+    maxl_idx = df['log-likelihood'].idxmax()
+    minl_idx = df['log-likelihood'].idxmin()
+    d_ranks = df['distance'].rank(method='min')
+    print('parsimony forest size : {}'.format(len(df.index)))
+    print('l_max: {}'.format(df['log-likelihood'][maxl_idx]))
+    print('d of l_max tree: {}'.format(df['distance'][maxl_idx]))
+    print('rank d of l_max tree: {}'.format(d_ranks[maxl_idx]))
+    print('l_min: {}'.format(df['log-likelihood'][minl_idx]))
+    print('d of l_min tree: {}'.format(df['distance'][minl_idx]))
+    print('rank d of l_min tree: {}'.format(d_ranks[minl_idx]))
     sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(args.outbase+'.validation.pdf')
 
 def main():
