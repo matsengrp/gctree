@@ -159,7 +159,7 @@ class CollapsedTree(LeavesAndClades):
                         node.delete(prevent_nondicotomic=False)
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
             if 'sequence' in tree.features and len(set([node.sequence for node in self.tree.traverse()])) != sum(1 for _ in self.tree.traverse()):
-                warnings.warn('repeated sequences in collapsed tree, possible backmutation', RuntimeWarning)
+                raise RuntimeError('repeated sequences in collapsed tree, possible backmutation')
         else:
             self.tree = tree
 
@@ -785,7 +785,20 @@ def simulate(args):
     mutation_model = MutationModel(args.mutability, args.substitution)
     size = 0
     while size < args.n:
-        tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
+        # this loop makes us resimulate if we got backmutations
+        trial = 1
+        while trial < 10:
+            try:
+                tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
+                collapsed_tree = CollapsedTree(tree=tree) # <-- this will fail if backmutations
+                break
+            except RuntimeError:
+                trial += 1
+                continue
+            else:
+                raise
+        if trial == 10:
+            raise RuntimeError('repeated sequences in collapsed tree on {} attempts'.format(trial))
         size = sum(node.frequency for node in tree)
     with open(args.outbase+'.simulation.fasta', 'w') as f:
         f.write('> naive\n')
@@ -798,8 +811,6 @@ def simulate(args):
                 f.write(leaf.sequence+'\n')
                 leaf.name = 'seq{}'.format(i)
     print(i, 'simulated observed sequences')
-    #tree.render(args.outbase+'.tree.svg')
-    collapsed_tree = CollapsedTree(tree=tree)
     collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
     collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')
 
@@ -810,21 +821,13 @@ def validate(args):
     with open(args.parfor, 'rb') as f:
         parsimony_forest = cPickle.load(f)
 
-    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence')[0],
+    # NOTE: the unrooted_trees flag is needed because, for some reason, the RF
+    #       function sometimes thinks the collapsed trees are unrooted and barfs
+    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
                                     tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
     df = pd.DataFrame({'distance':distances, 'log-likelihood':likelihoods})
     df.to_csv(args.outbase+'.validation.tsv', sep='\t', index=False)
-    maxl_idx = df['log-likelihood'].idxmax()
-    minl_idx = df['log-likelihood'].idxmin()
-    d_ranks = df['distance'].rank(method='min')
-    print('parsimony forest size: {}'.format(len(df.index)))
-    print('                l_max: {}'.format(df['log-likelihood'][maxl_idx]))
-    print('      d of l_max tree: {}'.format(df['distance'][maxl_idx]))
-    print(' rank d of l_max tree: {}'.format(d_ranks[maxl_idx]))
-    print('                l_min: {}'.format(df['log-likelihood'][minl_idx]))
-    print('      d of l_min tree: {}'.format(df['distance'][minl_idx]))
-    print(' rank d of l_min tree: {}'.format(d_ranks[minl_idx]))
     sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(args.outbase+'.validation.pdf')
 
 def main():
@@ -837,7 +840,7 @@ def main():
     parser_test = subparsers.add_parser('test', help='run tests on library functions')
     parser_test.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
     parser_test.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
-    parser_test.add_argument('--n', type=int, default=100, help='forest size for test mode')
+    parser_test.add_argument('--n', type=int, default=1, help='forest size for test mode')
     parser_test.set_defaults(func=test)
 
     # parser for inference subprogram

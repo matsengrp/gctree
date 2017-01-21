@@ -13,7 +13,7 @@ w = SConsWrap(nest, outdir, alias_environment=env)
 w.add_aggregate('aggdat', list)
 
 # Initialize our first nest level, just random simulation reruns, same params
-w.add('runs', range(1,11))
+w.add('runs', range(1,101))
 
 @w.add_target()
 def gctree_sim(outdir, c):
@@ -47,7 +47,7 @@ def gctree_validate(outdir, c):
                        os.path.join(outdir, 'gctree.validation.log')],
                       [c['gctree_sim'][1], c['gctree_infer'][0]],
                       'xvfb-run -a bin/gctree.py validate $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
-    c['aggdat'].append(tgt)
+    c['aggdat'].append(tgt[0])
     return tgt
 
 w.pop('runs')
@@ -55,8 +55,10 @@ w.pop('runs')
 @w.add_target()
 def aggregate(outdir, c):
     '''aggregate validation results'''
-    tgt = env.Command(os.path.join(outdir, 'aggregation.tsv'),
+    tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
+                       os.path.join(outdir, 'validaggreg.pdf'),
+                       os.path.join(outdir, 'validaggreg.log')],
                       c['aggdat'],
-                      'cat $SOURCES > $TARGET')
+                      'bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[2]}')
     env.AlwaysBuild(tgt)
     return tgt
