@@ -18,9 +18,9 @@ dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
                              'bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
 # run dnapars (from phylip package) to generate parsimony trees
-dnapars = env.Command(map(lambda x: os.path.join(outdir, x), ['outtree', 'outfile', 'dnapars.log']),
+dnapars = env.Command(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
                    dnapars_config,
-                   'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
+                   'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
 # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
 # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
 env.Depends(dnapars, phylip)
