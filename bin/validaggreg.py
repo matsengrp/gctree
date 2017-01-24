@@ -7,7 +7,7 @@ aggregation plots of validation output from several simulation/validation runs
 
 from __future__ import division, print_function
 import scipy, matplotlib
-matplotlib.use('PDF')
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
@@ -41,6 +41,8 @@ for i, fname in enumerate(args.input):
                      l_min, l_min_distance, l_min_distance_rank)
 
 aggdat['delta l'] = aggdat['max l'] - aggdat['min l']
+aggdat['delta r'] = (aggdat['min l distance rank'] - aggdat['max l distance rank'])/aggdat['forest size']
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
-sns.jointplot(x='forest size', y='delta l', data=aggdat, kind="kde").savefig(args.outbase+'.pdf')
+sns.jointplot(x='forest size', y='delta l', data=aggdat, kind="kde").savefig(args.outbase+'.delta_l.pdf')
+sns.jointplot(x='forest size', y='delta r', data=aggdat, kind="kde").savefig(args.outbase+'.delta_r.pdf')

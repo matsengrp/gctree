@@ -8,7 +8,7 @@ import os
 Import('env fasta outdir naiveID')
 
 # parse fasta file to phylip, interpreting integer names as frequencies
-phylip = env.Command(os.path.splitext(os.path.basename(fasta))[0] + '.phylip' if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
+phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
                      fasta,
                      'bin/fasta2phylip.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 

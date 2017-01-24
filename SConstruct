@@ -54,11 +54,11 @@ if GetOption('validate'):
               help='branching probabliity for simulation')
     AddOption('--lambda0',
               type='float',
-              default=.3,
+              default=.1,
               help='baseline mutation rate')
     AddOption('--r',
               type='float',
-              default=1.,
+              default=.5,
               help='sampling probability')
     AddOption('--n',
               type='int',

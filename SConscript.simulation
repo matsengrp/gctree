@@ -56,9 +56,10 @@ w.pop('runs')
 def aggregate(outdir, c):
     '''aggregate validation results'''
     tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
-                       os.path.join(outdir, 'validaggreg.pdf'),
+                       os.path.join(outdir, 'validaggreg.delta_l.pdf'),
+                       os.path.join(outdir, 'validaggreg.delta_r.pdf'),
                        os.path.join(outdir, 'validaggreg.log')],
                       c['aggdat'],
-                      'bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[2]}')
+                      'bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[3]}')
     env.AlwaysBuild(tgt)
     return tgt
