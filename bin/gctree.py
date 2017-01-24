@@ -140,15 +140,19 @@ class CollapsedTree(LeavesAndClades):
            |   \\
           (2)  (1)
     '''
-    def __init__(self, params=None, tree=None):
+    def __init__(self, params=None, tree=None, frame=None):
         '''
         For intialization, either params or tree (or both) must be provided
         params: offspring distribution parameters
         tree: ete tree with frequency node feature. If uncollapsed, it will be collapsed
+        frame: tranlation frame, with default None, no tranlation attempted
         '''
         #if params is None and tree is None:
         #    raise ValueError('either params or tree (or both) must be provided')
         LeavesAndClades.__init__(self, params=params)
+        if frame is not None and frame not in (1, 2, 3):
+            raise RuntimeError('frame must be 1, 2, 3, or None')
+        self.frame = frame
         if tree is not None:
             self.tree = tree.copy()
             if 0 in (node.dist for node in tree.iter_descendants()):
@@ -224,7 +228,7 @@ class CollapsedTree(LeavesAndClades):
             return self
         for _ in range(self.m):
             # ooooh, recursion
-            child = CollapsedTree(params=self.params).simulate().tree
+            child = CollapsedTree(params=self.params, frame=self.frame).simulate().tree
             child.dist = 1
             self.tree.add_child(child)
 
@@ -247,14 +251,19 @@ class CollapsedTree(LeavesAndClades):
                 nstyle['fgcolor'] = 'black'
             if node.up is not None:
                 if set(node.sequence.upper()) == set('ACGT'):
-                    nonsyn = hamming_distance(Seq(node.sequence, generic_dna).translate(), Seq(node.up.sequence, generic_dna).translate())
-                    if nonsyn > 0:
-                        nstyle['hz_line_color'] = 'black'
-                        nstyle['hz_line_width'] = nonsyn
-                    else:
-                        nstyle['hz_line_type'] = 1
-                    if '*' in Seq(node.sequence, generic_dna).translate():
-                        nstyle['bgcolor'] = 'red'
+                    if self.frame is not None:
+                        aa = Seq(node.sequence[(self.frame-1):(self.frame-1+(3*(((len(node.sequence)-(self.frame-1))//3))))],
+                                 generic_dna).translate()
+                        aa_parent = Seq(node.up.sequence[(self.frame-1):(self.frame-1+(3*(((len(node.sequence)-(self.frame-1))//3))))],
+                                        generic_dna).translate()
+                        nonsyn = hamming_distance(aa, aa_parent)
+                        if '*' in aa:
+                            nstyle['bgcolor'] = 'red'
+                        if nonsyn > 0:
+                            nstyle['hz_line_color'] = 'black'
+                            nstyle['hz_line_width'] = nonsyn
+                        else:
+                            nstyle['hz_line_type'] = 1
 
             node.set_style(nstyle)
 
@@ -724,7 +733,7 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    forest = CollapsedForest(forest=[CollapsedTree(tree=tree) for tree in phylip_parse(args.phylipfile, args.naive)])
+    forest = CollapsedForest(forest=[CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.naive)])
 
     if forest.n_trees == 1:
         warnings.warn('only one parsimony tree reported from dnapars')
@@ -784,7 +793,8 @@ def simulate(args):
         while trial < 10:
             try:
                 tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
-                collapsed_tree = CollapsedTree(tree=tree) # <-- this will fail if backmutations
+                print(args)
+                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
                 break
             except RuntimeError:
                 trial += 1
@@ -831,20 +841,26 @@ def main():
     subparsers = parser.add_subparsers(help='which program to run')
 
     # parser for test subprogram
-    parser_test = subparsers.add_parser('test', help='run tests on library functions')
+    parser_test = subparsers.add_parser('test',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                        help='run tests on library functions')
     parser_test.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
     parser_test.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
     parser_test.add_argument('--n', type=int, default=1, help='forest size for test mode')
     parser_test.set_defaults(func=test)
 
     # parser for inference subprogram
-    parser_infer = subparsers.add_parser('infer', help='likelihood ranking of parsimony trees')
+    parser_infer = subparsers.add_parser('infer',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                         help='likelihood ranking of parsimony trees')
     parser_infer.add_argument('--naive', type=str, default=None, help='name of naive sequence (outgroup root)')
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram
-    parser_sim = subparsers.add_parser('simulate', help='neutral model gctree simulation')
+    parser_sim = subparsers.add_parser('simulate',
+                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                       help='neutral model gctree simulation')
     parser_sim.add_argument('sequence', type=str, help='seed naive nucleotide sequence')
     parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
@@ -855,7 +871,9 @@ def main():
     parser_sim.set_defaults(func=simulate)
 
     # parser for validation subprogram
-    parser_val = subparsers.add_parser('validate', help='validate results of inference on simulation data')
+    parser_val = subparsers.add_parser('validate',
+                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                       help='validate results of inference on simulation data')
     parser_val.add_argument('truetree', type=str, help='.p file containing true tree')
     parser_val.add_argument('parfor', type=str, help='.p file containing parsimony forest from inference')
     parser_val.set_defaults(func=validate)
@@ -864,6 +882,9 @@ def main():
     for subparser in [parser_test, parser_infer, parser_sim, parser_val]:
         subparser.add_argument('--outbase', type=str, default='gctree.out', help='output file base name')
 
+    # a common parameter for the inference and simulation subprograms
+    for subparser in [parser_infer, parser_sim]:
+        subparser.add_argument('--frame', type=int, default=None, help='codon frame')
 
     args = parser.parse_args()
     args.func(args)

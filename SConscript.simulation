@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env outdir naive mutability substitution p lambda0 r n')
+Import('env frame outdir naive mutability substitution p lambda0 r n')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -21,6 +21,7 @@ def gctree_sim(outdir, c):
     GCtree simulation
     NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
     '''
+    frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     return env.Command([os.path.join(outdir, 'gctree.simulation.fasta'),
                      os.path.join(outdir, 'gctree.simulation.collapsed_tree.p'),
                      os.path.join(outdir, 'gctree.simulation.collapsed_tree.svg'),
@@ -30,6 +31,7 @@ def gctree_sim(outdir, c):
                      ' ${SOURCES[0]} ${SOURCES[1]}'+
                      ' --outbase '+os.path.join(outdir, 'gctree')+
                      ' --p {} --lambda0 {} --r {} --n {}'.format(p, lambda0, r, n)+
+                     frame_arg+
                      ' > ${TARGETS[3]}')
 
 @w.add_target()
@@ -37,7 +39,7 @@ def gctree_infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
     naiveID = 'naive' # this is what the simulation routine names the naive
-    return SConscript('SConscript.inference', exports='env fasta outdir naiveID')
+    return SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
 
 @w.add_target()
 def gctree_validate(outdir, c):

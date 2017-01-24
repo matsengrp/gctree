@@ -24,6 +24,11 @@ env.PrependENVPath('PATH', 'bin')
 AddOption('--validate',
           action='store_true',
           help='validation subprogram, instead of inference')
+AddOption('--frame',
+          type='int',
+          default=None,
+          help='codon frame')
+frame = GetOption('frame')
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
@@ -74,7 +79,7 @@ if GetOption('validate'):
     n = GetOption('n')
 
     SConscript('SConscript.simulation',
-                exports='env outdir naive mutability substitution p lambda0 r n')
+                exports='env frame outdir naive mutability substitution p lambda0 r n')
 
 else:
     AddOption('--fasta',
@@ -91,4 +96,4 @@ else:
     fasta = GetOption('fasta')
     naiveID = GetOption('naiveID')
 
-    SConscript('SConscript.inference', exports='env fasta outdir naiveID')
+    SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
