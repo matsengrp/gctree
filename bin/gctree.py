@@ -794,7 +794,6 @@ def simulate(args):
         while trial < 10:
             try:
                 tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
-                print(args)
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
                 break
             except RuntimeError:
