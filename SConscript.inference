@@ -29,8 +29,13 @@ env.Depends(dnapars, phylip)
 # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
 gctree_outbase = os.path.join(outdir, 'gctree')
 frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
-gctree_infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.MLtree.svg', gctree_outbase+'.inference.log'],
+# NOTE: there will be other svg trees if the parsimony forest has more than 1 tree
+#       these will be names 2, 3, ...
+gctree_infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.1.svg', gctree_outbase+'.inference.log'],
                            dnapars[1],
-                           'xvfb-run -a bin/gctree.py infer $SOURCE --naive '+naiveID+' --outbase '+gctree_outbase+frame_arg+' > ${TARGETS[2]}')
+                           'xvfb-run -a bin/gctree.py infer $SOURCE --naive '+naiveID+
+                           ' --outbase '+gctree_outbase+
+                           frame_arg+
+                           ' > ${TARGETS[2]}')
 
 Return('gctree_infer')

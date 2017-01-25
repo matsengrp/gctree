@@ -276,6 +276,7 @@ class CollapsedTree(LeavesAndClades):
                 N.rotation = -90
                 faces.add_face_to_node(N, node, 0, position='branch-top')
         ts.layout_fn = my_layout
+        self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
 
     def write(self, file_name):
@@ -513,7 +514,7 @@ class MutationModel():
             return [(1, dict((n2, 1/3) if n2 is not n else (n2, 0.) for n2 in 'ACGT')) for n in sequence]
 
     def mutate(self, sequence, lambda0=1):
-        '''mutate a sequence, with q the baseline mutability'''
+        '''mutate a sequence, with lamdba0 the baseline mutability'''
         sequence_length = len(sequence)
         mutabilities = self.mutabilities(sequence)
         sequence_mutability = sum(mutability[0] for mutability in mutabilities)/sequence_length
@@ -521,21 +522,25 @@ class MutationModel():
         # poisson rate for this sequence (given its relative mutability)
         lambda_sequence = sequence_mutability*lambda0
         # number of mutations
-        m = scipy.random.poisson(lambda_sequence)
-
-        for _ in range(m):
-            p = scipy.array([mutability[0] for mutability in mutabilities])
-            p = p/p.sum()
+        trials = 10
+        for trial in range(1, trials+1):
+            m = scipy.random.poisson(lambda_sequence)
+            if m <= sequence_length:
+                break
+            if trial == trials:
+                raise RuntimeError('mutations saturating, consider reducing lambda0')
+        # multinomial sample, with no repeats
+        p = scipy.array([mutability[0] for mutability in mutabilities])
+        p = p/p.sum()
+        mutations = scipy.random.choice(sequence_length, size=m, p=p, replace=False)
+        # mutute the sites with mutations
+        sequence = list(sequence) # mutable
+        for i in mutations:
+            p = [mutabilities[i][1][n] for n in 'ACGT']
             assert 0 <= abs(sum(p) - 1.) < 1e-10
-            mutated_site = scipy.random.multinomial(1, p).nonzero()[0][0]
-            sequence = list(sequence) # mutable
-            p = [mutabilities[mutated_site][1][n] for n in 'ACGT']
-            assert 0 <= abs(sum(p) - 1.) < 1e-10
-            sequence[mutated_site] = 'ACGT'[scipy.nonzero(scipy.random.multinomial(1, p))[0][0]]
-            sequence = ''.join(sequence)
-            mutabilities = self.mutabilities(sequence) # <-- update mutabilitites
+            sequence[i] = 'ACGT'[scipy.random.choice(4, p=p)]
 
-        return sequence
+        return ''.join(sequence)
 
 
     def simulate(self, sequence, p=.4, lambda0=1, r=1.):
@@ -733,15 +738,15 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    forest = CollapsedForest(forest=[CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.naive)])
+    parsimony_forest = CollapsedForest(forest=[CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.naive)])
 
-    if forest.n_trees == 1:
+    if parsimony_forest.n_trees == 1:
         warnings.warn('only one parsimony tree reported from dnapars')
 
-    print('number of trees with integer branch lengths:', forest.n_trees)
+    print('number of trees with integer branch lengths:', parsimony_forest.n_trees)
 
     # check for unifurcations at root
-    unifurcations = sum(tree.tree.frequency == 0 and len(tree.tree.children) == 1 for tree in forest.forest)
+    unifurcations = sum(tree.tree.frequency == 0 and len(tree.tree.children) == 1 for tree in parsimony_forest.forest)
     if unifurcations:
         print('WARNING: {} trees exhibit unifurcation from root, which is not possible under current model. Such nodes will be ommitted from likelihood calculation'.format(unifurcations))
 
@@ -750,7 +755,7 @@ def infer(args):
     max_tries = 1
     for tries in range(max_tries):
         try:
-            forest.mle(Vlad_sum=True)
+            parsimony_forest.mle(Vlad_sum=True)
             break
         except FloatingPointError as e:
             if tries + 1 < max_tries:
@@ -760,24 +765,20 @@ def infer(args):
         else:
             raise
 
-    print('params = {}'.format(forest.params))
+    print('params = {}'.format(parsimony_forest.params))
+
+    # get likelihoods and sort by them
+    ls = [tree.l(parsimony_forest.params)[0] for tree in parsimony_forest.forest]
+    ls, parsimony_forest.forest = zip(*sorted(zip(ls, parsimony_forest.forest), reverse=True))
 
     with open(args.outbase+'.inference.parsimony_forest.p', 'wb') as f:
-        cPickle.dump(forest, f)
+        cPickle.dump(parsimony_forest, f)
 
-    print_data = []
-    max_l = None
-    for collapsed_tree in forest.forest:
+    print('tree\talleles\tlogLikelihood')
+    for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
         alleles = len(collapsed_tree.tree)
-        l = collapsed_tree.l(forest.params)[0]
-        if max_l is None or l > max_l:
-            mle_tree = collapsed_tree
-        print_data.append((alleles, l))
-    mle_tree.render(args.outbase+'.inference.MLtree.svg')
-
-    print('alleles\tlogLikelihood')
-    for x in sorted(print_data, key=lambda x: (-x[-1], x[0])):
-        print('\t'.join(map(str, x)))
+        print('{}\t{}\t{}'.format(i, alleles, l))
+        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i))
 
 
 def simulate(args):
