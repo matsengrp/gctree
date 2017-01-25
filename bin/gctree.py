@@ -864,7 +864,7 @@ def main():
     parser_sim.add_argument('sequence', type=str, help='seed naive nucleotide sequence')
     parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
-    parser_sim.add_argument('--p', type=float, default=.4, help='branching probability')
+    parser_sim.add_argument('--p', type=float, default=.49, help='branching probability')
     parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
     parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
     parser_sim.add_argument('--n', type=int, default=1, help='minimum simulation size')
