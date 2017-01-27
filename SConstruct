@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
-Infer trees from germinal center data, and validate inference method
+Infer trees from germinal center data, and validate inference method with simulation
 '''
 from __future__ import print_function
 import os
@@ -21,15 +21,20 @@ env = Environment(ENV=environ)
 env.PrependENVPath('PATH', 'bin')
 
 # Setting up command line arguments/options
-AddOption('--validate',
+AddOption('--simulate',
           action='store_true',
           help='validation subprogram, instead of inference')
+AddOption('--frame',
+          type='int',
+          default=None,
+          help='codon frame')
+frame = GetOption('frame')
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
 outdir = GetOption('outdir')
 
-if GetOption('validate'):
+if GetOption('simulate'):
     AddOption('--naive',
               type='string',
               default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'+
@@ -72,9 +77,8 @@ if GetOption('validate'):
     lambda0 = GetOption('lambda0')
     r = GetOption('r')
     n = GetOption('n')
-
     SConscript('SConscript.simulation',
-                exports='env outdir naive mutability substitution p lambda0 r n')
+                exports='env frame outdir naive mutability substitution p lambda0 r n')
 
 else:
     AddOption('--fasta',
@@ -90,5 +94,4 @@ else:
 
     fasta = GetOption('fasta')
     naiveID = GetOption('naiveID')
-
-    SConscript('SConscript.inference', exports='env fasta outdir naiveID')
+    SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
