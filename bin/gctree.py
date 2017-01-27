@@ -513,9 +513,14 @@ class MutationModel():
         else:
             return [(1, dict((n2, 1/3) if n2 is not n else (n2, 0.) for n2 in 'ACGT')) for n in sequence]
 
-    def mutate(self, sequence, lambda0=1):
+    def mutate(self, sequence, lambda0=1, frame=1):
         '''mutate a sequence, with lamdba0 the baseline mutability'''
         sequence_length = len(sequence)
+        codon_start = frame-1
+        codon_end = codon_start + 3*((sequence_length - codon_start)//3)
+        if '*' in Seq(sequence[codon_start:codon_end], generic_dna).translate():
+            raise RuntimeError('sequence contains stop codon!')
+
         mutabilities = self.mutabilities(sequence)
         sequence_mutability = sum(mutability[0] for mutability in mutabilities)/sequence_length
         # baseline Poisson
@@ -534,13 +539,19 @@ class MutationModel():
         p = p/p.sum()
         mutations = scipy.random.choice(sequence_length, size=m, p=p, replace=False)
         # mutute the sites with mutations
-        sequence = list(sequence) # mutable
-        for i in mutations:
-            p = [mutabilities[i][1][n] for n in 'ACGT']
-            assert 0 <= abs(sum(p) - 1.) < 1e-10
-            sequence[i] = 'ACGT'[scipy.random.choice(4, p=p)]
-
-        return ''.join(sequence)
+        # if contains stop codon, try again, up to 10 times
+        sequence_list = list(sequence) # mutable
+        for trial in range(1, trials+1):
+            for i in mutations:
+                p = [mutabilities[i][1][n] for n in 'ACGT']
+                assert 0 <= abs(sum(p) - 1.) < 1e-10
+                sequence_list[i] = 'ACGT'[scipy.random.choice(4, p=p)]
+            sequence = ''.join(sequence_list)
+            if '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
+                break
+            if trial == trials:
+                raise RuntimeError('stop codon in simulated sequence on 10 consecustive attempts')
+        return sequence
 
 
     def simulate(self, sequence, p=.4, lambda0=1, r=1.):
