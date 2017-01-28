@@ -570,11 +570,11 @@ class MutationModel():
         nodes_unterminated = 1
         while nodes_unterminated > 0 and (t < T if T is not None else True):
             t += 1
-            for leaf in tree.iter_leaves():
+            for leaf in list(tree.iter_leaves()):
                 if not leaf.terminated:
                     if scipy.random.random() < p:
                         for child_count in range(2):
-                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0, frame)
+                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0, frame=frame)
                             child = TreeNode()
                             child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
                             child.add_feature('sequence', mutated_sequence)
@@ -810,7 +810,7 @@ def simulate(args):
         trial = 1
         while trial < 10:
             try:
-                tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r, args.frame, args.T)
+                tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r, frame=args.frame, T=args.T)
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
                 break
             except RuntimeError:

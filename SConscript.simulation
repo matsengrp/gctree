@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env frame outdir naive mutability substitution p lambda0 r n')
+Import('env outdir naive mutability substitution p lambda0 r n frame T')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -22,6 +22,7 @@ def gctree_sim(outdir, c):
     NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
     '''
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
+    time_arg = ' --T {} '.format(T) if T is not None else ''
     return env.Command([os.path.join(outdir, 'gctree.simulation.fasta'),
                      os.path.join(outdir, 'gctree.simulation.collapsed_tree.p'),
                      os.path.join(outdir, 'gctree.simulation.collapsed_tree.svg'),
@@ -32,6 +33,7 @@ def gctree_sim(outdir, c):
                      ' --outbase '+os.path.join(outdir, 'gctree')+
                      ' --p {} --lambda0 {} --r {} --n {}'.format(p, lambda0, r, n)+
                      frame_arg+
+                     time_arg+
                      ' > ${TARGETS[3]}')
 
 @w.add_target()

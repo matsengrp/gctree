@@ -69,6 +69,10 @@ if GetOption('simulate'):
               type='int',
               default=100,
               help='minimum simulation tree size')
+    AddOption('--T',
+              type='int',
+              default=None,
+              help='observation time')
 
     naive = GetOption('naive')
     mutability = GetOption('mutability')
@@ -77,8 +81,9 @@ if GetOption('simulate'):
     lambda0 = GetOption('lambda0')
     r = GetOption('r')
     n = GetOption('n')
+    T = GetOption('T')
     SConscript('SConscript.simulation',
-                exports='env frame outdir naive mutability substitution p lambda0 r n')
+                exports='env outdir naive mutability substitution p lambda0 r n frame T')
 
 else:
     AddOption('--fasta',
