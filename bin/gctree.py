@@ -7,7 +7,11 @@ in which the tree is collapsed to nodes that count the number of clonal leaves o
 '''
 
 from __future__ import division, print_function
-import scipy, warnings, random, cPickle
+import scipy, warnings, random
+try:
+    import cPickle as pickle
+except:
+    import pickle
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad
 
@@ -282,7 +286,7 @@ class CollapsedTree(LeavesAndClades):
     def write(self, file_name):
         '''serialize tree to file'''
         with open(file_name, 'wb') as f:
-            cPickle.dump(self, f)
+            pickle.dump(self, f)
 
 
 class CollapsedForest(CollapsedTree):
@@ -789,7 +793,7 @@ def infer(args):
     ls, parsimony_forest.forest = zip(*sorted(zip(ls, parsimony_forest.forest), reverse=True))
 
     with open(args.outbase+'.inference.parsimony_forest.p', 'wb') as f:
-        cPickle.dump(parsimony_forest, f)
+        pickle.dump(parsimony_forest, f)
 
     print('tree\talleles\tlogLikelihood')
     for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
@@ -838,9 +842,9 @@ def simulate(args):
 
 def validate(args):
     with open(args.truetree, 'rb') as f:
-        true_tree = cPickle.load(f)
+        true_tree = pickle.load(f)
     with open(args.parfor, 'rb') as f:
-        parsimony_forest = cPickle.load(f)
+        parsimony_forest = pickle.load(f)
 
     # NOTE: the unrooted_trees flag is needed because, for some reason, the RF
     #       function sometimes thinks the collapsed trees are unrooted and barfs
