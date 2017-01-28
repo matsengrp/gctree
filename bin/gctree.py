@@ -513,13 +513,14 @@ class MutationModel():
         else:
             return [(1, dict((n2, 1/3) if n2 is not n else (n2, 0.) for n2 in 'ACGT')) for n in sequence]
 
-    def mutate(self, sequence, lambda0=1, frame=1):
+    def mutate(self, sequence, lambda0=1, frame=None):
         '''mutate a sequence, with lamdba0 the baseline mutability'''
         sequence_length = len(sequence)
-        codon_start = frame-1
-        codon_end = codon_start + 3*((sequence_length - codon_start)//3)
-        if '*' in Seq(sequence[codon_start:codon_end], generic_dna).translate():
-            raise RuntimeError('sequence contains stop codon!')
+        if frame is not None:
+            codon_start = frame-1
+            codon_end = codon_start + 3*((sequence_length - codon_start)//3)
+            if '*' in Seq(sequence[codon_start:codon_end], generic_dna).translate():
+                raise RuntimeError('sequence contains stop codon!')
 
         mutabilities = self.mutabilities(sequence)
         sequence_mutability = sum(mutability[0] for mutability in mutabilities)/sequence_length
@@ -547,45 +548,50 @@ class MutationModel():
                 assert 0 <= abs(sum(p) - 1.) < 1e-10
                 sequence_list[i] = 'ACGT'[scipy.random.choice(4, p=p)]
             sequence = ''.join(sequence_list)
-            if '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
+            if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
                 break
             if trial == trials:
                 raise RuntimeError('stop codon in simulated sequence on 10 consecustive attempts')
         return sequence
 
 
-    def simulate(self, sequence, p=.4, lambda0=1, r=1.):
+    def simulate(self, sequence, p=.4, lambda0=1, r=1., frame=None, T=None):
         '''simulate neutral binary branching process with mutation model'''
-        if p >= .5:
+        if T is None and p >= .5:
             raw_input('WARNING: p = {} is not subcritical, tree termination not garanteed! [ENTER] to proceed'.format(p))
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
         tree.add_feature('terminated', False)
         tree.add_feature('frequency', 0)
+        tree.add_feature('time', 0)
+        t = 0 # <-- time
 
         nodes_unterminated = 1
-        while nodes_unterminated > 0:
+        while nodes_unterminated > 0 and (t < T if T is not None else True):
+            t += 1
             for leaf in tree.iter_leaves():
                 if not leaf.terminated:
                     if scipy.random.random() < p:
                         for child_count in range(2):
-                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0)
+                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0, frame)
                             child = TreeNode()
                             child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
                             child.add_feature('sequence', mutated_sequence)
                             child.add_feature('frequency', 0)
-                            leaf.add_child(child)
                             child.add_feature('terminated' ,False)
+                            child.add_feature('time', t)
+                            leaf.add_child(child)
                         nodes_unterminated += 1
                     else:
                         leaf.terminated = True
                         nodes_unterminated -= 1
 
         # each leaf gets an observation frequency of 1
-        for node in tree.iter_leaves():
-            if scipy.random.random() < r:
-                node.frequency = 1
+        # if T is not None, we only can observe those alive at T
+        for leaf in tree.iter_leaves():
+            if scipy.random.random() < r and (leaf.time == T if T is not None else True):
+                leaf.frequency = 1
 
         # return the fine (uncollapsed) tree
         return tree
@@ -804,7 +810,7 @@ def simulate(args):
         trial = 1
         while trial < 10:
             try:
-                tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r)
+                tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r, args.frame, args.T)
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
                 break
             except RuntimeError:
@@ -879,6 +885,7 @@ def main():
     parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
     parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
     parser_sim.add_argument('--n', type=int, default=1, help='minimum simulation size')
+    parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
     parser_sim.set_defaults(func=simulate)
 
     # parser for validation subprogram
