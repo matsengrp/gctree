@@ -9,9 +9,9 @@ in which the tree is collapsed to nodes that count the number of clonal leaves o
 from __future__ import division, print_function
 import scipy, warnings, random
 try:
-   import cPickle as pickle
+    import cPickle as pickle
 except:
-   import pickle
+    import pickle
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad
 
