@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
 import seaborn as sns
-from scipy.stats import probplot
+from scipy.stats import probplot, poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
@@ -559,10 +559,14 @@ class MutationModel():
         return sequence
 
 
-    def simulate(self, sequence, p=.4, lambda0=1, r=1., frame=None, T=None):
-        '''simulate neutral binary branching process with mutation model'''
-        if T is None and p >= .5:
-            raw_input('WARNING: p = {} is not subcritical, tree termination not garanteed! [ENTER] to proceed'.format(p))
+    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, r=1., frame=None, T=None):
+        '''
+        simulate neutral binary branching process with mutation model
+        progeny must be like a scipy.stats distribution, with rvs() and mean() methods
+        '''
+        expected_progeny = progeny.mean()
+        if expected_progeny >= 1 and T is None:
+            raise ValueError('E[progeny] = {} is not subcritical, tree termination not garanteed!'.format(expected_progeny))
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
@@ -571,25 +575,24 @@ class MutationModel():
         tree.add_feature('time', 0)
         t = 0 # <-- time
 
-        nodes_unterminated = 1
-        while nodes_unterminated > 0 and (t < T if T is not None else True):
+        leaves_unterminated = 1
+        while leaves_unterminated > 0 and (t < T if T is not None else True):
             t += 1
             for leaf in list(tree.iter_leaves()):
                 if not leaf.terminated:
-                    if scipy.random.random() < p:
-                        for child_count in range(2):
-                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0, frame=frame)
-                            child = TreeNode()
-                            child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
-                            child.add_feature('sequence', mutated_sequence)
-                            child.add_feature('frequency', 0)
-                            child.add_feature('terminated' ,False)
-                            child.add_feature('time', t)
-                            leaf.add_child(child)
-                        nodes_unterminated += 1
-                    else:
+                    n_children = progeny.rvs()
+                    leaves_unterminated += n_children - 1 # <-- this kills the parent if we drew a zero
+                    if not n_children:
                         leaf.terminated = True
-                        nodes_unterminated -= 1
+                    for child_count in range(n_children):
+                        mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0, frame=frame)
+                        child = TreeNode()
+                        child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
+                        child.add_feature('sequence', mutated_sequence)
+                        child.add_feature('frequency', 0)
+                        child.add_feature('terminated' ,False)
+                        child.add_feature('time', t)
+                        leaf.add_child(child)
 
         # each leaf gets an observation frequency of 1
         # if T is not None, we only can observe those alive at T
@@ -808,23 +811,31 @@ def simulate(args):
         args.lambda0 = max([1, int(.01*len(args.sequence))])
     args.sequence = args.sequence.upper()
     mutation_model = MutationModel(args.mutability, args.substitution)
-    size = 0
-    while size < args.n:
+    trials = 1000
+    # this loop makes us resimulate if size too small
+    for size_trial in range(trials):
         # this loop makes us resimulate if we got backmutations
-        trial = 1
-        while trial < 10:
+        for trial in range(trials):
             try:
-                tree = mutation_model.simulate(args.sequence, p=args.p, lambda0=args.lambda0, r=args.r, frame=args.frame, T=args.T)
+                tree = mutation_model.simulate(args.sequence, progeny=poisson(args.lambda_), lambda0=args.lambda0, r=args.r, T=args.T)
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
                 break
-            except RuntimeError:
-                trial += 1
+            except RuntimeError as e:
+                if trial <= trials:
+                    print('{}, trying again'.format(e))
                 continue
             else:
                 raise
-        if trial == 10:
-            raise RuntimeError('repeated sequences in collapsed tree on {} attempts'.format(trial))
-        size = sum(node.frequency for node in tree)
+        if trial == trials - 1:
+            raise RuntimeError('repeated sequences in collapsed tree on {} attempts'.format(trials))
+        size = sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())
+        if size >= args.n:
+            break
+        elif size_trial <= trials:
+            print('tree size {} less than target {}, trying again'.format(size, args.n))
+    if size_trial == trials - 1:
+        raise RuntimeError('tree of size {} not reached on {} attempts'.format(args.n, trials))
+
     with open(args.outbase+'.simulation.fasta', 'w') as f:
         f.write('> naive\n')
         f.write(args.sequence+'\n')
@@ -835,7 +846,7 @@ def simulate(args):
                 f.write('> seq{}\n'.format(i))
                 f.write(leaf.sequence+'\n')
                 leaf.name = 'seq{}'.format(i)
-    print(i, 'simulated observed sequences')
+    print('{} simulated observed sequences'.format(size))
     collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
     collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')
 
@@ -885,7 +896,7 @@ def main():
     parser_sim.add_argument('sequence', type=str, help='seed naive nucleotide sequence')
     parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
-    parser_sim.add_argument('--p', type=float, default=.49, help='branching probability')
+    parser_sim.add_argument('--lambda', dest='lambda_', type=float, default=.9, help='poisson branching parameter')
     parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
     parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
     parser_sim.add_argument('--n', type=int, default=1, help='minimum simulation size')

@@ -53,10 +53,10 @@ if GetOption('simulate'):
               metavar='PATH',
               default='S5F/Substitution.csv',
               help='path to S5F substitution data')
-    AddOption('--p',
+    AddOption('--lambda',
               type='float',
-              default=.49,
-              help='branching probabliity for simulation')
+              default=.9,
+              help='Poisson branching parameter for simulation')
     AddOption('--lambda0',
               type='float',
               default=.1,
@@ -77,13 +77,13 @@ if GetOption('simulate'):
     naive = GetOption('naive')
     mutability = GetOption('mutability')
     substitution = GetOption('substitution')
-    p = GetOption('p')
+    lambda_ = GetOption('lambda')
     lambda0 = GetOption('lambda0')
     r = GetOption('r')
     n = GetOption('n')
     T = GetOption('T')
     SConscript('SConscript.simulation',
-                exports='env outdir naive mutability substitution p lambda0 r n frame T')
+                exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
 
 else:
     AddOption('--fasta',
