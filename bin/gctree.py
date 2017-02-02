@@ -26,7 +26,7 @@ from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, Cir
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 
-#scipy.seterr(all='raise')
+scipy.seterr(all='raise')
 
 class LeavesAndClades():
     '''
@@ -662,6 +662,7 @@ def test(args):
     theoretical_cdf = scipy.cumsum(scipy.exp(log_prob))
     empirical_cdf = scipy.cumsum(freq)/len_total
 
+    sns.reset_orig() # <-- don't use seaborn
     fig = plt.figure()
     fig.set_tight_layout(True)
     plt.rc('text', usetex=True)
@@ -744,11 +745,11 @@ def test(args):
             Z[i, j] = z
     ax = fig.add_subplot(2,2,4)
     ax.set_title(r'$\ell(p, q)$')
-    contour = ax.contour(X, Y, Z, colors='k', label='likelihood contours')
+    contour = ax.contour(X, Y, Z, 10, colors='k', label='likelihood contours')
     for c in contour.collections:
         c.set_linestyle('solid')
 
-    ax.clabel(contour, fontsize=9, inline=1)
+    ax.clabel(contour, fontsize=8, inline=1)
     ax.plot([p], [q], 'k+', label='true parameters')
     ax.plot(mle.x[0], mle.x[1], 'ko', markerfacecolor='none', label='MLE parameters')
     ax.set_xlabel(r'$p$')
@@ -866,6 +867,26 @@ def validate(args):
     df.to_csv(args.outbase+'.validation.tsv', sep='\t', index=False)
     sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(args.outbase+'.validation.pdf')
 
+    # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
+    taxa = [leaf.sequence for leaf in true_tree.tree.iter_leaves() if leaf.frequency]
+    sequence_length = len(taxa[0])
+    n_taxa = len(taxa)
+    for ct, tree in enumerate(parsimony_forest.forest, 1):
+        d = scipy.zeros(shape=(n_taxa, n_taxa))
+        for i in range(n_taxa):
+            leafi_true = true_tree.tree.iter_search_nodes(sequence=taxa[i]).next()
+            leafi      =      tree.tree.iter_search_nodes(sequence=taxa[i]).next()
+            for j in range(i + 1, n_taxa):
+                leafj_true = true_tree.tree.iter_search_nodes(sequence=taxa[j]).next()
+                leafj      =      tree.tree.iter_search_nodes(sequence=taxa[j]).next()
+                MRCA_true = true_tree.tree.get_common_ancestor((leafi_true, leafj_true)).sequence
+                MRCA =           tree.tree.get_common_ancestor((leafi, leafj)).sequence
+                d[i, j] = hamming_distance(MRCA_true, MRCA)/sequence_length
+        fig = plt.figure()
+        sns.heatmap(d)
+        plt.savefig(args.outbase+'.validation.ancestor.{}.pdf'.format(ct))
+
+
 def main():
     import argparse
 
@@ -878,7 +899,7 @@ def main():
                                         help='run tests on library functions')
     parser_test.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
     parser_test.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
-    parser_test.add_argument('--n', type=int, default=1, help='forest size for test mode')
+    parser_test.add_argument('--n', type=int, default=50, help='forest size for test mode')
     parser_test.set_defaults(func=test)
 
     # parser for inference subprogram

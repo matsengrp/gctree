@@ -10,12 +10,12 @@ Import('env frame fasta outdir naiveID')
 # parse fasta file to phylip, interpreting integer names as frequencies
 phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
                      fasta,
-                     'bin/fasta2phylip.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+                     'python bin/fasta2phylip.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
 # make config file for dnapars
 dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
                              phylip,
-                             'bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+                             'python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
 # run dnapars (from phylip package) to generate parsimony trees
 dnapars = env.Command(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
@@ -33,7 +33,7 @@ frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
 #       these will be names 2, 3, ...
 gctree_infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.1.svg', gctree_outbase+'.inference.log'],
                            dnapars[1],
-                           'xvfb-run -a bin/gctree.py infer $SOURCE --naive '+naiveID+
+                           'xvfb-run -a python bin/gctree.py infer $SOURCE --naive '+naiveID+
                            ' --outbase '+gctree_outbase+
                            frame_arg+
                            ' > ${TARGETS[2]}')

@@ -28,7 +28,7 @@ def gctree_sim(outdir, c):
                      os.path.join(outdir, 'gctree.simulation.collapsed_tree.svg'),
                      os.path.join(outdir, 'gctree.simulation.log')],
                      [mutability, substitution],
-                     'xvfb-run -a bin/gctree.py simulate '+naive+
+                     'xvfb-run -a python bin/gctree.py simulate '+naive+
                      ' ${SOURCES[0]} ${SOURCES[1]}'+
                      ' --outbase '+os.path.join(outdir, 'gctree')+
                      ' --lambda {} --lambda0 {} --r {} --n {}'.format(lambda_, lambda0, r, n)+
@@ -50,7 +50,7 @@ def gctree_validate(outdir, c):
                        os.path.join(outdir, 'gctree.validation.pdf'),
                        os.path.join(outdir, 'gctree.validation.log')],
                       [c['gctree_sim'][1], c['gctree_infer'][0]],
-                      'xvfb-run -a bin/gctree.py validate $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
+                      'xvfb-run -a python bin/gctree.py validate $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
     c['aggdat'].append(tgt[0])
     return tgt
 
@@ -64,6 +64,6 @@ def aggregate(outdir, c):
                        os.path.join(outdir, 'validaggreg.delta_r.pdf'),
                        os.path.join(outdir, 'validaggreg.log')],
                       c['aggdat'],
-                      'bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[3]}')
+                      'python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[3]}')
     env.AlwaysBuild(tgt)
     return tgt
