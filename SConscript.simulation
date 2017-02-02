@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env outdir naive mutability substitution p lambda0 r n frame T')
+Import('env outdir naive mutability substitution lambda_ lambda0 r n frame T')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -31,7 +31,7 @@ def gctree_sim(outdir, c):
                      'xvfb-run -a bin/gctree.py simulate '+naive+
                      ' ${SOURCES[0]} ${SOURCES[1]}'+
                      ' --outbase '+os.path.join(outdir, 'gctree')+
-                     ' --p {} --lambda0 {} --r {} --n {}'.format(p, lambda0, r, n)+
+                     ' --lambda {} --lambda0 {} --r {} --n {}'.format(lambda_, lambda0, r, n)+
                      frame_arg+
                      time_arg+
                      ' > ${TARGETS[3]}')
