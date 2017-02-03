@@ -863,14 +863,13 @@ def validate(args):
     distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
                                     tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
-    df = pd.DataFrame({'distance':distances, 'log-likelihood':likelihoods})
-    df.to_csv(args.outbase+'.validation.tsv', sep='\t', index=False)
-    sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(args.outbase+'.validation.pdf')
+    df = pd.DataFrame({'RF':distances, 'log-likelihood':likelihoods})
 
     # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
     taxa = [leaf.sequence for leaf in true_tree.tree.iter_leaves() if leaf.frequency]
     sequence_length = len(taxa[0])
     n_taxa = len(taxa)
+    MRCA_sum_metric = []
     for ct, tree in enumerate(parsimony_forest.forest, 1):
         d = scipy.zeros(shape=(n_taxa, n_taxa))
         for i in range(n_taxa):
@@ -881,10 +880,19 @@ def validate(args):
                 leafj      =      tree.tree.iter_search_nodes(sequence=taxa[j]).next()
                 MRCA_true = true_tree.tree.get_common_ancestor((leafi_true, leafj_true)).sequence
                 MRCA =           tree.tree.get_common_ancestor((leafi, leafj)).sequence
-                d[i, j] = hamming_distance(MRCA_true, MRCA)/sequence_length
-        fig = plt.figure()
-        sns.heatmap(d)
+                d[i, j] = hamming_distance(MRCA_true, MRCA)#/sequence_length
+        sns.heatmap(d, vmin=0)
         plt.savefig(args.outbase+'.validation.ancestor.{}.pdf'.format(ct))
+        plt.clf()
+        MRCA_sum_metric.append(d.sum())
+    df['MRCA'] = MRCA_sum_metric
+
+    # plots
+    sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(args.outbase+'.validation.pdf')
+    # sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(args.outbase+'.validation.RF.pdf')
+    # sns.regplot(x='log-likelihood', y='MRCA', data=df).get_figure().savefig(args.outbase+'.validation.MRCA.pdf')
+
+    df.to_csv(args.outbase+'.validation.tsv', sep='\t', index=False)
 
 
 def main():
