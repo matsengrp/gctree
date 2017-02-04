@@ -25,7 +25,7 @@ aggdat = pd.DataFrame(columns=('parsimony forest size', 'trees with MRCA less th
 for i, fname in enumerate(args.input):
     df = pd.read_csv(fname, sep='\t')
     forest_size = len(df.index)
-    aggdat.loc[i] = (forest_size, sum(x < df['MRCA'][0] for x in df['MRCA']))
+    aggdat.loc[i] = (forest_size, sum(x <= df['MRCA'][0] for x in df['MRCA']))
     #percentileofscore(df['MRCA'], df['MRCA'][0], kind='mean'))
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
