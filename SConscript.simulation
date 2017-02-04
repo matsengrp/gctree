@@ -13,7 +13,7 @@ w = SConsWrap(nest, outdir, alias_environment=env)
 w.add_aggregate('aggdat', list)
 
 # Initialize our first nest level, just random simulation reruns, same params
-w.add('runs', range(1,11))
+w.add('runs', range(1,101))
 
 @w.add_target()
 def gctree_sim(outdir, c):
