@@ -34,12 +34,12 @@ plt.figure()
 sns.regplot(x='parsimony forest size', y='trees with MRCA less than or equal to optimal tree',
             data=aggdat, fit_reg=False, scatter_kws={'alpha':0.4})
 plt.xlim(.5, None)
-plt.ylim(-.1, plt.xlim()[1]/2)
+plt.ylim(.5, plt.xlim()[1]/2)
 linex = scipy.arange(1, int(aggdat['parsimony forest size'].max())+1)
 liney = (linex+1)/2
 plt.plot(linex, liney, '--k', lw=1)
 plt.xscale('log')
-plt.yscale('symlog')
+plt.yscale('log')
 plt.savefig(args.outbase+'.pdf')
 
 # g = sns.pairplot(aggdat, kind='reg',
