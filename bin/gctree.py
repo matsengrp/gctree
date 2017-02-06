@@ -866,21 +866,21 @@ def validate(args):
     df = pd.DataFrame({'RF':distances, 'log-likelihood':likelihoods})
 
     # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
-    taxa = [leaf.sequence for leaf in true_tree.tree.iter_leaves() if leaf.frequency]
+    taxa = [node.sequence for node in true_tree.tree.traverse() if node.frequency]
     sequence_length = len(taxa[0])
     n_taxa = len(taxa)
     MRCA_sum_metric = []
     for ct, tree in enumerate(parsimony_forest.forest, 1):
         d = scipy.zeros(shape=(n_taxa, n_taxa))
         for i in range(n_taxa):
-            leafi_true = true_tree.tree.iter_search_nodes(sequence=taxa[i]).next()
-            leafi      =      tree.tree.iter_search_nodes(sequence=taxa[i]).next()
+            nodei_true = true_tree.tree.iter_search_nodes(sequence=taxa[i]).next()
+            nodei      =      tree.tree.iter_search_nodes(sequence=taxa[i]).next()
             for j in range(i + 1, n_taxa):
-                leafj_true = true_tree.tree.iter_search_nodes(sequence=taxa[j]).next()
-                leafj      =      tree.tree.iter_search_nodes(sequence=taxa[j]).next()
-                MRCA_true = true_tree.tree.get_common_ancestor((leafi_true, leafj_true)).sequence
-                MRCA =           tree.tree.get_common_ancestor((leafi, leafj)).sequence
-                d[i, j] = hamming_distance(MRCA_true, MRCA)#/sequence_length
+                nodej_true = true_tree.tree.iter_search_nodes(sequence=taxa[j]).next()
+                nodej      =      tree.tree.iter_search_nodes(sequence=taxa[j]).next()
+                MRCA_true = true_tree.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
+                MRCA =           tree.tree.get_common_ancestor((nodei, nodej)).sequence
+                d[i, j] = nodei.frequency*nodej.frequency*hamming_distance(MRCA_true, MRCA)#/sequence_length
         sns.heatmap(d, vmin=0)
         plt.savefig(args.outbase+'.validation.ancestor.{}.pdf'.format(ct))
         plt.clf()
