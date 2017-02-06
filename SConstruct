@@ -21,12 +21,15 @@ env = Environment(ENV=environ)
 env.PrependENVPath('PATH', 'bin')
 
 # Setting up command line arguments/options
+AddOption('--inference',
+          action='store_true',
+          help='Run inference')
 AddOption('--simulate',
           action='store_true',
           help='validation subprogram, instead of inference')
 AddOption('--frame',
           type='int',
-          default=None,
+          default=1,
           help='codon frame')
 frame = GetOption('frame')
 AddOption('--outdir',
@@ -34,7 +37,15 @@ AddOption('--outdir',
           help="directory in which to output results")
 outdir = GetOption('outdir')
 
-if GetOption('simulate'):
+
+class InputError(Exception):
+    """Exception raised for errors in the input."""
+
+if not GetOption('simulate') and not GetOption('inference'):
+    InputError('Please provide one of the required arguments. Either \"--inference\" or \"--simulate\".')
+
+
+if GetOption('simulate') not GetOption('help'):
     AddOption('--naive',
               type='string',
               default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'+
@@ -82,10 +93,8 @@ if GetOption('simulate'):
     r = GetOption('r')
     n = GetOption('n')
     T = GetOption('T')
-    SConscript('SConscript.simulation',
-                exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
 
-else:
+elif GetOption('inference') not GetOption('help'):
     AddOption('--fasta',
               dest='fasta',
               type='string',
@@ -99,4 +108,12 @@ else:
 
     fasta = GetOption('fasta')
     naiveID = GetOption('naiveID')
+
+
+# First call after all arguments have been parsed
+# to enable correct command line help.
+if GetOption('simulate') not GetOption('help'):
+    SConscript('SConscript.simulation',
+               exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
+elif GetOption('inference') not GetOption('help'):
     SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
