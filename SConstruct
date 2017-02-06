@@ -42,16 +42,18 @@ class InputError(Exception):
     """Exception raised for errors in the input."""
 
 if not GetOption('simulate') and not GetOption('inference'):
-    InputError('Please provide one of the required arguments. Either \"--inference\" or \"--simulate\".')
+    raise InputError('Please provide one of the required arguments. Either "--inference" or "--simulate".'
+                     'Command line help can then be evoked by "-h" or "--help" and found in the bottom'
+                     'of the output under "Local Options".')
 
 
-if GetOption('simulate') not GetOption('help'):
+if GetOption('simulate'):
     AddOption('--naive',
               type='string',
-              default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'+
-                      'gcgactccatcaccagtggttactggaactggatccggaaattcccagggaataa'+
-                      'acttgagtacatggggtacataagctacagtggtagcacttactacaatccatct'+
-                      'ctcaaaagtcgaatctccatcactcgagacacatccaagaaccagtactacctgc'+
+              default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'
+                      'gcgactccatcaccagtggttactggaactggatccggaaattcccagggaataa'
+                      'acttgagtacatggggtacataagctacagtggtagcacttactacaatccatct'
+                      'ctcaaaagtcgaatctccatcactcgagacacatccaagaaccagtactacctgc'
                       'agttgaattctgtgactactgaggacacagccacatattactgt',
               help='sequence of naive from which to simulate')
     AddOption('--mutability',
@@ -94,7 +96,7 @@ if GetOption('simulate') not GetOption('help'):
     n = GetOption('n')
     T = GetOption('T')
 
-elif GetOption('inference') not GetOption('help'):
+elif GetOption('inference'):
     AddOption('--fasta',
               dest='fasta',
               type='string',
@@ -112,8 +114,13 @@ elif GetOption('inference') not GetOption('help'):
 
 # First call after all arguments have been parsed
 # to enable correct command line help.
-if GetOption('simulate') not GetOption('help'):
+if GetOption('simulate') and not GetOption('help'):
+    if None in [outdir, naive, mutability, substitution, lambda_, lambda0, r, n, frame]:
+        raise InputError('Please provide all required options.')
     SConscript('SConscript.simulation',
                exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
-elif GetOption('inference') not GetOption('help'):
+elif GetOption('inference') and not GetOption('help'):
+    if None in [frame, fasta, outdir, naiveID]:
+        raise InputError('Please provide all required options.')
     SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
+
