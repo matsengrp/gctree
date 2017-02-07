@@ -27,11 +27,21 @@ AddOption('--inference',
 AddOption('--simulate',
           action='store_true',
           help='validation subprogram, instead of inference')
+AddOption('--threads',
+          type='int',
+          help='Number of cores to run on.')
+if GetOption('threads'):
+    threads = GetOption('threads')
+else:
+    threads = 1
 AddOption('--frame',
           type='int',
-          default=1,
           help='codon frame')
-frame = GetOption('frame')
+if GetOption('frame'):
+    frame = GetOption('frame')
+else:
+    frame = 1
+
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
@@ -48,6 +58,12 @@ if not GetOption('simulate') and not GetOption('inference'):
 
 
 if GetOption('simulate'):
+    AddOption('--gctree',
+               action='store_true',
+               help='Inference using the GCtree algorithm.')
+    AddOption('--igphyml',
+               action='store_true',
+               help='Inference using the IgPhyML algorithm.')
     AddOption('--naive',
               type='string',
               default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'
@@ -115,10 +131,15 @@ elif GetOption('inference'):
 # First call after all arguments have been parsed
 # to enable correct command line help.
 if GetOption('simulate') and not GetOption('help'):
-    if None in [outdir, naive, mutability, substitution, lambda_, lambda0, r, n, frame]:
+    if None in [outdir, naive, mutability, substitution, lambda_, lambda0, r, n, frame] or \
+    (not GetOption('gctree') and not GetOption('igphyml')):
         raise InputError('Please provide all required options.')
-    SConscript('SConscript.simulation',
-               exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
+    if GetOption('gctree'):
+        SConscript('SConscript.simulation',
+                   exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
+    elif GetOption('igphyml'):
+        SConscript('SConscript.simulation_IgPhyML',
+                   exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
 elif GetOption('inference') and not GetOption('help'):
     if None in [frame, fasta, outdir, naiveID]:
         raise InputError('Please provide all required options.')
