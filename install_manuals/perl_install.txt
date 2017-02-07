@@ -1,0 +1,30 @@
+By Kristian Davidsen
+6th Feb. 2017
+
+
+module load OpenBLAS/0.2.15-GCC-4.9.3-2.25-LAPACK-3.6.0
+
+wget http://www.cpan.org/src/5.0/perl-5.24.1.tar.gz
+tar -xzf perl-5.24.1.tar.gz
+cd perl-5.24.1
+./Configure -des -Dprefix=/home/matsengrp/src/perl-5.24.1
+make
+make test
+make install
+cd ..
+rm perl-5.24.1.tar.gz
+cd ../../local/bin/
+ln -s ../../src/perl-5.24.1/perl
+ln -s ../../src/perl-5.24.1/bin/cpan
+
+
+### For installing modules:
+module load OpenBLAS/0.2.15-GCC-4.9.3-2.25-LAPACK-3.6.0
+export PKG_CONFIG_PATH="/home/matsengrp/src/perl-5.24.1/pkg-config:$PKG_CONFIG_PATH"
+cpan
+> install PDL
+> install PDL::LinearAlgebra::Trans
+
+### NOTICE that the pkg-config files under /home/matsengrp/src/perl-5.24.1/pkg-config is specific for the BLAS/LAPACK version OpenBLAS/0.2.15-GCC-4.9.3-2.25-LAPACK-3.6.0.
+
+

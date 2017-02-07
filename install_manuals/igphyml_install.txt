@@ -1,0 +1,7 @@
+By Kristian Davidsen
+6th Feb. 2017
+
+module load GCC
+module load OpenBLAS
+sh make_phyml_omp
+
