@@ -22,14 +22,14 @@ phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fast
 
 
 ### Step 1:
-# igphyml -i gctree.simulation.phylip -m GY -w M0 -t e --run_id gy94
+# igphyml -i gctree.simulation.phylip -m GY -w M0 -t e --run_id gy94 --threads 5
 #    gctree.simulation.phylip_igphyml_tree.txt_gy94  <--- File which is used for HLP16
 #    gctree.simulation.phylip_igphyml_stats.txt_gy94
 
 ### Step 2:
-# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o tlr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --run_id hlp16   <----- Optimize on topology, lenght and rate
-# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o lr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --run_id hlp16    <----- Optimize on lenght and rate
-# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o r -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --run_id hlp16     <----- Optimize on rate
+# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o tlr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16   <----- Optimize on topology, lenght and rate
+# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o lr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16    <----- Optimize on lenght and rate
+# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o r -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16     <----- Optimize on rate
 #    gctree.simulation.phylip_igphyml_tree.txt_hlp16  <--- File which is final tree topology
 #    gctree.simulation.phylip_igphyml_stats.txt_hlp16
 
