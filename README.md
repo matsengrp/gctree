@@ -14,7 +14,7 @@ There's going to be some simulation, validation, etc, with this project. For tha
 ## scons pipelines
 
 * Inference pipeline: `scons --outdir=[path to output] --fasta=[path to Tas et al. style fasta] --naiveID=[ID of naive sequence in fasta file, default 'naive']`
-* Simulation/validation pipeline: `scons --simulate --outdir=[path to output] --naive=[DNA seq of naive sequence from which to start simulating, used default if omitted] --mutability=[path to S5F mutability file, default 'S5F/mutability'] --substitution=[path to S5F substitution file, default 'S5F/substitution'] --p=[branching probability for simulation, default 0.49] --lambda0=[baseline mutation rate, default .3] --r=[sampling probability, default 1.] --n=[minimum simulation tree size, default 1]`
+* Simulation/validation pipeline: `scons --simulate --outdir=[path to output] --naive=[DNA seq of naive sequence from which to start simulating, used default if omitted] --mutability=[path to S5F mutability file, default 'S5F/mutability'] --substitution=[path to S5F substitution file, default 'S5F/substitution'] --p=[branching probability for simulation, default 0.49] --lambda0=[baseline mutation rate, default .3] --r=[sampling probability, default 1.] --N=[simulation tree size, default None] --T=[max generations, default None]`
 
 ## `gctree.py`
 library for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree.py --help`. There are three subprograms, each of which has usage info:

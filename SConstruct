@@ -29,7 +29,7 @@ AddOption('--simulate',
           help='validation subprogram, instead of inference')
 AddOption('--frame',
           type='int',
-          default=1,
+          default=None,
           help='codon frame')
 frame = GetOption('frame')
 AddOption('--outdir',
@@ -45,7 +45,6 @@ if not GetOption('simulate') and not GetOption('inference'):
     raise InputError('Please provide one of the required arguments. Either "--inference" or "--simulate".'
                      'Command line help can then be evoked by "-h" or "--help" and found in the bottom'
                      'of the output under "Local Options".')
-
 
 if GetOption('simulate'):
     AddOption('--naive',
@@ -78,10 +77,10 @@ if GetOption('simulate'):
               type='float',
               default=.5,
               help='sampling probability')
-    AddOption('--n',
+    AddOption('--N',
               type='int',
-              default=100,
-              help='minimum simulation tree size')
+              default=None,
+              help='simulation size')
     AddOption('--T',
               type='int',
               default=None,
@@ -93,7 +92,7 @@ if GetOption('simulate'):
     lambda_ = GetOption('lambda')
     lambda0 = GetOption('lambda0')
     r = GetOption('r')
-    n = GetOption('n')
+    N = GetOption('N')
     T = GetOption('T')
 
 elif GetOption('inference'):
@@ -115,12 +114,11 @@ elif GetOption('inference'):
 # First call after all arguments have been parsed
 # to enable correct command line help.
 if GetOption('simulate') and not GetOption('help'):
-    if None in [outdir, naive, mutability, substitution, lambda_, lambda0, r, n, frame]:
-        raise InputError('Please provide all required options.')
+    if outdir is None:
+        raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
+               exports='env outdir naive mutability substitution lambda_ lambda0 r frame N T')
 elif GetOption('inference') and not GetOption('help'):
-    if None in [frame, fasta, outdir, naiveID]:
-        raise InputError('Please provide all required options.')
+    if None in [fasta, outdir]:
+        raise InputError('input fasta and outdir must be specified')
     SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
-

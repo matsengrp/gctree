@@ -151,8 +151,6 @@ class CollapsedTree(LeavesAndClades):
         tree: ete tree with frequency node feature. If uncollapsed, it will be collapsed
         frame: tranlation frame, with default None, no tranlation attempted
         '''
-        #if params is None and tree is None:
-        #    raise ValueError('either params or tree (or both) must be provided')
         LeavesAndClades.__init__(self, params=params)
         if frame is not None and frame not in (1, 2, 3):
             raise RuntimeError('frame must be 1, 2, 3, or None')
@@ -559,14 +557,17 @@ class MutationModel():
         return sequence
 
 
-    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, r=1., frame=None, T=None):
+    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, r=1., frame=None, N=None, T=None):
         '''
         simulate neutral binary branching process with mutation model
         progeny must be like a scipy.stats distribution, with rvs() and mean() methods
         '''
-        expected_progeny = progeny.mean()
-        if expected_progeny >= 1 and T is None:
-            raise ValueError('E[progeny] = {} is not subcritical, tree termination not garanteed!'.format(expected_progeny))
+        if N is not None and T is not None:
+            raise ValueError('only one of N and T may be not None')
+        if N is None and T is None:
+            expected_progeny = progeny.mean()
+            if expected_progeny >= 1:
+                raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
@@ -576,7 +577,7 @@ class MutationModel():
         t = 0 # <-- time
 
         leaves_unterminated = 1
-        while leaves_unterminated > 0 and (t < T if T is not None else True):
+        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < T if T is not None else True):
             t += 1
             for leaf in list(tree.iter_leaves()):
                 if not leaf.terminated:
@@ -594,10 +595,16 @@ class MutationModel():
                         child.add_feature('time', t)
                         leaf.add_child(child)
 
-        # each leaf gets an observation frequency of 1
-        # if T is not None, we only can observe those alive at T
-        for leaf in tree.iter_leaves():
-            if scipy.random.random() < r and (leaf.time == T if T is not None else True):
+        if N is not None:
+            if leaves_unterminated < N:
+                raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
+
+        # each leaf in final generation gets an observation frequency of 1, unless downsampled
+        final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
+        if N is not None:
+            final_leaves = random.sample(final_leaves, N)
+        for leaf in final_leaves:
+            if scipy.random.random() < r:
                 leaf.frequency = 1
 
         # return the fine (uncollapsed) tree
@@ -813,29 +820,23 @@ def simulate(args):
     args.sequence = args.sequence.upper()
     mutation_model = MutationModel(args.mutability, args.substitution)
     trials = 1000
-    # this loop makes us resimulate if size too small
-    for size_trial in range(trials):
-        # this loop makes us resimulate if we got backmutations
-        for trial in range(trials):
-            try:
-                tree = mutation_model.simulate(args.sequence, progeny=poisson(args.lambda_), lambda0=args.lambda0, r=args.r, T=args.T)
-                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
-                break
-            except RuntimeError as e:
-                if trial <= trials:
-                    print('{}, trying again'.format(e))
-                continue
-            else:
-                raise
-        if trial == trials - 1:
-            raise RuntimeError('repeated sequences in collapsed tree on {} attempts'.format(trials))
-        size = sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())
-        if size >= args.n:
+    # this loop makes us resimulate if size too small, or backmutation
+    for trial in range(trials):
+        try:
+            tree = mutation_model.simulate(args.sequence,
+                                           progeny=poisson(args.lambda_),
+                                           lambda0=args.lambda0,
+                                           r=args.r,
+                                           N=args.N,
+                                           T=args.T)
+            collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
             break
-        elif size_trial <= trials:
-            print('tree size {} less than target {}, trying again'.format(size, args.n))
-    if size_trial == trials - 1:
-        raise RuntimeError('tree of size {} not reached on {} attempts'.format(args.n, trials))
+        except RuntimeError as e:
+            print('{}, trying again'.format(e))
+        else:
+            raise
+    if trial == trials - 1:
+        raise RuntimeError('{} attempts exceeded'.format(trials))
 
     with open(args.outbase+'.simulation.fasta', 'w') as f:
         f.write('> naive\n')
@@ -847,7 +848,7 @@ def simulate(args):
                 f.write('> seq{}\n'.format(i))
                 f.write(leaf.sequence+'\n')
                 leaf.name = 'seq{}'.format(i)
-    print('{} simulated observed sequences'.format(size))
+    print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
     collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
     collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')
 
@@ -928,7 +929,7 @@ def main():
     parser_sim.add_argument('--lambda', dest='lambda_', type=float, default=.9, help='poisson branching parameter')
     parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
     parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
-    parser_sim.add_argument('--n', type=int, default=1, help='minimum simulation size')
+    parser_sim.add_argument('--N', type=int, default=None, help='simulation size')
     parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
     parser_sim.set_defaults(func=simulate)
 
