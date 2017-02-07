@@ -818,7 +818,7 @@ def simulate(args):
         # this loop makes us resimulate if we got backmutations
         for trial in range(trials):
             try:
-                tree = mutation_model.simulate(args.sequence, progeny=poisson(args.lambda_), lambda0=args.lambda0, r=args.r, T=args.T)
+                tree = mutation_model.simulate(args.sequence, progeny=poisson(args.lambda_), lambda0=args.lambda0, r=args.r, T=args.T, frame=args.frame)
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
                 break
             except RuntimeError as e:
