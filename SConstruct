@@ -29,23 +29,17 @@ AddOption('--simulate',
           help='validation subprogram, instead of inference')
 AddOption('--threads',
           type='int',
+          default=1,
           help='Number of cores to run on.')
-if GetOption('threads'):
-    threads = GetOption('threads')
-else:
-    threads = 1
 AddOption('--frame',
           type='int',
-<<<<<<< HEAD
-=======
           default=None,
->>>>>>> 2823b2fbfab09453622b1e8810b1c87b14b2b5ea
           help='codon frame')
-if GetOption('frame'):
-    frame = GetOption('frame')
-else:
-    frame = 1
-
+frame = GetOption('frame')
+AddOption('--method',
+           default='gctree',
+           help='inference method, currently only "gctree" implemented')
+method = GetOption('method')
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
@@ -61,12 +55,6 @@ if not GetOption('simulate') and not GetOption('inference'):
                      'of the output under "Local Options".')
 
 if GetOption('simulate'):
-    AddOption('--gctree',
-               action='store_true',
-               help='Inference using the GCtree algorithm.')
-    AddOption('--igphyml',
-               action='store_true',
-               help='Inference using the IgPhyML algorithm.')
     AddOption('--naive',
               type='string',
               default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'
@@ -121,36 +109,23 @@ elif GetOption('inference'):
               type='string',
               metavar='PATH',
               help='path to input fasta')
+    fasta = GetOption('fasta')
     AddOption('--naiveID',
               type='string',
               metavar='seqID',
               default='naive',
               help='id of naive sequence')
-
-    fasta = GetOption('fasta')
     naiveID = GetOption('naiveID')
 
 
 # First call after all arguments have been parsed
 # to enable correct command line help.
 if GetOption('simulate') and not GetOption('help'):
-<<<<<<< HEAD
-    if None in [outdir, naive, mutability, substitution, lambda_, lambda0, r, n, frame] or \
-    (not GetOption('gctree') and not GetOption('igphyml')):
-        raise InputError('Please provide all required options.')
-    if GetOption('gctree'):
-        SConscript('SConscript.simulation',
-                   exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
-    elif GetOption('igphyml'):
-        SConscript('SConscript.simulation_IgPhyML',
-                   exports='env outdir naive mutability substitution lambda_ lambda0 r n frame T')
-=======
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env outdir naive mutability substitution lambda_ lambda0 r frame N T')
->>>>>>> 2823b2fbfab09453622b1e8810b1c87b14b2b5ea
+               exports='env method outdir naive mutability substitution lambda_ lambda0 r frame N T')
 elif GetOption('inference') and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
+    SConscript('SConscript.inference', exports='env method frame fasta outdir naiveID')

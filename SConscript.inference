@@ -5,37 +5,96 @@ Infer trees from germinal center data
 '''
 import os
 # the following must be exported by parent SConstruct/SConscript
-Import('env frame fasta outdir naiveID')
+Import('env method frame fasta outdir naiveID')
 
-# parse fasta file to phylip, interpreting integer names as frequencies
-phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
-                     fasta,
-                     'stdbuf -oL python bin/fasta2phylip.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+if method == 'gctree':
+    # parse fasta file to phylip, interpreting integer names as frequencies
+    phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
+                         fasta,
+                         'stdbuf -oL python bin/fasta2phylip.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
-# make config file for dnapars
-dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
-                             phylip,
-                             'stdbuf -oL python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+    # make config file for dnapars
+    dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
+                                 phylip,
+                                 'stdbuf -oL python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
-# run dnapars (from phylip package) to generate parsimony trees
-dnapars = env.Command(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
-                   dnapars_config,
-                   'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
-# Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
-# only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
-env.Depends(dnapars, phylip)
+    # run dnapars (from phylip package) to generate parsimony trees
+    dnapars = env.Command(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
+                       dnapars_config,
+                       'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
+    # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
+    # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
+    env.Depends(dnapars, phylip)
 
-# ML tree from parsimony trees
-# NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
-gctree_outbase = os.path.join(outdir, 'gctree')
-frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
-# NOTE: there will be other svg trees if the parsimony forest has more than 1 tree
-#       these will be names 2, 3, ...
-gctree_infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.1.svg', gctree_outbase+'.inference.log'],
-                           dnapars[1],
-                           'xvfb-run -a stdbuf -oL python bin/gctree.py infer $SOURCE --naive '+naiveID+
-                           ' --outbase '+gctree_outbase+
-                           frame_arg+
-                           ' > ${TARGETS[2]}')
+    # ML tree from parsimony trees
+    # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
+    gctree_outbase = os.path.join(outdir, 'gctree')
+    frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
+    # NOTE: there will be other svg trees if the parsimony forest has more than 1 tree
+    #       these will be names 2, 3, ...
+    infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.1.svg', gctree_outbase+'.inference.log'],
+                         dnapars[1],
+                         'xvfb-run -a stdbuf -oL python bin/gctree.py infer $SOURCE --naive '+naiveID+
+                         ' --outbase '+gctree_outbase+
+                         frame_arg+
+                         ' > ${TARGETS[2]}')
 
-Return('gctree_infer')
+    Return('infer')
+
+elif method == 'igphyml':
+    # parse fasta file to phylip, interpreting integer names as frequencies
+    phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
+                         fasta,
+                         'python bin/fasta2phylip.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+
+
+    # make config file for dnapars
+    #dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
+    #                             phylip,
+    #                             'python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+
+
+
+
+    ### Step 1:
+    # igphyml -i gctree.simulation.phylip -m GY -w M0 -t e --run_id gy94 --threads 5
+    #    gctree.simulation.phylip_igphyml_tree.txt_gy94  <--- File which is used for HLP16
+    #    gctree.simulation.phylip_igphyml_stats.txt_gy94
+
+    ### Step 2:
+    # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o tlr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16   <----- Optimize on topology, lenght and rate
+    # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o lr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16    <----- Optimize on lenght and rate
+    # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o r -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16     <----- Optimize on rate
+    #    gctree.simulation.phylip_igphyml_tree.txt_hlp16  <--- File which is final tree topology
+    #    gctree.simulation.phylip_igphyml_stats.txt_hlp16
+
+
+
+
+
+
+    # run dnapars (from phylip package) to generate parsimony trees
+    igphyml = env.Command(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
+                       dnapars_config,
+                       'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
+    # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
+    # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
+    # env.Depends(dnapars, phylip)
+
+    # ML tree from parsimony trees
+    # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
+    gctree_outbase = os.path.join(outdir, 'gctree')
+    frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
+    # NOTE: there will be other svg trees if the parsimony forest has more than 1 tree
+    #       these will be names 2, 3, ...
+    infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.1.svg', gctree_outbase+'.inference.log'],
+                               dnapars[1],
+                               'xvfb-run -a python bin/gctree.py infer $SOURCE --naive '+naiveID+
+                               ' --outbase '+gctree_outbase+
+                               frame_arg+
+                               ' > ${TARGETS[2]}')
+
+else:
+    InputError('invalid inference method: ' + method)
+
+Return('infer')

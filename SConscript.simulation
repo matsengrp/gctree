@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env outdir naive mutability substitution lambda_ lambda0 r frame N T')
+Import('env method outdir naive mutability substitution lambda_ lambda0 r frame N T')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -32,26 +32,26 @@ def gctree_sim(outdir, c):
                      'xvfb-run -a stdbuf -oL python bin/gctree.py simulate '+naive+
                      ' ${SOURCES[0]} ${SOURCES[1]}'+
                      ' --outbase '+os.path.join(outdir, 'gctree')+
-                     ' --lambda {} --lambda0 {} --r {} --n {}'.format(lambda_, lambda0, r, n)+
+                     ' --lambda {} --lambda0 {} --r {}'.format(lambda_, lambda0, r)+
                      frame_arg+
                      T_arg+
                      N_arg+
                      ' > ${TARGETS[3]}')
 
 @w.add_target()
-def gctree_infer(outdir, c):
+def infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
     naiveID = 'naive' # this is what the simulation routine names the naive
-    return SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
+    return SConscript('SConscript.inference', exports='env method frame fasta outdir naiveID')
 
 @w.add_target()
-def gctree_validate(outdir, c):
+def validate(outdir, c):
     '''do validation'''
     tgt = env.Command([os.path.join(outdir, 'gctree.validation.tsv'),
                        os.path.join(outdir, 'gctree.validation.pdf'),
                        os.path.join(outdir, 'gctree.validation.log')],
-                      [c['gctree_sim'][1], c['gctree_infer'][0]],
+                      [c['gctree_sim'][1], c['infer'][0]],
                       'xvfb-run -a stdbuf -oL python bin/gctree.py validate $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
     c['aggdat'].append(tgt[0])
     return tgt
