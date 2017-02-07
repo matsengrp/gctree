@@ -28,7 +28,7 @@ def gctree_sim(outdir, c):
                      os.path.join(outdir, 'gctree.simulation.collapsed_tree.svg'),
                      os.path.join(outdir, 'gctree.simulation.log')],
                      [mutability, substitution],
-                     'xvfb-run -a stdbuf -oL python bin/gctree.py simulate '+naive+
+                     'xvfb-run -a python bin/gctree.py simulate '+naive+
                      ' ${SOURCES[0]} ${SOURCES[1]}'+
                      ' --outbase '+os.path.join(outdir, 'gctree')+
                      ' --lambda {} --lambda0 {} --r {} --n {}'.format(lambda_, lambda0, r, n)+
@@ -37,11 +37,11 @@ def gctree_sim(outdir, c):
                      ' > ${TARGETS[3]}')
 
 @w.add_target()
-def gctree_infer(outdir, c):
+def igphyml_infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
     naiveID = 'naive' # this is what the simulation routine names the naive
-    return SConscript('SConscript.inference', exports='env frame fasta outdir naiveID')
+    return SConscript('SConscript.inference_igphyml', exports='env frame fasta outdir naiveID')
 
 @w.add_target()
 def gctree_validate(outdir, c):
@@ -49,8 +49,8 @@ def gctree_validate(outdir, c):
     tgt = env.Command([os.path.join(outdir, 'gctree.validation.tsv'),
                        os.path.join(outdir, 'gctree.validation.pdf'),
                        os.path.join(outdir, 'gctree.validation.log')],
-                      [c['gctree_sim'][1], c['gctree_infer'][0]],
-                      'xvfb-run -a stdbuf -oL python bin/gctree.py validate $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
+                      [c['gctree_sim'][1], c['igphyml_infer'][0]],
+                      'xvfb-run -a python bin/gctree.py validate $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
     c['aggdat'].append(tgt[0])
     return tgt
 
@@ -63,6 +63,6 @@ def aggregate(outdir, c):
                        os.path.join(outdir, 'validaggreg.pdf'),
                        os.path.join(outdir, 'validaggreg.log')],
                       c['aggdat'],
-                      'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[2]}')
+                      'python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[2]}')
     env.AlwaysBuild(tgt)
     return tgt
