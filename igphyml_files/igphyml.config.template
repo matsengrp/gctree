@@ -1,7 +1,7 @@
-length	AA_LEN
+length	LEN_AA
 rooted	1
 outdir	.
-seqfile	gctree.simulation.fasta
+seqfile	gctree.simulation_depup.fasta
 rootid	naive
 igphyml	IGPHYML_DIR
 stats	gctree.simulation.phylip_igphyml_stats.txt_MODEL
