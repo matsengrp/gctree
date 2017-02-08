@@ -31,7 +31,7 @@ def validate(truetree, parfor, outbase):
     distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
                                     tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
-    df = pd.DataFrame({'RF':distances, 'log-likelihood':likelihoods})
+    df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances})
 
     # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
     taxa = [node.sequence for node in true_tree.tree.traverse() if node.frequency]
@@ -53,7 +53,7 @@ def validate(truetree, parfor, outbase):
         plt.savefig(outbase+'.ancestor.{}.pdf'.format(ct))
         plt.clf()
         MRCA_sum_metric.append(d.sum())
-    df['MRCA'] = MRCA_sum_metric
+    df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances, 'MRCA':MRCA_sum_metric})
 
     # plots
     sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(outbase+'.pdf')
