@@ -421,12 +421,10 @@ def phylip_parse(phylip_outfile, naive=None):
                         seq = ''.join(fields[3:])
                     tree_sequence_dict[name] += seq
 
-        #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
         nodes = {}
         for name in names:
             node = TreeNode()
             node.name = name
-            node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else 0
             node.add_feature('sequence', tree_sequence_dict[node.name])
             if node.name == naive:
                 node.add_feature('frequency', 0)
@@ -446,16 +444,15 @@ def phylip_parse(phylip_outfile, naive=None):
             assert nodes[naive] in tree.children
             tree.remove_child(nodes[naive])
             nodes[naive].add_child(tree)
-            tree.dist = nodes[naive].dist
             tree = nodes[naive]
-            tree.dist = 0
 
         # make random choices for ambiguous bases
         tree = disambiguate(tree)
 
-        # assert branch lengths make sense
+        # compute branch lengths
+        tree.dist = 0 # no branch above root
         for node in tree.iter_descendants():
-            assert node.dist == hamming_distance(node.sequence, node.up.sequence)
+            node.dist = hamming_distance(node.sequence, node.up.sequence)
 
         trees.append(tree)
 
