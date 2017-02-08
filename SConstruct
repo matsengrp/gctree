@@ -75,7 +75,7 @@ if GetOption('simulate'):
               help='path to S5F substitution data')
     AddOption('--lambda',
               type='float',
-              default=.9,
+              default=2.,
               help='Poisson branching parameter for simulation')
     AddOption('--lambda0',
               type='float',
@@ -83,7 +83,7 @@ if GetOption('simulate'):
               help='baseline mutation rate')
     AddOption('--r',
               type='float',
-              default=.5,
+              default=1.,
               help='sampling probability')
     AddOption('--N',
               type='int',
