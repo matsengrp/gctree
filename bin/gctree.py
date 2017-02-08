@@ -839,13 +839,13 @@ def simulate(args):
         raise RuntimeError('{} attempts exceeded'.format(trials))
 
     with open(args.outbase+'.simulation.fasta', 'w') as f:
-        f.write('> naive\n')
+        f.write('>naive\n')
         f.write(args.sequence+'\n')
         i = 0
         for leaf in tree.iter_leaves():
             if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
                 i += 1
-                f.write('> seq{}\n'.format(i))
+                f.write('>seq{}\n'.format(i))
                 f.write(leaf.sequence+'\n')
                 leaf.name = 'seq{}'.format(i)
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))

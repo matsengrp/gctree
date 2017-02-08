@@ -4,6 +4,7 @@
 import os
 from nestly import Nest
 from nestly.scons import SConsWrap
+from scipy import arange
 # the following must be exported by parent SConstruct/SConscript
 Import('env method outdir naive mutability substitution lambda_ lambda0 r frame N T')
 
@@ -12,7 +13,20 @@ w = SConsWrap(nest, outdir, alias_environment=env)
 
 w.add_aggregate('aggdat', list)
 
-# Initialize our first nest level, just random simulation reruns, same params
+# Initialize our first nest level,
+if lambda_ is None:
+    w.add('lambda', [.1, 1, 5, 10])
+else:
+    w.add('lambda', [lambda_])
+if lambda0 is None:
+    w.add('lambda0', [.1, 1, 10])
+else:
+    w.add('lambda0', [lambda0])
+if r is None:
+    w.add('r', [.1, .5, .9, 1.])
+else:
+    w.add('r', [r])
+# next nest, just random simulation reruns, same params
 w.add('runs', range(1,101))
 
 @w.add_target()
@@ -32,7 +46,7 @@ def gctree_sim(outdir, c):
                      'xvfb-run -a stdbuf -oL python bin/gctree.py simulate '+naive+
                      ' ${SOURCES[0]} ${SOURCES[1]}'+
                      ' --outbase '+os.path.join(outdir, 'gctree')+
-                     ' --lambda {} --lambda0 {} --r {}'.format(lambda_, lambda0, r)+
+                     ' --lambda {0[lambda]} --lambda0 {0[lambda0]} --r {0[r]}'.format(c)+
                      frame_arg+
                      T_arg+
                      N_arg+
@@ -48,11 +62,11 @@ def infer(outdir, c):
 @w.add_target()
 def validate(outdir, c):
     '''do validation'''
-    tgt = env.Command([os.path.join(outdir, 'gctree.validation.tsv'),
-                       os.path.join(outdir, 'gctree.validation.pdf'),
-                       os.path.join(outdir, 'gctree.validation.log')],
+    tgt = env.Command([os.path.join(outdir, 'validation.tsv'),
+                       os.path.join(outdir, 'validation.pdf'),
+                       os.path.join(outdir, 'validation.log')],
                       [c['gctree_sim'][1], c['infer'][0]],
-                      'xvfb-run -a stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
+                      'stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[2]}')
     c['aggdat'].append(tgt[0])
     return tgt
 

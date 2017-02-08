@@ -6,12 +6,24 @@ comparison of inference and simulated trees
 '''
 
 from __future__ import division, print_function
-import gctree
+from gctree import CollapsedTree, CollapsedForest, hamming_distance
+try:
+    import cPickle as pickle
+except:
+    import pickle
+import pandas as pd
+import scipy
+import seaborn as sns
+# import matplotlib
+# matplotlib.use('PDF')
+from matplotlib import pyplot as plt
 
-def validate(args):
-    with open(args.truetree, 'rb') as f:
+
+def validate(truetree, parfor, outbase):
+
+    with open(truetree, 'rb') as f:
         true_tree = pickle.load(f)
-    with open(args.parfor, 'rb') as f:
+    with open(parfor, 'rb') as f:
         parsimony_forest = pickle.load(f)
 
     # NOTE: the unrooted_trees flag is needed because, for some reason, the RF
@@ -19,7 +31,7 @@ def validate(args):
     distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
                                     tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
 
-    df = pd.DataFrame({'RF':distances, 'log-likelihood':likelihoods})
+    df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances})
 
     # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
     taxa = [node.sequence for node in true_tree.tree.traverse() if node.frequency]
@@ -38,17 +50,17 @@ def validate(args):
                 MRCA =           tree.tree.get_common_ancestor((nodei, nodej)).sequence
                 d[i, j] = nodei.frequency*nodej.frequency*hamming_distance(MRCA_true, MRCA)#/sequence_length
         sns.heatmap(d, vmin=0)
-        plt.savefig(args.outbase+'.validation.ancestor.{}.pdf'.format(ct))
+        plt.savefig(outbase+'.ancestor.{}.pdf'.format(ct))
         plt.clf()
         MRCA_sum_metric.append(d.sum())
-    df['MRCA'] = MRCA_sum_metric
+    df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances, 'MRCA':MRCA_sum_metric})
 
     # plots
-    sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(args.outbase+'.validation.pdf')
-    # sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(args.outbase+'.validation.RF.pdf')
-    # sns.regplot(x='log-likelihood', y='MRCA', data=df).get_figure().savefig(args.outbase+'.validation.MRCA.pdf')
+    sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(outbase+'.pdf')
+    # sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(outbase+'.RF.pdf')
+    # sns.regplot(x='log-likelihood', y='MRCA', data=df).get_figure().savefig(outbase+'.MRCA.pdf')
 
-    df.to_csv(args.outbase+'.validation.tsv', sep='\t', index=False)
+    df.to_csv(outbase+'.tsv', sep='\t', index=False)
 
 
 def main():
@@ -61,8 +73,9 @@ def main():
     parser.add_argument('truetree', type=str, help='.p file containing true tree')
     parser.add_argument('parfor', type=str, help='.p file containing parsimony forest from inference')
     parser.add_argument('--outbase', type=str, default='gctree.out', help='output file base name')
-    parser.set_defaults(func=validate)
+    args = parser.parse_args()
 
+    validate(args.truetree, args.parfor, args.outbase)
 
 if __name__ == '__main__':
     main()
