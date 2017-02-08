@@ -56,17 +56,27 @@ elif method == 'igphyml':
 
 
 
-    ### Step 1:
-    # igphyml -i gctree.simulation.phylip -m GY -w M0 -t e --run_id gy94 --threads 5
-    #    gctree.simulation.phylip_igphyml_tree.txt_gy94  <--- File which is used for HLP16
-    #    gctree.simulation.phylip_igphyml_stats.txt_gy94
+### Step 1 
+### Run GY94 model to get a base topology:
+# igphyml -i gctree.simulation.phylip -m GY -w M0 -t e --run_id gy94 --threads 5
+#    gctree.simulation.phylip_igphyml_tree.txt_gy94  <--- File which is used for HLP16
+#    gctree.simulation.phylip_igphyml_stats.txt_gy94
 
-    ### Step 2:
-    # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o tlr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16   <----- Optimize on topology, lenght and rate
-    # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o lr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16    <----- Optimize on lenght and rate
-    # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o r -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16     <----- Optimize on rate
-    #    gctree.simulation.phylip_igphyml_tree.txt_hlp16  <--- File which is final tree topology
-    #    gctree.simulation.phylip_igphyml_stats.txt_hlp16
+### Step 2:
+### Run HLP16 model to correct tree:
+# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o tlr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16   <----- Optimize on topology, lenght and rate
+# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o lr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16    <----- Optimize on lenght and rate
+# igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o r -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16     <----- Optimize on rate
+#    gctree.simulation.phylip_igphyml_tree.txt_hlp16  <--- File which is final tree topology
+#    gctree.simulation.phylip_igphyml_stats.txt_hlp16
+
+### Step 3:
+### Make naive the outgroup:
+# bin/reroot.py --tree gctree.simulation.phylip_igphyml_tree.txt_gy94 --reroot_tree gctree.simulation.phylip_igphyml_tree.txt_gy94.outgroup --pattern naive --outgroup 1
+# bin/reroot.py --tree gctree.simulation.phylip_igphyml_tree.txt_hlp16 --reroot_tree gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup --pattern naive --outgroup 1
+
+### Step 4:
+### Prepare for IgPhyML ASR:
 
 
 
