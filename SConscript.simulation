@@ -52,7 +52,7 @@ def validate(outdir, c):
                        os.path.join(outdir, 'gctree.validation.pdf'),
                        os.path.join(outdir, 'gctree.validation.log')],
                       [c['gctree_sim'][1], c['infer'][0]],
-                      'xvfb-run -a stdbuf -oL python bin/gctree.py validate $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
+                      'xvfb-run -a stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'gctree')+' > ${TARGETS[2]}')
     c['aggdat'].append(tgt[0])
     return tgt
 
