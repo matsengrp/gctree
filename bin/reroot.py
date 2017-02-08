@@ -23,12 +23,18 @@ def reroot_tree(tree, pattern='.*naive.*', outgroup=0):
     # find all nodes matching pattern
     node = find_node(tree, pattern)
     tree.set_outgroup(node)
-    if tree != node and not outgroup:
+    if tree != node and outgroup == 1:
+        s = node.get_sisters() # KBH - want the outgroup with a branch length of (near) zero
+        s[0].dist = node.dist * 2
+        node.dist = 0.0000001  # KBH - actual zero length branches cause problems
+        tree.swap_children()   # KBH - want root to be at the last taxon in the newick file.
+    elif tree != node:
         tree.remove_child(node)
         node.add_child(tree)
         tree.dist = node.dist
         node.dist = 0
-        tree = node
+        tree = node        
+
     return tree
 
 
@@ -57,6 +63,7 @@ def main():
     parser.add_argument(
         '--outgroup',
         required=False,
+        type=int,
         default=0,
         metavar="0/1",
         help="Set as outgroup instead of tree root.")
@@ -73,4 +80,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
