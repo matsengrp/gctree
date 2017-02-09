@@ -6,5 +6,5 @@ rootid	naive
 igphyml	IGPHYML_DIR
 stats	gctree.simulation.phylip_igphyml_stats.txt_MODEL
 tree	gctree.simulation.phylip_igphyml_tree.txt_MODEL.outgroup
-ambigfile	igphyml_files/dummy.ambig
+ambigfile	AMBIG
 stem	gctree.simulation.igphyml_MODEL

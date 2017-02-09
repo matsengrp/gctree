@@ -843,7 +843,8 @@ def simulate(args):
                                            lambda0=args.lambda0,
                                            r=args.r,
                                            N=args.N,
-                                           T=args.T)
+                                           T=args.T,
+                                           frame=args.frame)
             collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
             uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:

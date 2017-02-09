@@ -42,67 +42,114 @@ if method == 'gctree':
     Return('infer')
 
 elif method == 'igphyml':
+
+    io = map(lambda x: os.path.join(outdir, x), ['dedup_fasta.log'])
+    dedup_fasta = env.Command(os.path.join(outdir, 'gctree.simulation_dedup.fasta'),
+                              fasta,
+                              'python igphyml_files/igphyml_tools.py dedup_fasta --infile $SOURCE --outfile $TARGET > {}'.format(*io))
+
     # parse fasta file to phylip, interpreting integer names as frequencies
     phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
-                         fasta,
+                         dedup_fasta,
                          'python bin/fasta2phylip.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
 
-    # make config file for dnapars
-    #dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
-    #                             phylip,
-    #                             'python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+    io = map(lambda x: os.path.join(outdir, x), ['igphyml_gy94_topology.log'])
+    igphyml_gy94_topology = env.Command(os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_gy94'),
+                                        phylip,
+                                        'igphyml -i $SOURCE -m GY -w M0 -t e --run_id gy94 > {}'.format(*io))
+
+
+    igphyml_opti = 'tlr'  # <--- can be changed to 'lr' or 'r'
+    io = map(lambda x: os.path.join(outdir, x), ['gctree.simulation.phylip', 'igphyml_hlp16.log'])
+    igphyml_hlp16 = env.Command(os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16'),
+                                igphyml_gy94_topology,
+                                'igphyml -i {} -u $SOURCE -m HLP16 --root {} -o {} --run_id hlp16 > {}'.format(io[0], naiveID, igphyml_opti, io[1]))
+
+
+    io = map(lambda x: os.path.join(outdir, x), ['naive_outgroup.log'])
+    naive_outgroup = env.Command(os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup'),
+                                 igphyml_hlp16,
+                                 'python igphyml_files/igphyml_tools.py reroot --tree $SOURCE --reroot_tree $TARGET --pattern {} --outgroup 1 > {}'.format(naiveID, io[0]))
+
+
+
+    io = map(lambda x: os.path.join(outdir, x), ['gctree.simulation_dedup.fasta', 'ASR_config.log'])
+    ASR_config = env.Command(os.path.join(outdir, 'igphyml.config_hlp16'),
+                             naive_outgroup,
+                             'python igphyml_files/igphyml_tools.py make_igphyml_config --fasta_file {} --outfile $TARGET --template igphyml_files/igphyml.config.template --igphyml_exe igphyml --model hlp16 > {}'.format(*io))
+
+
+
+    io = map(lambda x: os.path.join(outdir, x), ['gctree.simulation.phylip_igphyml_stats.txt_hlp16', 'gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup', 'gctree.simulation_dedup.fasta', 'run_ASR.log'])
+    run_ASR = env.Command(os.path.join(outdir, 'gctree.simulation.igphyml_hlp16.MLcodons.fa'),
+                          ASR_config,
+                          'perl igphyml_files/ancReconstructHLP16.pl $SOURCE --stats {} --tree {} --seqfile {} > {}'.format(*io))
+
+
+    '''
+
+    cur_dir = os.getcwd()
+    run_ASR = env.Command('gctree.simulation.igphyml_hlp16.MLcodons.fa',
+                          ASR_config,
+                          'cd ' + outdir + ' && perl ' + cur_dir + '/igphyml_files/ancReconstructHLP16.pl $SOURCE > {}'.format('run_ASR.log'))
 
 
 
 
-### Step 1 
+    io = map(lambda x: os.path.join(outdir, x), ['gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup', 'parse_ASR.log'])
+    infer = env.Command(os.path.join(outdir, 'igphyml_infered_tree.p'),
+                             run_ASR,
+                             'xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree {} --asr_seq $SOURCE --outbase igphyml_infered_tree > {}'.format(*io))
+
+    '''
+
+    infer = 'NotYet'
+    
+
+### Step 1:
+### Deduplicate fasta file:
+# python igphyml_files/igphyml_tools.py dedup_fasta --infile gctree.simulation.fasta --outfile gctree.simulation_dedup.fasta
+#    gctree.simulation_dedup.fasta  <----- Used for ASR
+
+### Step 2:
 ### Run GY94 model to get a base topology:
 # igphyml -i gctree.simulation.phylip -m GY -w M0 -t e --run_id gy94 --threads 5
 #    gctree.simulation.phylip_igphyml_tree.txt_gy94  <--- File which is used for HLP16
 #    gctree.simulation.phylip_igphyml_stats.txt_gy94
 
-### Step 2:
+### Step 3:
 ### Run HLP16 model to correct tree:
 # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o tlr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16   <----- Optimize on topology, lenght and rate
 # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o lr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16    <----- Optimize on lenght and rate
 # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o r -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16     <----- Optimize on rate
 #    gctree.simulation.phylip_igphyml_tree.txt_hlp16  <--- File which is final tree topology
 #    gctree.simulation.phylip_igphyml_stats.txt_hlp16
-
-### Step 3:
-### Make naive the outgroup:
-# bin/reroot.py --tree gctree.simulation.phylip_igphyml_tree.txt_gy94 --reroot_tree gctree.simulation.phylip_igphyml_tree.txt_gy94.outgroup --pattern naive --outgroup 1
-# bin/reroot.py --tree gctree.simulation.phylip_igphyml_tree.txt_hlp16 --reroot_tree gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup --pattern naive --outgroup 1
+### Also add "--hotness 0 vs. e to the simulation"
 
 ### Step 4:
+### Make naive the outgroup:
+# python igphyml_files/igphyml_tools.py reroot --tree gctree.simulation.phylip_igphyml_tree.txt_hlp16 --reroot_tree gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup --pattern naive --outgroup 1
+#    gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup  <---- Topology used for ASR
+
+### Step 5:
 ### Prepare for IgPhyML ASR:
+# python igphyml_files/igphyml_tools.py make_igphyml_config --template igphyml_files/igphyml.config.template --outfile igphyml.config_hlp16 --igphyml_exe igphyml --model hlp16 --fasta_file gctree.simulation_dedup.fasta
+#    igphyml.config_hlp16  <---- ASR config file
+
+### Step 6:
+### Run ASR:
+# perl bin/ancReconstructHLP16.pl igphyml.config_hlp16
+#    gctree.simulation.igphyml_hlp16.MLcodons.fa  <---- Output file
+
+### Step 7:
+### Convert the ASR output to ete3 pickle:
+# xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup --asr_seq gctree.simulation.igphyml_hlp16.MLcodons.fa --outbase igphyml_infered_tree
+#    igphyml_infered_tree.svg  <---- svg of the collapsed topology
+#    igphyml_infered_tree.p  <----- pickle of the ete3 tree format
 
 
 
-
-
-
-    # run dnapars (from phylip package) to generate parsimony trees
-    igphyml = env.Command(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
-                       dnapars_config,
-                       'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
-    # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
-    # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
-    # env.Depends(dnapars, phylip)
-
-    # ML tree from parsimony trees
-    # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
-    gctree_outbase = os.path.join(outdir, 'gctree')
-    frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
-    # NOTE: there will be other svg trees if the parsimony forest has more than 1 tree
-    #       these will be names 2, 3, ...
-    infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p', gctree_outbase+'.inference.1.svg', gctree_outbase+'.inference.log'],
-                               dnapars[1],
-                               'xvfb-run -a python bin/gctree.py infer $SOURCE --naive '+naiveID+
-                               ' --outbase '+gctree_outbase+
-                               frame_arg+
-                               ' > ${TARGETS[2]}')
 
 else:
     InputError('invalid inference method: ' + method)

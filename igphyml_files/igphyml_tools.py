@@ -9,7 +9,10 @@ to create an ete3 tree with the ancestral sequences.
 from __future__ import division, print_function
 import sys
 import os
+import re
 import warnings
+from Bio import SeqIO
+from ete3 import Tree, TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
 sys.path.append(os.path.abspath("/fh/fast/matsen_e/kdavidse/gctree/bin"))
 
 
@@ -30,8 +33,6 @@ def ASR_parser(args):
         import cPickle as pickle
     except:
         import pickle
-    from ete3 import Tree, TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
-    from Bio import SeqIO
     from gctree import CollapsedForest, CollapsedTree
 
     try:
@@ -43,7 +44,7 @@ def ASR_parser(args):
     tree = map_asr_to_tree(args.asr_seq, tree)
 
     # Reroot to make the naive sequence the real root instead of just an outgroup:
-    tree = reroot_tree(tree)
+    # tree = reroot_tree(tree)  <--- Currently breaks because the node features are not conserved???
 
     igphyml_tree = CollapsedTree(tree=tree)
     igphyml_tree.render(args.outbase + '.svg')
@@ -111,9 +112,14 @@ def make_igphyml_config(args):
     with open(args.template) as fh:
         template = fh.read()
 
+    cur_dir = os.getcwd()
+    AMBIG = cur_dir + '/igphyml_files/dummy.ambig'
+
     template = template.replace('LEN_AA', str(LEN_AA))
     template = template.replace('IGPHYML_DIR', IGPHYML_DIR)
     template = template.replace('MODEL', MODEL)
+    template = template.replace('AMBIG', AMBIG)
+
 
     # Write the new config file:
     with open(args.outfile, 'w') as fh_out:
@@ -164,8 +170,6 @@ def dedup_fasta(args):
 
 def reroot(args):
     from ete3 import Tree, NodeStyle, TreeStyle, TextFace, add_face_to_node
-    import os
-    import re
 
     try:
         tree = Tree(args.tree)
@@ -204,7 +208,7 @@ def reroot_tree(tree, pattern='.*naive.*', outgroup=0):
         node.add_child(tree)
         tree.dist = node.dist
         node.dist = 0
-        tree = node        
+        tree = node
 
     return tree
 
@@ -217,43 +221,43 @@ def main():
     subparsers = parser.add_subparsers(help='Which program to run')
 
     # Parser for ASR_parser subprogram:
-    parser = argparse.ArgumentParser('ASR_parser',
-                                     help='Reroot a tree based on node containing a keyword.',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--tree', required=True, metavar='NEWICK TREE', help='Input tree used for topology.')
-    parser.add_argument('--asr_seq', required=True, help='Input ancestral sequences.')
-    parser.add_argument('--outbase', required=True, metavar='FILENAME', help='Filename for the output ASR tree.')
-    parser_test.set_defaults(func=ASR_parser)
+    parser_asr = subparsers.add_parser('ASR_parser',
+                                       help='Reroot a tree based on node containing a keyword.',
+                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_asr.add_argument('--tree', required=True, metavar='NEWICK TREE', help='Input tree used for topology.')
+    parser_asr.add_argument('--asr_seq', required=True, help='Input ancestral sequences.')
+    parser_asr.add_argument('--outbase', required=True, metavar='FILENAME', help='Filename for the output ASR tree.')
+    parser_asr.set_defaults(func=ASR_parser)
 
     # Parser for make_igphyml_config subprogram:
-    parser = argparse.ArgumentParser('make_igphyml_config',
-                                     help='Prepare config file for ASR under the HLP16 model.',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--template', help='Config file template', type=str, metavar='FILE', required=True)
-    parser.add_argument('--outfile', help='Name of the config file to write.', type=str, metavar='FILENAME', required=True)
-    parser.add_argument('--igphyml_exe', help='IgPhyML executable. Will search for the default localt like UNIX `which`.', type=str, required=True)
-    parser.add_argument('--model', help='Which model to run? [gy94, hlp16]', type=str, required=True)
-    parser.add_argument('--fasta_file', help='To find the length of the amino acid sequence.', type=str, required=True)
-    parser_test.set_defaults(func=make_igphyml_config)
+    parser_conf = subparsers.add_parser('make_igphyml_config',
+                                        help='Prepare config file for ASR under the HLP16 model.',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_conf.add_argument('--template', help='Config file template', type=str, metavar='FILE', required=True)
+    parser_conf.add_argument('--outfile', help='Name of the config file to write.', type=str, metavar='FILENAME', required=True)
+    parser_conf.add_argument('--igphyml_exe', help='IgPhyML executable. Will search for the default localt like UNIX `which`.', type=str, required=True)
+    parser_conf.add_argument('--model', help='Which model to run? [gy94, hlp16]', type=str, required=True)
+    parser_conf.add_argument('--fasta_file', help='To find the length of the amino acid sequence.', type=str, required=True)
+    parser_conf.set_defaults(func=make_igphyml_config)
 
     # Parser for dedup_fasta subprogram:
-    parser = argparse.ArgumentParser('dedup_fasta',
-                                     help='Deduplicate a fasta file.',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--infile', type=str, help='fasta file with any integer ids indicating frequency', required=True)
-    parser.add_argument('--outfile', type=str, help='Output filename.', required=True)
-    parser.add_argument('--naive', type=str, default='naive', help='naive sequence id')
-    parser_test.set_defaults(func=dedup_fasta)
+    parser_dedup = subparsers.add_parser('dedup_fasta',
+                                         help='Deduplicate a fasta file.',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_dedup.add_argument('--infile', type=str, help='fasta file with any integer ids indicating frequency', required=True)
+    parser_dedup.add_argument('--outfile', type=str, help='Output filename.', required=True)
+    parser_dedup.add_argument('--naive', type=str, default='naive', help='naive sequence id')
+    parser_dedup.set_defaults(func=dedup_fasta)
 
     # Parser for reroot subprogram:
-    parser = argparse.ArgumentParser('reroot',
-                                     description='Reroot a tree based on node containing a keyword.',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--tree', required=True, metavar='NEWICK TREE', help='Input tree to root, in newick format.')
-    parser.add_argument('--reroot_tree', required=True, metavar='FILENAME', help='Filename for the output rerooted tree.')
-    parser.add_argument('--pattern', metavar='REGEX PATTERN', required=True, help="Pattern to search for the node to root on.")
-    parser.add_argument('--outgroup', required=False, type=int, default=0, metavar="0/1", help="Set as outgroup instead of tree root.")
-    parser_test.set_defaults(func=reroot)
+    parser_reroot = subparsers.add_parser('reroot',
+                                          description='Reroot a tree based on node containing a keyword.',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_reroot.add_argument('--tree', required=True, metavar='NEWICK TREE', help='Input tree to root, in newick format.')
+    parser_reroot.add_argument('--reroot_tree', required=True, metavar='FILENAME', help='Filename for the output rerooted tree.')
+    parser_reroot.add_argument('--pattern', metavar='REGEX PATTERN', required=True, help="Pattern to search for the node to root on.")
+    parser_reroot.add_argument('--outgroup', required=False, type=int, default=0, metavar="0/1", help="Set as outgroup instead of tree root.")
+    parser_reroot.set_defaults(func=reroot)
 
 
     args = parser.parse_args()
