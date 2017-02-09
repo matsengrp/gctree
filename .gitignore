@@ -4,3 +4,4 @@
 .sconsign.dblite
 .ipynb_checkpoints
 *.pyc
+._*
