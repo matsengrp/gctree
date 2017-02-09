@@ -25,13 +25,11 @@ def validate(truetree, parfor, outbase):
         true_tree = pickle.load(f)
     with open(parfor, 'rb') as f:
         parsimony_forest = pickle.load(f)
-
+    n_trees = len(parsimony_forest.forest)
     # NOTE: the unrooted_trees flag is needed because, for some reason, the RF
     #       function sometimes thinks the collapsed trees are unrooted and barfs
     distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
-                                    tree.l(parsimony_forest.params)[0]) for tree in parsimony_forest.forest])
-
-    df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances})
+                                    tree.l(parsimony_forest.params)[0] if parsimony_forest.params is not None else None) for tree in parsimony_forest.forest])
 
     # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
     taxa = [node.sequence for node in true_tree.tree.traverse() if node.frequency]
@@ -53,12 +51,14 @@ def validate(truetree, parfor, outbase):
         plt.savefig(outbase+'.ancestor.{}.pdf'.format(ct))
         plt.clf()
         MRCA_sum_metric.append(d.sum())
+
     df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances, 'MRCA':MRCA_sum_metric})
 
-    # plots
-    sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(outbase+'.pdf')
-    # sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(outbase+'.RF.pdf')
-    # sns.regplot(x='log-likelihood', y='MRCA', data=df).get_figure().savefig(outbase+'.MRCA.pdf')
+    if n_trees > 1:
+        # plots
+        sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(outbase+'.pdf')
+        # sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(outbase+'.RF.pdf')
+        # sns.regplot(x='log-likelihood', y='MRCA', data=df).get_figure().savefig(outbase+'.MRCA.pdf')
 
     df.to_csv(outbase+'.tsv', sep='\t', index=False)
 

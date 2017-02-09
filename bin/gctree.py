@@ -337,6 +337,8 @@ class CollapsedForest(CollapsedTree):
         '''
         if self.forest is None:
             raise ValueError('forest data must be defined to compute likelihood')
+        if self.params is None:
+            raise ValueError('params must not be None')
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
         # since the l method on the CollapsedTree class returns l and grad_l...
