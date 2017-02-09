@@ -56,27 +56,48 @@ elif method == 'igphyml':
 
 
 
-### Step 1 
+### Step 1:
+### Deduplicate fasta file:
+# python ../../bin/dedup_fasta.py --infile gctree.simulation.fasta --outfile gctree.simulation_dedup.fasta
+#    gctree.simulation_dedup.fasta  <----- Used for ASR
+
+### Step 2:
 ### Run GY94 model to get a base topology:
 # igphyml -i gctree.simulation.phylip -m GY -w M0 -t e --run_id gy94 --threads 5
 #    gctree.simulation.phylip_igphyml_tree.txt_gy94  <--- File which is used for HLP16
 #    gctree.simulation.phylip_igphyml_stats.txt_gy94
 
-### Step 2:
+### Step 3:
 ### Run HLP16 model to correct tree:
 # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o tlr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16   <----- Optimize on topology, lenght and rate
 # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o lr -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16    <----- Optimize on lenght and rate
 # igphyml -i gctree.simulation.phylip -m HLP16 --root naive -o r -u gctree.simulation.phylip_igphyml_tree.txt_gy94 --threads 5 --run_id hlp16     <----- Optimize on rate
 #    gctree.simulation.phylip_igphyml_tree.txt_hlp16  <--- File which is final tree topology
 #    gctree.simulation.phylip_igphyml_stats.txt_hlp16
-
-### Step 3:
-### Make naive the outgroup:
-# bin/reroot.py --tree gctree.simulation.phylip_igphyml_tree.txt_gy94 --reroot_tree gctree.simulation.phylip_igphyml_tree.txt_gy94.outgroup --pattern naive --outgroup 1
-# bin/reroot.py --tree gctree.simulation.phylip_igphyml_tree.txt_hlp16 --reroot_tree gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup --pattern naive --outgroup 1
+### Also add "--hotness 0 vs. e to the simulation"
 
 ### Step 4:
+### Make naive the outgroup:
+# python bin/reroot.py --tree gctree.simulation.phylip_igphyml_tree.txt_hlp16 --reroot_tree gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup --pattern naive --outgroup 1
+#    gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup  <---- Topology used for ASR
+
+### Step 5:
 ### Prepare for IgPhyML ASR:
+# python igphyml_files/make_igphyml_config.py --template igphyml_files/igphyml.config.template --outfile igphyml.config_hlp16 --igphyml_exe igphyml --model hlp16 --fasta_file gctree.simulation_dedup.fasta
+#    igphyml.config_hlp16  <---- ASR config file
+
+### Step 6:
+### Run ASR:
+# perl bin/ancReconstructHLP16.pl igphyml.config_hlp16
+#    gctree.simulation.igphyml_hlp16.MLcodons.fa  <---- Output file
+
+### Step 7:
+### Convert the ASR output to 
+# Input files:
+# gctree.simulation.igphyml_hlp16.MLcodons.fa
+# gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup
+# Output:
+# ete3 tree object with the same topology but added ancestral sequences to the nodes
 
 
 
