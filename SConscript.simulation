@@ -15,7 +15,7 @@ w.add_aggregate('aggdat', list)
 
 # Initialize our first nest level,
 if lambda_ is None:
-    w.add('lambda', [.1, 1, 5, 10])
+    w.add('lambda', [1, 5, 10])
 else:
     w.add('lambda', [lambda_])
 if lambda0 is None:

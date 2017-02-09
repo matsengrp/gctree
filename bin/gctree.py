@@ -25,6 +25,7 @@ from scipy.stats import probplot, poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
+from Bio.Data.IUPACData import ambiguous_dna_values
 
 scipy.seterr(all='raise')
 
@@ -371,6 +372,18 @@ def hamming_distance(seq1, seq2):
     return sum(x != y for x, y in zip(seq1, seq2))
 
 
+def disambiguate(tree):
+    '''make random choices for ambiguous bases, respecting tree inheritance'''
+    sequence_length = len(tree.sequence)
+    for node in tree.traverse():
+        for site in range(sequence_length):
+            base = node.sequence[site]
+            if base not in 'ACGT':
+                new_base = random.choice(ambiguous_dna_values[base])
+                for node2 in node.traverse(is_leaf_fn=lambda n: False if base in [n2.sequence[site] for n2 in n.children] else True):
+                    node2.sequence = node2.sequence[:site] + new_base + node2.sequence[(site+1):]
+    return tree
+
 def phylip_parse(phylip_outfile, naive=None):
     '''parse phylip outfile and return ete trees'''
     # parse phylip outfile
@@ -408,42 +421,40 @@ def phylip_parse(phylip_outfile, naive=None):
                         seq = ''.join(fields[3:])
                     tree_sequence_dict[name] += seq
 
-        # if integer branch (not weird ambiguous chars)
-        if set(''.join([tree_sequence_dict[name] for name in names])) == set('ACGT'):
-            #nodes = dict([(name, Tree(name=(name, tree_sequence_dict[name]), dist=hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else None)) for name in names])
-            nodes = {}
-            for name in names:
-                node = TreeNode()
-                node.name = name
-                node.dist = hamming_distance(tree_sequence_dict[name], tree_sequence_dict[parent_dict[name]]) if parent_dict[name] is not None else 0
-                node.add_feature('sequence', tree_sequence_dict[node.name])
-                if node.name == naive:
-                    node.add_feature('frequency', 0)
-                elif '_' in node.name:
-                    node.add_feature('frequency', int(node.name.split('_')[-1]))
-                    node.name = '_'.join(node.name.split('_')[:-1])
-                else:
-                    node.add_feature('frequency', 0)
-                nodes[name] = node
-            tree = nodes[names[0]] # naive is first
-            for name in parent_dict:
-                if parent_dict[name] is not None:
-                    nodes[parent_dict[name]].add_child(nodes[name])
-            # reroot on naive
-            if naive is not None:
-                assert len(nodes[naive].children) == 0
-                assert nodes[naive] in tree.children
-                tree.remove_child(nodes[naive])
-                nodes[naive].add_child(tree)
-                tree.dist = nodes[naive].dist
-                tree = nodes[naive]
-                tree.dist = 0
+        nodes = {}
+        for name in names:
+            node = TreeNode()
+            node.name = name
+            node.add_feature('sequence', tree_sequence_dict[node.name])
+            if node.name == naive:
+                node.add_feature('frequency', 0)
+            elif '_' in node.name:
+                node.add_feature('frequency', int(node.name.split('_')[-1]))
+                node.name = '_'.join(node.name.split('_')[:-1])
+            else:
+                node.add_feature('frequency', 0)
+            nodes[name] = node
+        tree = nodes[names[0]] # naive is first
+        for name in parent_dict:
+            if parent_dict[name] is not None:
+                nodes[parent_dict[name]].add_child(nodes[name])
+        # reroot on naive
+        if naive is not None:
+            assert len(nodes[naive].children) == 0
+            assert nodes[naive] in tree.children
+            tree.remove_child(nodes[naive])
+            nodes[naive].add_child(tree)
+            tree = nodes[naive]
 
-            # assert branch lengths make sense
-            for node in tree.iter_descendants():
-                assert node.dist == hamming_distance(node.sequence, node.up.sequence)
+        # make random choices for ambiguous bases
+        tree = disambiguate(tree)
 
-            trees.append(tree)
+        # compute branch lengths
+        tree.dist = 0 # no branch above root
+        for node in tree.iter_descendants():
+            node.dist = hamming_distance(node.sequence, node.up.sequence)
+
+        trees.append(tree)
 
     return trees
 
@@ -830,6 +841,9 @@ def simulate(args):
                                            N=args.N,
                                            T=args.T)
             collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
+            uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
+            if uniques < 2:
+                raise RuntimeError('collapsed tree contains {} sampled sequences, vacuous inference'.format(leaves_unterminated, N))
             break
         except RuntimeError as e:
             print('{}, trying again'.format(e))
