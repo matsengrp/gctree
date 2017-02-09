@@ -841,6 +841,9 @@ def simulate(args):
                                            N=args.N,
                                            T=args.T)
             collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
+            uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
+            if uniques < 2:
+                raise RuntimeError('collapsed tree contains {} sampled sequences, vacuous inference'.format(leaves_unterminated, N))
             break
         except RuntimeError as e:
             print('{}, trying again'.format(e))
