@@ -381,7 +381,8 @@ def disambiguate(tree):
             if base not in 'ACGT':
                 new_base = random.choice(ambiguous_dna_values[base])
                 for node2 in node.traverse(is_leaf_fn=lambda n: False if base in [n2.sequence[site] for n2 in n.children] else True):
-                    node2.sequence = node2.sequence[:site] + new_base + node2.sequence[(site+1):]
+                    if node2.sequence[site] == base:
+                        node2.sequence = node2.sequence[:site] + new_base + node2.sequence[(site+1):]
     return tree
 
 def phylip_parse(phylip_outfile, naive=None):
@@ -843,7 +844,7 @@ def simulate(args):
             collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
             uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:
-                raise RuntimeError('collapsed tree contains {} sampled sequences, vacuous inference'.format(leaves_unterminated, N))
+                raise RuntimeError('collapsed tree contains {} sampled sequences, vacuous inference'.format(uniques))
             break
         except RuntimeError as e:
             print('{}, trying again'.format(e))
