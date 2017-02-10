@@ -19,7 +19,7 @@ if method == 'gctree':
                                  'stdbuf -oL python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
     # run dnapars (from phylip package) to generate parsimony trees
-    dnapars = env.Command(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
+    dnapars = env.SRun(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
                        dnapars_config,
                        'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
     # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
@@ -59,7 +59,7 @@ elif method == 'igphyml':
 
     # Run IgPhyML with the HLP16 model using the GY94 tree topology as starting point:
     igphyml_opti = 'tlr'  # <--- can be changed to 'lr' or 'r'
-    ### --hotness 
+    ### --hotness
     io = map(lambda x: os.path.join(outdir, x), ['gctree.simulation.phylip', 'igphyml_hlp16.log'])
     igphyml_hlp16 = env.Command(os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16'),
                                 igphyml_gy94_topology,

@@ -614,13 +614,23 @@ class MutationModel():
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         if N is not None:
-            # if we specified N, we downsample this last generation, detaching from the tree those nodes we don't sample
-            random.shuffle(final_leaves)
-            for _ in range(len(final_leaves) - N):
-                final_leaves.pop().detach()
+            # if we specified N, downsample
+            final_leaves = random.sample(final_leaves, N)
         for leaf in final_leaves:
             if scipy.random.random() < r:
                 leaf.frequency = 1
+
+        # prune away lineages that are unobserved
+        for node in tree.iter_descendants():
+            if sum(node2.frequency for node2 in node.traverse()) == 0:
+                node.detach()
+
+        # remove unobserved unifurcations
+        for node in tree.iter_descendants():
+            parent = node.up
+            if node.frequency == 0 and len(node.children) == 1:
+                node.delete(prevent_nondicotomic=False)
+                node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)
 
         # return the fine (uncollapsed) tree
         return tree
