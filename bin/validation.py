@@ -47,9 +47,9 @@ def validate(truetree, parfor, outbase):
                 MRCA_true = true_tree.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
                 MRCA =           tree.tree.get_common_ancestor((nodei, nodej)).sequence
                 d[i, j] = nodei.frequency*nodej.frequency*hamming_distance(MRCA_true, MRCA)#/sequence_length
-        sns.heatmap(d, vmin=0)
-        plt.savefig(outbase+'.ancestor.{}.pdf'.format(ct))
-        plt.clf()
+        # sns.heatmap(d, vmin=0)
+        # plt.savefig(outbase+'.ancestor.{}.pdf'.format(ct))
+        # plt.clf()
         MRCA_sum_metric.append(d.sum())
 
     df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances, 'MRCA':MRCA_sum_metric})

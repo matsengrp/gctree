@@ -95,7 +95,7 @@ if GetOption('simulate'):
               help='observation time')
     AddOption('--n',
               type='int',
-              default=100,
+              default=10,
               help='number of simulations with each parameter parameter choice')
 
     naive = GetOption('naive')
