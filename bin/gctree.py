@@ -165,8 +165,8 @@ class CollapsedTree(LeavesAndClades):
                         node.up.frequency += node.frequency
                         node.delete(prevent_nondicotomic=False)
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
-            if 'sequence' in tree.features and len(set([node.sequence for node in self.tree.traverse()])) != sum(1 for _ in self.tree.traverse()):
-                raise RuntimeError('repeated sequences in collapsed tree, possible backmutation')
+            if 'sequence' in tree.features and len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0])) != sum(node.frequency > 0 for node in self.tree.traverse()):
+                raise RuntimeError('repeated observed sequences in collapsed tree')
         else:
             self.tree = tree
 

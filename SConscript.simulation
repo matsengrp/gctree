@@ -6,7 +6,7 @@ from nestly import Nest
 from nestly.scons import SConsWrap
 from scipy import arange
 # the following must be exported by parent SConstruct/SConscript
-Import('env method outdir naive mutability substitution lambda_ lambda0 r frame N T')
+Import('env method outdir naive mutability substitution lambda_ lambda0 r frame N T n')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -27,7 +27,7 @@ if r is None:
 else:
     w.add('r', [r])
 # next nest, just random simulation reruns, same params
-w.add('runs', range(1,101))
+w.add('runs', range(1, n+1))
 
 @w.add_target()
 def gctree_sim(outdir, c):

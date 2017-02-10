@@ -38,7 +38,7 @@ AddOption('--frame',
 frame = GetOption('frame')
 AddOption('--method',
            default='gctree',
-           help='inference method, currently only "gctree" implemented')
+           help='inference method, "gctree" or "igphyml"')
 method = GetOption('method')
 AddOption('--outdir',
           type='string',
@@ -88,11 +88,15 @@ if GetOption('simulate'):
     AddOption('--N',
               type='int',
               default=None,
-              help='simulation size')
+              help='simulation size (number of cells observerved)')
     AddOption('--T',
               type='int',
               default=None,
               help='observation time')
+    AddOption('--n',
+              type='int',
+              default=100,
+              help='number of simulations with each parameter parameter choice')
 
     naive = GetOption('naive')
     mutability = GetOption('mutability')
@@ -102,7 +106,7 @@ if GetOption('simulate'):
     r = GetOption('r')
     N = GetOption('N')
     T = GetOption('T')
-
+    n = GetOption('n')
 elif GetOption('inference'):
     AddOption('--fasta',
               dest='fasta',
@@ -124,7 +128,7 @@ if GetOption('simulate') and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env method outdir naive mutability substitution lambda_ lambda0 r frame N T')
+               exports='env method outdir naive mutability substitution lambda_ lambda0 r frame N T n')
 elif GetOption('inference') and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
