@@ -36,10 +36,17 @@ AddOption('--frame',
           default=None,
           help='codon frame')
 frame = GetOption('frame')
-AddOption('--method',
-           default='gctree',
-           help='inference method, "gctree" or "igphyml"')
-method = GetOption('method')
+AddOption('--gctree',
+           action='store_true',
+           help='use gctree inference')
+gctree = GetOption('gctree')
+AddOption('--igphyml',
+           action='store_true',
+           help='use igphyml inference')
+igphyml = GetOption('igphyml')
+if not gctree and not igphyml:
+    raise InputError('must set at least one inference method')
+
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
@@ -128,8 +135,8 @@ if GetOption('simulate') and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env method outdir naive mutability substitution lambda_ lambda0 r frame N T n')
+               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n')
 elif GetOption('inference') and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env method frame fasta outdir naiveID')
+    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID')

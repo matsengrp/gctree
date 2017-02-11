@@ -577,9 +577,10 @@ class MutationModel():
         if N is not None and T is not None:
             raise ValueError('only one of N and T may be not None')
         if N is None and T is None:
-            expected_progeny = progeny.mean()
-            if expected_progeny >= 1:
-                raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
+            raise ValueError('either N or T must be specified')
+            # expected_progeny = progeny.mean()
+            # if expected_progeny >= 1:
+            #     raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
@@ -925,7 +926,7 @@ def main():
 
     # a common parameter for the inference and simulation subprograms
     for subparser in [parser_infer, parser_sim]:
-        subparser.add_argument('--frame', type=int, default=None, help='codon frame')
+        subparser.add_argument('--frame', type=int, default=None, choices=(1,2,3), help='codon frame')
 
     args = parser.parse_args()
     args.func(args)

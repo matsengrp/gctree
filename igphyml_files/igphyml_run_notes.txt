@@ -35,6 +35,6 @@
 
 ### Step 7:
 ### Convert the ASR output to ete3 pickle:
-# xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup --asr_seq gctree.simulation.igphyml_hlp16.MLcodons.fa --outbase igphyml_infered_tree
-#    igphyml_infered_tree.svg  <---- svg of the collapsed topology
-#    igphyml_infered_tree.p  <----- pickle of the ete3 tree format
+# xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree gctree.simulation.phylip_igphyml_tree.txt_hlp16.outgroup --asr_seq gctree.simulation.igphyml_hlp16.MLcodons.fa --outbase igphyml_inferred_tree
+#    igphyml_inferred_tree.svg  <---- svg of the collapsed topology
+#    igphyml_inferred_tree.p  <----- pickle of the ete3 tree format

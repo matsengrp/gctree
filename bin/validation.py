@@ -17,49 +17,62 @@ import seaborn as sns
 # import matplotlib
 # matplotlib.use('PDF')
 from matplotlib import pyplot as plt
+import os
 
-
-def validate(truetree, parfor, outbase):
-
-    with open(truetree, 'rb') as f:
-        true_tree = pickle.load(f)
-    with open(parfor, 'rb') as f:
-        parsimony_forest = pickle.load(f)
-    n_trees = len(parsimony_forest.forest)
-    # NOTE: the unrooted_trees flag is needed because, for some reason, the RF
-    #       function sometimes thinks the collapsed trees are unrooted and barfs
-    distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
-                                    tree.l(parsimony_forest.params)[0] if parsimony_forest.params is not None else None) for tree in parsimony_forest.forest])
-
-    # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
+def MRCA_distance(true_tree, tree):
+    '''
+    here's Erick's idea of matrix of hamming distance of common ancestors of taxa
+    takes a true and inferred tree as CollapsedTree objects
+    '''
     taxa = [node.sequence for node in true_tree.tree.traverse() if node.frequency]
-    sequence_length = len(taxa[0])
     n_taxa = len(taxa)
-    MRCA_sum_metric = []
-    for ct, tree in enumerate(parsimony_forest.forest, 1):
-        d = scipy.zeros(shape=(n_taxa, n_taxa))
-        for i in range(n_taxa):
-            nodei_true = true_tree.tree.iter_search_nodes(sequence=taxa[i]).next()
-            nodei      =      tree.tree.iter_search_nodes(sequence=taxa[i]).next()
-            for j in range(i + 1, n_taxa):
-                nodej_true = true_tree.tree.iter_search_nodes(sequence=taxa[j]).next()
-                nodej      =      tree.tree.iter_search_nodes(sequence=taxa[j]).next()
-                MRCA_true = true_tree.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
-                MRCA =           tree.tree.get_common_ancestor((nodei, nodej)).sequence
-                d[i, j] = nodei.frequency*nodej.frequency*hamming_distance(MRCA_true, MRCA)#/sequence_length
-        # sns.heatmap(d, vmin=0)
-        # plt.savefig(outbase+'.ancestor.{}.pdf'.format(ct))
-        # plt.clf()
-        MRCA_sum_metric.append(d.sum())
+    d = scipy.zeros(shape=(n_taxa, n_taxa))
+    for i in range(n_taxa):
+        nodei_true = true_tree.tree.iter_search_nodes(sequence=taxa[i]).next()
+        nodei      =      tree.tree.iter_search_nodes(sequence=taxa[i]).next()
+        for j in range(i + 1, n_taxa):
+            nodej_true = true_tree.tree.iter_search_nodes(sequence=taxa[j]).next()
+            nodej      =      tree.tree.iter_search_nodes(sequence=taxa[j]).next()
+            MRCA_true = true_tree.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
+            MRCA =           tree.tree.get_common_ancestor((nodei, nodej)).sequence
+            d[i, j] = nodei.frequency*nodej.frequency*hamming_distance(MRCA_true, MRCA)
+    return d
 
-    df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances, 'MRCA':MRCA_sum_metric})
 
-    if n_trees > 1:
-        # plots
-        sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(outbase+'.pdf')
-        # sns.regplot(x='log-likelihood', y='distance', data=df).get_figure().savefig(outbase+'.RF.pdf')
-        # sns.regplot(x='log-likelihood', y='MRCA', data=df).get_figure().savefig(outbase+'.MRCA.pdf')
+def validate(true_tree, inferences, outbase):
+    '''
+    inferences is a dict mapping infernce name, like "gctree" to pickle files of
+    CollapsedForest
+    '''
 
+    # if gctre is among the inferences, let's evaluate the likelihood ranking
+    # among the parsimony trees
+    if 'gctree' in inferences:
+        n_trees = len(inferences['gctree'].forest)
+        # NOTE: the unrooted_trees flag is needed because, for some reason, the RF
+        #       function sometimes thinks the collapsed trees are unrooted and barfs
+        distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
+                                        tree.l(inferences['gctree'].params)[0]) for tree in inferences['gctree'].forest])
+        MRCAs = [MRCA_distance(true_tree, tree).sum() for tree in inferences['gctree'].forest]
+
+        df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances, 'MRCA':MRCAs})
+
+        if n_trees > 1:
+            # plots
+            sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(outbase+'.gctree.pdf')
+
+        df.to_csv(outbase+'.gctree.tsv', sep='\t', index=False)
+
+    # compare the inference methods
+    # assume the first tree in the forest is the inferred tree
+    methods, distances, MRCAs = zip(*[(method,
+                                       true_tree.tree.robinson_foulds(inferences[method].forest[0].tree,
+                                                                      attr_t1='sequence',
+                                                                      attr_t2='sequence',
+                                                                      unrooted_trees=True)[0],
+                                       MRCA_distance(true_tree, inferences[method].forest[0]).sum())
+                                        for method in inferences])
+    df = pd.DataFrame({'method':methods, 'RF':distances, 'MRCA':MRCAs}, columns=('method', 'RF', 'MRCA'))
     df.to_csv(outbase+'.tsv', sep='\t', index=False)
 
 
@@ -70,12 +83,18 @@ def main():
     parser = argparse.ArgumentParser(description='validate results of inference on simulation data',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('truetree', type=str, help='.p file containing true tree')
-    parser.add_argument('parfor', type=str, help='.p file containing parsimony forest from inference')
-    parser.add_argument('--outbase', type=str, default='gctree.out', help='output file base name')
+    parser.add_argument('true_tree', type=str, help='.p file containing true tree')
+    parser.add_argument('forest_files', type=str, nargs='*', help='.p files containing forests from each inference method')
+    parser.add_argument('--outbase', type=str, required=True, help='output file base name')
     args = parser.parse_args()
 
-    validate(args.truetree, args.parfor, args.outbase)
+    with open(args.true_tree, 'rb') as f:
+        true_tree = pickle.load(f)
+    inferences = {}
+    for forest_file in args.forest_files:
+        with open(forest_file, 'rb') as f:
+            inferences[os.path.basename(forest_file).split('.')[0]] = pickle.load(f)
+    validate(true_tree, inferences, args.outbase)
 
 if __name__ == '__main__':
     main()

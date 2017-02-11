@@ -6,12 +6,13 @@ from nestly import Nest
 from nestly.scons import SConsWrap
 from scipy import arange
 # the following must be exported by parent SConstruct/SConscript
-Import('env method outdir naive mutability substitution lambda_ lambda0 r frame N T n')
+Import('env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
 
-w.add_aggregate('aggdat', list)
+if gctree:
+    w.add_aggregate('gctree_agg', list)
 
 # Initialize our first nest level,
 if lambda_ is None:
@@ -56,26 +57,31 @@ def infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
     naiveID = 'naive' # this is what the simulation routine names the naive
-    return SConscript('SConscript.inference', exports='env method frame fasta outdir naiveID')
+    return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID')
 
 @w.add_target()
 def validate(outdir, c):
     '''do validation'''
-    tgt = env.Command([os.path.join(outdir, 'validation.tsv'),
-                    os.path.join(outdir, 'validation.log')],
-                   [c['gctree_sim'][1], c['infer'][0]],
+    outputs = [os.path.join(outdir, 'validation.tsv'), # <-- this one compares different methods
+               os.path.join(outdir, 'validation.log')]
+    if gctree:
+        outputs.append(os.path.join(outdir, 'validation.gctree.tsv')) # <-- special gctree output evaluating parsimony tree ranking
+    tgt = env.Command(outputs,
+                   [c['gctree_sim'][1]] + [x[0] for x in c['infer']],
                     'stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
-    c['aggdat'].append(tgt[0])
+    if gctree:
+        c['gctree_agg'].append(tgt[2])
     return tgt
 
 w.pop('runs')
 
-@w.add_target()
-def aggregate(outdir, c):
-    '''aggregate validation results'''
-    tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
-                       os.path.join(outdir, 'validaggreg.log')],
-                      c['aggdat'],
-                      'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
-    env.AlwaysBuild(tgt)
-    return tgt
+if gctree:
+    @w.add_target()
+    def gctree_aggregate(outdir, c):
+        '''aggregate validation results'''
+        tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
+                           os.path.join(outdir, 'validaggreg.log')],
+                          c['gctree_agg'],
+                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
+        env.AlwaysBuild(tgt)
+        return tgt
