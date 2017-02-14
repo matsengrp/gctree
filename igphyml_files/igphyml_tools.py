@@ -13,8 +13,8 @@ import re
 import warnings
 from Bio import SeqIO
 from ete3 import Tree, TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
-sys.path.append(os.path.abspath("/fh/fast/matsen_e/kdavidse/gctree/bin"))
-
+sys.path.append(os.path.abspath("bin"))
+from Bio import AlignIO
 
 class FastaInputError(Exception):
     '''When the fasta file in not reflecting amino acid DNA coding for protein.'''
@@ -89,7 +89,6 @@ def map_asr_to_tree(asr_seq, tree):
 
 
 def make_igphyml_config(args):
-    import re
 
     igphyml_path = which(args.igphyml_exe.rstrip('/'))
     assert(igphyml_path is not None)
@@ -97,16 +96,10 @@ def make_igphyml_config(args):
     MODEL = args.model
     assert(MODEL in ['gy94', 'hlp16'])
     # Find the length of the translated DNA sequence:
-    LEN_AA = None
-    with open(args.fasta_file) as fh:
-        for l in fh:
-            if not l.startswith('>') and l != '':
-                this_LEN_AA = len(l.strip()) / 3.0
-                if int(this_LEN_AA) != this_LEN_AA or (LEN_AA is not None and this_LEN_AA != LEN_AA):
-                    raise FastaInputError('Problem with the input fasta file. Either is the not a multiple of three or it has indels.')
-                elif LEN_AA is None:
-                    LEN_AA = int(this_LEN_AA)
-    assert(LEN_AA is not None)
+    len_nt = AlignIO.read(args.fasta_file, 'fasta').get_alignment_length()
+    if len_nt % 3 != 0:
+        raise FastaInputError('Problem with the input fasta file. Either is the not a multiple of three or it has indels.')
+    LEN_AA = len_nt/3
 
     # Replace the keyword in the template file:
     with open(args.template) as fh:

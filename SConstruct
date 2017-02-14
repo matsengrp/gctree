@@ -44,9 +44,6 @@ AddOption('--igphyml',
            action='store_true',
            help='use igphyml inference')
 igphyml = GetOption('igphyml')
-if not gctree and not igphyml:
-    raise InputError('must set at least one inference method')
-
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
@@ -55,6 +52,11 @@ outdir = GetOption('outdir')
 
 class InputError(Exception):
     """Exception raised for errors in the input."""
+
+if not gctree and not igphyml:
+    raise InputError('must set at least one inference method')
+if igphyml and frame != 1:
+    raise InputError('frame must equal 1 for igphyml')
 
 if not GetOption('simulate') and not GetOption('inference'):
     raise InputError('Please provide one of the required arguments. Either "--inference" or "--simulate".'
