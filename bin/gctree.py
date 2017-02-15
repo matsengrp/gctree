@@ -165,8 +165,8 @@ class CollapsedTree(LeavesAndClades):
                         node.up.frequency += node.frequency
                         node.delete(prevent_nondicotomic=False)
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
-            if 'sequence' in tree.features and len(set([node.sequence for node in self.tree.traverse()])) != sum(1 for _ in self.tree.traverse()):
-                raise RuntimeError('repeated sequences in collapsed tree, possible backmutation')
+            if 'sequence' in tree.features and len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0])) != sum(node.frequency > 0 for node in self.tree.traverse()):
+                raise RuntimeError('repeated observed sequences in collapsed tree')
         else:
             self.tree = tree
 
@@ -577,9 +577,10 @@ class MutationModel():
         if N is not None and T is not None:
             raise ValueError('only one of N and T may be not None')
         if N is None and T is None:
-            expected_progeny = progeny.mean()
-            if expected_progeny >= 1:
-                raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
+            raise ValueError('either N or T must be specified')
+            # expected_progeny = progeny.mean()
+            # if expected_progeny >= 1:
+            #     raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
@@ -614,13 +615,23 @@ class MutationModel():
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         if N is not None:
-            # if we specified N, we downsample this last generation, detaching from the tree those nodes we don't sample
-            random.shuffle(final_leaves)
-            for _ in range(len(final_leaves) - N):
-                final_leaves.pop().detach()
+            # if we specified N, downsample
+            final_leaves = random.sample(final_leaves, N)
         for leaf in final_leaves:
             if scipy.random.random() < r:
                 leaf.frequency = 1
+
+        # prune away lineages that are unobserved
+        for node in tree.iter_descendants():
+            if sum(node2.frequency for node2 in node.traverse()) == 0:
+                node.detach()
+
+        # remove unobserved unifurcations
+        for node in tree.iter_descendants():
+            parent = node.up
+            if node.frequency == 0 and len(node.children) == 1:
+                node.delete(prevent_nondicotomic=False)
+                node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)
 
         # return the fine (uncollapsed) tree
         return tree
@@ -915,7 +926,7 @@ def main():
 
     # a common parameter for the inference and simulation subprograms
     for subparser in [parser_infer, parser_sim]:
-        subparser.add_argument('--frame', type=int, default=None, help='codon frame')
+        subparser.add_argument('--frame', type=int, default=None, choices=(1,2,3), help='codon frame')
 
     args = parser.parse_args()
     args.func(args)

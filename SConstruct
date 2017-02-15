@@ -24,9 +24,11 @@ env.PrependENVPath('PATH', 'bin')
 AddOption('--inference',
           action='store_true',
           help='Run inference')
+inference = GetOption('inference')
 AddOption('--simulate',
           action='store_true',
           help='validation subprogram, instead of inference')
+simulate = GetOption('simulate')
 AddOption('--threads',
           type='int',
           default=1,
@@ -36,10 +38,14 @@ AddOption('--frame',
           default=None,
           help='codon frame')
 frame = GetOption('frame')
-AddOption('--method',
-           default='gctree',
-           help='inference method, currently only "gctree" implemented')
-method = GetOption('method')
+AddOption('--gctree',
+           action='store_true',
+           help='use gctree inference')
+gctree = GetOption('gctree')
+AddOption('--igphyml',
+           action='store_true',
+           help='use igphyml inference')
+igphyml = GetOption('igphyml')
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
@@ -49,12 +55,17 @@ outdir = GetOption('outdir')
 class InputError(Exception):
     """Exception raised for errors in the input."""
 
-if not GetOption('simulate') and not GetOption('inference'):
+if not gctree and not igphyml:
+    raise InputError('must set at least one inference method')
+if igphyml and frame != 1:
+    raise InputError('frame must equal 1 for igphyml')
+
+if not simulate and not inference:
     raise InputError('Please provide one of the required arguments. Either "--inference" or "--simulate".'
                      'Command line help can then be evoked by "-h" or "--help" and found in the bottom'
                      'of the output under "Local Options".')
 
-if GetOption('simulate'):
+if simulate:
     AddOption('--naive',
               type='string',
               default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'
@@ -88,11 +99,15 @@ if GetOption('simulate'):
     AddOption('--N',
               type='int',
               default=None,
-              help='simulation size')
+              help='simulation size (number of cells observerved)')
     AddOption('--T',
               type='int',
               default=None,
               help='observation time')
+    AddOption('--n',
+              type='int',
+              default=10,
+              help='number of simulations with each parameter parameter choice')
 
     naive = GetOption('naive')
     mutability = GetOption('mutability')
@@ -102,8 +117,8 @@ if GetOption('simulate'):
     r = GetOption('r')
     N = GetOption('N')
     T = GetOption('T')
-
-elif GetOption('inference'):
+    n = GetOption('n')
+elif inference:
     AddOption('--fasta',
               dest='fasta',
               type='string',
@@ -120,12 +135,12 @@ elif GetOption('inference'):
 
 # First call after all arguments have been parsed
 # to enable correct command line help.
-if GetOption('simulate') and not GetOption('help'):
+if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env method outdir naive mutability substitution lambda_ lambda0 r frame N T')
-elif GetOption('inference') and not GetOption('help'):
+               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n')
+elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env method frame fasta outdir naiveID')
+    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID')
