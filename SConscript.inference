@@ -59,7 +59,7 @@ elif method == 'igphyml':
 
     # Run IgPhyML with the HLP16 model using the GY94 tree topology as starting point:
     igphyml_opti = 'tlr'  # <--- can be changed to 'lr' or 'r'
-    ### --hotness 
+    ### --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e
     io = map(lambda x: os.path.join(outdir, x), ['gctree.simulation.phylip', 'igphyml_hlp16.log'])
     igphyml_hlp16 = env.Command(os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16'),
                                 igphyml_gy94_topology,
