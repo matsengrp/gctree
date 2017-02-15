@@ -46,7 +46,6 @@ if gctree:
     return_list.append(gctree_infer)
 
 if igphyml:
-# seqmagickconvert phy2fa
     # need the dedup phy as fa for ASR
     dedup_fasta = env.Command([os.path.join(outdir, 'gctree.simulation.dedup.fasta'),
                                os.path.join(outdir, 'gctree.simulation.dedup.log')],

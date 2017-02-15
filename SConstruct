@@ -24,9 +24,11 @@ env.PrependENVPath('PATH', 'bin')
 AddOption('--inference',
           action='store_true',
           help='Run inference')
+inference = GetOption('inference')
 AddOption('--simulate',
           action='store_true',
           help='validation subprogram, instead of inference')
+simulate = GetOption('simulate')
 AddOption('--threads',
           type='int',
           default=1,
@@ -58,12 +60,12 @@ if not gctree and not igphyml:
 if igphyml and frame != 1:
     raise InputError('frame must equal 1 for igphyml')
 
-if not GetOption('simulate') and not GetOption('inference'):
+if not simulate and not inference:
     raise InputError('Please provide one of the required arguments. Either "--inference" or "--simulate".'
                      'Command line help can then be evoked by "-h" or "--help" and found in the bottom'
                      'of the output under "Local Options".')
 
-if GetOption('simulate'):
+if simulate:
     AddOption('--naive',
               type='string',
               default='ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg'
@@ -116,7 +118,7 @@ if GetOption('simulate'):
     N = GetOption('N')
     T = GetOption('T')
     n = GetOption('n')
-elif GetOption('inference'):
+elif inference:
     AddOption('--fasta',
               dest='fasta',
               type='string',
@@ -133,12 +135,12 @@ elif GetOption('inference'):
 
 # First call after all arguments have been parsed
 # to enable correct command line help.
-if GetOption('simulate') and not GetOption('help'):
+if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
                exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n')
-elif GetOption('inference') and not GetOption('help'):
+elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
     SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID')
