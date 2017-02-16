@@ -425,7 +425,7 @@ sub readInRootedNewick{
    getdivergence(\%root,0); #get divergences
 
    my $t = printtreestring(\%root,"").";";
-   if($t ne $oin){print "Tree read in incorrectly!\n$oin\n$t\n";die();}
+   if($t ne $oin){print "Tree read in incorrectly!Probably not an issue if you had zero branch lengths\n$oin\n$t\n";}
    else{print "Tree read in correctly\n";}
   
    if($printtree){
@@ -447,6 +447,7 @@ sub relevel{
 
 
 #Once tree is read in, need to get the branch lengths
+#Once tree is read in, need to get the branch lengths
 sub getdists{
   my $node = $_[0];
   if(exists($node->{"left"})){
@@ -459,6 +460,10 @@ sub getdists{
     if($node->{"id"}=~/\:/){
       $node->{"dist"} = $';
       $node->{"id"} = $`;
+      if($node->{"dist"} == 0){
+        $node->{"dist"} = 0.0000000000000000000001;
+        print "zero length branch length caught\n";
+      }
     }else{
       if($node->{"level"} != 0){
         die($node->{"id"}." level ".$node->{"level"}." is formatted incorrectly!");
