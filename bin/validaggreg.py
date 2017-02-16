@@ -12,21 +12,19 @@ from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
 import argparse
-from scipy.stats import percentileofscore
 import seaborn as sns
 
-parser = argparse.ArgumentParser(description='germinal center tree inference and simulation')
+parser = argparse.ArgumentParser(description='aggregate validation of repeated runs with same parameters')
 parser.add_argument('input', type=str, nargs='+', help='gctree.validation.tsv files')
 parser.add_argument('--outbase', type=str, help='output file base name')
 args = parser.parse_args()
 
-aggdat = pd.DataFrame(columns=('parsimony forest size', 'trees with MRCA less than or equal to optimal tree'))
+aggdat = pd.DataFrame(columns=('parsimony forest size', 'mean allele frequency', 'MRCA distance to true tree', 'RF distance to true tree', 'trees with MRCA less than or equal to optimal tree'))
 
 for i, fname in enumerate(args.input):
     df = pd.read_csv(fname, sep='\t')
     forest_size = len(df.index)
-    aggdat.loc[i] = (forest_size, sum(x <= df['MRCA'][0] for x in df['MRCA']))
-    #percentileofscore(df['MRCA'], df['MRCA'][0], kind='mean'))
+    aggdat.loc[i] = (forest_size, df['mean_frequency'][0], df['MRCA'][0], df['RF'][0], sum(x <= df['MRCA'][0] for x in df['MRCA']))
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 
