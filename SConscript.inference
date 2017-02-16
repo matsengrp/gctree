@@ -5,9 +5,13 @@ Infer trees from germinal center data
 '''
 import os
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml frame fasta outdir naiveID')
+Import('env gctree igphyml frame fasta outdir naiveID use_srun')
 
 return_list = []
+
+if not use_srun:
+    env.SRun = env.Command
+
 
 if gctree or igphyml:
     # parse fasta file to phylip, interpreting integer names as frequencies
@@ -60,7 +64,7 @@ if igphyml:
 
     # Run IgPhyML with the HLP16 model using the GY94 tree topology as starting point:
     igphyml_opti = 'tlr'  # <--- can be changed to 'lr' or 'r'
-    ### --hotness
+    ### --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e
     igphyml_hlp16 = env.SRun([os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16'),
                               os.path.join(outdir, 'gctree.simulation.phylip_igphyml_stats.txt_hlp16'),
                               os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16.log')],

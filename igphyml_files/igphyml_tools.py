@@ -41,10 +41,11 @@ def ASR_parser(args):
         raise TreeFileParsingError('Could not read the input tree. Is this really newick format?')
 
     tree.add_feature('frequency', 0)
+    tree.add_feature('sequence', 'DUMMY')
     tree = map_asr_to_tree(args.asr_seq, tree)
 
     # Reroot to make the naive sequence the real root instead of just an outgroup:
-    # tree = reroot_tree(tree)  <--- Currently breaks because the node features are not conserved???
+    tree = reroot_tree(tree)
 
     igphyml_tree = CollapsedTree(tree=tree)
     igphyml_tree.render(args.outbase + '.svg')
