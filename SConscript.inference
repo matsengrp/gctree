@@ -5,9 +5,13 @@ Infer trees from germinal center data
 '''
 import os
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml frame fasta outdir naiveID')
+Import('env gctree igphyml frame fasta outdir naiveID use_srun')
 
 return_list = []
+
+if not use_srun:
+    env.SRun = env.Command
+
 
 if gctree or igphyml:
     # parse fasta file to phylip, interpreting integer names as frequencies

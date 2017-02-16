@@ -6,7 +6,7 @@ from nestly import Nest
 from nestly.scons import SConsWrap
 from scipy import arange
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n')
+Import('env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n use_srun')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -57,7 +57,7 @@ def infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
     naiveID = 'naive' # this is what the simulation routine names the naive
-    return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID')
+    return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID use_srun')
 
 @w.add_target()
 def validate(outdir, c):

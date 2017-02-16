@@ -29,10 +29,10 @@ AddOption('--simulate',
           action='store_true',
           help='validation subprogram, instead of inference')
 simulate = GetOption('simulate')
-AddOption('--threads',
-          type='int',
-          default=1,
-          help='Number of cores to run on.')
+AddOption('--srun',
+          action='store_true',
+          help='Should jobs be submitted with srun?')
+use_srun = GetOption('srun')
 AddOption('--frame',
           type='int',
           default=None,
@@ -55,12 +55,12 @@ outdir = GetOption('outdir')
 class InputError(Exception):
     """Exception raised for errors in the input."""
 
-if not gctree and not igphyml:
+if not gctree and not igphyml and not GetOption('help'):
     raise InputError('must set at least one inference method')
 if igphyml and frame != 1:
     raise InputError('frame must equal 1 for igphyml')
 
-if not simulate and not inference:
+if not simulate and not inference and not GetOption('help'):
     raise InputError('Please provide one of the required arguments. Either "--inference" or "--simulate".'
                      'Command line help can then be evoked by "-h" or "--help" and found in the bottom'
                      'of the output under "Local Options".')
@@ -139,7 +139,7 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n')
+               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n use_srun')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
