@@ -16,7 +16,6 @@ from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad
 
 import matplotlib
-matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd

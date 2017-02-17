@@ -6,7 +6,7 @@ from nestly import Nest
 from nestly.scons import SConsWrap
 from scipy import arange
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n use_srun')
+Import('env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n CommandRunner')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -20,7 +20,7 @@ if lambda_ is None:
 else:
     w.add('lambda', [lambda_])
 if lambda0 is None:
-    w.add('lambda0', [.1, .5, 1])
+    w.add('lambda0', arange(.1, 1.1, .1))
 else:
     w.add('lambda0', [lambda0])
 if r is None:
@@ -42,7 +42,7 @@ def gctree_sim(outdir, c):
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     T_arg = ' --T {} '.format(T) if T is not None else ''
     N_arg = ' --N {} '.format(N) if N is not None else ''
-    return env.Command([os.path.join(outdir, 'gctree.simulation.fasta'),
+    return CommandRunner([os.path.join(outdir, 'gctree.simulation.fasta'),
                      os.path.join(outdir, 'gctree.simulation.collapsed_tree.p'),
                      os.path.join(outdir, 'gctree.simulation.log')],
                      [mutability, substitution],
@@ -60,7 +60,7 @@ def infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
     naiveID = 'naive' # this is what the simulation routine names the naive
-    return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID use_srun')
+    return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID CommandRunner')
 
 @w.add_target()
 def validate(outdir, c):
@@ -69,9 +69,9 @@ def validate(outdir, c):
                os.path.join(outdir, 'validation.log')]
     if gctree:
         outputs.append(os.path.join(outdir, 'validation.gctree.tsv')) # <-- special gctree output evaluating parsimony tree ranking
-    tgt = env.Command(outputs,
+    tgt = CommandRunner(outputs,
                    [c['gctree_sim'][1]] + [x[0] for x in c['infer']],
-                    'stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
+                    'xvfb-run -a stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
     if gctree:
         c['gctree_agg'].append(tgt[2])
     return tgt
@@ -85,7 +85,7 @@ if gctree:
         tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
                            os.path.join(outdir, 'validaggreg.log')],
                           c['gctree_agg'],
-                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
+                          'xvfb-run -a stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         c['gctree_outeragg'].append(tgt[0])
         return tgt
@@ -98,6 +98,6 @@ if gctree:
         tgt = env.Command([os.path.join(outdir, 'aggregation.tsv'),
                            os.path.join(outdir, 'aggregation.log')],
                           c['gctree_outeragg'],
-                          'stdbuf -oL python bin/aggregate.py $SOURCES --outbase '+os.path.join(outdir, 'aggregation')+' > ${TARGETS[1]}')
+                          'xvfb-run -a stdbuf -oL python bin/aggregate.py $SOURCES --outbase '+os.path.join(outdir, 'aggregation')+' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         return tgt

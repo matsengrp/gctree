@@ -32,7 +32,10 @@ simulate = GetOption('simulate')
 AddOption('--srun',
           action='store_true',
           help='Should jobs be submitted with srun?')
-use_srun = GetOption('srun')
+if GetOption('srun'):
+    CommandRunner = env.SRun
+else:
+    CommandRunner = env.Command
 AddOption('--frame',
           type='int',
           default=None,
@@ -139,8 +142,8 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n use_srun')
+               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n CommandRunner')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID')
+    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID CommandRunner')

@@ -5,13 +5,9 @@ Infer trees from germinal center data
 '''
 import os
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml frame fasta outdir naiveID use_srun')
+Import('env gctree igphyml frame fasta outdir naiveID CommandRunner')
 
 return_list = []
-
-if not use_srun:
-    env.SRun = env.Command
-
 
 if gctree or igphyml:
     # parse fasta file to phylip, interpreting integer names as frequencies
@@ -29,9 +25,9 @@ if gctree:
                                  'stdbuf -oL python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
     # run dnapars (from phylip package) to generate parsimony trees
-    dnapars = env.SRun(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
+    dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
                        dnapars_config,
-                       'cd ' + outdir + ' && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
+                       'cd ' + outdir + ' && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
     # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
     # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
     env.Depends(dnapars, phylip)
@@ -40,7 +36,7 @@ if gctree:
     # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
     gctree_outbase = os.path.join(outdir, 'gctree')
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
-    gctree_infer = env.Command([gctree_outbase+'.inference.parsimony_forest.p',
+    gctree_infer = CommandRunner([gctree_outbase+'.inference.parsimony_forest.p',
                                 gctree_outbase+'.inference.log'],
                                 dnapars[1],
                                 'xvfb-run -a stdbuf -oL python bin/gctree.py infer $SOURCE --naive '+naiveID+
@@ -57,7 +53,7 @@ if igphyml:
                               'seqmagick convert $SOURCE ${TARGETS[0]} > ${TARGETS[1]}')
 
     # Run IgPhyML with the GY94 model to get the initial topology:
-    igphyml_gy94_topology = env.SRun([os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_gy94'),
+    igphyml_gy94_topology = CommandRunner([os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_gy94'),
                                          os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_gy94.log')],
                                      phylip,
                                      'igphyml -i $SOURCE -m GY -w M0 -t e --run_id gy94 > ${TARGETS[1]}')
@@ -65,7 +61,7 @@ if igphyml:
     # Run IgPhyML with the HLP16 model using the GY94 tree topology as starting point:
     igphyml_opti = 'tlr'  # <--- can be changed to 'lr' or 'r'
     ### --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e
-    igphyml_hlp16 = env.SRun([os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16'),
+    igphyml_hlp16 = CommandRunner([os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16'),
                               os.path.join(outdir, 'gctree.simulation.phylip_igphyml_stats.txt_hlp16'),
                               os.path.join(outdir, 'gctree.simulation.phylip_igphyml_tree.txt_hlp16.log')],
                              [phylip, igphyml_gy94_topology[0]],
@@ -84,7 +80,7 @@ if igphyml:
                              'python igphyml_files/igphyml_tools.py make_igphyml_config --fasta_file $SOURCE --outfile ${TARGETS[0]} --template igphyml_files/igphyml.config.template --igphyml_exe igphyml --model hlp16 > ${TARGETS[1]}')
 
     # Run IgPhyML ASR script:
-    run_ASR = env.SRun([os.path.join(outdir, 'gctree.simulation.igphyml_hlp16.MLcodons.fa'),
+    run_ASR = CommandRunner([os.path.join(outdir, 'gctree.simulation.igphyml_hlp16.MLcodons.fa'),
                         os.path.join(outdir, 'gctree.simulation.igphyml_hlp16.MLcodons.log')],
                        [ASR_config[0], igphyml_hlp16[1], naive_outgroup[0], dedup_fasta[0]],
                        'perl igphyml_files/ancReconstructHLP16.pl ${SOURCES[0]} --stats ${SOURCES[1]} --tree ${SOURCES[2]} --seqfile ${SOURCES[3]} --outdir '+outdir+' > ${TARGETS[1]}')

@@ -56,8 +56,12 @@ def validate(true_tree, inferences, outbase):
         MRCAs = [MRCA_distance(true_tree, tree).sum() for tree in inferences['gctree'].forest]
 
         mean_frequencies = [scipy.mean([node.frequency for node in tree.tree.traverse()]) for tree in inferences['gctree'].forest]
-
-        df = pd.DataFrame({'log-likelihood':likelihoods, 'RF':distances, 'MRCA':MRCAs, 'mean_frequency':mean_frequencies})
+        mean_branch_lengths = [scipy.mean([node.dist for node in tree.tree.iter_descendants()]) for tree in inferences['gctree'].forest]
+        df = pd.DataFrame({'log-likelihood':likelihoods,
+                           'RF':distances,
+                           'MRCA':MRCAs,
+                           'mean_frequency':mean_frequencies,
+                           'mean_branch_length':mean_branch_lengths})
 
         if n_trees > 1:
             # plots

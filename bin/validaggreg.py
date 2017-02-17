@@ -7,7 +7,6 @@ aggregation plots of validation output from several simulation/validation runs
 
 from __future__ import division, print_function
 import scipy, matplotlib
-matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
@@ -19,12 +18,12 @@ parser.add_argument('input', type=str, nargs='+', help='gctree.validation.tsv fi
 parser.add_argument('--outbase', type=str, help='output file base name')
 args = parser.parse_args()
 
-aggdat = pd.DataFrame(columns=('parsimony forest size', 'mean allele frequency', 'MRCA distance to true tree', 'RF distance to true tree', 'trees with MRCA less than or equal to optimal tree'))
+aggdat = pd.DataFrame(columns=('parsimony forest size', 'mean allele frequency', 'mean branch length', 'MRCA distance to true tree', 'RF distance to true tree', 'trees with MRCA less than or equal to optimal tree'))
 
 for i, fname in enumerate(args.input):
     df = pd.read_csv(fname, sep='\t')
     forest_size = len(df.index)
-    aggdat.loc[i] = (forest_size, df['mean_frequency'][0], df['MRCA'][0], df['RF'][0], sum(x <= df['MRCA'][0] for x in df['MRCA']))
+    aggdat.loc[i] = (forest_size, df['mean_frequency'][0], df['mean_branch_length'][0], df['MRCA'][0], df['RF'][0], sum(x <= df['MRCA'][0] for x in df['MRCA']))
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 
