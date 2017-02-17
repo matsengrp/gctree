@@ -13,10 +13,10 @@ except:
     import pickle
 import pandas as pd
 import scipy
-import seaborn as sns
-# import matplotlib
-# matplotlib.use('PDF')
+import matplotlib
+matplotlib.use('PDF')
 from matplotlib import pyplot as plt
+import seaborn as sns
 import os
 
 def MRCA_distance(true_tree, tree):
@@ -65,7 +65,9 @@ def validate(true_tree, inferences, outbase):
 
         if n_trees > 1:
             # plots
-            sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5).savefig(outbase+'.gctree.pdf')
+            plt.figure()
+            sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5)
+            plt.savefig(outbase+'.gctree.pdf')
 
         df.to_csv(outbase+'.gctree.tsv', sep='\t', index=False)
 

@@ -71,7 +71,7 @@ def validate(outdir, c):
         outputs.append(os.path.join(outdir, 'validation.gctree.tsv')) # <-- special gctree output evaluating parsimony tree ranking
     tgt = CommandRunner(outputs,
                    [c['gctree_sim'][1]] + [x[0] for x in c['infer']],
-                    'xvfb-run -a stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
+                    'stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
     if gctree:
         c['gctree_agg'].append(tgt[2])
     return tgt
@@ -85,7 +85,7 @@ if gctree:
         tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
                            os.path.join(outdir, 'validaggreg.log')],
                           c['gctree_agg'],
-                          'xvfb-run -a stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
+                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         c['gctree_outeragg'].append(tgt[0])
         return tgt
@@ -98,6 +98,6 @@ if gctree:
         tgt = env.Command([os.path.join(outdir, 'aggregation.tsv'),
                            os.path.join(outdir, 'aggregation.log')],
                           c['gctree_outeragg'],
-                          'xvfb-run -a stdbuf -oL python bin/aggregate.py $SOURCES --outbase '+os.path.join(outdir, 'aggregation')+' > ${TARGETS[1]}')
+                          'stdbuf -oL python bin/aggregate.py $SOURCES --outbase '+os.path.join(outdir, 'aggregation')+' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         return tgt
