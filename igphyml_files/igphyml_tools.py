@@ -13,7 +13,7 @@ import re
 import warnings
 from Bio import SeqIO
 from ete3 import Tree, TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
-sys.path.append(os.path.abspath("bin"))
+sys.path.append(os.path.abspath('/'.join(os.path.realpath(__file__).split('/')[:-2]) + "/bin"))
 from Bio import AlignIO
 
 class FastaInputError(Exception):
@@ -33,19 +33,24 @@ def ASR_parser(args):
         import cPickle as pickle
     except:
         import pickle
-    from gctree import CollapsedForest, CollapsedTree
+    from gctree import CollapsedForest, CollapsedTree, hamming_distance
 
     try:
         tree = Tree(args.tree)
     except:
         raise TreeFileParsingError('Could not read the input tree. Is this really newick format?')
 
-    tree.add_feature('frequency', 0)
-    tree.add_feature('sequence', 'DUMMY')
+    tree.add_feature('frequency', 0)       # Will be deleted
+    tree.add_feature('sequence', 'DUMMY')  # Will be deleted
     tree = map_asr_to_tree(args.asr_seq, tree)
 
     # Reroot to make the naive sequence the real root instead of just an outgroup:
     tree = reroot_tree(tree)
+
+    # Recompute branch lengths as hamming distances:
+    tree.dist = 0  # No branch above root
+    for node in tree.iter_descendants():
+        node.dist = hamming_distance(node.sequence, node.up.sequence)
 
     igphyml_tree = CollapsedTree(tree=tree)
     igphyml_tree.render(args.outbase + '.svg')
@@ -199,7 +204,11 @@ def reroot_tree(tree, pattern='.*naive.*', outgroup=0):
         tree.swap_children()   # KBH - want root to be at the last taxon in the newick file.
     elif tree != node:
         tree.remove_child(node)
-        node.add_child(tree)
+        # Notice that an internal node between the outgroup (naive seq.)
+        # and the the root is removed because ASR for IgPhyML is done using
+        # the naive as an actual root.
+        node.add_child(tree.get_children()[0].get_children()[0])
+        node.add_child(tree.get_children()[0].get_children()[1])
         tree.dist = node.dist
         node.dist = 0
         tree = node
