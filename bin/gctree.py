@@ -542,7 +542,7 @@ class MutationModel():
         # poisson rate for this sequence (given its relative mutability)
         lambda_sequence = sequence_mutability*lambda0
         # number of mutations
-        trials = 10
+        trials = 20
         for trial in range(1, trials+1):
             m = scipy.random.poisson(lambda_sequence)
             if m <= sequence_length:
@@ -565,7 +565,7 @@ class MutationModel():
             if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
                 break
             if trial == trials:
-                raise RuntimeError('stop codon in simulated sequence on 10 consecustive attempts')
+                raise RuntimeError('stop codon in simulated sequence on '+str(trials)+' consecustive attempts')
         return sequence
 
 
