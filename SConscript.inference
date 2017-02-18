@@ -34,12 +34,13 @@ if gctree:
 
     # ML tree from parsimony trees
     # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
+    # NOTE: TMPDIR is needed due to a an xvfb conflict that Ben (scicomp ninja) discovered
     gctree_outbase = os.path.join(outdir, 'gctree')
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     gctree_infer = CommandRunner([gctree_outbase+'.inference.parsimony_forest.p',
                                 gctree_outbase+'.inference.log'],
                                 dnapars[1],
-                                'xvfb-run -a stdbuf -oL python bin/gctree.py infer $SOURCE --naive '+naiveID+
+                                'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py infer $SOURCE --naive '+naiveID+
                                 ' --outbase '+gctree_outbase+
                                 frame_arg+
                                 ' > ${TARGETS[1]}')
@@ -89,7 +90,7 @@ if igphyml:
     igphyml_infer = env.Command([os.path.join(outdir, 'igphyml.inferred_tree.p'),
                                  os.path.join(outdir, 'igphyml.inferred_tree.log')],
                                 [naive_outgroup[0], run_ASR],
-                                'xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --asr_seq ${SOURCES[1]} --outbase '+os.path.join(outdir, 'igphyml.inferred_tree')+' > ${TARGETS[1]}')
+                                'TMPDIR=/tmp xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --asr_seq ${SOURCES[1]} --outbase '+os.path.join(outdir, 'igphyml.inferred_tree')+' > ${TARGETS[1]}')
     return_list.append(igphyml_infer)
 
 Return('return_list')

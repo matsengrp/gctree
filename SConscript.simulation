@@ -46,7 +46,7 @@ def gctree_sim(outdir, c):
                      os.path.join(outdir, 'gctree.simulation.collapsed_tree.p'),
                      os.path.join(outdir, 'gctree.simulation.log')],
                      [mutability, substitution],
-                     'xvfb-run -a stdbuf -oL python bin/gctree.py simulate '+naive+
+                     'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py simulate '+naive+
                      ' ${SOURCES[0]} ${SOURCES[1]}'+
                      ' --outbase '+os.path.join(outdir, 'gctree')+
                      ' --lambda {0[lambda]} --lambda0 {0[lambda0]} --r {0[r]}'.format(c)+
