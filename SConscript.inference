@@ -84,7 +84,7 @@ if igphyml:
     run_ASR = CommandRunner([os.path.join(outdir, 'gctree.simulation.igphyml_hlp16.MLcodons.fa'),
                         os.path.join(outdir, 'gctree.simulation.igphyml_hlp16.MLcodons.log')],
                        [ASR_config[0], igphyml_hlp16[1], naive_outgroup[0], dedup_fasta[0]],
-                       'perl igphyml_files/ancReconstructHLP16.pl ${SOURCES[0]} --stats ${SOURCES[1]} --tree ${SOURCES[2]} --seqfile ${SOURCES[3]} --outdir '+outdir+' > ${TARGETS[1]}')
+                       'stdbuf -oL perl igphyml_files/ancReconstructHLP16.pl ${SOURCES[0]} --stats ${SOURCES[1]} --tree ${SOURCES[2]} --seqfile ${SOURCES[3]} --outdir '+outdir+' > ${TARGETS[1]}')
 
     # Convert the ASR output to an collapsed forest with an ete3 tree and pickle it:
     igphyml_infer = env.Command([os.path.join(outdir, 'igphyml.inferred_tree.p'),
