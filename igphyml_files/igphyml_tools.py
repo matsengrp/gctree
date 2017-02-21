@@ -51,6 +51,7 @@ def ASR_parser(args):
     tree.dist = 0  # No branch above root
     for node in tree.iter_descendants():
         node.dist = hamming_distance(node.sequence, node.up.sequence)
+        #node.name = node.name.split('_')[0]
 
     igphyml_tree = CollapsedTree(tree=tree)
     igphyml_tree.render(args.outbase + '.svg')
@@ -87,7 +88,7 @@ def map_asr_to_tree(asr_seq, tree):
 
         assert(ancestor)
         ancestor.add_feature('frequency', frequency)
-        ancestor.add_feature('sequence', record.seq)
+        ancestor.add_feature('sequence', str(record.seq))
 
     return tree
 
@@ -181,7 +182,7 @@ def reroot(args):
 
 def find_node(tree, pattern):
     regex = re.compile(pattern).search
-    nodes =  [ node for node in tree.traverse() for m in [regex(node.name)] if m]
+    nodes =  [node for node in tree.traverse() for m in [regex(node.name)] if m]
     if not nodes:
         warn("Cannot find matching node; looking for name matching '{}'".format(pattern))
         return
@@ -212,7 +213,6 @@ def reroot_tree(tree, pattern='.*naive.*', outgroup=0):
         tree.dist = node.dist
         node.dist = 0
         tree = node
-
     return tree
 
 
