@@ -48,10 +48,20 @@ sub Fill_upp{
       }
       for(my $i=0; $i < $length;$i++){
           for(my $j=0;$j<61;$j++){
-              my $sumxz = log($Pxz[$partition->[$i]]->at(0,$j))+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+              my $sumxz;
+              if ($Pxz[$partition->[$i]]->at(0,$j) < 0) {
+                $sumxz = 1+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+              } else {
+                $sumxz = log($Pxz[$partition->[$i]]->at(0,$j))+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+              }
               for(my $k=1;$k<61;$k++){
                   if($Pxz[$partition->[$i]]->at($k,$j)==0){print $node->{"dist"}." $k $j\n"}
-                  my $pxz = log($Pxz[$partition->[$i]]->at($k,$j)) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                  my $pxz;
+                  if ($Pxz[$partition->[$i]]->at($k,$j) < 0) {
+                    $pxz = 1 + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                  } else {
+                    $pxz = log($Pxz[$partition->[$i]]->at($k,$j)) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                  }
                   $sumxz = $sumxz + log(1+exp($pxz-$sumxz));
               }
               $node->{"uppmat"}->[$i][$j] = $sumxz;
@@ -70,10 +80,20 @@ sub Fill_upp{
     #pxy
     for(my $i=0; $i < $length;$i++){
         for(my $j=0;$j<61;$j++){
-            my $sumxy = log($Pxy[$partition->[$i]]->at($j,0))+$node->{"up"}->{"uppmat"}->[$i][0];
+            my $sumxy;
+            if ($Pxy[$partition->[$i]]->at($j,0) < 0) {
+              $sumxy = 1+$node->{"up"}->{"uppmat"}->[$i][0];
+            } else {
+              $sumxy = log($Pxy[$partition->[$i]]->at($j,0))+$node->{"up"}->{"uppmat"}->[$i][0];
+            }
             for(my $k=1;$k<61;$k++){
                 if($Pxy[$partition->[$i]]->at($k,$j)==0){print $node->{"up"}->{"dist"}." $k $j\n"}
-                my $pxy = log($Pxy[$partition->[$i]]->at($j,$k)) + $node->{"up"}->{"uppmat"}->[$i][$k];
+                my $pxy;
+                if ($Pxy[$partition->[$i]]->at($j,$k) < 0) {
+                  $pxy = 1 + $node->{"up"}->{"uppmat"}->[$i][$k];
+                } else {
+                  $pxy = log($Pxy[$partition->[$i]]->at($j,$k)) + $node->{"up"}->{"uppmat"}->[$i][$k];
+                }
                 $sumxy = $sumxy + log(1+exp($pxy-$sumxy));
             }
             $node->{"uppmat"}->[$i][$j] = $sumxy;
@@ -82,10 +102,20 @@ sub Fill_upp{
     #pyv
     for(my $i=0; $i < $length;$i++){
         for(my $j=0;$j<61;$j++){
-            my $sumyv = log($Pyv[$partition->[$i]]->at(0,$j))+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+            my $sumyv;
+            if ($Pyv[$partition->[$i]]->at(0,$j) < 0) {
+              $sumyv = 1+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+            } else {
+              $sumyv = log($Pyv[$partition->[$i]]->at(0,$j))+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+            }
             for(my $k=1;$k<61;$k++){
                 if($Pyv[$partition->[$i]]->at($k,$j)==0){print $node->{"up"}->{$other}->{"dist"}." $k $j ".$Pyv[$partition->[$i]]->at($k,$j)."\n"}
-                my $pyv = log($Pyv[$partition->[$i]]->at($k,$j)) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                my $pyv;
+                if ($Pyv[$partition->[$i]]->at($k,$j) < 0) {
+                  $pyv = 1 + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                } else {
+                  $pyv = log($Pyv[$partition->[$i]]->at($k,$j)) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                }
                 $sumyv = $sumyv + log(1+exp($pyv-$sumyv));
             }
             $node->{"uppmat"}->[$i][$j] += $sumyv;
@@ -135,7 +165,12 @@ sub Marginal_ASR{
     for(my $v=0;$v<61;$v++){
         my $lhoodv;
         for(my $y=0;$y<61;$y++){
-          my $val = $node->{"uppmat"}->[$i][$y]+log($Pyv[$partition->[$i]]->at($v,$y))+$node->{"mat"}->[$i][$v];
+          my $val;
+          if ($Pyv[$partition->[$i]]->at($v,$y) < 0) {
+            $val = $node->{"uppmat"}->[$i][$y]+1+$node->{"mat"}->[$i][$v];
+          } else {
+            $val = $node->{"uppmat"}->[$i][$y]+log($Pyv[$partition->[$i]]->at($v,$y))+$node->{"mat"}->[$i][$v];
+          }
           if($y==0){$lhoodv=$val;}
           else{$lhoodv = $lhoodv + log(1+exp($val-$lhoodv));}
        }
@@ -183,12 +218,32 @@ sub Pruning_Lhood{
         }
         for(my $i=0; $i < $length;$i++){
             for(my $j=0;$j<61;$j++){
-                my $sumr = log($Prs[$partition->[$i]]->at(0,$j))+$node->{"right"}->{"mat"}->[$i][0];
-                my $suml = log($Pls[$partition->[$i]]->at(0,$j))+$node->{"left"}->{"mat"}->[$i][0];
+               my $sumr;
+               my $suml;
+               if ($Prs[$partition->[$i]]->at(0,$j) < 0) {
+                 $sumr = 1+$node->{"right"}->{"mat"}->[$i][0];
+               } else {
+                 $sumr = log($Prs[$partition->[$i]]->at(0,$j))+$node->{"right"}->{"mat"}->[$i][0];
+               }
+               if ($Pls[$partition->[$i]]->at(0,$j) < 0) {
+                 $suml = 1+$node->{"left"}->{"mat"}->[$i][0];
+               } else {
+                 $suml = log($Pls[$partition->[$i]]->at(0,$j))+$node->{"left"}->{"mat"}->[$i][0];
+               }
                 for(my $k=1;$k<61;$k++){
                     if($Prs[$partition->[$i]]->at($k,$j)==0){print $node->{"dist"}." $k $j\n"}
-                    my $pr = log($Prs[$partition->[$i]]->at($k,$j)) + $node->{"right"}->{"mat"}->[$i][$k];
-                    my $pl = log($Pls[$partition->[$i]]->at($k,$j)) + $node->{"left"}->{"mat"}->[$i][$k];
+                      my $pr;
+                      my $pl;
+                      if ($Prs[$partition->[$i]]->at($k,$j) < 0) {
+                        $pr = 1 + $node->{"right"}->{"mat"}->[$i][$k];
+                      } else {
+                        $pr = log($Prs[$partition->[$i]]->at($k,$j)) + $node->{"right"}->{"mat"}->[$i][$k];
+                      }
+                      if ($Pls[$partition->[$i]]->at($k,$j) < 0) {
+                        $pl = 1 + $node->{"left"}->{"mat"}->[$i][$k];
+                      } else {
+                        $pl = log($Pls[$partition->[$i]]->at($k,$j)) + $node->{"left"}->{"mat"}->[$i][$k];
+                      }
                     $sumr = $sumr + log(1+exp($pr-$sumr));
                     $suml = $suml + log(1+exp($pl-$suml));
                 }
@@ -1179,6 +1234,19 @@ my $maa = printML_aa(\%root,"",\@codons,$codonTableSingle,$codonTableTriple);
 #print "$maa\n";
 
 print "Likelihood comparison - StatsFile: $statslhood, Reconstruction: $lhood\n";
+
+# Die if the likelihoods don't match:
+sub isnan { ! defined( $_[0] <=> 9**9**9 ) }
+if (isnan($statslhood) or isnan($lhood)) {
+  print "*** Failed to reconstruct the likelihood. See the line above. ***\n";
+  die("*** Failed to reconstruct the likelihood. ***\n");
+}
+my @sort_array = ($lhood, $statslhood);
+my $min_lhood = (sort {$a <=> $b} @sort_array)[0];
+if (abs($lhood - $statslhood) / $min_lhood > 0.01) {
+  print "*** Failed to reconstruct the likelihood with sufficient precision (>1%). See the line above. ***\n";
+  die("*** Failed to reconstruct the likelihood with sufficient precision (>1%). ***\n");
+}
 
 open(OUT,">$outdir/$stem.MLcodons.fa") or die();
 print OUT uc "$mcodons\n";
