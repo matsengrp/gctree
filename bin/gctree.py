@@ -163,6 +163,9 @@ class CollapsedTree(LeavesAndClades):
                 for node in self.tree.get_descendants():
                     if node.dist == 0:
                         node.up.frequency += node.frequency
+                        if node.name and not node.up.name:
+                            node.up.name = node.name
+
                         node.delete(prevent_nondicotomic=False)
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
             if 'sequence' in tree.features and len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0])) != sum(node.frequency > 0 for node in self.tree.traverse()):
@@ -810,7 +813,7 @@ def infer(args):
 
     # fit p and q using all trees
     # if we get floating point errors, try a few more times (starting params are random)
-    max_tries = 1
+    max_tries = 10
     for tries in range(max_tries):
         try:
             parsimony_forest.mle(Vlad_sum=True)
