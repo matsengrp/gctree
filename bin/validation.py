@@ -73,14 +73,15 @@ def validate(true_tree, inferences, outbase):
 
     # compare the inference methods
     # assume the first tree in the forest is the inferred tree
-    methods, distances, MRCAs = zip(*[(method,
+    methods, n_taxa, distances, MRCAs = zip(*[(method,
+                                       len(list(true_tree.tree.traverse())),  # Get all taxa in the tree
                                        true_tree.tree.robinson_foulds(inferences[method].forest[0].tree,
                                                                       attr_t1='sequence',
                                                                       attr_t2='sequence',
                                                                       unrooted_trees=True)[0],
                                        MRCA_distance(true_tree, inferences[method].forest[0]).sum())
-                                        for method in inferences])
-    df = pd.DataFrame({'method':methods, 'RF':distances, 'MRCA':MRCAs}, columns=('method', 'RF', 'MRCA'))
+                                       for method in inferences])
+    df = pd.DataFrame({'method':methods, 'N_taxa':n_taxa, 'RF':distances, 'MRCA':MRCAs}, columns=('method', 'N_taxa', 'RF', 'MRCA'))
     df.to_csv(outbase+'.tsv', sep='\t', index=False)
 
 
@@ -103,6 +104,8 @@ def main():
         with open(forest_file, 'rb') as f:
             inferences[os.path.basename(forest_file).split('.')[0]] = pickle.load(f)
     validate(true_tree, inferences, args.outbase)
+    print('Done')  # Print something to the log to make the wait_func run smooth
+
 
 if __name__ == '__main__':
     main()
