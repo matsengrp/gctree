@@ -13,14 +13,19 @@ w = SConsWrap(nest, outdir, alias_environment=env)
 
 if gctree:
     w.add_aggregate('gctree_outeragg', list) # <-- aggregating results across parameters
+w.add_aggregate('outeragg', list) # <-- aggregating results across parameters
 
 # Initialize our first nest level,
 if lambda_ is None:
-    w.add('lambda', [1, 5, 10])
+    w.add('lambda', [1, 2, 5, 10])
 else:
     w.add('lambda', [lambda_])
 if lambda0 is None:
-    w.add('lambda0', arange(.1, 1.1, .1))
+    # Rule of thumb mutation rate in a BCR
+    # undergoing SHM is 10^-3, for 90 ammino acid
+    # that is 90*3*10^-3 = 0.27 \aprox 0.25
+    w.add('lambda0', arange(0.125, 0.25, 0.5))
+    # w.add('lambda0', arange(.1, 1.1, .1))
 else:
     w.add('lambda0', [lambda0])
 if r is None:
@@ -29,6 +34,7 @@ else:
     w.add('r', [r])
 if gctree:
     w.add_aggregate('gctree_agg', list) # <-- for aggregating repeated simulations with the same parameters
+w.add_aggregate('agg', list) # <-- for aggregating repeated simulations with the same parameters
 
 # next nest, just random simulation reruns, same params
 w.add('runs', range(1, n+1))
@@ -59,7 +65,7 @@ def gctree_sim(outdir, c):
 def infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
-    naiveID = 'naive' # this is what the simulation routine names the naive
+    naiveID = 'naive' # this is what the simulation routine names the naive 
     return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID CommandRunner')
 
 @w.add_target()
@@ -74,30 +80,55 @@ def validate(outdir, c):
                     'stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
     if gctree:
         c['gctree_agg'].append(tgt[2])
+    c['agg'].append(tgt[0])
     return tgt
 
 w.pop('runs')
+
 
 if gctree:
     @w.add_target()
     def gctree_aggregate(outdir, c):
         '''aggregate validation results'''
-        tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
-                           os.path.join(outdir, 'validaggreg.log')],
+        tgt = env.Command([os.path.join(outdir, 'gctree.validaggreg.tsv'),
+                           os.path.join(outdir, 'gctree.validaggreg.log')],
                           c['gctree_agg'],
-                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
+                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.validaggreg')+' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         c['gctree_outeragg'].append(tgt[0])
         return tgt
 
-    w.pop('lambda')
+@w.add_target()
+def inner_aggregate(outdir, c):
+    '''aggregate validation results'''
+    tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
+                       os.path.join(outdir, 'validaggreg.log')],
+                      c['agg'],
+                      'stdbuf -oL python bin/validaggreg_compare.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
+    env.AlwaysBuild(tgt)
+    c['outeragg'].append(tgt[0])
+    return tgt
 
+w.pop('lambda')
+
+@w.add_target()
+def outer_aggregate(outdir, c):
+    '''aggregate different parameter values'''
+    tgt = env.Command([os.path.join(outdir, 'aggregation.tsv'),
+                       os.path.join(outdir, 'aggregation.log')],
+                      c['outeragg'],
+                      'stdbuf -oL python bin/aggregate_compare.py $SOURCES --outbase '+os.path.join(outdir, 'aggregation')+' > ${TARGETS[1]}')
+    env.AlwaysBuild(tgt)
+    return tgt
+
+
+if gctree:
     @w.add_target()
     def gctree_aggregate(outdir, c):
         '''aggregate different parameter values'''
-        tgt = env.Command([os.path.join(outdir, 'aggregation.tsv'),
-                           os.path.join(outdir, 'aggregation.log')],
+        tgt = env.Command([os.path.join(outdir, 'gctree.aggregation.tsv'),
+                           os.path.join(outdir, 'gctree.aggregation.log')],
                           c['gctree_outeragg'],
-                          'stdbuf -oL python bin/aggregate.py $SOURCES --outbase '+os.path.join(outdir, 'aggregation')+' > ${TARGETS[1]}')
+                          'stdbuf -oL python bin/aggregate.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.aggregation')+' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         return tgt
