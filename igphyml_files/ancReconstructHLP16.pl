@@ -18,6 +18,7 @@ use strict;
 use warnings;
 use PDL;
 use PDL::LinearAlgebra::Trans;
+my SMALL = 1e-100;
 
 sub Fill_upp{
     my $node = $_[0];
@@ -49,18 +50,18 @@ sub Fill_upp{
       for(my $i=0; $i < $length;$i++){
           for(my $j=0;$j<61;$j++){
               my $sumxz;
-              if ($Pxz[$partition->[$i]]->at(0,$j) < 0) {
-                $sumxz = 1+$node->{"up"}->{$other}->{"mat"}->[$i][0];
-              } else {
+              if ($Pxz[$partition->[$i]]->at(0,$j) > 0) {
                 $sumxz = log($Pxz[$partition->[$i]]->at(0,$j))+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+              } else {
+                $sumxz = log(SMALL)+$node->{"up"}->{$other}->{"mat"}->[$i][0];
               }
               for(my $k=1;$k<61;$k++){
                   if($Pxz[$partition->[$i]]->at($k,$j)==0){print $node->{"dist"}." $k $j\n"}
                   my $pxz;
-                  if ($Pxz[$partition->[$i]]->at($k,$j) < 0) {
-                    $pxz = 1 + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
-                  } else {
+                  if ($Pxz[$partition->[$i]]->at($k,$j) > 0) {
                     $pxz = log($Pxz[$partition->[$i]]->at($k,$j)) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                  } else {
+                    $pxz = log(SMALL) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
                   }
                   $sumxz = $sumxz + log(1+exp($pxz-$sumxz));
               }
@@ -81,18 +82,18 @@ sub Fill_upp{
     for(my $i=0; $i < $length;$i++){
         for(my $j=0;$j<61;$j++){
             my $sumxy;
-            if ($Pxy[$partition->[$i]]->at($j,0) < 0) {
-              $sumxy = 1+$node->{"up"}->{"uppmat"}->[$i][0];
-            } else {
+            if ($Pxy[$partition->[$i]]->at($j,0) > 0) {
               $sumxy = log($Pxy[$partition->[$i]]->at($j,0))+$node->{"up"}->{"uppmat"}->[$i][0];
+            } else {
+              $sumxy = log(SMALL)+$node->{"up"}->{"uppmat"}->[$i][0];
             }
             for(my $k=1;$k<61;$k++){
                 if($Pxy[$partition->[$i]]->at($k,$j)==0){print $node->{"up"}->{"dist"}." $k $j\n"}
                 my $pxy;
-                if ($Pxy[$partition->[$i]]->at($j,$k) < 0) {
-                  $pxy = 1 + $node->{"up"}->{"uppmat"}->[$i][$k];
-                } else {
+                if ($Pxy[$partition->[$i]]->at($j,$k) > 0) {
                   $pxy = log($Pxy[$partition->[$i]]->at($j,$k)) + $node->{"up"}->{"uppmat"}->[$i][$k];
+                } else {
+                  $pxy = log(SMALL) + $node->{"up"}->{"uppmat"}->[$i][$k];
                 }
                 $sumxy = $sumxy + log(1+exp($pxy-$sumxy));
             }
@@ -103,18 +104,18 @@ sub Fill_upp{
     for(my $i=0; $i < $length;$i++){
         for(my $j=0;$j<61;$j++){
             my $sumyv;
-            if ($Pyv[$partition->[$i]]->at(0,$j) < 0) {
-              $sumyv = 1+$node->{"up"}->{$other}->{"mat"}->[$i][0];
-            } else {
+            if ($Pyv[$partition->[$i]]->at(0,$j) > 0) {
               $sumyv = log($Pyv[$partition->[$i]]->at(0,$j))+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+            } else {
+              $sumyv = log(SMALL)+$node->{"up"}->{$other}->{"mat"}->[$i][0];
             }
             for(my $k=1;$k<61;$k++){
                 if($Pyv[$partition->[$i]]->at($k,$j)==0){print $node->{"up"}->{$other}->{"dist"}." $k $j ".$Pyv[$partition->[$i]]->at($k,$j)."\n"}
                 my $pyv;
-                if ($Pyv[$partition->[$i]]->at($k,$j) < 0) {
-                  $pyv = 1 + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
-                } else {
+                if ($Pyv[$partition->[$i]]->at($k,$j) > 0) {
                   $pyv = log($Pyv[$partition->[$i]]->at($k,$j)) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                } else {
+                  $pyv = log(SMALL) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
                 }
                 $sumyv = $sumyv + log(1+exp($pyv-$sumyv));
             }
@@ -166,10 +167,10 @@ sub Marginal_ASR{
         my $lhoodv;
         for(my $y=0;$y<61;$y++){
           my $val;
-          if ($Pyv[$partition->[$i]]->at($v,$y) < 0) {
-            $val = $node->{"uppmat"}->[$i][$y]+1+$node->{"mat"}->[$i][$v];
-          } else {
+          if ($Pyv[$partition->[$i]]->at($v,$y) > 0) {
             $val = $node->{"uppmat"}->[$i][$y]+log($Pyv[$partition->[$i]]->at($v,$y))+$node->{"mat"}->[$i][$v];
+          } else {
+            $val = $node->{"uppmat"}->[$i][$y]+log(SMALL)+$node->{"mat"}->[$i][$v];
           }
           if($y==0){$lhoodv=$val;}
           else{$lhoodv = $lhoodv + log(1+exp($val-$lhoodv));}
@@ -220,29 +221,29 @@ sub Pruning_Lhood{
             for(my $j=0;$j<61;$j++){
                my $sumr;
                my $suml;
-               if ($Prs[$partition->[$i]]->at(0,$j) < 0) {
-                 $sumr = 1+$node->{"right"}->{"mat"}->[$i][0];
-               } else {
+               if ($Prs[$partition->[$i]]->at(0,$j) > 0) {
                  $sumr = log($Prs[$partition->[$i]]->at(0,$j))+$node->{"right"}->{"mat"}->[$i][0];
-               }
-               if ($Pls[$partition->[$i]]->at(0,$j) < 0) {
-                 $suml = 1+$node->{"left"}->{"mat"}->[$i][0];
                } else {
+                 $sumr = log(SMALL)+$node->{"right"}->{"mat"}->[$i][0];
+               }
+               if ($Pls[$partition->[$i]]->at(0,$j) > 0) {
                  $suml = log($Pls[$partition->[$i]]->at(0,$j))+$node->{"left"}->{"mat"}->[$i][0];
+               } else {
+                 $suml = log(SMALL)+$node->{"left"}->{"mat"}->[$i][0];
                }
                 for(my $k=1;$k<61;$k++){
                     if($Prs[$partition->[$i]]->at($k,$j)==0){print $node->{"dist"}." $k $j\n"}
                       my $pr;
                       my $pl;
-                      if ($Prs[$partition->[$i]]->at($k,$j) < 0) {
-                        $pr = 1 + $node->{"right"}->{"mat"}->[$i][$k];
-                      } else {
+                      if ($Prs[$partition->[$i]]->at($k,$j) > 0) {
                         $pr = log($Prs[$partition->[$i]]->at($k,$j)) + $node->{"right"}->{"mat"}->[$i][$k];
-                      }
-                      if ($Pls[$partition->[$i]]->at($k,$j) < 0) {
-                        $pl = 1 + $node->{"left"}->{"mat"}->[$i][$k];
                       } else {
+                        $pr = log(SMALL) + $node->{"right"}->{"mat"}->[$i][$k];
+                      }
+                      if ($Pls[$partition->[$i]]->at($k,$j) > 0) {
                         $pl = log($Pls[$partition->[$i]]->at($k,$j)) + $node->{"left"}->{"mat"}->[$i][$k];
+                      } else {
+                        $pl = log(SMALL) + $node->{"left"}->{"mat"}->[$i][$k];
                       }
                     $sumr = $sumr + log(1+exp($pr-$sumr));
                     $suml = $suml + log(1+exp($pl-$suml));
@@ -838,165 +839,165 @@ my $ambigfile;
 my $bstats;
 
 while(<C>){
-	my $line = $_;
-	chomp($line);
-	if($line =~ /nsim\s+(\S+)/){
-		$nsim = $1;
-	}
-	if($line =~ /omegas\s+(\S+)/){
-		@omegas = split(",",$1);
-	}
-	if($line =~ /kappa\s+(\S+)/){
-		$kappa = $1;
-	}
-	if($line =~ /motifs\s+(\S+)/){
-		@motifs = split(",",$1);
-	}
-	if($line =~ /hs\s+(\S+)/){
-		@hs = split(",",$1);
-	}
-	if($line =~ /freqs\s+(\S+)/){
-		$freqs = $1;
-	}
-	if($line =~ /tree\s+(\S+)/){
-		$treefile = $1;
-	}
-	if($line =~ /fullcontext\s+(\S+)/){
-		$context=$1;
-	}
-	if($line =~ /outdir\s+(\S+)/){
-		$outdir=$1;
-	}
-	if($line =~ /rooted\s+(\S+)/){
-		$rooted=$1;
-	}
-	if($line =~ /length\s+(\S+)/){
-		$length=$1;
-	}
-	if($line =~ /rootid\s+(\S+)/){
-		$rootid=$1;
-	}
-	if($line =~ /part\s+(\S+)/){
-		$partfile=$1;
-	}
-	if($line =~ /igphyml\s+(\S+)/){
-		$igphyml=$1;
-	}
-	if($line =~ /seqfile\s+(\S+)/){
-		$seqfile=$1;
-	}
-	if($line =~ /stats\s+(\S+)/){
-		$statsfile=$1;
-	}
-	if($line =~ /stem\s+(\S+)/){
-		$stem=$1;
-	}
-	if($line =~ /ambigfile\s+(\S+)/){
-		$ambigfile=$1;
-	}
+  my $line = $_;
+  chomp($line);
+  if($line =~ /nsim\s+(\S+)/){
+    $nsim = $1;
+  }
+  if($line =~ /omegas\s+(\S+)/){
+    @omegas = split(",",$1);
+  }
+  if($line =~ /kappa\s+(\S+)/){
+    $kappa = $1;
+  }
+  if($line =~ /motifs\s+(\S+)/){
+    @motifs = split(",",$1);
+  }
+  if($line =~ /hs\s+(\S+)/){
+    @hs = split(",",$1);
+  }
+  if($line =~ /freqs\s+(\S+)/){
+    $freqs = $1;
+  }
+  if($line =~ /tree\s+(\S+)/){
+    $treefile = $1;
+  }
+  if($line =~ /fullcontext\s+(\S+)/){
+    $context=$1;
+  }
+  if($line =~ /outdir\s+(\S+)/){
+    $outdir=$1;
+  }
+  if($line =~ /rooted\s+(\S+)/){
+    $rooted=$1;
+  }
+  if($line =~ /length\s+(\S+)/){
+    $length=$1;
+  }
+  if($line =~ /rootid\s+(\S+)/){
+    $rootid=$1;
+  }
+  if($line =~ /part\s+(\S+)/){
+    $partfile=$1;
+  }
+  if($line =~ /igphyml\s+(\S+)/){
+    $igphyml=$1;
+  }
+  if($line =~ /seqfile\s+(\S+)/){
+    $seqfile=$1;
+  }
+  if($line =~ /stats\s+(\S+)/){
+    $statsfile=$1;
+  }
+  if($line =~ /stem\s+(\S+)/){
+    $stem=$1;
+  }
+  if($line =~ /ambigfile\s+(\S+)/){
+    $ambigfile=$1;
+  }
 }
 
 #check to see if stats file was specified in command line
 for(my $i = 1; $i < scalar(@ARGV); $i++){
-	my $line = $ARGV[$i];
-	if($line =~ /-stats/){
-		$statsfile=$ARGV[$i+1];
-	}
+  my $line = $ARGV[$i];
+  if($line =~ /-stats/){
+    $statsfile=$ARGV[$i+1];
+  }
 }
 
 #Read in igphyml stats file, if specified
 if(defined $statsfile && $statsfile ne "N"){
-	open(STATS,$statsfile)or die("Couldn't open $statsfile\n");
-	my @stats = <STATS>;
-	@motifs = (0)x0;
-	@omegas = (0)x0;
-	@hs = (0)x0;
-	$freqs = "stats";
-	foreach my $l (@stats){
-	  chomp($l);
-	  if($l =~ /Motif:\s+(\S+)\s+\d\s+\d\s+(\S+)/){
-	  	push(@motifs,$1);
-	  	push(@hs,$2);
-	  	print "Read motif h $1 = $2 from $statsfile\n";
-	  }
-	  if($l =~ /\. Omega\s+(\d+)\s+\S+:\s+(\S+)/){
-	  	$omegas[$1]=$2;
-	  	print "Read omega $1 = $2 from $statsfile\n";
-	  }
-	  if($l =~ /. Nonsynonymous\/synonymous ratio:\s+(\S+)/){
-	  	$omegas[0]=$1;
-	  	print "Read old school omega 0 = $1 from $statsfile\n";
-	  }
-	  if($l =~ /\. Transition\/transversion ratio:\s+(\S+)/){
-	  	$kappa=$1;
-	  	print "Read kappa $kappa from $statsfile\n";
-	  }
-	  if($l =~ /\. Log-likelihood:\s+(\S+)/){
-	  	$statslhood=$1;
-	  	print "Read stats lhood $statslhood from $statsfile\n";
-	  }
-	  $bstats .= " $l";
-	}
-	print "Reading in frequency parameters from IgPhyML stats file\n";
+  open(STATS,$statsfile)or die("Couldn't open $statsfile\n");
+  my @stats = <STATS>;
+  @motifs = (0)x0;
+  @omegas = (0)x0;
+  @hs = (0)x0;
+  $freqs = "stats";
+  foreach my $l (@stats){
+    chomp($l);
+    if($l =~ /Motif:\s+(\S+)\s+\d\s+\d\s+(\S+)/){
+      push(@motifs,$1);
+      push(@hs,$2);
+      print "Read motif h $1 = $2 from $statsfile\n";
+    }
+    if($l =~ /\. Omega\s+(\d+)\s+\S+:\s+(\S+)/){
+      $omegas[$1]=$2;
+      print "Read omega $1 = $2 from $statsfile\n";
+    }
+    if($l =~ /. Nonsynonymous\/synonymous ratio:\s+(\S+)/){
+      $omegas[0]=$1;
+      print "Read old school omega 0 = $1 from $statsfile\n";
+    }
+    if($l =~ /\. Transition\/transversion ratio:\s+(\S+)/){
+      $kappa=$1;
+      print "Read kappa $kappa from $statsfile\n";
+    }
+    if($l =~ /\. Log-likelihood:\s+(\S+)/){
+      $statslhood=$1;
+      print "Read stats lhood $statslhood from $statsfile\n";
+    }
+    $bstats .= " $l";
+  }
+  print "Reading in frequency parameters from IgPhyML stats file\n";
 }
 
 #check command line args to see if any should be over-ridden
 for(my $i = 1; $i < scalar(@ARGV); $i++){
-	my $line = $ARGV[$i];
-	if($line =~ /-nsim/){
-		$nsim = $ARGV[$i+1];
-	}
-	if($line =~ /-omegas/){
-		@omegas = split(",",$ARGV[$i+1]);
-	}
-	if($line =~ /-kappa/){
-		$kappa = $ARGV[$i+1];
-	}
-	if($line =~ /-part/){
-		$partfile = $ARGV[$i+1];
-	}
-	if($line =~ /-motifs/){
-		@motifs = split(",",$ARGV[$i+1]);
-	}
-	if($line =~ /-hs/){
-		@hs = split(",",$ARGV[$i+1]);
-	}
-	if($line =~ /-freqs/){
-		$freqs = $ARGV[$i+1];
-	}
-	if($line =~ /-tree/){
-		$treefile = $ARGV[$i+1];
-	}
-	if($line =~ /-fullcontext/){
-		$context=$ARGV[$i+1];
-	}
-	if($line =~ /-outdir/){
-		$outdir=$ARGV[$i+1];
-	}
-	if($line =~ /-rooted/){
-		$rooted=$ARGV[$i+1];
-	}
-	if($line =~ /-length/){
-		$length=$ARGV[$i+1];
-	}
-	if($line =~ /-rootid/){
-		$rootid=$ARGV[$i+1];
-	}
-	if($line =~ /-igphyml/){
-		$igphyml=$ARGV[$i+1];
-	}
-	if($line =~ /-seqfile/){
-		$seqfile=$ARGV[$i+1];
-	}
-	if($line =~ /-stats/){
-		$statsfile=$ARGV[$i+1];
-	}
-	if($line =~ /-stem/){
-		$stem=$ARGV[$i+1];
-	}
-	if($line =~ /ambigfile/){
-		$ambigfile=$1;
-	}
+  my $line = $ARGV[$i];
+  if($line =~ /-nsim/){
+    $nsim = $ARGV[$i+1];
+  }
+  if($line =~ /-omegas/){
+    @omegas = split(",",$ARGV[$i+1]);
+  }
+  if($line =~ /-kappa/){
+    $kappa = $ARGV[$i+1];
+  }
+  if($line =~ /-part/){
+    $partfile = $ARGV[$i+1];
+  }
+  if($line =~ /-motifs/){
+    @motifs = split(",",$ARGV[$i+1]);
+  }
+  if($line =~ /-hs/){
+    @hs = split(",",$ARGV[$i+1]);
+  }
+  if($line =~ /-freqs/){
+    $freqs = $ARGV[$i+1];
+  }
+  if($line =~ /-tree/){
+    $treefile = $ARGV[$i+1];
+  }
+  if($line =~ /-fullcontext/){
+    $context=$ARGV[$i+1];
+  }
+  if($line =~ /-outdir/){
+    $outdir=$ARGV[$i+1];
+  }
+  if($line =~ /-rooted/){
+    $rooted=$ARGV[$i+1];
+  }
+  if($line =~ /-length/){
+    $length=$ARGV[$i+1];
+  }
+  if($line =~ /-rootid/){
+    $rootid=$ARGV[$i+1];
+  }
+  if($line =~ /-igphyml/){
+    $igphyml=$ARGV[$i+1];
+  }
+  if($line =~ /-seqfile/){
+    $seqfile=$ARGV[$i+1];
+  }
+  if($line =~ /-stats/){
+    $statsfile=$ARGV[$i+1];
+  }
+  if($line =~ /-stem/){
+    $stem=$ARGV[$i+1];
+  }
+  if($line =~ /ambigfile/){
+    $ambigfile=$1;
+  }
 }
 
 #check that all necessary parameters are specified
@@ -1038,61 +1039,63 @@ my $tree = <TREE>;
 chomp($tree);
 my %root;
 if($rooted==1){
-	%root = %{readInRootedNewick($tree,0)};
+  %root = %{readInRootedNewick($tree,0)};
 }else{
-	%root = %{readInUnrootedNewick($tree,$rootid,0)};
+  %root = %{readInUnrootedNewick($tree,$rootid,0)};
 }
 
 #read in ambiguous character file
-open(AM,$ambigfile) or die();
 my %ambig;
-while(<AM>){
-	my $line = $_;
-	chomp($line);
-	my @in = split(" ",$line);
-	if(!exists($ambig{$in[0]})){
-		my %new;
-		$ambig{$in[0]} = \%new;
-	}
-	if(!exists($ambig{$in[0]}->{$in[1]})){
-		my @new = (0)x61;
-		$ambig{$in[0]}->{$in[1]} = \@new;
-	}
-	$ambig{$in[0]}->{$in[1]}->[$in[2]]=$in[3];
+  if($ambigfile ne "N"){
+  open(AM,$ambigfile) or die();
+  while(<AM>){
+    my $line = $_;
+    chomp($line);
+    my @in = split(" ",$line);
+    if(!exists($ambig{$in[0]})){
+      my %new;
+      $ambig{$in[0]} = \%new;
+    }
+    if(!exists($ambig{$in[0]}->{$in[1]})){
+      my @new = (0)x61;
+      $ambig{$in[0]}->{$in[1]} = \@new;
+    }
+    $ambig{$in[0]}->{$in[1]}->[$in[2]]=$in[3];
+  }
 }
 
 #Set up partition model from file
 my @part = ((-1)x$length);
 my $nparts=0;
 if($partfile ne "N"){
-	open(P,$partfile) or die("Couldn't open $partfile");
-	my $h = <P>;
-	while(<P>){
-		my $line = $_;
-		chomp($line);
-		my @in1 = split(":",$line);
-		my @in2 = split(",",$in1[1]);
-		for(my $i=0;$i<scalar(@in2);$i++){
-			my @in3=split("\\.\\.",$in2[$i]);
-			for(my $j=$in3[0];$j<=$in3[1];$j++){
-				if($j >= $length){die("Partition $nparts extends beyond specified sequnece length!")}
-				$part[$j]=$nparts;
-			}
-		}
-		$nparts++;
-	}
+  open(P,$partfile) or die("Couldn't open $partfile");
+  my $h = <P>;
+  while(<P>){
+    my $line = $_;
+    chomp($line);
+    my @in1 = split(":",$line);
+    my @in2 = split(",",$in1[1]);
+    for(my $i=0;$i<scalar(@in2);$i++){
+      my @in3=split("\\.\\.",$in2[$i]);
+      for(my $j=$in3[0];$j<=$in3[1];$j++){
+        if($j >= $length){die("Partition $nparts extends beyond specified sequnece length!")}
+        $part[$j]=$nparts;
+      }
+    }
+    $nparts++;
+  }
 }else{ #default of a single partition
-	@part = ((0)x$length);
-	$nparts=1;
+  @part = ((0)x$length);
+  $nparts=1;
 }
 if($nparts != scalar(@omegas)){die("$nparts partitions, but ".(scalar(@omegas)." omegas!"))}
 print "Partition index: ";
 for(my$i=0;$i<$length;$i++){
-	if($part[$i] == -1){
-		die("Position $i unspecified in partition file.");
-	}else{
-		print "$part[$i] ";
-	}
+  if($part[$i] == -1){
+    die("Position $i unspecified in partition file.");
+  }else{
+    print "$part[$i] ";
+  }
 }
 print "\n";
 
@@ -1105,30 +1108,34 @@ my @chars = ("t","c","a","g");
 my %freqs;
 my $fsum=0;
 foreach my $a (@chars){
-	foreach my $b (@chars){
-		foreach my $c (@chars){
-			if($a.$b.$c ne "tga" && $a.$b.$c ne "taa" && $a.$b.$c ne "tag"){
-				push(@codons,$a.$b.$c);
-				$codoni{$a.$b.$c}=$index;
-				my $match = uc $a.$b.$c;
-				if(defined $statsfile && $statsfile ne "N"){
-					if($bstats =~ /f\($match\)=(\d+\.*\d*)/){
-						$freqs{lc $match} = $1;
-					}else{die($match)}
-				}elsif($freqs eq "uniform"){
-					$freqs{lc $match} = 1/61;
-				}else{
-					die("freqs not set properly\n");
-				}
-				$fsum += $freqs{$a.$b.$c};
-				$index++;
-			}
-		}
-	}
+  foreach my $b (@chars){
+    foreach my $c (@chars){
+      if($a.$b.$c ne "tga" && $a.$b.$c ne "taa" && $a.$b.$c ne "tag"){
+        push(@codons,$a.$b.$c);
+        $codoni{$a.$b.$c}=$index;
+        my $match = uc $a.$b.$c;
+        if(defined $statsfile && $statsfile ne "N"){
+          if($bstats =~ /f\($match\)=(\d+\.*\d*)/){
+            $freqs{lc $match} = $1;
+            if($freqs{lc $match} == 0){
+              print "Zero frequency caught\n";
+              $freqs{lc $match}=1e-10;
+            }
+          }else{die($match)}
+        }elsif($freqs eq "uniform"){
+          $freqs{lc $match} = 1/61;
+        }else{
+          die("freqs not set properly\n");
+        }
+        $fsum += $freqs{$a.$b.$c};
+        $index++;
+      }
+    }
+  }
 }
 foreach my $k (keys %freqs){
-	$freqs{$k} = $freqs{$k}/$fsum;
-	$transfreq[$codoni{$k}]=$freqs{$k};
+  $freqs{$k} = $freqs{$k}/$fsum;
+  $transfreq[$codoni{$k}]=$freqs{$k};
 }
 print "Codon frequencies: @transfreq\n";
 
@@ -1138,71 +1145,71 @@ my @Bmat = (0)x(61*61);
 my $fi;my $ti;my $li;my $ri;
 
 for(my $mi = 0; $mi < scalar(@motifs); $mi++){
-	my $motif = $motifs[$mi];
-	print "Reading in $motif table\n";
-	my @htable;
-	open(HTABLE,"$igphyml/src/motifs/HTABLE_$motif") or die("Couldn't open $igphyml/src/motifs/HTABLE_$motif\n");
-	while(<HTABLE>){
-		my $l = $_;
-		chomp($l);
-		push(@htable,$l);
-	}
-	close(HTABLE);
+  my $motif = $motifs[$mi];
+  print "Reading in $motif table\n";
+  my @htable;
+  open(HTABLE,"$igphyml/src/motifs/HTABLE_$motif") or die("Couldn't open $igphyml/src/motifs/HTABLE_$motif\n");
+  while(<HTABLE>){
+    my $l = $_;
+    chomp($l);
+    push(@htable,$l);
+  }
+  close(HTABLE);
 
-	for($fi=0;$fi<61;$fi++){
-		for($ti=0;$ti<61;$ti++){
-			my @htotals = (0)x(1);
-			for($li=0;$li<61;$li++){
-				for($ri=0;$ri<61;$ri++){
-					$htotals[0] += $transfreq[$li]*$transfreq[$ri]*$htable[$fi*61*61*61+$ti*61*61+$li*61+$ri];
-				}
-			}
-			my $hsum = $hs[$mi]*$htotals[0];
-			$Bmat[61*$fi+$ti]+=$hsum;
-		}
-	}
-	if(scalar(@Bmat) != (61*61)){die("@Bmat")}
+  for($fi=0;$fi<61;$fi++){
+    for($ti=0;$ti<61;$ti++){
+      my @htotals = (0)x(1);
+      for($li=0;$li<61;$li++){
+        for($ri=0;$ri<61;$ri++){
+          $htotals[0] += $transfreq[$li]*$transfreq[$ri]*$htable[$fi*61*61*61+$ti*61*61+$li*61+$ri];
+        }
+      }
+      my $hsum = $hs[$mi]*$htotals[0];
+      $Bmat[61*$fi+$ti]+=$hsum;
+    }
+  }
+  if(scalar(@Bmat) != (61*61)){die("@Bmat")}
 }
 
 #Make Q matrices
 my @Qs;
 for(my $i=0;$i<scalar(@omegas);$i++){
-	print "Making Q matrix $i, omega: $omegas[$i]\n";
-	push(@Qs,getQmat_HLP16(\@Bmat,$kappa,$omegas[$i],\%freqs,\@codons,0))
+  print "Making Q matrix $i, omega: $omegas[$i]\n";
+  push(@Qs,getQmat_HLP16(\@Bmat,$kappa,$omegas[$i],\%freqs,\@codons,0))
 }
 
 #Check to see that the root sequence is in good order
 my $seqs;
 my @rs;
 if(defined $seqfile || $seqfile ne "N"){
-	$seqs = getfasta($seqfile);
-	if(!exists($seqs->{$rootid})){
-		die("$rootid not found in sequence file: $seqfile\n");
-	}
-	if(length($seqs->{$rootid}) ne $length*3){
-		die("Specified root sequence is not specified length: $length ".(length($seqs->{$rootid})/3)."\n");
-	}
+  $seqs = getfasta($seqfile);
+  if(!exists($seqs->{$rootid})){
+    die("$rootid not found in sequence file: $seqfile\n");
+  }
+  if(length($seqs->{$rootid}) ne $length*3){
+    die("Specified root sequence is not specified length: $length ".(length($seqs->{$rootid})/3)."\n");
+  }
 }else{
-	die("Need sequences and root!");
+  die("Need sequences and root!");
 }
 
 #make site/tip matrix for ambiguous characters
 my @tipr;
 my @keyst = keys %$seqs;
 for(my $i = 0; $i < length($seqs->{$keyst[0]})/3; $i++){
-	my @temp = (1e-10)x61;
-	my $count=61e-10;
-	foreach my $k (keys %$seqs){
-		my @s = split("",$seqs->{$k});
-		my @t = @{transarrayCodon(\@s,\%codoni)};
-		if($t[$i] ne "NA"){
-			$temp[$t[$i]]++;
-			$count++;
-		}
-	}
-	for(my $j=0;$j<61;$j++){
-		$tipr[61*$i+$j] = $temp[$j]/$count
-	}
+  my @temp = (1e-10)x61;
+  my $count=61e-10;
+  foreach my $k (keys %$seqs){
+    my @s = split("",$seqs->{$k});
+    my @t = @{transarrayCodon(\@s,\%codoni)};
+    if($t[$i] ne "NA"){
+      $temp[$t[$i]]++;
+      $count++;
+    }
+  }
+  for(my $j=0;$j<61;$j++){
+    $tipr[61*$i+$j] = $temp[$j]/$count
+  }
 }
 
 #collect subtaxa of each node
@@ -1239,12 +1246,14 @@ print "Likelihood comparison - StatsFile: $statslhood, Reconstruction: $lhood\n"
 sub isnan { ! defined( $_[0] <=> 9**9**9 ) }
 if (isnan($statslhood) or isnan($lhood)) {
   print "*** Failed to reconstruct the likelihood. See the line above. ***\n";
+  #system("rm $outdir/gctree.simulation.fasta")
   die("*** Failed to reconstruct the likelihood. ***\n");
 }
 my @sort_array = ($lhood, $statslhood);
 my $min_lhood = (sort {$a <=> $b} @sort_array)[0];
 if (abs($lhood - $statslhood) / $min_lhood > 0.01) {
   print "*** Failed to reconstruct the likelihood with sufficient precision (>1%). See the line above. ***\n";
+  #system("rm $outdir/gctree.simulation.fasta")
   die("*** Failed to reconstruct the likelihood with sufficient precision (>1%). ***\n");
 }
 
