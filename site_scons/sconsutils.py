@@ -49,7 +49,7 @@ def wait_func(dest):
         limit = 30
         while not os.path.isfile(entry) or os.stat(entry).st_size == 0:
             print("waiting for {}...".format(entry))
-            time.sleep(2)
+            time.sleep(10)
             count = count + 1
             if count >limit:
                 return 1
