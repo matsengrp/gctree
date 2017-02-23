@@ -26,11 +26,8 @@ for i, fname in enumerate(args.input):
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 
-print(aggdat)
 plt.figure()
-df1 = pd.melt(aggdat.ix[:, aggdat.columns != 'N_taxa'], id_vars=['method'])
-sns.factorplot(x="method", y="value", col="variable", col_wrap=2,
+df1 = pd.melt(aggdat.ix[:, aggdat.columns != 'N_taxa'], id_vars=['method'], var_name='metric')
+sns.factorplot(x="method", y="value", col="metric", col_wrap=2,
                    data=df1, kind="swarm", size=2.5, aspect=.8, sharey=False)
 plt.savefig(args.outbase+'.pdf')
-
-
