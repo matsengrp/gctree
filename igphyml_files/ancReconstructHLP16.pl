@@ -18,7 +18,7 @@ use strict;
 use warnings;
 use PDL;
 use PDL::LinearAlgebra::Trans;
-my SMALL = 1e-100;
+my $SMALL = 1e-200;
 
 sub Fill_upp{
     my $node = $_[0];
@@ -53,7 +53,7 @@ sub Fill_upp{
               if ($Pxz[$partition->[$i]]->at(0,$j) > 0) {
                 $sumxz = log($Pxz[$partition->[$i]]->at(0,$j))+$node->{"up"}->{$other}->{"mat"}->[$i][0];
               } else {
-                $sumxz = log(SMALL)+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+                $sumxz = log($SMALL)+$node->{"up"}->{$other}->{"mat"}->[$i][0];
               }
               for(my $k=1;$k<61;$k++){
                   if($Pxz[$partition->[$i]]->at($k,$j)==0){print $node->{"dist"}." $k $j\n"}
@@ -61,7 +61,7 @@ sub Fill_upp{
                   if ($Pxz[$partition->[$i]]->at($k,$j) > 0) {
                     $pxz = log($Pxz[$partition->[$i]]->at($k,$j)) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
                   } else {
-                    $pxz = log(SMALL) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                    $pxz = log($SMALL) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
                   }
                   $sumxz = $sumxz + log(1+exp($pxz-$sumxz));
               }
@@ -85,7 +85,7 @@ sub Fill_upp{
             if ($Pxy[$partition->[$i]]->at($j,0) > 0) {
               $sumxy = log($Pxy[$partition->[$i]]->at($j,0))+$node->{"up"}->{"uppmat"}->[$i][0];
             } else {
-              $sumxy = log(SMALL)+$node->{"up"}->{"uppmat"}->[$i][0];
+              $sumxy = log($SMALL)+$node->{"up"}->{"uppmat"}->[$i][0];
             }
             for(my $k=1;$k<61;$k++){
                 if($Pxy[$partition->[$i]]->at($k,$j)==0){print $node->{"up"}->{"dist"}." $k $j\n"}
@@ -93,7 +93,7 @@ sub Fill_upp{
                 if ($Pxy[$partition->[$i]]->at($j,$k) > 0) {
                   $pxy = log($Pxy[$partition->[$i]]->at($j,$k)) + $node->{"up"}->{"uppmat"}->[$i][$k];
                 } else {
-                  $pxy = log(SMALL) + $node->{"up"}->{"uppmat"}->[$i][$k];
+                  $pxy = log($SMALL) + $node->{"up"}->{"uppmat"}->[$i][$k];
                 }
                 $sumxy = $sumxy + log(1+exp($pxy-$sumxy));
             }
@@ -107,7 +107,7 @@ sub Fill_upp{
             if ($Pyv[$partition->[$i]]->at(0,$j) > 0) {
               $sumyv = log($Pyv[$partition->[$i]]->at(0,$j))+$node->{"up"}->{$other}->{"mat"}->[$i][0];
             } else {
-              $sumyv = log(SMALL)+$node->{"up"}->{$other}->{"mat"}->[$i][0];
+              $sumyv = log($SMALL)+$node->{"up"}->{$other}->{"mat"}->[$i][0];
             }
             for(my $k=1;$k<61;$k++){
                 if($Pyv[$partition->[$i]]->at($k,$j)==0){print $node->{"up"}->{$other}->{"dist"}." $k $j ".$Pyv[$partition->[$i]]->at($k,$j)."\n"}
@@ -115,7 +115,7 @@ sub Fill_upp{
                 if ($Pyv[$partition->[$i]]->at($k,$j) > 0) {
                   $pyv = log($Pyv[$partition->[$i]]->at($k,$j)) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
                 } else {
-                  $pyv = log(SMALL) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
+                  $pyv = log($SMALL) + $node->{"up"}->{$other}->{"mat"}->[$i][$k];
                 }
                 $sumyv = $sumyv + log(1+exp($pyv-$sumyv));
             }
@@ -170,7 +170,7 @@ sub Marginal_ASR{
           if ($Pyv[$partition->[$i]]->at($v,$y) > 0) {
             $val = $node->{"uppmat"}->[$i][$y]+log($Pyv[$partition->[$i]]->at($v,$y))+$node->{"mat"}->[$i][$v];
           } else {
-            $val = $node->{"uppmat"}->[$i][$y]+log(SMALL)+$node->{"mat"}->[$i][$v];
+            $val = $node->{"uppmat"}->[$i][$y]+log($SMALL)+$node->{"mat"}->[$i][$v];
           }
           if($y==0){$lhoodv=$val;}
           else{$lhoodv = $lhoodv + log(1+exp($val-$lhoodv));}
@@ -224,12 +224,12 @@ sub Pruning_Lhood{
                if ($Prs[$partition->[$i]]->at(0,$j) > 0) {
                  $sumr = log($Prs[$partition->[$i]]->at(0,$j))+$node->{"right"}->{"mat"}->[$i][0];
                } else {
-                 $sumr = log(SMALL)+$node->{"right"}->{"mat"}->[$i][0];
+                 $sumr = log($SMALL)+$node->{"right"}->{"mat"}->[$i][0];
                }
                if ($Pls[$partition->[$i]]->at(0,$j) > 0) {
                  $suml = log($Pls[$partition->[$i]]->at(0,$j))+$node->{"left"}->{"mat"}->[$i][0];
                } else {
-                 $suml = log(SMALL)+$node->{"left"}->{"mat"}->[$i][0];
+                 $suml = log($SMALL)+$node->{"left"}->{"mat"}->[$i][0];
                }
                 for(my $k=1;$k<61;$k++){
                     if($Prs[$partition->[$i]]->at($k,$j)==0){print $node->{"dist"}." $k $j\n"}
@@ -238,12 +238,12 @@ sub Pruning_Lhood{
                       if ($Prs[$partition->[$i]]->at($k,$j) > 0) {
                         $pr = log($Prs[$partition->[$i]]->at($k,$j)) + $node->{"right"}->{"mat"}->[$i][$k];
                       } else {
-                        $pr = log(SMALL) + $node->{"right"}->{"mat"}->[$i][$k];
+                        $pr = log($SMALL) + $node->{"right"}->{"mat"}->[$i][$k];
                       }
                       if ($Pls[$partition->[$i]]->at($k,$j) > 0) {
                         $pl = log($Pls[$partition->[$i]]->at($k,$j)) + $node->{"left"}->{"mat"}->[$i][$k];
                       } else {
-                        $pl = log(SMALL) + $node->{"left"}->{"mat"}->[$i][$k];
+                        $pl = log($SMALL) + $node->{"left"}->{"mat"}->[$i][$k];
                       }
                     $sumr = $sumr + log(1+exp($pr-$sumr));
                     $suml = $suml + log(1+exp($pl-$suml));
@@ -302,7 +302,6 @@ sub getQmat_HLP16{
     my $print = $_[5];
     my %tr = %{codonTable()};
     my %q;
-    my $small = 1e-200;
     for(my $i=0; $i < scalar(@codons); $i++){
         my $from = $codons[$i];
         for(my $j=0; $j < scalar(@codons); $j++){
@@ -310,7 +309,7 @@ sub getQmat_HLP16{
             if($from eq $to){$q{$from.$to}=0;next;}
             my @diff = @{diffPos($from,$to)};
             if(scalar(@diff) > 1){
-                $q{$from.$to}=$small;
+                $q{$from.$to}=$SMALL;
             }else{
                 my @dc = sort {$a cmp $b} (substr($from,$diff[0],1),substr($to,$diff[0],1));
                 if("@dc" eq "a g" || "@dc" eq "c t"){
