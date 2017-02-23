@@ -40,12 +40,15 @@ df.ix[df.ix[:,'metric'] == 'MRCA', 'value'] = np.log(1 + df.ix[df.ix[:,'metric']
 df.ix[df.ix[:,'metric'] == 'MRCA', 'metric'] = 'logMRCA'
 
 
-plot2var = [sns.boxplot, sns.boxplot, sns.boxplot, sns.pointplot]
+plot2var = [sns.swarmplot, sns.swarmplot, sns.swarmplot, sns.lmplot]
 variables = ['lambda', 'lambda0', 'r', 'N_taxa']
-#plot_options = ['lambda', 'lambda0', 'r', 'N_taxa']
-numb_variables = sum(len(set(df[var])) > 1 for var in variables)
+options = [dict(split=True, size=3), dict(split=True, size=3), dict(split=True, size=3), dict(size=5)]
+
+#options = [dict(split=True, size=3), dict(split=True, size=3), dict(split=True, size=3), dict()]
+numb_variables = sum(len(set(df[var])) > 1 for var in variables) - 1  ### NOTICE -1 because of N_taxa cannot be plotted on same page because of "tight layout"
 
 plot_func = {v:f for v, f in zip(variables, plot2var)}
+plot_options = {v:o for v, o in zip(variables, options)}
 
 
 gs = gridspec.GridSpec(numb_variables, 2)
@@ -54,23 +57,42 @@ fig = plt.figure(figsize=(8, 4*numb_variables))
 
 i = 0
 for var in variables:
-    if not len(set(df[var])) > 1:
+    if not len(set(df[var])) > 1 or var == 'N_taxa':
         continue
 
     plf = plot_func[var]
-
+    kwargs = plot_options[var]
     ax = plt.subplot(gs[i, 0])
     plot_data = df.ix[df.ix[:,'metric'] == 'RF', :]
-    plf(x=var, y="value", hue="method", data=plot_data)
+    plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
 
     ax = plt.subplot(gs[i, 1])
     plot_data = df.ix[df.ix[:,'metric'] == 'logMRCA', :]
-    plf(x=var, y="value", hue="method", data=plot_data)
+    plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
 
     i += 1
 
-
 plt.savefig(args.outbase+'.pdf')
+
+
+gs = gridspec.GridSpec(1, 1)
+ax = plt.subplot(gs[0, 0])
+fig = plt.figure(figsize=(8, 4))
+plf = plot_func[var]
+kwargs = plot_options[var]
+
+plot_data = df.ix[df.ix[:,'metric'] == 'RF', :]
+plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
+plt.savefig(args.outbase+'1.pdf')
+
+
+plot_data = df.ix[df.ix[:,'metric'] == 'logMRCA', :]
+plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
+plt.savefig(args.outbase+'2.pdf')
+
+
+
+
 
 
 #if len(set(aggdat['lambda'])) == 1 and len(set(aggdat['r'])) == 1:
