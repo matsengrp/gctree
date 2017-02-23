@@ -14,6 +14,7 @@ import pandas as pd
 import argparse
 import seaborn as sns
 from os import path, sep
+import numpy as np
 
 parser = argparse.ArgumentParser(description='outer aggregation')
 parser.add_argument('input', type=str, nargs='+', help='validaggreg.tsv files')
@@ -32,19 +33,42 @@ for i, fname in enumerate(args.input):
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 columns = aggdat.columns.values.tolist()
-columns.remove('lambda0')
+# columns.remove('lambda0')
+
+df = pd.melt(aggdat, id_vars=['method', 'N_taxa', 'lambda', 'lambda0', 'r'], value_vars=['RF','MRCA'], var_name='metric')
+df.ix[df.ix[:,'metric'] == 'MRCA', 'value'] = np.log(1 + df.ix[df.ix[:,'metric'] == 'MRCA', 'value'])
+df.ix[df.ix[:,'metric'] == 'MRCA', 'metric'] = 'logMRCA'
 
 
+plot2var = [sns.boxplot, sns.boxplot, sns.boxplot, sns.pointplot]
+variables = ['lambda', 'lambda0', 'r', 'N_taxa']
+#plot_options = ['lambda', 'lambda0', 'r', 'N_taxa']
+numb_variables = sum(len(set(df[var])) > 1 for var in variables)
+
+plot_func = {v:f for v, f in zip(variables, plot2var)}
 
 
-
-df = pd.melt(aggdat, id_vars=['method', 'N_taxa', 'lambda', 'lambda0', 'r'], value_vars=['RF','MRCA'])
-
-
+gs = gridspec.GridSpec(numb_variables, 2)
+fig = plt.figure(figsize=(8, 4*numb_variables))
 
 
-sns.factorplot(x="lambda", y="value", col="variable", hue="method",
-               col_wrap=2, data=df, kind="violin", size=4, aspect=2, sharey=False)
+i = 0
+for var in variables:
+    if not len(set(df[var])) > 1:
+        continue
+
+    plf = plot_func[var]
+
+    ax = plt.subplot(gs[i, 0])
+    plot_data = df.ix[df.ix[:,'metric'] == 'RF', :]
+    plf(x=var, y="value", hue="method", data=plot_data)
+
+    ax = plt.subplot(gs[i, 1])
+    plot_data = df.ix[df.ix[:,'metric'] == 'logMRCA', :]
+    plf(x=var, y="value", hue="method", data=plot_data)
+
+    i += 1
+
 
 plt.savefig(args.outbase+'.pdf')
 
