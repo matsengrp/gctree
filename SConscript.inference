@@ -4,8 +4,24 @@
 Infer trees from germinal center data
 '''
 import os
+import atexit
+import shutil
 # the following must be exported by parent SConstruct/SConscript
 Import('env gctree igphyml frame fasta outdir naiveID CommandRunner')
+
+
+def delete_on_failure():
+    from SCons.Script import GetBuildFailures
+    for bf in GetBuildFailures():
+        try:
+            shutil.rmtree(os.path.dirname(bf.node.abspath))
+            print('There was an error for target:', bf.node.abspath)
+            print('To resolve this the base folder was deleted. '
+                  'Restarting will possibly solve the issue in case '
+                  'this was just a bad simulation. Deleted folder:', os.path.dirname(bf.node.abspath))
+        except OSError:
+            pass  # Allow this
+atexit.register(delete_on_failure)
 
 return_list = []
 
@@ -79,6 +95,7 @@ if igphyml:
                               os.path.join(outdir, 'igphyml.config_hlp16.log')],
                              dedup_fasta[0],
                              'python igphyml_files/igphyml_tools.py make_igphyml_config --fasta_file $SOURCE --outfile ${TARGETS[0]} --template igphyml_files/igphyml.config.template --igphyml_exe igphyml --model hlp16 > ${TARGETS[1]}')
+
 
     # Run IgPhyML ASR script:
     run_ASR = CommandRunner([os.path.join(outdir, 'gctree.simulation.igphyml_hlp16.MLcodons.fa'),
