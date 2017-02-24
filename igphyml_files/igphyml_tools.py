@@ -129,7 +129,7 @@ def make_igphyml_config(args):
 def which(executable):
     for path in os.environ["PATH"].split(os.pathsep):
         if os.path.exists(os.path.join(path, executable)):
-                return os.path.realpath(os.path.join(path, executable))
+            return os.path.realpath(os.path.join(path, executable))
     return None
 
 
