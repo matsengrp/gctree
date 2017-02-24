@@ -42,7 +42,9 @@ df.ix[df.ix[:,'metric'] == 'MRCA', 'metric'] = 'logMRCA'
 
 plot2var = [sns.swarmplot, sns.swarmplot, sns.swarmplot, sns.lmplot]
 variables = ['lambda', 'lambda0', 'r', 'N_taxa']
-options = [dict(split=True, size=3), dict(split=True, size=3), dict(split=True, size=3), dict(size=5)]
+options = [dict(split=True, size=3), dict(split=True, size=3), dict(split=True, size=3), dict(size=6)]
+#options = [dict(size=3), dict(size=3), dict(size=3), dict(size=12)]
+
 
 #options = [dict(split=True, size=3), dict(split=True, size=3), dict(split=True, size=3), dict()]
 numb_variables = sum(len(set(df[var])) > 1 for var in variables) - 1  ### NOTICE -1 because of N_taxa cannot be plotted on same page because of "tight layout"
@@ -64,30 +66,45 @@ for var in variables:
     kwargs = plot_options[var]
     ax = plt.subplot(gs[i, 0])
     plot_data = df.ix[df.ix[:,'metric'] == 'RF', :]
+    sns.boxplot(x=var, y="value", hue="method", data=plot_data, showfliers=False)
     plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
+    ax.set(ylabel='RF distance')
 
     ax = plt.subplot(gs[i, 1])
     plot_data = df.ix[df.ix[:,'metric'] == 'logMRCA', :]
+    sns.boxplot(x=var, y="value", hue="method", data=plot_data, showfliers=False)
     plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
+    ax.set(ylabel='MRCA distance')
 
     i += 1
 
+
+fig.tight_layout()
 plt.savefig(args.outbase+'.pdf')
 
 
+var = 'N_taxa'
 gs = gridspec.GridSpec(1, 1)
 ax = plt.subplot(gs[0, 0])
-fig = plt.figure(figsize=(8, 4))
+fig = plt.figure(figsize=(8, 8))
 plf = plot_func[var]
 kwargs = plot_options[var]
 
 plot_data = df.ix[df.ix[:,'metric'] == 'RF', :]
-plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
+plf(x=var, y="value", hue="method", data=plot_data, legend_out=True, **kwargs)
+#colors = {'gctree':'red', 'igphyml':'blue'}
+#plot_data.plot(kind='scatter', x=var, y='value', c=plot_data['method'].apply(lambda x: colors[x]))
+ax.set(ylabel='RF distance')
+sns.plt.title('Plot for tree size: {}. For RF.'.format(var))
+#fig.tight_layout()
 plt.savefig(args.outbase+'1.pdf')
 
 
 plot_data = df.ix[df.ix[:,'metric'] == 'logMRCA', :]
 plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
+ax.set(ylabel='MRCA distance')
+sns.plt.title('Plot for tree size: {}. For MRCA.'.format(var))
+#fig.tight_layout()
 plt.savefig(args.outbase+'2.pdf')
 
 
