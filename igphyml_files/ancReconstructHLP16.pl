@@ -810,9 +810,6 @@ sub codonTableSingle{
   return \%codons;
 }
 
-#Read in parameters from congif file
-my $config = $ARGV[0];
-open(C,$config) or die("Couldn't open config file ($config)");
 
 my $nsim;
 my $kappa;
@@ -837,64 +834,75 @@ my $ambigfile;
 
 my $bstats;
 
-while(<C>){
-  my $line = $_;
-  chomp($line);
-  if($line =~ /nsim\s+(\S+)/){
-    $nsim = $1;
+
+#Read in parameters from congif file
+# my $config = $ARGV[0];
+# open(C,$config) or die("Couldn't open config file ($config)");
+if (open(my $C, $ARGV[0])) {
+  print "Found readable config file at first command line argument. Now reading it...\n";
+  while(defined(my $line = <$C>)){
+    chomp($line);
+    if($line =~ /nsim\s+(\S+)/){
+      $nsim = $1;
+    }
+    if($line =~ /omegas\s+(\S+)/){
+      @omegas = split(",",$1);
+    }
+    if($line =~ /kappa\s+(\S+)/){
+      $kappa = $1;
+    }
+    if($line =~ /motifs\s+(\S+)/){
+      @motifs = split(",",$1);
+    }
+    if($line =~ /hs\s+(\S+)/){
+      @hs = split(",",$1);
+    }
+    if($line =~ /freqs\s+(\S+)/){
+      $freqs = $1;
+    }
+    if($line =~ /tree\s+(\S+)/){
+      $treefile = $1;
+    }
+    if($line =~ /fullcontext\s+(\S+)/){
+      $context=$1;
+    }
+    if($line =~ /outdir\s+(\S+)/){
+      $outdir=$1;
+    }
+    if($line =~ /rooted\s+(\S+)/){
+      $rooted=$1;
+    }
+    if($line =~ /length\s+(\S+)/){
+      $length=$1;
+    }
+    if($line =~ /rootid\s+(\S+)/){
+      $rootid=$1;
+    }
+    if($line =~ /part\s+(\S+)/){
+      $partfile=$1;
+    }
+    if($line =~ /igphyml\s+(\S+)/){
+      $igphyml=$1;
+    }
+    if($line =~ /seqfile\s+(\S+)/){
+      $seqfile=$1;
+    }
+    if($line =~ /stats\s+(\S+)/){
+      $statsfile=$1;
+    }
+    if($line =~ /stem\s+(\S+)/){
+      $stem=$1;
+    }
+    if($line =~ /ambigfile\s+(\S+)/){
+      $ambigfile=$1;
+    }
   }
-  if($line =~ /omegas\s+(\S+)/){
-    @omegas = split(",",$1);
-  }
-  if($line =~ /kappa\s+(\S+)/){
-    $kappa = $1;
-  }
-  if($line =~ /motifs\s+(\S+)/){
-    @motifs = split(",",$1);
-  }
-  if($line =~ /hs\s+(\S+)/){
-    @hs = split(",",$1);
-  }
-  if($line =~ /freqs\s+(\S+)/){
-    $freqs = $1;
-  }
-  if($line =~ /tree\s+(\S+)/){
-    $treefile = $1;
-  }
-  if($line =~ /fullcontext\s+(\S+)/){
-    $context=$1;
-  }
-  if($line =~ /outdir\s+(\S+)/){
-    $outdir=$1;
-  }
-  if($line =~ /rooted\s+(\S+)/){
-    $rooted=$1;
-  }
-  if($line =~ /length\s+(\S+)/){
-    $length=$1;
-  }
-  if($line =~ /rootid\s+(\S+)/){
-    $rootid=$1;
-  }
-  if($line =~ /part\s+(\S+)/){
-    $partfile=$1;
-  }
-  if($line =~ /igphyml\s+(\S+)/){
-    $igphyml=$1;
-  }
-  if($line =~ /seqfile\s+(\S+)/){
-    $seqfile=$1;
-  }
-  if($line =~ /stats\s+(\S+)/){
-    $statsfile=$1;
-  }
-  if($line =~ /stem\s+(\S+)/){
-    $stem=$1;
-  }
-  if($line =~ /ambigfile\s+(\S+)/){
-    $ambigfile=$1;
-  }
+close $C;
+} else {
+  print "Did not find a readable config file at first command line argument.\n";
 }
+
+
 
 #check to see if stats file was specified in command line
 for(my $i = 1; $i < scalar(@ARGV); $i++){
@@ -1006,11 +1014,16 @@ if(scalar(@motifs)==0){die("motifs needs to be specified")}
 if(scalar(@hs)==0){die("hs needs to be specified")}
 if(!defined $freqs){die("freqs needs to be specified")}
 if(!defined $outdir){die("outdir needs to be specified")}
-if(!defined $length){die("length needs to be specified")}
 if(!defined $rootid){die("rootid needs to be specified")}
 if(!defined $igphyml){die("igphyml needs to be specified")}
 if(!defined $stem){die("stem needs to be specified")}
 if(!defined $seqfile){die("seqfile needs to be specified");}
+my $seqs = getfasta($seqfile);
+if(!defined $length){die("Length needs to be specified or set explicitly to default by \"-length D\”")}
+if ($length eq 'D') {
+  my @keys = keys %$seqs;
+  $length = length($seqs->{$keys[0]})/3;
+}
 if(!defined $statsfile){$statsfile="N";}
 if(!defined $partfile){$partfile="N";}
 if(!defined $ambigfile){$ambigfile="N";}
@@ -1178,10 +1191,8 @@ for(my $i=0;$i<scalar(@omegas);$i++){
 }
 
 #Check to see that the root sequence is in good order
-my $seqs;
 my @rs;
 if(defined $seqfile || $seqfile ne "N"){
-  $seqs = getfasta($seqfile);
   if(!exists($seqs->{$rootid})){
     die("$rootid not found in sequence file: $seqfile\n");
   }
