@@ -22,3 +22,24 @@ library for simulating, and compute likelihoods, for collapsed trees generated f
 * `gctree.py simulation --help`: simulate data under branching model, plus S5F and imperfect sampling.
 * `gctree.py validation --help`
 * `gctree.py test --help`: performs a test of the likelihood against a by-hand calculation for a simple tree, and simulates a forest of trees and performs MLE, outputting plots validating MLE and gradients.
+
+
+## Installation
+
+### Dependencies
+* scons
+* xvfb-run
+* Python 2, with modules:
+  * ete3, seaborn, numphy, scipy, warnings, random, cPickle, matplotlib, pandas, biopython, argparse
+
+**For running GCtree inferrence:**
+* PHYLIP (http://evolution.genetics.washington.edu/phylip/getme-new.html)
+  * Needs to be in $PATH
+
+**For running IgPhyML inferrence:**
+* IgPhyML (https://github.com/kbhoehn/IgPhyML)
+  * Needs to be in $PATH
+* perl5, with modules:
+  * PDL
+  * PDL::LinearAlgebra::Trans
+
