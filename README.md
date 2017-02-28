@@ -43,3 +43,9 @@ library for simulating, and compute likelihoods, for collapsed trees generated f
   * PDL
   * PDL::LinearAlgebra::Trans
 
+
+### Getting python dependencies
+```
+sudo apt-get install python-pip scons
+pip install --user ete3 seaborn numphy scipy warnings random cPickle matplotlib pandas biopython argparse
+```
