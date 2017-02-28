@@ -66,6 +66,8 @@ def ASR_parser(args):
     with open(args.outbase + '.p', 'wb') as f:
         pickle.dump(igphyml_forest, f)
 
+    print('Done parsing IgPhyML tree')
+
 
 def map_asr_to_tree(asr_seq, tree):
     '''Takes a IgPhyML fasta header and returns the matching ete3 tree node.'''
@@ -125,6 +127,8 @@ def make_igphyml_config(args):
     with open(args.outfile, 'w') as fh_out:
         fh_out.write(template)
 
+    print('Done making IgPhyML config file.')
+
 
 def which(executable):
     for path in os.environ["PATH"].split(os.pathsep):
@@ -165,7 +169,7 @@ def dedup_fasta(args):
             print('>' + str(record.id), file=fh_out)
             print(str(record.seq), file=fh_out)
 
-
+    print('Done deduplicating input fasta file.')
 
 
 def reroot(args):
@@ -178,6 +182,8 @@ def reroot(args):
 
     rerotted_tree = reroot_tree(tree, pattern=args.pattern, outgroup=args.outgroup)
     rerotted_tree.write(outfile=args.reroot_tree)
+
+    print('Done rerooting input tree.')
 
 
 def find_node(tree, pattern):
