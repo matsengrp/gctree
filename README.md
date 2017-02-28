@@ -47,5 +47,5 @@ library for simulating, and compute likelihoods, for collapsed trees generated f
 ### Getting python dependencies
 ```
 sudo apt-get install python-pip scons
-pip install --user ete3 seaborn numphy scipy warnings random cPickle matplotlib pandas biopython argparse
+pip install --user ete3 seaborn numpy scipy matplotlib pandas biopython argparse
 ```
