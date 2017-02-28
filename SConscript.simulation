@@ -4,7 +4,6 @@
 import os
 from nestly import Nest
 from nestly.scons import SConsWrap
-from scipy import arange
 # the following must be exported by parent SConstruct/SConscript
 Import('env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n CommandRunner')
 
@@ -24,7 +23,7 @@ if lambda0 is None:
     # Rule of thumb mutation rate in a BCR
     # undergoing SHM is 10^-3, for 90 ammino acid
     # that is 90*3*10^-3 = 0.27 \aprox 0.25
-    w.add('lambda0', arange(0.125, 0.25, 0.5))
+    w.add('lambda0', [0.125, 0.25, 0.5])
     # w.add('lambda0', arange(.1, 1.1, .1))
 else:
     w.add('lambda0', [lambda0])
@@ -65,7 +64,7 @@ def gctree_sim(outdir, c):
 def infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
-    naiveID = 'naive' # this is what the simulation routine names the naive 
+    naiveID = 'naive' # this is what the simulation routine names the naive
     return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID CommandRunner')
 
 @w.add_target()
