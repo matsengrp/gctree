@@ -24,13 +24,12 @@ library for simulating, and compute likelihoods, for collapsed trees generated f
 * `gctree.py test --help`: performs a test of the likelihood against a by-hand calculation for a simple tree, and simulates a forest of trees and performs MLE, outputting plots validating MLE and gradients.
 
 
-## Installation
-
 ### Dependencies
 * scons
-* xvfb-run
+* xvfb-run or X11
+  * Used for rendering phylogenetic trees using ete3
 * Python 2, with modules:
-  * ete3, seaborn, numphy, scipy, warnings, random, cPickle, matplotlib, pandas, biopython, argparse
+  * ete3, seaborn, numpy, scipy, matplotlib, pandas, biopython, argparse
 
 **For running GCtree inferrence:**
 * PHYLIP (http://evolution.genetics.washington.edu/phylip/getme-new.html)
@@ -44,8 +43,11 @@ library for simulating, and compute likelihoods, for collapsed trees generated f
   * PDL::LinearAlgebra::Trans
 
 
-### Getting python dependencies
+### Getting python and perl dependencies
 ```
 sudo apt-get install python-pip scons
 pip install --user ete3 seaborn numpy scipy matplotlib pandas biopython argparse
+cpan
+> install PDL
+> install PDL::LinearAlgebra::Trans
 ```
