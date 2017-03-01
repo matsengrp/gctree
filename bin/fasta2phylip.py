@@ -26,6 +26,8 @@ def Tas_parse(aln_file, naive, frame=None):
         seqstr = str(seq.seq)[start:end]
         if seq.id == naive:
             naive_seq = seqstr
+            if seqstr not in seqs_unique_counts:
+                seqs_unique_counts[seqstr] = 0 # no observed naive unless we see it elsewhere
         elif seq.id.isdigit():
             seqs_unique_counts[seqstr] = int(seq.id)
         elif str(seq.seq) not in seqs_unique_counts:
@@ -33,7 +35,7 @@ def Tas_parse(aln_file, naive, frame=None):
         else:
             seqs_unique_counts[seqstr] += 1
 
-    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive+'_'+str(seqs_unique_counts[naive_seq]))])
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)+'_'+str(seqs_unique_counts[seq])))
 

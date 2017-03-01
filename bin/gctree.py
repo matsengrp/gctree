@@ -430,9 +430,7 @@ def phylip_parse(phylip_outfile, naive=None):
             node = TreeNode()
             node.name = name
             node.add_feature('sequence', tree_sequence_dict[node.name])
-            if node.name == naive:
-                node.add_feature('frequency', 0)
-            elif '_' in node.name:
+            if '_' in node.name:
                 node.add_feature('frequency', int(node.name.split('_')[-1]))
                 node.name = '_'.join(node.name.split('_')[:-1])
             else:
