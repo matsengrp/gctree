@@ -881,6 +881,17 @@ def simulate(args):
                 f.write('>seq{}\n'.format(i))
                 f.write(leaf.sequence+'\n')
                 leaf.name = 'seq{}'.format(i)
+
+    # some observable simulation stats to write
+    frequency, distance_from_naive, degree = zip(*[(node.frequency,
+                                                    hamming_distance(node.sequence, args.sequence),
+                                                    sum(hamming_distance(node.sequence, node2.sequence) == 1 for node2 in collapsed_tree.tree.traverse() if node2.frequency and node2 is not node))
+                                                   for node in collapsed_tree.tree.traverse() if node.frequency])
+    stats = pd.DataFrame({'allele frequency':frequency,
+                          'Hamming distance to naive sequence':distance_from_naive,
+                          'degree':degree})
+    stats.to_csv(args.outbase+'.simulation.stats.tsv', sep='\t', index=False)
+
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
     collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
     collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')

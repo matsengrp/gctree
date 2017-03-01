@@ -30,7 +30,7 @@ def delete_on_failure():
                   'this was just a bad simulation. Deleted folder:', os.path.dirname(bf.node.abspath))
         except OSError:
             pass  # Allow this
-atexit.register(delete_on_failure)
+# atexit.register(delete_on_failure)
 
 return_list = []
 
