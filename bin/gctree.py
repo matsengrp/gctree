@@ -442,11 +442,12 @@ def phylip_parse(phylip_outfile, naive=None):
                 nodes[parent_dict[name]].add_child(nodes[name])
         # reroot on naive
         if naive is not None:
-            assert len(nodes[naive].children) == 0
-            assert nodes[naive] in tree.children
-            tree.remove_child(nodes[naive])
-            nodes[naive].add_child(tree)
-            tree = nodes[naive]
+            naive_id = [node for node in nodes if naive in node][0]
+            assert len(nodes[naive_id].children) == 0
+            assert nodes[naive_id] in tree.children
+            tree.remove_child(nodes[naive_id])
+            nodes[naive_id].add_child(tree)
+            tree = nodes[naive_id]
 
         # make random choices for ambiguous bases
         tree = disambiguate(tree)
