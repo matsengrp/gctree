@@ -10,7 +10,7 @@ from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 
-def Tas_parse(aln_file, count_fnam, naive, frame=None):
+def Tas_parse(aln_file, naive, count_fnam=None, frame=None):
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -35,14 +35,12 @@ def Tas_parse(aln_file, count_fnam, naive, frame=None):
         else:
             seqs_unique_counts[seqstr] += 1
 
-    fh_out = open(count_fnam, 'w')
     new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
-    print('{},{}'.format(naive.lower(), str(seqs_unique_counts[naive_seq])), file=fh_out)
+    counts = {naive.lower(): seqs_unique_counts[naive_seq]}
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)))
-        print('{},{}'.format(str(i+1), str(seqs_unique_counts[seq])), file=fh_out)
-    fh_out.close()
-    return new_aln
+        counts[str(i+1)] = seqs_unique_counts[seq]
+    return new_aln, counts
 
 
 def check_header(header):
@@ -56,7 +54,7 @@ def check_header(header):
        raise Exception
 
 
-def default_parse(aln_file, count_fnam, naive, frame=None):
+def default_parse(aln_file, naive, count_fnam=None, frame=None):
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -90,20 +88,16 @@ def default_parse(aln_file, count_fnam, naive, frame=None):
 
         if seqstr not in seq2id:
             seq2id[seqstr] = seq.id.lower()
+        elif seq.id == naive:  # The naive sequence have precedence
+            seq2id[seqstr] = seq.id.lower()
 
-    fh_out = open(count_fnam, 'w')
-    if naive_seq in seqs_unique_counts:
-        new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
-        print('{},{}'.format(seq2id[naive_seq], str(seqs_unique_counts[naive_seq])), file=fh_out)
-        del seqs_unique_counts[naive_seq]
-    else:
-        new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
-        print('{},{}'.format(seq2id[naive_seq], str(seqs_unique_counts[naive_seq])), file=fh_out)
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=seq2id[naive_seq])])
+    counts = {seq2id[naive_seq]: seqs_unique_counts[naive_seq]}
+    del seqs_unique_counts[naive_seq]
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=seq2id[seq]))
-        print('{},{}'.format(seq2id[seq], str(seqs_unique_counts[seq])), file=fh_out)
-    fh_out.close()
-    return new_aln
+        counts[seq2id[seq]] = seqs_unique_counts[seq]
+    return new_aln, counts
 
 
 def main():
@@ -120,15 +114,19 @@ def main():
     args = parser.parse_args()
 
     if args.converter is not None and args.converter.lower() in specified_coverters:        
-        new_aln = Tas_parse(args.infile, args.countfile, args.naive, frame=args.frame)
+        new_aln, counts = Tas_parse(args.infile, args.naive, count_fnam=args.countfile, frame=args.frame)
     elif args.converter is not None and args.converter.lower() not in specified_coverters:
         print('Cannot find the specified converter:', args.converter)
         print('Allowed converters:', specified_coverters.join(','))
         raise Exception
     else:
-        new_aln = default_parse(args.infile, args.countfile, args.naive, frame=args.frame)
+        new_aln, counts = default_parse(args.infile, args.naive, count_fnam=args.countfile, frame=args.frame)
     print(new_aln.format('phylip'))
+    if count_fnam not None:
+        fh_out = open(count_fnam, 'w')
+        for seqID, count in counts.items():
+            print('{},{}'.format(seqID, count), file=fh_out)
+        fh_out.close()
 
 if __name__ == '__main__':
     main()
-
