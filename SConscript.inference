@@ -47,6 +47,8 @@ if gctree or igphyml:
                          'stdbuf -oL python bin/fasta2phylip.py $SOURCE ${TARGETS[1]}'+
                          frame_arg+converter_arg+
                          '--naive {} > ${TARGETS[0]}'.format(naiveID))
+# Update the naive ID:
+naiveID = naiveID.lower()
 
 if gctree:
     # make config file for dnapars
@@ -78,7 +80,7 @@ if gctree:
 
 
 if igphyml:
-    # need the dedup phy as fa for ASR
+    # Need the dedup phy as fa for ASR:
     dedup_fasta = env.Command([os.path.join(outdir, basename+'.dedup.fasta'),
                                os.path.join(outdir, basename+'.dedup.log')],
                               phylip[0],
@@ -118,7 +120,7 @@ if igphyml:
     igphyml_infer = env.Command([os.path.join(outdir, 'igphyml.inferred_tree.p'),
                                  os.path.join(outdir, 'igphyml.inferred_tree.log')],
                                 [naive_outgroup[0], phylip[1], run_ASR],
-                                'TMPDIR=/tmp xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --counts ${SOURCES[1]} --asr_seq ${SOURCES[2]} --outbase '+os.path.join(outdir, 'igphyml.inferred_tree')+' > ${TARGETS[1]}')
+                                'TMPDIR=/tmp xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --counts ${SOURCES[1]} --asr_seq ${SOURCES[2]} --outbase '+os.path.join(outdir, 'igphyml.inferred_tree')+ ' --naive '+naiveID+' > ${TARGETS[1]}')
     return_list.append(igphyml_infer)
 
 Return('return_list')

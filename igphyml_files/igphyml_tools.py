@@ -40,9 +40,10 @@ def ASR_parser(args):
     except:
         raise TreeFileParsingError('Could not read the input tree. Is this really newick format?')
 
-    tree.add_feature('frequency', 0)       # Will be deleted
-    tree.add_feature('sequence', 'DUMMY')  # Will be deleted
-    tree = map_asr_to_tree(args.asr_seq, tree)
+    counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(args.countfile)}
+    tree.add_feature('frequency', 0)       # Placeholder will be deleted when rerooting
+    tree.add_feature('sequence', 'DUMMY')  # Placeholder will be deleted when rerooting
+    tree = map_asr_to_tree(args.asr_seq, tree args.naive)
 
     # Reroot to make the naive sequence the real root instead of just an outgroup:
     tree = reroot_tree(tree)
@@ -51,7 +52,6 @@ def ASR_parser(args):
     tree.dist = 0  # No branch above root
     for node in tree.iter_descendants():
         node.dist = hamming_distance(node.sequence, node.up.sequence)
-        #node.name = node.name.split('_')[0]
 
     igphyml_tree = CollapsedTree(tree=tree)
     igphyml_tree.render(args.outbase + '.svg')
@@ -69,25 +69,25 @@ def ASR_parser(args):
     print('Done parsing IgPhyML tree')
 
 
-def map_asr_to_tree(asr_seq, tree):
+def map_asr_to_tree(asr_seq, tree, naiveID):
     '''Takes a IgPhyML fasta header and returns the matching ete3 tree node.'''
     for record in SeqIO.parse(asr_seq, "fasta"):
         descendants = record.id.split(';')[1].split(',')
         # Fix IgPhyML ASR turning fasta headers to upper case:
         descendants = [d.lower() for d in descendants]
         assert(descendants)
-        if len(descendants) > 1:
+        if len(descendants) > 1:  # ASR infer node
             ancestor = tree.get_common_ancestor(descendants)
             frequency = 0
-        elif descendants[0] == 'naive':
+        else:  # Observed leaf or naive
             ancestor = tree.get_leaves_by_name(descendants[0])
             ancestor = ancestor[0]
-            frequency = 0
-        else:
-            ancestor = tree.get_leaves_by_name(descendants[0])
-            ancestor = ancestor[0]
-            frequency = int(descendants[0].split('_')[-1])
+            if descendants[0] in counts:
+                frequency = counts[descendants[0]]
+            else:
+                frequency = 0
 
+        # Add the features:
         assert(ancestor)
         ancestor.add_feature('frequency', frequency)
         ancestor.add_feature('sequence', str(record.seq))
@@ -234,8 +234,10 @@ def main():
                                        help='Reroot a tree based on node containing a keyword.',
                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_asr.add_argument('--tree', required=True, metavar='NEWICK TREE', help='Input tree used for topology.')
+    parser_asr.add_argument('--counts', required=True, metavar='ALLELE_FREQUENCY', help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
     parser_asr.add_argument('--asr_seq', required=True, help='Input ancestral sequences.')
     parser_asr.add_argument('--outbase', required=True, metavar='FILENAME', help='Filename for the output ASR tree.')
+    parser_dedup.add_argument('--naive', type=str, default='naive', help='naive sequence id')
     parser_asr.set_defaults(func=ASR_parser)
 
     # Parser for make_igphyml_config subprogram:

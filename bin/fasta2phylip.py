@@ -35,13 +35,9 @@ def Tas_parse(aln_file, count_fnam, naive, frame=None):
         else:
             seqs_unique_counts[seqstr] += 1
 
-    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive+'_'+str(seqs_unique_counts[naive_seq]))])
-    for i, seq in enumerate(seqs_unique_counts):
-        new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)+'_'+str(seqs_unique_counts[seq])))
-
     fh_out = open(count_fnam, 'w')
-    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive+'_'+str(seqs_unique_counts[naive_seq]))])
-    print('{},{}'.format(naive, str(seqs_unique_counts[naive_seq])), file=fh_out)
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
+    print('{},{}'.format(naive.lower(), str(seqs_unique_counts[naive_seq])), file=fh_out)
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)))
         print('{},{}'.format(str(i+1), str(seqs_unique_counts[seq])), file=fh_out)
@@ -93,15 +89,15 @@ def default_parse(aln_file, count_fnam, naive, frame=None):
             id_set.add(seq.id)
 
         if seqstr not in seq2id:
-            seq2id[seqstr] = seq.id
+            seq2id[seqstr] = seq.id.lower()
 
     fh_out = open(count_fnam, 'w')
     if naive_seq in seqs_unique_counts:
-        new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
+        new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
         print('{},{}'.format(seq2id[naive_seq], str(seqs_unique_counts[naive_seq])), file=fh_out)
         del seqs_unique_counts[naive_seq]
     else:
-        new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
+        new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
         print('{},{}'.format(seq2id[naive_seq], str(seqs_unique_counts[naive_seq])), file=fh_out)
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=seq2id[seq]))
@@ -113,7 +109,7 @@ def default_parse(aln_file, count_fnam, naive, frame=None):
 def main():
     parser = argparse.ArgumentParser(description='Convert a fasta file to philyp format. Headers must be a unique ID of less than '
                                                  'or equal to 10 ASCII characters. A special option for converting a Victora lab '
-                                                 'GC fasta file to phylip is also included.')
+                                                 'GC fasta file to phylip is also included. All headers are converted to lower case.')
     parser.add_argument('infile', type=str, help='Fasta file with less than or equal to 10 characters unique header ID. '
                                                  'For Vitora data any integer ids indicats frequency.')
     parser.add_argument('countfile', type=str, help='Filename for the output file containing the counts.')
