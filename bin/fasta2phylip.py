@@ -88,11 +88,11 @@ def default_parse(aln_file, basename, naive, frame=None):
         if seqstr not in seq2id:
             seq2id[seqstr] = seq.id
 
-    fh_out = open(basename+'.counts', w)
+    fh_out = open(basename+'.counts', 'w')
     new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=seq2id[seq]))
-        print('{},{}'.format(seq2id[seq], str(seqs_unique_counts[seq])))
+        print('{},{}'.format(seq2id[seq], str(seqs_unique_counts[seq])), file=fh_out)
     fh_out.close()
     return new_aln
 
