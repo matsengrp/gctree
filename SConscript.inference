@@ -43,10 +43,9 @@ if gctree or igphyml:
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
     phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
                           os.path.join(outdir, basename)+'.counts'],
-                         fasta,
-                         'stdbuf -oL python bin/fasta2phylip.py $SOURCE ${TARGETS[1]}'+
-                         frame_arg+converter_arg+
-                         '--naive {} > ${TARGETS[0]}'.format(naiveID))
+                          fasta,
+                          'stdbuf -oL python bin/fasta2phylip.py $SOURCE ${TARGETS[1]} '+ frame_arg+converter_arg+
+                          '--naive '+naiveID+' > ${TARGETS[0]}')
 # Update the naive ID:
 naiveID = naiveID.lower()
 
@@ -72,7 +71,7 @@ if gctree:
     gctree_infer = CommandRunner([gctree_outbase+'.inference.parsimony_forest.p',
                                 gctree_outbase+'.inference.log'],
                                 [dnapars[1], phylip[1]],
-                                'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py infer ${TARGETS[0]} ${TARGETS[1]} --naive '+naiveID+
+                                'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive '+naiveID+
                                 ' --outbase '+gctree_outbase+
                                 frame_arg+
                                 ' > ${TARGETS[1]}')
