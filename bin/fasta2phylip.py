@@ -10,7 +10,7 @@ from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 
-def Tas_parse(aln_file, naive, count_fnam=None, frame=None):
+def Tas_parse(aln_file, naive, frame=None):
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -54,7 +54,7 @@ def check_header(header):
        raise Exception
 
 
-def default_parse(aln_file, naive, count_fnam=None, frame=None):
+def default_parse(aln_file, naive, frame=None):
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -114,16 +114,16 @@ def main():
     args = parser.parse_args()
 
     if args.converter is not None and args.converter.lower() in specified_coverters:        
-        new_aln, counts = Tas_parse(args.infile, args.naive, count_fnam=args.countfile, frame=args.frame)
+        new_aln, counts = Tas_parse(args.infile, args.naive, frame=args.frame)
     elif args.converter is not None and args.converter.lower() not in specified_coverters:
         print('Cannot find the specified converter:', args.converter)
         print('Allowed converters:', specified_coverters.join(','))
         raise Exception
     else:
-        new_aln, counts = default_parse(args.infile, args.naive, count_fnam=args.countfile, frame=args.frame)
+        new_aln, counts = default_parse(args.infile, args.naive, frame=args.frame)
     print(new_aln.format('phylip'))
-    if count_fnam not None:
-        fh_out = open(count_fnam, 'w')
+    if args.countfile is not None:
+        fh_out = open(args.countfile, 'w')
         for seqID, count in counts.items():
             print('{},{}'.format(seqID, count), file=fh_out)
         fh_out.close()
