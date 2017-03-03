@@ -39,6 +39,13 @@ def Tas_parse(aln_file, count_fnam, naive, frame=None):
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)+'_'+str(seqs_unique_counts[seq])))
 
+    fh_out = open(count_fnam, 'w')
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive+'_'+str(seqs_unique_counts[naive_seq]))])
+    print('{},{}'.format(naive, str(seqs_unique_counts[naive_seq])), file=fh_out)
+    for i, seq in enumerate(seqs_unique_counts):
+        new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)))
+        print('{},{}'.format(str(i+1), str(seqs_unique_counts[seq])), file=fh_out)
+    fh_out.close()
     return new_aln
 
 
@@ -88,7 +95,7 @@ def default_parse(aln_file, count_fnam, naive, frame=None):
         if seqstr not in seq2id:
             seq2id[seqstr] = seq.id
 
-    fh_out = open(basename+'.counts', 'w')
+    fh_out = open(count_fnam, 'w')
     if naive_seq in seqs_unique_counts:
         new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
         print('{},{}'.format(seq2id[naive_seq], str(seqs_unique_counts[naive_seq])), file=fh_out)
