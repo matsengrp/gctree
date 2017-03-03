@@ -10,7 +10,7 @@ from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 
-def Tas_parse(aln_file, naive, frame=None):
+def Tas_parse(aln_file, count_fnam, naive, frame=None):
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -53,7 +53,7 @@ def check_header(header):
        raise Exception
 
 
-def default_parse(aln_file, basename, naive, frame=None):
+def default_parse(aln_file, count_fnam, naive, frame=None):
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -103,8 +103,7 @@ def main():
                                                  'GC fasta file to phylip is also included.')
     parser.add_argument('infile', type=str, help='Fasta file with less than or equal to 10 characters unique header ID. '
                                                  'For Vitora data any integer ids indicats frequency.')
-    parser.add_argument('basename', type=str, help='Basename of the output files. Creates two output files '
-                                                   'One phylip alignment file and one count file.')
+    parser.add_argument('countfile', type=str, help='Filename for the output file containing the counts.')
     parser.add_argument('--converter', type=str, help='Use a special format convertion scheme e.g. for a Vitora lab GC fasta file. Options: [tas]')
     specified_coverters = ['tas']
     parser.add_argument('--naive', type=str, default='naive', help='naive sequence id')
@@ -112,13 +111,13 @@ def main():
     args = parser.parse_args()
 
     if args.converter is not None and args.converter.lower() in specified_coverters:        
-        new_aln = Tas_parse(args.infile, args.naive, frame=args.frame)
+        new_aln = Tas_parse(args.infile, args.countfile, args.naive, frame=args.frame)
     elif args.converter is not None and args.converter.lower() not in specified_coverters:
         print('Cannot find the specified converter:', args.converter)
         print('Allowed converters:', specified_coverters.join(','))
         raise Exception
     else:
-        new_aln = default_parse(args.infile, args.basename, args.naive, frame=args.frame)
+        new_aln = default_parse(args.infile, args.countfile, args.naive, frame=args.frame)
     print(new_aln.format('phylip'))
 
 if __name__ == '__main__':
