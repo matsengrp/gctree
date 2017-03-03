@@ -134,6 +134,11 @@ elif inference:
               default='naive',
               help='id of naive sequence')
     naiveID = GetOption('naiveID')
+    AddOption('--converter',
+              type='string',
+              default=None,
+              help='Converter to convert input fasta format e.g. the Victora lab GC fasta format')
+    converter = GetOption('converter')
 
 
 # First call after all arguments have been parsed
@@ -146,4 +151,4 @@ if simulate and not GetOption('help'):
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID CommandRunner')
+    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID converter CommandRunner')

@@ -52,7 +52,8 @@ def check_header(header):
        print('Sequence headers must be shorter than 10 characters:', header)
        raise Exception
 
-def default_parse(aln_file, naive, frame=None):
+
+def default_parse(aln_file, basename, naive, frame=None):
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -87,10 +88,12 @@ def default_parse(aln_file, naive, frame=None):
         if seqstr not in seq2id:
             seq2id[seqstr] = seq.id
 
+    fh_out = open(basename+'.counts', w)
     new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=seq2id[seq]))
-
+        print('{},{}'.format(seq2id[seq], str(seqs_unique_counts[seq])))
+    fh_out.close()
     return new_aln
 
 
@@ -115,7 +118,7 @@ def main():
         print('Allowed converters:', specified_coverters.join(','))
         raise Exception
     else:
-        new_aln = default_parse(args.infile, args.naive, frame=args.frame)
+        new_aln = default_parse(args.infile, args.basename, args.naive, frame=args.frame)
     print(new_aln.format('phylip'))
 
 if __name__ == '__main__':

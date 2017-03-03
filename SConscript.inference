@@ -16,7 +16,7 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml frame fasta outdir naiveID CommandRunner')
+Import('env gctree igphyml frame fasta outdir naiveID converter CommandRunner')
 
 
 def delete_on_failure():
@@ -36,12 +36,15 @@ return_list = []
 
 
 if gctree or igphyml:
+    fasta_str = str(fasta)
+    basename = '.'.join(os.path.basename(fasta_str).split('.')[:-1])
     # parse fasta file to phylip, interpreting integer names as frequencies
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
+    converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
     phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
-                         fasta,
-                         'stdbuf -oL python bin/fasta2phylip.py $SOURCE '+
-                         frame_arg+
+                         [fasta, basename],
+                         'stdbuf -oL python bin/fasta2phylip.py ${SOURCES[0]} ${SOURCES[1]} '+
+                         frame_arg+converter_arg+
                          '--naive {} > $TARGET'.format(naiveID))
 
 if gctree:
@@ -73,9 +76,6 @@ if gctree:
     return_list.append(gctree_infer)
 
 if igphyml:
-    fasta_str = str(fasta)
-    basename = '.'.join(os.path.basename(fasta_str).split('.')[:-1])
-
     # need the dedup phy as fa for ASR
     dedup_fasta = env.Command([os.path.join(outdir, basename+'.dedup.fasta'),
                                os.path.join(outdir, basename+'.dedup.log')],
