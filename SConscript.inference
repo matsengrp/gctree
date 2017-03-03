@@ -41,16 +41,17 @@ if gctree or igphyml:
     # parse fasta file to phylip, interpreting integer names as frequencies
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
-    phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
+    phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
+                          os.path.join(outdir, basename)+'.counts'],
                          fasta,
-                         'stdbuf -oL python bin/fasta2phylip.py $SOURCE '+os.path.join(outdir, basename)+
+                         'stdbuf -oL python bin/fasta2phylip.py $SOURCE ${TARGETS[1]}'+
                          frame_arg+converter_arg+
-                         '--naive {} > $TARGET'.format(naiveID))
+                         '--naive {} > ${TARGETS[0]}'.format(naiveID))
 
 if gctree:
     # make config file for dnapars
     dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
-                                 phylip,
+                                 phylip[0],
                                  'stdbuf -oL python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
 
     # run dnapars (from phylip package) to generate parsimony trees
@@ -68,24 +69,25 @@ if gctree:
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     gctree_infer = CommandRunner([gctree_outbase+'.inference.parsimony_forest.p',
                                 gctree_outbase+'.inference.log'],
-                                dnapars[1],
-                                'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py infer $SOURCE --naive '+naiveID+
+                                [dnapars[1], phylip[1]],
+                                'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py infer ${TARGETS[0]} ${TARGETS[1]} --naive '+naiveID+
                                 ' --outbase '+gctree_outbase+
                                 frame_arg+
                                 ' > ${TARGETS[1]}')
     return_list.append(gctree_infer)
 
+
 if igphyml:
     # need the dedup phy as fa for ASR
     dedup_fasta = env.Command([os.path.join(outdir, basename+'.dedup.fasta'),
                                os.path.join(outdir, basename+'.dedup.log')],
-                              phylip,
+                              phylip[0],
                               'seqmagick convert $SOURCE ${TARGETS[0]} > ${TARGETS[1]}')
 
     # Run IgPhyML with the GY94 model to get the initial topology:
     igphyml_gy94_topology = CommandRunner([os.path.join(outdir, basename+'.phylip_igphyml_tree.txt_gy94'),
                                            os.path.join(outdir, basename+'.phylip_igphyml_tree.txt_gy94.log')],
-                                           phylip,
+                                           phylip[0],
                                            'igphyml -i $SOURCE -m GY -w M0 -t e --run_id gy94 > ${TARGETS[1]}')
 
     # Run IgPhyML with the HLP16 model using the GY94 tree topology as starting point:
@@ -94,7 +96,7 @@ if igphyml:
     igphyml_hlp16 = CommandRunner([os.path.join(outdir, basename+'.phylip_igphyml_tree.txt_hlp16'),
                               os.path.join(outdir, basename+'.phylip_igphyml_stats.txt_hlp16'),
                               os.path.join(outdir, basename+'.phylip_igphyml_tree.txt_hlp16.log')],
-                             [phylip, igphyml_gy94_topology[0]],
+                             [phylip[0], igphyml_gy94_topology[0]],
                              'igphyml -i ${SOURCES[0]} -u ${SOURCES[1]} -m HLP16 --root '+naiveID+' -o '+igphyml_opti+' --run_id hlp16 > ${TARGETS[2]}')
 
     # On the HLP16 output tree make the naive sequence an outgroup:
@@ -115,8 +117,8 @@ if igphyml:
     # Convert the ASR output to an collapsed forest with an ete3 tree and pickle it:
     igphyml_infer = env.Command([os.path.join(outdir, 'igphyml.inferred_tree.p'),
                                  os.path.join(outdir, 'igphyml.inferred_tree.log')],
-                                [naive_outgroup[0], run_ASR],
-                                'TMPDIR=/tmp xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --asr_seq ${SOURCES[1]} --outbase '+os.path.join(outdir, 'igphyml.inferred_tree')+' > ${TARGETS[1]}')
+                                [naive_outgroup[0], phylip[1], run_ASR],
+                                'TMPDIR=/tmp xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --counts ${SOURCES[1]} --asr_seq ${SOURCES[2]} --outbase '+os.path.join(outdir, 'igphyml.inferred_tree')+' > ${TARGETS[1]}')
     return_list.append(igphyml_infer)
 
 Return('return_list')

@@ -388,9 +388,10 @@ def disambiguate(tree):
                         node2.sequence = node2.sequence[:site] + new_base + node2.sequence[(site+1):]
     return tree
 
-def phylip_parse(phylip_outfile, naive=None):
+def phylip_parse(phylip_outfile, countfile, naive=None):
     '''parse phylip outfile and return ete trees'''
     # parse phylip outfile
+    counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(countfile)}
     outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
 
     # ete trees
@@ -430,9 +431,16 @@ def phylip_parse(phylip_outfile, naive=None):
             node = TreeNode()
             node.name = name
             node.add_feature('sequence', tree_sequence_dict[node.name])
-            if '_' in node.name:
-                node.add_feature('frequency', int(node.name.split('_')[-1]))
-                node.name = '_'.join(node.name.split('_')[:-1])
+
+### Removed by KD because it is replaced by a count file
+#            if '_' in node.name:
+#                node.add_feature('frequency', int(node.name.split('_')[-1]))
+#                node.name = '_'.join(node.name.split('_')[:-1])
+#            else:
+#                node.add_feature('frequency', 0)
+
+            if node.name in counts:
+                node.add_feature('frequency', counts[node.name])
             else:
                 node.add_feature('frequency', 0)
             nodes[name] = node
@@ -798,7 +806,7 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    parsimony_forest = CollapsedForest(forest=[CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.naive)])
+    parsimony_forest = CollapsedForest(forest=[CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.countfile, args.naive)])
 
     if parsimony_forest.n_trees == 1:
         warnings.warn('only one parsimony tree reported from dnapars')
@@ -917,6 +925,7 @@ def main():
                                          help='likelihood ranking of parsimony trees')
     parser_infer.add_argument('--naive', type=str, default=None, help='name of naive sequence (outgroup root)')
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
+    parser_infer.add_argument('countfile', type=str, help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram
