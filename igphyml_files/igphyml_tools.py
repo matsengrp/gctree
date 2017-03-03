@@ -43,7 +43,7 @@ def ASR_parser(args):
     counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(args.countfile)}
     tree.add_feature('frequency', 0)       # Placeholder will be deleted when rerooting
     tree.add_feature('sequence', 'DUMMY')  # Placeholder will be deleted when rerooting
-    tree = map_asr_to_tree(args.asr_seq, tree args.naive)
+    tree = map_asr_to_tree(args.asr_seq, tree, args.naive)
 
     # Reroot to make the naive sequence the real root instead of just an outgroup:
     tree = reroot_tree(tree)
