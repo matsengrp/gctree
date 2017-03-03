@@ -43,7 +43,7 @@ if gctree or igphyml:
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
     phylip = env.Command(os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
                          fasta,
-                         'stdbuf -oL python bin/fasta2phylip.py $SOURCE '+basename+
+                         'stdbuf -oL python bin/fasta2phylip.py $SOURCE '+os.path.join(outdir, basename)+
                          frame_arg+converter_arg+
                          '--naive {} > $TARGET'.format(naiveID))
 
