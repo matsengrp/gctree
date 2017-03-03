@@ -237,7 +237,7 @@ def main():
     parser_asr.add_argument('--counts', required=True, metavar='ALLELE_FREQUENCY', help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
     parser_asr.add_argument('--asr_seq', required=True, help='Input ancestral sequences.')
     parser_asr.add_argument('--outbase', required=True, metavar='FILENAME', help='Filename for the output ASR tree.')
-    parser_dedup.add_argument('--naive', type=str, default='naive', help='naive sequence id')
+    parser_asr.add_argument('--naive', type=str, default='naive', help='naive sequence id')
     parser_asr.set_defaults(func=ASR_parser)
 
     # Parser for make_igphyml_config subprogram:
