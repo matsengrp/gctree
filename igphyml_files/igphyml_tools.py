@@ -40,7 +40,7 @@ def ASR_parser(args):
     except:
         raise TreeFileParsingError('Could not read the input tree. Is this really newick format?')
 
-    counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(args.countfile)}
+    counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(args.counts)}
     tree.add_feature('frequency', 0)       # Placeholder will be deleted when rerooting
     tree.add_feature('sequence', 'DUMMY')  # Placeholder will be deleted when rerooting
     tree = map_asr_to_tree(args.asr_seq, tree, args.naive)
