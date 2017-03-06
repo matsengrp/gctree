@@ -47,9 +47,10 @@ sims = set(aggdat['simulation'])
 nsims = len(sims)
 
 if args.experimental is not None:
-    exp_dict = {seq.id:str(seq.seq) for seq in Tas_parse(args.experimental, naive='GL')}
-    naive_id = [seq for seq in exp_dict if 'GL' in seq][0]
-    frequency, distance_from_naive, degree = zip(*[(int(seq.split('_')[-1]),
+    new_aln, counts = Tas_parse(args.experimental, naive='GL')
+    exp_dict = {seq.id:str(seq.seq) for seq in new_aln}
+    naive_id = [seq for seq in exp_dict if 'gl' in seq][0]
+    frequency, distance_from_naive, degree = zip(*[(counts[seq],
                                                     hamming_distance(exp_dict[seq], exp_dict[naive_id]),
                                                     sum(hamming_distance(exp_dict[seq], exp_dict[seq2]) == 1 for seq2 in exp_dict if seq2 is not seq and int(seq2.split('_')[-1]) != 0))
                                                    for seq in exp_dict if int(seq.split('_')[-1]) != 0])

@@ -69,7 +69,8 @@ def infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
     naiveID = 'naive' # this is what the simulation routine names the naive
-    return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID CommandRunner')
+    converter = None  # No problem with weird fasta formating from the simulated data
+    return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID converter CommandRunner')
 
 @w.add_target()
 def validate(outdir, c):
