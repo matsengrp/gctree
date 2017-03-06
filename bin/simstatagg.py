@@ -51,8 +51,8 @@ if args.experimental is not None:
     naive_id = [seq for seq in exp_dict if 'GL' in seq][0]
     frequency, distance_from_naive, degree = zip(*[(int(seq.split('_')[-1]),
                                                     hamming_distance(exp_dict[seq], exp_dict[naive_id]),
-                                                    sum(hamming_distance(exp_dict[seq], exp_dict[seq2]) == 1 for seq2 in exp_dict if seq2 is not seq))
-                                                   for seq in exp_dict if seq is not naive_id])
+                                                    sum(hamming_distance(exp_dict[seq], exp_dict[seq2]) == 1 for seq2 in exp_dict if seq2 is not seq and int(seq2.split('_')[-1]) != 0))
+                                                   for seq in exp_dict if int(seq.split('_')[-1]) != 0])
     exp_stats = pd.DataFrame({'allele frequency':frequency,
                               'Hamming distance to naive sequence':distance_from_naive,
                               'degree':degree})
@@ -65,7 +65,7 @@ fig = plt.figure()
 for simulation, simulation_aggdat in aggdat.groupby('simulation'):
     sns.kdeplot(simulation_aggdat[fields[0]], cumulative=True, bw=bw, alpha=alpha, legend=False, lw=1)
 if args.experimental is not None:
-    sns.kdeplot(exp_stats[fields[0]], cumulative=True, bw=bw, color='gray', legend=False, lw=3, alpha=.8)
+    sns.kdeplot(exp_stats[fields[0]], cumulative=True, bw=bw, color='k', legend=False, lw=3, alpha=.8)
 plt.xlabel(fields[0])
 plt.xlim([0, None])
 pp.savefig()
@@ -79,9 +79,9 @@ for simulation, simulation_aggdat in aggdat.groupby('simulation'):
     g.ax_joint.plot(simulation_aggdat[fields[1]], simulation_aggdat[fields[2]], '+', mew=1, alpha=alpha/2)
     # sns.kdeplot(simulation_aggdat[fields[1]], simulation_aggdat[fields[2]], bw=3*bw, ax=g.ax_joint, levels=levels, alpha=alpha, shade=False)
 if args.experimental is not None:
-    sns.kdeplot(exp_stats[fields[1]], bw=bw, ax=g.ax_marg_x, color='gray', legend=False, alpha=.8, lw=3)
-    sns.kdeplot(exp_stats[fields[2]], bw=bw, ax=g.ax_marg_y, color='gray', vertical=True, legend=False, alpha=.8, lw=3)
-    g.ax_joint.plot(exp_stats[fields[1]], exp_stats[fields[2]], 'o', mew=2, alpha=.8, markerfacecolor='none', color='gray')
+    sns.kdeplot(exp_stats[fields[1]], bw=bw, ax=g.ax_marg_x, color='k', legend=False, alpha=.8, lw=3)
+    sns.kdeplot(exp_stats[fields[2]], bw=bw, ax=g.ax_marg_y, color='k', vertical=True, legend=False, alpha=.8, lw=3)
+    g.ax_joint.plot(exp_stats[fields[1]], exp_stats[fields[2]], 'o', mew=2, alpha=.8, markerfacecolor='none', color='k')
 
 
 g.ax_joint.set_xscale('symlog')
