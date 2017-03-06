@@ -52,8 +52,8 @@ if args.experimental is not None:
     naive_id = [seq for seq in exp_dict if 'gl' in seq][0]
     frequency, distance_from_naive, degree = zip(*[(counts[seq],
                                                     hamming_distance(exp_dict[seq], exp_dict[naive_id]),
-                                                    sum(hamming_distance(exp_dict[seq], exp_dict[seq2]) == 1 for seq2 in exp_dict if seq2 is not seq and int(seq2.split('_')[-1]) != 0))
-                                                   for seq in exp_dict if int(seq.split('_')[-1]) != 0])
+                                                    sum(hamming_distance(exp_dict[seq], exp_dict[seq2]) == 1 for seq2 in exp_dict if seq2 is not seq and counts[seq2] != 0))
+                                                   for seq in exp_dict if counts[seq] != 0])
     exp_stats = pd.DataFrame({'allele frequency':frequency,
                               'Hamming distance to naive sequence':distance_from_naive,
                               'degree':degree})

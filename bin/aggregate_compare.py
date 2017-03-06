@@ -79,7 +79,7 @@ for var in variables:
     i += 1
 
 
-fig.tight_layout()
+# fig.tight_layout()
 plt.savefig(args.outbase+'.pdf')
 
 

@@ -11,6 +11,7 @@ from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 
 def Tas_parse(aln_file, naive, frame=None):
+    naive = naive.lower()
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -21,7 +22,9 @@ def Tas_parse(aln_file, naive, frame=None):
         end = sequence_length
 
     seqs_unique_counts = {}
+    id_set = set()
     for seq in aln:
+        seq.id = seq.id.lower()
         # if id is just an integer, assume it represents count of that sequence
         seqstr = str(seq.seq)[start:end]
         if seq.id == naive:
@@ -35,8 +38,14 @@ def Tas_parse(aln_file, naive, frame=None):
         else:
             seqs_unique_counts[seqstr] += 1
 
-    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
-    counts = {naive.lower(): seqs_unique_counts[naive_seq]}
+        if seq.id in id_set:
+            print('Sequence ID found multiple times:', seq.id)
+            raise Exception
+        else:
+            id_set.add(seq.id)
+
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
+    counts = {naive: seqs_unique_counts[naive_seq]}
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)))
         counts[str(i+1)] = seqs_unique_counts[seq]
@@ -55,6 +64,7 @@ def check_header(header):
 
 
 def default_parse(aln_file, naive, frame=None):
+    naive = naive.lower()
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -68,6 +78,7 @@ def default_parse(aln_file, naive, frame=None):
     seq2id = dict()
     id_set = set()
     for seq in aln:
+        seq.id = seq.id.lower()
         check_header(seq.id)
         # if id is just an integer, assume it represents count of that sequence
         seqstr = str(seq.seq)[start:end]
@@ -87,9 +98,9 @@ def default_parse(aln_file, naive, frame=None):
             id_set.add(seq.id)
 
         if seqstr not in seq2id:
-            seq2id[seqstr] = seq.id.lower()
+            seq2id[seqstr] = seq.id
         elif seq.id == naive:  # The naive sequence have precedence
-            seq2id[seqstr] = seq.id.lower()
+            seq2id[seqstr] = seq.id
 
     new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=seq2id[naive_seq])])
     counts = {seq2id[naive_seq]: seqs_unique_counts[naive_seq]}
@@ -113,7 +124,7 @@ def main():
     parser.add_argument('--frame', type=int, default=None, help='codon frame', choices=(1,2,3))
     args = parser.parse_args()
 
-    if args.converter is not None and args.converter.lower() in specified_coverters:        
+    if args.converter is not None and args.converter.lower() in specified_coverters:
         new_aln, counts = Tas_parse(args.infile, args.naive, frame=args.frame)
     elif args.converter is not None and args.converter.lower() not in specified_coverters:
         print('Cannot find the specified converter:', args.converter)
