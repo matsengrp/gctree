@@ -472,8 +472,13 @@ def phylip_parse(phylip_outfile, countfile, naive=None):
 
 class MutationModel():
     '''a class for a mutation model, and functions to mutate sequences'''
-    def __init__(self, mutability_file=None, substitution_file=None):
-        '''initialized with input files of the S5F format'''
+    def __init__(self, mutability_file=None, substitution_file=None, mutation_order=False):
+        """
+        initialized with input files of the S5F format
+        @param mutation_order: whether or not to mutate sequences using a context sensitive manner
+                                where mutation order matters
+        """
+        self.mutation_order = mutation_order
         if mutability_file is not None and substitution_file is not None:
             self.context_model = {}
             with open(mutability_file, 'r') as f:
@@ -538,7 +543,13 @@ class MutationModel():
             return [(1, dict((n2, 1/3) if n2 is not n else (n2, 0.) for n2 in 'ACGT')) for n in sequence]
 
     def mutate(self, sequence, lambda0=1, frame=None):
-        '''mutate a sequence, with lamdba0 the baseline mutability'''
+        """
+        Mutate a sequence, with lamdba0 the baseline mutability
+        Cannot mutate the same position multiple times
+        @param sequence: the original sequence to mutate
+        @param lambda0: a "baseline" mutation rate
+        @param frame: the reading frame index
+        """
         sequence_length = len(sequence)
         if frame is not None:
             codon_start = frame-1
@@ -559,19 +570,28 @@ class MutationModel():
                 break
             if trial == trials:
                 raise RuntimeError('mutations saturating, consider reducing lambda0')
-        # multinomial sample, with no repeats
-        p = scipy.array([mutability[0] for mutability in mutabilities])
-        p = p/p.sum()
-        mutations = scipy.random.choice(sequence_length, size=m, p=p, replace=False)
+
         # mutute the sites with mutations
         # if contains stop codon, try again, up to 10 times
-        sequence_list = list(sequence) # mutable
+        sequence_list = list(sequence) # make string a list so we can modify it
         for trial in range(1, trials+1):
-            for i in mutations:
-                p = [mutabilities[i][1][n] for n in 'ACGT']
-                assert 0 <= abs(sum(p) - 1.) < 1e-10
-                sequence_list[i] = 'ACGT'[scipy.random.choice(4, p=p)]
-            sequence = ''.join(sequence_list)
+            unmutated_positions = set(range(sequence_length))
+            for i in range(m):
+                # Determine the position to mutate from the mutability matrix
+                mutability_p = scipy.array([mutabilities[pos][0] for pos in unmutated_positions])
+                mut_pos = scipy.random.choice(sequence_length - i, p=mutability_p/mutability_p.sum())
+
+                # Remove this position so we don't mutate it again
+                unmutated_positions.remove(mut_pos)
+
+                # Now draw the target nucleotide using the substitution matrix
+                substitution_p = [mutabilities[mut_pos][1][n] for n in 'ACGT']
+                assert 0 <= abs(sum(substitution_p) - 1.) < 1e-10
+                sequence_list[mut_pos] = 'ACGT'[scipy.random.choice(4, p=substitution_p)]
+                if self.mutation_order:
+                    # if mutation order matters, the mutabilities of the sequence need to be updated
+                    mutabilities = self.mutabilities(''.join(sequence_list))
+            sequence = ''.join(sequence_list) # reconstruct our sequence
             if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
                 break
             if trial == trials:
