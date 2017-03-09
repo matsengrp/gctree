@@ -388,10 +388,14 @@ def disambiguate(tree):
                         node2.sequence = node2.sequence[:site] + new_base + node2.sequence[(site+1):]
     return tree
 
-def phylip_parse(phylip_outfile, countfile, naive=None):
+def phylip_parse(phylip_outfile, countfile=None, naive=None):
     '''parse phylip outfile and return ete trees'''
     # parse phylip outfile
-    counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(countfile)}
+    if countfile not None:
+        counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(countfile)}
+    # No count, just make an empty count dictionary:
+    else:
+        counts = dict()
     outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
 
     # ete trees
