@@ -7,6 +7,9 @@
       "hit_affinities"
     ]
   },
+  "collapse_syn": {
+    "hit_affinities": "mean"
+  },
   "node_color": [
     [
       "common_links",
