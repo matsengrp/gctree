@@ -391,7 +391,7 @@ def disambiguate(tree):
 def phylip_parse(phylip_outfile, countfile=None, naive=None):
     '''parse phylip outfile and return ete trees'''
     # parse phylip outfile
-    if countfile not None:
+    if countfile is not None:
         counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(countfile)}
     # No count, just make an empty count dictionary:
     else:
