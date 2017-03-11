@@ -472,13 +472,15 @@ def phylip_parse(phylip_outfile, countfile, naive=None):
 
 class MutationModel():
     '''a class for a mutation model, and functions to mutate sequences'''
-    def __init__(self, mutability_file=None, substitution_file=None, mutation_order=False):
+    def __init__(self, mutability_file=None, substitution_file=None, mutation_order=False, with_replacement=False):
         """
         initialized with input files of the S5F format
         @param mutation_order: whether or not to mutate sequences using a context sensitive manner
                                 where mutation order matters
+        @param with_replacement: allow the same position to mutate multiple times on a single branch
         """
         self.mutation_order = mutation_order
+        self.with_replacement = with_replacement
         if mutability_file is not None and substitution_file is not None:
             self.context_model = {}
             with open(mutability_file, 'r') as f:
@@ -580,8 +582,9 @@ class MutationModel():
                 mutability_p = scipy.array([mutabilities[pos][0] for pos in unmutated_positions])
                 mut_pos = scipy.random.choice(unmutated_positions, p=mutability_p/mutability_p.sum())
 
-                # Remove this position so we don't mutate it again
-                unmutated_positions.remove(mut_pos)
+                if not self.with_replacement:
+                    # Remove this position so we don't mutate it again
+                    unmutated_positions.remove(mut_pos)
 
                 # Now draw the target nucleotide using the substitution matrix
                 substitution_p = [mutabilities[mut_pos][1][n] for n in 'ACGT']
