@@ -525,10 +525,10 @@ class MutationModel():
                 substitution = {n:sum(d[1][n] for d in matches)/len_matches for n in 'ACGT'}
                 mutabilities.append((mutability, substitution))
             # unambiguous internal kmers
-            for i in range(self.k//2, sequence_length - self.k//2):
+            for i in range(self.k//2 + 1, sequence_length - self.k//2):
                 mutabilities.append(self.context_model[sequence[(i-self.k//2):(i+self.k//2+1)]])
             # ambiguous right end motifs
-            for i in range(sequence_length - self.k//2 + 1, sequence_length):
+            for i in range(sequence_length - self.k//2, sequence_length):
                 kmer_prefix = sequence[(i-self.k//2):]
                 matches = [value for key, value in self.context_model.iteritems() if key.startswith(kmer_prefix)]
                 len_matches = len(matches)
@@ -537,7 +537,6 @@ class MutationModel():
                 mutability = sum(match[0] for match in matches)/len_matches
                 substitution = {n:sum(d[1][n] for d in matches)/len_matches for n in 'ACGT'}
                 mutabilities.append((mutability, substitution))
-
             return mutabilities
         else:
             return [(1, dict((n2, 1/3) if n2 is not n else (n2, 0.) for n2 in 'ACGT')) for n in sequence]
@@ -575,11 +574,11 @@ class MutationModel():
         # if contains stop codon, try again, up to 10 times
         sequence_list = list(sequence) # make string a list so we can modify it
         for trial in range(1, trials+1):
-            unmutated_positions = set(range(sequence_length))
+            unmutated_positions = range(sequence_length)
             for i in range(m):
                 # Determine the position to mutate from the mutability matrix
                 mutability_p = scipy.array([mutabilities[pos][0] for pos in unmutated_positions])
-                mut_pos = scipy.random.choice(sequence_length - i, p=mutability_p/mutability_p.sum())
+                mut_pos = scipy.random.choice(unmutated_positions, p=mutability_p/mutability_p.sum())
 
                 # Remove this position so we don't mutate it again
                 unmutated_positions.remove(mut_pos)
@@ -587,7 +586,8 @@ class MutationModel():
                 # Now draw the target nucleotide using the substitution matrix
                 substitution_p = [mutabilities[mut_pos][1][n] for n in 'ACGT']
                 assert 0 <= abs(sum(substitution_p) - 1.) < 1e-10
-                sequence_list[mut_pos] = 'ACGT'[scipy.random.choice(4, p=substitution_p)]
+                chosen_target = scipy.random.choice(4, p=substitution_p)
+                sequence_list[mut_pos] = 'ACGT'[chosen_target]
                 if self.mutation_order:
                     # if mutation order matters, the mutabilities of the sequence need to be updated
                     mutabilities = self.mutabilities(''.join(sequence_list))
