@@ -43,7 +43,7 @@ def ASR_parser(args):
     counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(args.counts)}
     tree.add_feature('frequency', 0)       # Placeholder will be deleted when rerooting
     tree.add_feature('sequence', 'DUMMY')  # Placeholder will be deleted when rerooting
-    tree = map_asr_to_tree(args.asr_seq, tree, args.naive)
+    tree = map_asr_to_tree(args.asr_seq, tree, args.naive, counts)
 
     # Reroot to make the naive sequence the real root instead of just an outgroup:
     tree = reroot_tree(tree)
@@ -69,7 +69,7 @@ def ASR_parser(args):
     print('Done parsing IgPhyML tree')
 
 
-def map_asr_to_tree(asr_seq, tree, naiveID):
+def map_asr_to_tree(asr_seq, tree, naiveID, counts):
     '''Takes a IgPhyML fasta header and returns the matching ete3 tree node.'''
     for record in SeqIO.parse(asr_seq, "fasta"):
         descendants = record.id.split(';')[1].split(',')
