@@ -517,7 +517,7 @@ class MutationModel():
             mutabilities = []
             assert sequence_length >= 5
             # ambiguous left end motifs
-            for i in range(self.k//2 + 1):
+            for i in range(self.k//2):
                 kmer_suffix = sequence[:(i+self.k//2+1)]
                 matches = [value for key, value in self.context_model.iteritems() if key.endswith(kmer_suffix)]
                 len_matches = len(matches)
@@ -527,7 +527,7 @@ class MutationModel():
                 substitution = {n:sum(d[1][n] for d in matches)/len_matches for n in 'ACGT'}
                 mutabilities.append((mutability, substitution))
             # unambiguous internal kmers
-            for i in range(self.k//2 + 1, sequence_length - self.k//2):
+            for i in range(self.k//2, sequence_length - self.k//2):
                 mutabilities.append(self.context_model[sequence[(i-self.k//2):(i+self.k//2+1)]])
             # ambiguous right end motifs
             for i in range(sequence_length - self.k//2, sequence_length):
