@@ -575,11 +575,11 @@ class MutationModel():
             if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
                 break
             if trial == trials:
-                raise RuntimeError('stop codon in simulated sequence on '+str(trials)+' consecustive attempts')
+                raise RuntimeError('stop codon in simulated sequence on '+str(trials)+' consecutive attempts')
         return sequence
 
 
-    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, r=1., frame=None, N=None, T=None):
+    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, frame=None, N=None, T=None, n=None):
         '''
         simulate neutral binary branching process with mutation model
         progeny must be like a scipy.stats distribution, with rvs() and mean() methods
@@ -591,6 +591,8 @@ class MutationModel():
             # expected_progeny = progeny.mean()
             # if expected_progeny >= 1:
             #     raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
+        if n > N:
+            raise ValueError('n ({}) must not larger than N ({})'.format(n, N))
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
@@ -618,18 +620,14 @@ class MutationModel():
                         child.add_feature('time', t)
                         leaf.add_child(child)
 
-        if N is not None:
-            if leaves_unterminated < N:
-                raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
+        if leaves_unterminated < N:
+            raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
 
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
-        if N is not None:
-            # if we specified N, downsample
-            final_leaves = random.sample(final_leaves, N)
-        for leaf in final_leaves:
-            if scipy.random.random() < r:
-                leaf.frequency = 1
+        # by default, downsample to the target simulation size
+        for leaf in random.sample(final_leaves, n if n is not None else N) if N is not None else final_leaves:
+            leaf.frequency = 1
 
         # prune away lineages that are unobserved
         for node in tree.iter_descendants():
@@ -862,7 +860,7 @@ def simulate(args):
             tree = mutation_model.simulate(args.sequence,
                                            progeny=poisson(args.lambda_),
                                            lambda0=args.lambda0,
-                                           r=args.r,
+                                           n=args.n,
                                            N=args.N,
                                            T=args.T,
                                            frame=args.frame)
@@ -937,8 +935,8 @@ def main():
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
     parser_sim.add_argument('--lambda', dest='lambda_', type=float, default=.9, help='poisson branching parameter')
     parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
-    parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
-    parser_sim.add_argument('--N', type=int, default=None, help='simulation size')
+    parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
+    parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
     parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
     parser_sim.set_defaults(func=simulate)
 
