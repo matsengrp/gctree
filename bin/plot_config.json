@@ -1,0 +1,34 @@
+{
+  "collapse_low_freq": {
+    "f": 30,
+    "k": 2,
+    "except": [
+      "common_links",
+      "hit_affinities"
+    ]
+  },
+  "collapse_syn": {
+    "hit_affinities": "mean"
+  },
+  "node_color": [
+    [
+      "common_links",
+      "indigo"
+    ],
+    [
+      "hit_affinities",
+      "firebrick"
+    ]
+  ],
+  "node_label": [
+    "hit_affinities"
+  ],
+  "node_size": "LNobs",
+  "prune_max_branch_length": 5,
+  "node_shape": [
+    [
+      "common_links",
+      "square"
+    ]
+  ]
+}
