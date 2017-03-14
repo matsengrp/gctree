@@ -571,38 +571,39 @@ class MutationModel():
         trials = 20
         for trial in range(1, trials+1):
             m = scipy.random.poisson(lambda_sequence)
-            if m <= sequence_length:
+            if m <= sequence_length or self.with_replacement:
                 break
             if trial == trials:
                 raise RuntimeError('mutations saturating, consider reducing lambda0')
 
-        # mutute the sites with mutations
+        # mutate the sites with mutations
         # if contains stop codon, try again, up to 10 times
-        sequence_list = list(sequence) # make string a list so we can modify it
-        for trial in range(1, trials+1):
-            unmutated_positions = range(sequence_length)
-            for i in range(m):
-                # Determine the position to mutate from the mutability matrix
-                mutability_p = scipy.array([mutabilities[pos][0] for pos in unmutated_positions])
+        unmutated_positions = range(sequence_length)
+        for i in range(m):
+            sequence_list = list(sequence) # make string a list so we can modify it
+            # Determine the position to mutate from the mutability matrix
+            mutability_p = scipy.array([mutabilities[pos][0] for pos in unmutated_positions])
+            for trial in range(1, trials+1):
                 mut_pos = scipy.random.choice(unmutated_positions, p=mutability_p/mutability_p.sum())
-
-                if not self.with_replacement:
-                    # Remove this position so we don't mutate it again
-                    unmutated_positions.remove(mut_pos)
-
                 # Now draw the target nucleotide using the substitution matrix
                 substitution_p = [mutabilities[mut_pos][1][n] for n in 'ACGT']
                 assert 0 <= abs(sum(substitution_p) - 1.) < 1e-10
                 chosen_target = scipy.random.choice(4, p=substitution_p)
+                original_base = sequence_list[mut_pos]
                 sequence_list[mut_pos] = 'ACGT'[chosen_target]
-                if self.mutation_order:
-                    # if mutation order matters, the mutabilities of the sequence need to be updated
-                    mutabilities = self.mutabilities(''.join(sequence_list))
-            sequence = ''.join(sequence_list) # reconstruct our sequence
-            if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
-                break
-            if trial == trials:
-                raise RuntimeError('stop codon in simulated sequence on '+str(trials)+' consecutive attempts')
+                sequence = ''.join(sequence_list) # reconstruct our sequence
+                if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
+                    if self.mutation_order:
+                        # if mutation order matters, the mutabilities of the sequence need to be updated
+                        mutabilities = self.mutabilities(sequence)
+                    if not self.with_replacement:
+                        # Remove this position so we don't mutate it again
+                        unmutated_positions.remove(mut_pos)
+                    break
+                if trial == trials:
+                    raise RuntimeError('stop codon in simulated sequence on '+str(trials)+' consecutive attempts')
+                sequence_list[mut_pos] = original_base # <-- we only get here if we are retrying
+
         return sequence
 
 
