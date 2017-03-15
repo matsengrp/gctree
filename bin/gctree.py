@@ -476,7 +476,7 @@ def phylip_parse(phylip_outfile, countfile=None, naive=None):
 
 class MutationModel():
     '''a class for a mutation model, and functions to mutate sequences'''
-    def __init__(self, mutability_file=None, substitution_file=None, mutation_order=False, with_replacement=False):
+    def __init__(self, mutability_file=None, substitution_file=None, mutation_order=True, with_replacement=True):
         """
         initialized with input files of the S5F format
         @param mutation_order: whether or not to mutate sequences using a context sensitive manner
