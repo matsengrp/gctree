@@ -57,18 +57,18 @@ def find_node_by_seq(tree, sequence):
 
 
 def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
-    assert(penalty_cap < 0)
+    assert(penalty_cap < 0)  # Penalties must be negative
     nt = find_node_by_seq(tree_t, seq)
     lt = reconstruct_lineage(tree_t, nt)
     ni = find_node_by_seq(tree_i, seq)
     li = reconstruct_lineage(tree_i, ni)
-    # The lineages must be longer than just the root and the terminal node
-    if len(lt) <= 2 or len(li) <= 2:
+    # One lineages must be longer than just the root and the terminal node
+    if len(lt) <= 2 and len(li) <= 2:
         return False
 
     # Gap penalty chosen not too large:
     gap_penalty = -10
-    assert(gap_penalty < 0)
+    assert(gap_penalty < 0)  # Penalties must be negative
     if penalty_cap is not None and gap_penalty < penalty_cap:
         gap_penalty = penalty_cap
 
@@ -154,23 +154,27 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
 
 def lineage_dist(true_tree, inferred_tree, penalty_cap=None, freq_weigthing=False):
     total_lineage_dist = 0
+    total_max_penalty = 0
     nlineages = 0
     for node in true_tree.tree.traverse():
         if not node.frequency > 0:
             continue
 
         aln_res = align_lineages(node.sequence, true_tree.tree, inferred_tree.tree, penalty_cap=None)
-        if aln_res is  False:
+        if aln_res is  False:  # Skip lineages less than three members long
             continue
         align_t, align_i, asr_align, final_score, max_penalty = aln_res
-        total_lineage_dist += final_score / max_penalty  # Normalize with max penalty to get a number between 0 and 1
-        if freq_weigthing is True:
-            nlineages += 1 * node.frequency
-        else:
-            nlineages += 1
         assert(sum(asr_align) == final_score)
+        if freq_weigthing is True:
+            total_max_penalty += max_penalty * node.frequency
+            total_lineage_dist += final_score * node.frequency
+        else:
+            total_max_penalty += max_penalty
+            total_lineage_dist += final_score
 
-    norm_lineage_dist = total_lineage_dist / nlineages
+    if total_max_penalty == 0:  # There can be total_max_penalty == 0 when all lineages have less than three members
+        return 0
+    norm_lineage_dist = total_lineage_dist / total_max_penalty  # Normalize with max penalty to get a number between 0 and 1
     return norm_lineage_dist
 
 
@@ -207,12 +211,13 @@ def validate(true_tree, inferences, outbase):
     # among the parsimony trees
     if 'gctree' in inferences:
         n_trees = len(inferences['gctree'].forest)
-        # NOTE: the unrooted_trees flag is needed because, for some reason, the RF
+        # note: the unrooted_trees flag is needed because, for some reason, the RF
         #       function sometimes thinks the collapsed trees are unrooted and barfs
         distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
                                         tree.l(inferences['gctree'].params)[0]) for tree in inferences['gctree'].forest])
         MRCAs = [MRCA_distance(true_tree, tree).sum() for tree in inferences['gctree'].forest]
-        lineage_distances = all_lineage_dist(true_tree, tree)
+        lineage_distances = [all_lineage_dist(true_tree, tree) for tree in inferences['gctree'].forest]
+        lineage_distances = zip(*lineage_distances)  # Unzip the forest tuple to get lineage_distances[ld0-3][tree_n]
         mean_frequencies = [scipy.mean([node.frequency for node in tree.tree.traverse()]) for tree in inferences['gctree'].forest]
         mean_branch_lengths = [scipy.mean([node.dist for node in tree.tree.iter_descendants()]) for tree in inferences['gctree'].forest]
         df = pd.DataFrame({'log-likelihood':likelihoods,
@@ -236,7 +241,7 @@ def validate(true_tree, inferences, outbase):
     # compare the inference methods
     # assume the first tree in the forest is the inferred tree
 
-    methods, n_taxa, distances, MRCAs, lineage_distance = zip(
+    methods, n_taxa, distances, MRCAs, lineage_distances = zip(
         *[(method,
            len(list(true_tree.tree.traverse())),  # Get all taxa in the tree
            true_tree.tree.robinson_foulds(inferences[method].forest[0].tree,
@@ -245,6 +250,7 @@ def validate(true_tree, inferences, outbase):
                                           unrooted_trees=True)[0],
            MRCA_distance(true_tree, inferences[method].forest[0]).sum(),
            all_lineage_dist(true_tree, inferences[method].forest[0])) for method in inferences])
+    lineage_distances = zip(*lineage_distances)  # Unzip the methods tuple to get lineage_distances[ld0-3][method]
     df = pd.DataFrame({'method':methods, 'N_taxa':n_taxa, 'RF':distances, 'MRCA':MRCAs, 'ld1':lineage_distances[0], 'ld2':lineage_distances[1], 'ld3':lineage_distances[2], 'ld4':lineage_distances[3]},
                       columns=('method', 'N_taxa', 'RF', 'MRCA', 'ld1', 'ld2', 'ld3', 'ld4'))
     df.to_csv(outbase+'.tsv', sep='\t', index=False)
