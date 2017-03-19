@@ -248,7 +248,7 @@ def tree_render_default(tree, frame=None):
     return tree, ts
 
 
-def tree_render_user(tree, frame=None, tree_features=None, **kwargs):
+def tree_render_user(tree, frame=None, tree_features=None, namecolor=None):
     '''
     Base function to add rendering attributes to an ete3 tree.
     The function can plot tree is default mode and/or take user input.
@@ -289,6 +289,9 @@ def tree_render_user(tree, frame=None, tree_features=None, **kwargs):
                         nstyle['fgcolor'] = t[1]
                         if nstyle['size'] < small_node:
                             nstyle['size'] = small_node
+            if namecolor is not None and node.name in namecolor:
+                # print(node.name)
+                nstyle['fgcolor'] = 'DarkGreen'
 
         if 'node_shape' in tree_features:
             for t in tree_features['node_shape']:
@@ -326,6 +329,8 @@ def tree_render_user(tree, frame=None, tree_features=None, **kwargs):
             for t in tree_features['node_label']:
                 node_attr = ifhasthenget(node, t)
                 if node_attr and to_string(node_attr):
+                    if t == 'name' and hasattr(node, 'cl'):
+                        continue
                     textface = to_string(node_attr)
                     N = TextFace(textface, fsize=12, fgcolor='black')
                     if 'e-' in textface and to_float(textface):  # Stupid exception because ete3 rendering doesn't understand scientific notation
@@ -412,7 +417,12 @@ def collapse_syn(tree, frame=None, tree_features=None):
     return tree
 
 
-def make_tree(tree, outfile, tree_features_file=None, statsfile=None, frame=None):
+def make_tree(tree, outfile, tree_features_file=None, statsfile=None, frame=None, namecolor=None):
+    try:
+        import cPickle as pickle
+    except:
+        import pickle
+    from gctree import CollapsedForest, CollapsedTree
     '''
     This function wraps the rendering of an ete3 tree with custom user options
     and the adding to the default GCtree rendering.
@@ -462,8 +472,12 @@ def make_tree(tree, outfile, tree_features_file=None, statsfile=None, frame=None
             raise RuntimeError('Could not cast f and k to integers, or maybe they are not defined at all?:', e)
         tree = collapse_low_freq(tree, [f, k], cl_except)
 
-    tree, ts = tree_render_user(tree, frame=frame, tree_features=tree_features)
+    tree, ts = tree_render_user(tree, frame=frame, tree_features=tree_features, namecolor=namecolor)
     tree.render(outfile, tree_style=ts)
+    collapsed_tree = CollapsedTree(tree=tree)
+    forest = CollapsedForest(forest=[collapsed_tree])
+    with open(outfile[:-4] + '.p', 'wb') as f:
+        pickle.dump(forest, f)
 
 
 def main():
