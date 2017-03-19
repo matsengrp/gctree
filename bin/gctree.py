@@ -476,7 +476,7 @@ def phylip_parse(phylip_outfile, countfile=None, naive=None):
 
 class MutationModel():
     '''a class for a mutation model, and functions to mutate sequences'''
-    def __init__(self, mutability_file=None, substitution_file=None, mutation_order=False, with_replacement=False):
+    def __init__(self, mutability_file=None, substitution_file=None, mutation_order=True, with_replacement=True):
         """
         initialized with input files of the S5F format
         @param mutation_order: whether or not to mutate sequences using a context sensitive manner
@@ -571,42 +571,43 @@ class MutationModel():
         trials = 20
         for trial in range(1, trials+1):
             m = scipy.random.poisson(lambda_sequence)
-            if m <= sequence_length:
+            if m <= sequence_length or self.with_replacement:
                 break
             if trial == trials:
                 raise RuntimeError('mutations saturating, consider reducing lambda0')
 
-        # mutute the sites with mutations
+        # mutate the sites with mutations
         # if contains stop codon, try again, up to 10 times
-        sequence_list = list(sequence) # make string a list so we can modify it
-        for trial in range(1, trials+1):
-            unmutated_positions = range(sequence_length)
-            for i in range(m):
-                # Determine the position to mutate from the mutability matrix
-                mutability_p = scipy.array([mutabilities[pos][0] for pos in unmutated_positions])
+        unmutated_positions = range(sequence_length)
+        for i in range(m):
+            sequence_list = list(sequence) # make string a list so we can modify it
+            # Determine the position to mutate from the mutability matrix
+            mutability_p = scipy.array([mutabilities[pos][0] for pos in unmutated_positions])
+            for trial in range(1, trials+1):
                 mut_pos = scipy.random.choice(unmutated_positions, p=mutability_p/mutability_p.sum())
-
-                if not self.with_replacement:
-                    # Remove this position so we don't mutate it again
-                    unmutated_positions.remove(mut_pos)
-
                 # Now draw the target nucleotide using the substitution matrix
                 substitution_p = [mutabilities[mut_pos][1][n] for n in 'ACGT']
                 assert 0 <= abs(sum(substitution_p) - 1.) < 1e-10
                 chosen_target = scipy.random.choice(4, p=substitution_p)
+                original_base = sequence_list[mut_pos]
                 sequence_list[mut_pos] = 'ACGT'[chosen_target]
-                if self.mutation_order:
-                    # if mutation order matters, the mutabilities of the sequence need to be updated
-                    mutabilities = self.mutabilities(''.join(sequence_list))
-            sequence = ''.join(sequence_list) # reconstruct our sequence
-            if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
-                break
-            if trial == trials:
-                raise RuntimeError('stop codon in simulated sequence on '+str(trials)+' consecustive attempts')
+                sequence = ''.join(sequence_list) # reconstruct our sequence
+                if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
+                    if self.mutation_order:
+                        # if mutation order matters, the mutabilities of the sequence need to be updated
+                        mutabilities = self.mutabilities(sequence)
+                    if not self.with_replacement:
+                        # Remove this position so we don't mutate it again
+                        unmutated_positions.remove(mut_pos)
+                    break
+                if trial == trials:
+                    raise RuntimeError('stop codon in simulated sequence on '+str(trials)+' consecutive attempts')
+                sequence_list[mut_pos] = original_base # <-- we only get here if we are retrying
+
         return sequence
 
 
-    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, r=1., frame=None, N=None, T=None):
+    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, frame=None, N=None, T=None, n=None):
         '''
         simulate neutral binary branching process with mutation model
         progeny must be like a scipy.stats distribution, with rvs() and mean() methods
@@ -618,6 +619,8 @@ class MutationModel():
             # expected_progeny = progeny.mean()
             # if expected_progeny >= 1:
             #     raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
+        if n > N:
+            raise ValueError('n ({}) must not larger than N ({})'.format(n, N))
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
@@ -645,18 +648,14 @@ class MutationModel():
                         child.add_feature('time', t)
                         leaf.add_child(child)
 
-        if N is not None:
-            if leaves_unterminated < N:
-                raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
+        if leaves_unterminated < N:
+            raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
 
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
-        if N is not None:
-            # if we specified N, downsample
-            final_leaves = random.sample(final_leaves, N)
-        for leaf in final_leaves:
-            if scipy.random.random() < r:
-                leaf.frequency = 1
+        # by default, downsample to the target simulation size
+        for leaf in random.sample(final_leaves, n if n is not None else N) if N is not None else final_leaves:
+            leaf.frequency = 1
 
         # prune away lineages that are unobserved
         for node in tree.iter_descendants():
@@ -889,7 +888,7 @@ def simulate(args):
             tree = mutation_model.simulate(args.sequence,
                                            progeny=poisson(args.lambda_),
                                            lambda0=args.lambda0,
-                                           r=args.r,
+                                           n=args.n,
                                            N=args.N,
                                            T=args.T,
                                            frame=args.frame)
@@ -964,8 +963,8 @@ def main():
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
     parser_sim.add_argument('--lambda', dest='lambda_', type=float, default=.9, help='poisson branching parameter')
     parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
-    parser_sim.add_argument('--r', type=float, default=1., help='sampling probability')
-    parser_sim.add_argument('--N', type=int, default=None, help='simulation size')
+    parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
+    parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
     parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
     parser_sim.set_defaults(func=simulate)
 

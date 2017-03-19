@@ -18,6 +18,7 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import seaborn as sns
 import os
+import numpy as np
 try:
     import jellyfish  # Last time I checked this module was the fastest kid on the block, however 2x slower than a simple Cython function
     def fast_hamming_dist(s1, s2):
@@ -40,18 +41,36 @@ def reconstruct_lineage(tree, node):
 
 
 def find_node_by_seq(tree, sequence):
-    node = [node for node in tree.traverse() if node.sequence == sequence]
-    assert(len(node) == 1)
+    node = [node for node in tree.traverse() if node.sequence == sequence and node.frequency > 0]
+    try:
+        assert(len(node) == 1)
+    except Exception as e:
+        print('Nodes list:')
+        print(node)
+
+        print(tree)
+        print(node[0])
+        print(node[1])
+
+        raise e
     return node[0]
 
 
-def align_lineages(seq, tree_t, tree_i):
+def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
+    assert(penalty_cap < 0)  # Penalties must be negative
     nt = find_node_by_seq(tree_t, seq)
     lt = reconstruct_lineage(tree_t, nt)
     ni = find_node_by_seq(tree_i, seq)
     li = reconstruct_lineage(tree_i, ni)
-    # SW parameters:
+    # One lineages must be longer than just the root and the terminal node
+    if len(lt) <= 2 and len(li) <= 2:
+        return False
+
+    # Gap penalty chosen not too large:
     gap_penalty = -10
+    assert(gap_penalty < 0)  # Penalties must be negative
+    if penalty_cap is not None and gap_penalty < penalty_cap:
+        gap_penalty = penalty_cap
 
     # Regerate a score matrix matrix:
     kt = len(lt)
@@ -86,7 +105,10 @@ def align_lineages(seq, tree_t, tree_i):
         sc_left = aln_sc[i-1][j]
 
         if sc_current == (sc_diagonal + sc_mat[i-1, j-1]):
-            asr_align.append(sc_mat[i-1, j-1])
+            if penalty_cap is not None and sc_mat[i-1, j-1] > penalty_cap:
+                asr_align.append(penalty_cap)
+            else:
+                asr_align.append(sc_mat[i-1, j-1])
             align_t.append(lt[i-1])
             align_i.append(li[j-1])
             i -= 1
@@ -115,23 +137,45 @@ def align_lineages(seq, tree_t, tree_i):
         j -= 1
 
     max_penalty = 0
+    penalty = sum(asr_align)
     for a in align_t:
         if a == '_':
             max_penalty += gap_penalty
         else:
-            max_penalty += -len(a)
-    return align_t, align_i, asr_align, aln_sc[kt, ki], max_penalty
+            if penalty_cap is not None:
+                max_penalty += penalty_cap
+            else:
+                max_penalty += -len(a)
+    # Notice that the root and the terminal node is excluded from this comparison.
+    # by adding their length to the max_penalty:
+    max_penalty += 2 * len(lt[0])
+    return [align_t, align_i, asr_align, penalty, max_penalty]
 
 
-def lineage_dist(true_tree, inferred_tree):
+def lineage_dist(true_tree, inferred_tree, penalty_cap=None, freq_weigthing=False):
     total_lineage_dist = 0
-    leaf_seqs = [node.sequence for node in true_tree.tree.traverse() if node.is_leaf()]
-    for leaf_seq in leaf_seqs:
-        align_t, align_i, asr_align, final_score, max_penalty = align_lineages(leaf_seq, true_tree.tree, inferred_tree.tree)
-        total_lineage_dist += final_score / max_penalty  # Normalize with max penalty to get a number between 0 and 1
+    total_max_penalty = 0
+    nlineages = 0
+    for node in true_tree.tree.traverse():
+        if not node.frequency > 0:
+            continue
+
+        aln_res = align_lineages(node.sequence, true_tree.tree, inferred_tree.tree, penalty_cap=None)
+        if aln_res is  False:  # Skip lineages less than three members long
+            continue
+        align_t, align_i, asr_align, final_score, max_penalty = aln_res
         assert(sum(asr_align) == final_score)
-    norm_lineage_dist = total_lineage_dist / len(leaf_seqs)
-    return total_lineage_dist
+        if freq_weigthing is True:
+            total_max_penalty += max_penalty * node.frequency
+            total_lineage_dist += final_score * node.frequency
+        else:
+            total_max_penalty += max_penalty
+            total_lineage_dist += final_score
+
+    if total_max_penalty == 0:  # There can be total_max_penalty == 0 when all lineages have less than three members
+        return 0
+    norm_lineage_dist = total_lineage_dist / total_max_penalty  # Normalize with max penalty to get a number between 0 and 1
+    return norm_lineage_dist
 
 
 def MRCA_distance(true_tree, tree):
@@ -160,23 +204,29 @@ def validate(true_tree, inferences, outbase):
     CollapsedForest
     '''
 
+    # [(None, False), (1, False), (None, True), (1, True)]
+    all_lineage_dist = lambda x, y: [lineage_dist(x, y, i1, i2) for i2 in [False, True] for i1 in [None, 1]]
+
     # if gctre is among the inferences, let's evaluate the likelihood ranking
     # among the parsimony trees
     if 'gctree' in inferences:
         n_trees = len(inferences['gctree'].forest)
-        # NOTE: the unrooted_trees flag is needed because, for some reason, the RF
+        # note: the unrooted_trees flag is needed because, for some reason, the RF
         #       function sometimes thinks the collapsed trees are unrooted and barfs
         distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
                                         tree.l(inferences['gctree'].params)[0]) for tree in inferences['gctree'].forest])
         MRCAs = [MRCA_distance(true_tree, tree).sum() for tree in inferences['gctree'].forest]
-        lineage_distance = [lineage_dist(true_tree, tree) for tree in inferences['gctree'].forest]
-
+        lineage_distances = [all_lineage_dist(true_tree, tree) for tree in inferences['gctree'].forest]
+        lineage_distances = zip(*lineage_distances)  # Unzip the forest tuple to get lineage_distances[ld0-3][tree_n]
         mean_frequencies = [scipy.mean([node.frequency for node in tree.tree.traverse()]) for tree in inferences['gctree'].forest]
         mean_branch_lengths = [scipy.mean([node.dist for node in tree.tree.iter_descendants()]) for tree in inferences['gctree'].forest]
         df = pd.DataFrame({'log-likelihood':likelihoods,
                            'RF':distances,
                            'MRCA':MRCAs,
-                           'lineage_distance':lineage_distance,
+                           'ld1':lineage_distances[0],
+                           'ld2':lineage_distances[1],
+                           'ld3':lineage_distances[2],
+                           'ld4':lineage_distances[3],
                            'mean_frequency':mean_frequencies,
                            'mean_branch_length':mean_branch_lengths})
 
@@ -190,7 +240,8 @@ def validate(true_tree, inferences, outbase):
 
     # compare the inference methods
     # assume the first tree in the forest is the inferred tree
-    methods, n_taxa, distances, MRCAs, lineage_distance = zip(
+
+    methods, n_taxa, distances, MRCAs, lineage_distances = zip(
         *[(method,
            len(list(true_tree.tree.traverse())),  # Get all taxa in the tree
            true_tree.tree.robinson_foulds(inferences[method].forest[0].tree,
@@ -198,10 +249,10 @@ def validate(true_tree, inferences, outbase):
                                           attr_t2='sequence',
                                           unrooted_trees=True)[0],
            MRCA_distance(true_tree, inferences[method].forest[0]).sum(),
-           lineage_dist(true_tree, inferences[method].forest[0]))
-           for method in inferences])
-    df = pd.DataFrame({'method':methods, 'N_taxa':n_taxa, 'RF':distances, 'MRCA':MRCAs, 'lineage_distance':lineage_distance},
-                      columns=('method', 'N_taxa', 'RF', 'MRCA', 'lineage_distance'))
+           all_lineage_dist(true_tree, inferences[method].forest[0])) for method in inferences])
+    lineage_distances = zip(*lineage_distances)  # Unzip the methods tuple to get lineage_distances[ld0-3][method]
+    df = pd.DataFrame({'method':methods, 'N_taxa':n_taxa, 'RF':distances, 'MRCA':MRCAs, 'ld1':lineage_distances[0], 'ld2':lineage_distances[1], 'ld3':lineage_distances[2], 'ld4':lineage_distances[3]},
+                      columns=('method', 'N_taxa', 'RF', 'MRCA', 'ld1', 'ld2', 'ld3', 'ld4'))
     df.to_csv(outbase+'.tsv', sep='\t', index=False)
 
 

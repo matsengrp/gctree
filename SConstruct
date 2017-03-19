@@ -95,10 +95,10 @@ if simulate:
               type='float',
               default=None,
               help='baseline mutation rate')
-    AddOption('--r',
-              type='float',
+    AddOption('--n',
+              type='int',
               default=None,
-              help='sampling probability')
+              help='cells downsampled')
     AddOption('--N',
               type='int',
               default=None,
@@ -107,7 +107,7 @@ if simulate:
               type='int',
               default=None,
               help='observation time')
-    AddOption('--n',
+    AddOption('--nsim',
               type='int',
               default=10,
               help='number of simulations with each parameter parameter choice')
@@ -117,10 +117,10 @@ if simulate:
     substitution = GetOption('substitution')
     lambda_ = GetOption('lambda')
     lambda0 = GetOption('lambda0')
-    r = GetOption('r')
+    n = GetOption('n')
     N = GetOption('N')
     T = GetOption('T')
-    n = GetOption('n')
+    nsim = GetOption('nsim')
 elif inference:
     AddOption('--fasta',
               dest='fasta',
@@ -147,7 +147,7 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 r frame N T n CommandRunner')
+               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 n frame N T nsim CommandRunner')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')

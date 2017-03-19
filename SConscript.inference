@@ -93,12 +93,13 @@ if igphyml:
 
     # Run IgPhyML with the HLP16 model using the GY94 tree topology as starting point:
     igphyml_opti = 'tlr'  # <--- can be changed to 'lr' or 'r'
-    ### --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e
+    ### Full motif model: --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e
+    ### Less parameter rich motif model: --motifs WRC_2:0,GYW_0:0,WA_1:1,TW_0:2,SYC_2:3,GRS_0:3 --hotness e,e,e,e
     igphyml_hlp16 = CommandRunner([os.path.join(outdir, basename+'.phylip_igphyml_tree.txt_hlp16'),
                               os.path.join(outdir, basename+'.phylip_igphyml_stats.txt_hlp16'),
                               os.path.join(outdir, basename+'.phylip_igphyml_tree.txt_hlp16.log')],
                              [phylip[0], igphyml_gy94_topology[0]],
-                             'igphyml -i ${SOURCES[0]} -u ${SOURCES[1]} -m HLP16 --root '+naiveID+' -o '+igphyml_opti+' --run_id hlp16 > ${TARGETS[2]}')
+                             'igphyml --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e -i ${SOURCES[0]} -u ${SOURCES[1]} -m HLP17 --root '+naiveID+' -o '+igphyml_opti+' --run_id hlp16 > ${TARGETS[2]}')
 
     # On the HLP16 output tree make the naive sequence an outgroup:
     naive_outgroup = env.Command([os.path.join(outdir, basename+'.phylip_igphyml_tree.txt_hlp16.outgroup'),
