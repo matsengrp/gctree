@@ -61,6 +61,11 @@ def check_header(header):
    if len(header) > 10:
        print('Sequence headers must be shorter than 10 characters:', header)
        raise Exception
+    try:
+        int(header)
+        raise Exception('Sequence headers must be distinguishable from an integer. Please add a non number character.')
+    except:
+        pass
 
 
 def default_parse(aln_file, naive, frame=None):
@@ -116,7 +121,9 @@ def main():
                                                  'or equal to 10 ASCII characters. A special option for converting a Victora lab '
                                                  'GC fasta file to phylip is also included. All headers are converted to lower case.')
     parser.add_argument('infile', type=str, help='Fasta file with less than or equal to 10 characters unique header ID. '
-                                                 'For Vitora data any integer ids indicats frequency.')
+                                                 'For Vitora data any integer ids indicats frequency.'
+                                                 'Because dnapars will name internal nodes by intergers a node name must include'
+                                                 'at least one non number character.')
     parser.add_argument('countfile', type=str, help='Filename for the output file containing the counts.')
     parser.add_argument('--converter', type=str, help='Use a special format convertion scheme e.g. for a Vitora lab GC fasta file. Options: [tas]')
     specified_coverters = ['tas']
