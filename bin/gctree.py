@@ -23,7 +23,7 @@ from matplotlib import rc, ticker
 import pandas as pd
 import seaborn as sns
 from scipy.stats import probplot, poisson
-from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace
+from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, SVG_COLORS
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 from Bio.Data.IUPACData import ambiguous_dna_values
@@ -275,6 +275,18 @@ class CollapsedTree(LeavesAndClades):
         '''return a string representation for printing'''
         return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
+    @staticmethod
+    # def my_layout(node):
+    #     if node.frequency > 1:
+    #         N = TextFace(node.frequency, fsize=14, fgcolor='black')
+    #         N.rotation = -90
+    #         faces.add_face_to_node(N, node, 0, position='branch-top')
+    def my_layout(node):
+        if node.frequency > 0:
+            C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color='lightgray', label={'text':str(node.frequency), 'color':'black'})
+            C.rotation = -90
+            faces.add_face_to_node(C, node, 0)
+
     def render(self, outfile):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         for node in self.tree.traverse():
@@ -283,8 +295,9 @@ class CollapsedTree(LeavesAndClades):
                 nstyle['size'] = 5
                 nstyle['fgcolor'] = 'grey'
             else:
-                nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.frequency)
-                nstyle['fgcolor'] = 'black'
+                nstyle['size'] = 0
+            #     nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.frequency)
+            #     nstyle['fgcolor'] = 'black'
             if node.up is not None:
                 if set(node.sequence.upper()) == set('ACGT'):
                     if self.frame is not None:
@@ -306,13 +319,9 @@ class CollapsedTree(LeavesAndClades):
         ts = TreeStyle()
         ts.show_leaf_name = False
         ts.rotation = 90
-        def my_layout(node):
-            if node.frequency > 1:
-                N = TextFace(node.frequency, fsize=14, fgcolor='black')
-                N.rotation = -90
-                faces.add_face_to_node(N, node, 0, position='branch-top')
-        ts.layout_fn = my_layout
-        self.tree.ladderize()
+        ts.layout_fn = CollapsedTree.my_layout
+        ts.show_scale = False
+        # self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
 
     def write(self, file_name):
@@ -1078,9 +1087,10 @@ def simulate(args):
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=True, allow_repeats=True)
             else:
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
+            # tree.ladderize()
             uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:
-                raise RuntimeError('collapsed tree contains {} sampled sequences, vacuous inference'.format(uniques))
+                raise RuntimeError('collapsed tree contains {} sampled sequences'.format(uniques))
             break
         except RuntimeError as e:
             print('{}, trying again'.format(e))
@@ -1155,6 +1165,23 @@ def plot_runstats(runstats, outbase):
     plt.xlabel('GC generation')
     plt.title('Cell count as function of GC generation')
     fig.savefig(outbase + 'selection_sim.runstats.svg')
+
+    # render the full lineage tree
+    ts = TreeStyle()
+    ts.rotation = 90
+    ts.show_leaf_name = False
+    colors = {}
+    for n in tree.traverse():
+       nstyle = NodeStyle()
+       if n == tree:
+           colors[n.sequence] = 'black'
+           SVG_COLORS.remove('black')
+       elif n.sequence not in colors:
+           colors[n.sequence] = SVG_COLORS.pop()
+       nstyle['fgcolor'] = colors[n.sequence]
+       nstyle["size"] = 10
+       n.set_style(nstyle)
+    tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
 
 
 def main():
