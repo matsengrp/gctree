@@ -14,7 +14,8 @@ except:
     import pickle
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad
-
+import random
+import numpy as np
 import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
@@ -26,6 +27,21 @@ from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, Cir
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 from Bio.Data.IUPACData import ambiguous_dna_values
+try:
+    # Last time I checked this module was the fastest kid on the block,
+    # 5-10x faster than pure python, however 2x slower than a simple Cython function
+    import jellyfish
+    def hamming_distance(s1, s2):
+        if s1 == s2:
+            return 0
+        else:
+            return jellyfish.hamming_distance(unicode(s1), unicode(s2))
+except:
+    def hamming_distance(seq1, seq2):
+        '''Hamming distance between two sequences of equal length'''
+        return sum(x != y for x, y in zip(seq1, seq2))
+    print('Couldn\'t find the python module "jellyfish" which is used for fast string comparison. Falling back to pure python function.')
+
 
 scipy.seterr(all='raise')
 
@@ -145,7 +161,7 @@ class CollapsedTree(LeavesAndClades):
            |   \\
           (2)  (1)
     '''
-    def __init__(self, params=None, tree=None, frame=None):
+    def __init__(self, params=None, tree=None, frame=None, collapse_syn=False, allow_repeats=False):
         '''
         For intialization, either params or tree (or both) must be provided
         params: offspring distribution parameters
@@ -156,6 +172,16 @@ class CollapsedTree(LeavesAndClades):
         if frame is not None and frame not in (1, 2, 3):
             raise RuntimeError('frame must be 1, 2, 3, or None')
         self.frame = frame
+
+        if collapse_syn is True:
+            tree.dist = 0  # no branch above root
+            for node in tree.iter_descendants():
+                aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
+                         generic_dna).translate()
+                aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
+                                generic_dna).translate()
+                node.dist = hamming_distance(aa, aa_parent)
+
         if tree is not None:
             self.tree = tree.copy()
             if 0 in (node.dist for node in tree.iter_descendants()):
@@ -167,12 +193,16 @@ class CollapsedTree(LeavesAndClades):
                             node.up.name = node.name
 
                         node.delete(prevent_nondicotomic=False)
+
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
-            if 'sequence' in tree.features and len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0])) != sum(node.frequency > 0 for node in self.tree.traverse()):
-                raise RuntimeError('repeated observed sequences in collapsed tree')
+            rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
+            if not allow_repeats and rep_seq:
+                raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+            elif allow_repeats and rep_seq:
+                rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
+                print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
         else:
             self.tree = tree
-
 
     def l(self, params, sign=1):
         '''
@@ -368,11 +398,6 @@ class CollapsedForest(CollapsedTree):
         '''return a string representation for printing'''
         return 'params = {}, n_trees = {}\n'.format(self.params, self.n_trees) + \
                 '\n'.join([str(tree) for tree in self.forest])
-
-
-def hamming_distance(seq1, seq2):
-    '''Hamming distance between two sequences of equal length'''
-    return sum(x != y for x, y in zip(seq1, seq2))
 
 
 def disambiguate(tree):
@@ -607,33 +632,150 @@ class MutationModel():
         return sequence
 
 
-    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, frame=None, N=None, T=None, n=None):
+    def one_mutant(self, sequence, Nmuts, frame=1, lambda0=0.1):
+        '''
+        Make a single mutant with a distance, in amino acid sequence, of Nmuts away from the starting point.
+        '''
+        trial = 100  # Allow 100 trials before quitting
+        while trial > 0:
+            mut_seq = sequence[:]
+            aa = str(Seq(sequence[(frame-1):(frame-1+(3*(((len(sequence)-(frame-1))//3))))], generic_dna).translate())
+            aa_mut = Seq(mut_seq[(frame-1):(frame-1+(3*(((len(mut_seq)-(frame-1))//3))))], generic_dna).translate()
+            dist = hamming_distance(aa, aa_mut)
+            while dist < Nmuts:
+                mut_seq = self.mutate(mut_seq, lambda0=lambda0, frame=frame)
+                aa_mut = str(Seq(mut_seq[(frame-1):(frame-1+(3*(((len(mut_seq)-(frame-1))//3))))], generic_dna).translate())
+                dist = hamming_distance(aa, aa_mut)
+            if dist == Nmuts:
+                return aa_mut
+            else:
+                trial -= 1
+        raise RuntimeError('100 consecutive attempts for creating a target sequence failed.')
+
+
+    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, frame=None, N=None, T=None, n=None, verbose=False, selection_params=None):
         '''
         simulate neutral binary branching process with mutation model
         progeny must be like a scipy.stats distribution, with rvs() and mean() methods
         '''
+        # Checking the validity of the input parameters:
         if N is not None and T is not None:
-            raise ValueError('only one of N and T may be not None')
-        if N is None and T is None:
-            raise ValueError('either N or T must be specified')
+            raise ValueError('Only one of N and T can be used. One must be None.')
+        if selection_params is not None and T is None:
+            raise ValueError('Simulation with selection was chosen. A time, T, must be specified.')
+        elif N is None and T is None:
+            raise ValueError('Either N or T must be specified.')
             # expected_progeny = progeny.mean()
             # if expected_progeny >= 1:
             #     raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
         if n > N:
             raise ValueError('n ({}) must not larger than N ({})'.format(n, N))
+        if selection_params is not None and frame is None:
+            raise ValueError('Simulation with selection was chosen. A frame must must be specified.')
+
+        # Planting the tree:
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
         tree.add_feature('terminated', False)
         tree.add_feature('frequency', 0)
         tree.add_feature('time', 0)
-        t = 0 # <-- time
 
+        # <---- Selection:
+        def calc_Kd(seqAA, targetAAseqs, hd2affy):
+            '''Find the closest target sequence to and apply the "hamming distance to affinity" transformation function.'''
+            hd = min([hamming_distance(seqAA, t) for t in targetAAseqs])
+            return(hd2affy(hd))
+
+        if selection_params is not None:
+            hd_generation = list()  # Collect an array of the counts of each hamming distance at each time step
+            mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, outbase = selection_params
+            # Assert that the target sequences are comparable to the naive sequence:
+            aa = Seq(tree.sequence[(frame-1):(frame-1+(3*(((len(tree.sequence)-(frame-1))//3))))], generic_dna).translate()
+            assert(sum([1 for t in targetAAseqs if len(t) != len(aa)]) == 0)  # All targets are same length
+            assert(sum([1 for t in targetAAseqs if hamming_distance(aa, t) == target_dist]))  # All target are "target_dist" away from the naive sequence 
+            # Affinity is an exponential function of hamming distance:
+            def hd2affy(hd): return(mature_affy + hd**2 * (naive_affy - mature_affy) / target_dist**2)
+            # We store both the amino acid sequence and the affinity as tree features:
+            tree.add_feature('AAseq', str(aa))
+            tree.add_feature('Kd', calc_Kd(tree.AAseq, targetAAseqs, hd2affy))
+
+        def lambda_selection(node, tree, targetAAseqs, hd2affy, A_total):
+            '''
+            Given a node and its tree and a "hamming distance to affinity" transformation function
+            reutrn the poisson lambda parameter for the progeny distribution.
+            '''
+            def calc_BnA(Kd_n, A):
+                '''
+                This calculated the fraction B:A (B bound to A), at equilibrium also referred to as "binding time",
+                of all the different Bs in the population given the number of free As in solution.
+                '''
+                BnA = 1/(1+Kd_n/A)
+                return(BnA)
+
+            def return_objective_A(Kd_n, A_total):
+                '''
+                The objective function that solves the set of differential equations setup to find the number of free As,
+                at equilibrium, given a number of Bs with some affinity listed in Kd_n.
+                '''
+                def obj(A): return((A_total - (A + np.sum(1/(1+Kd_n/A))))**2)
+                return(obj)
+
+            def calc_binding_time(Kd_n, A_total):
+                '''
+                Solves the objective function to find the number of free As and then uses this,
+                to calculate the fraction B:A (B bound to A) for all the different Bs.
+                '''
+                obj = return_objective_A(Kd_n, A_total)
+                # Different minimizers have been tested and 'L-BFGS-B' was significant faster than anything else:
+                obj_min = minimize(obj, A_total, bounds=[[1e-10, A_total]], method='L-BFGS-B', tol=1e-20)
+                BnA = calc_BnA(Kd_n, obj_min.x[0])
+                # Terminate if the precision is not good enough:
+                assert(BnA.sum()+obj_min.x[0]-A_total < A_total/100)
+                return(BnA)
+
+            def trans_BA(BA, p):
+                '''Transform the fraction B:A (B bound to A) to a poisson lambda between 0 and 2.'''
+                # We keep alpha to enable the possibility that there is a minimum lambda_:
+                alpha, beta, Q = p
+                lambda_ = alpha + (2 - alpha) / (1 + Q*np.exp(-beta*BA))
+                return(lambda_)
+
+            # Update the list of affinities for all the live nodes:
+            Kd_n = np.array([n.Kd for n in tree.iter_leaves() if not n.terminated])
+            BnA = calc_binding_time(Kd_n, A_total)
+            # Parameters for the generalized logistic function to transform B:A
+            # into a lambda parameter to the progeny distribution:
+            Tparams = [-0.002, 13.8, 996]
+            lambdas = trans_BA(BnA, Tparams)
+            i = 0
+            for n in tree.iter_leaves():
+                if n.terminated:
+                    continue
+                n.add_feature('lambda_', lambdas[i])
+                i += 1
+            return(tree)
+        # ----/> Selection
+
+        t = 0  # <-- time
         leaves_unterminated = 1
         while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < T if T is not None else True):
+            if verbose:
+                print('At time:', t)
+            skip_lambda_n = 0  # At every new round reset the all the lambdas
             t += 1
-            for leaf in list(tree.iter_leaves()):
+            list_of_leaves = list(tree.iter_leaves())
+            random.shuffle(list_of_leaves)
+            for leaf in list_of_leaves:
                 if not leaf.terminated:
+                    # <---- Selection:
+                    if selection_params is not None:
+                        if skip_lambda_n == 0:
+                            skip_lambda_n = skip_update
+                            tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total)
+                        progeny = poisson(leaf.lambda_)
+                        skip_lambda_n -= 1
+                    # ----/> Selection
                     n_children = progeny.rvs()
                     leaves_unterminated += n_children - 1 # <-- this kills the parent if we drew a zero
                     if not n_children:
@@ -643,10 +785,33 @@ class MutationModel():
                         child = TreeNode()
                         child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
                         child.add_feature('sequence', mutated_sequence)
+                        # <---- Selection:
+                        if selection_params is not None:
+                            aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))], generic_dna).translate()
+                            child.add_feature('AAseq', str(aa))
+                            child.add_feature('Kd', calc_Kd(child.AAseq, targetAAseqs, hd2affy))
+                        # ----/> Selection
                         child.add_feature('frequency', 0)
                         child.add_feature('terminated' ,False)
                         child.add_feature('time', t)
                         leaf.add_child(child)
+            # <---- Selection:
+            if selection_params is not None:
+                hd_distrib = [min([hamming_distance(tn.AAseq, ta) for ta in targetAAseqs]) for tn in tree.iter_leaves() if not tn.terminated]
+                hist = np.histogram(hd_distrib, bins=list(range(target_dist*3)))
+                hd_generation.append(hist)
+                if verbose and hd_distrib:
+                    print('Total cell population:', sum(hist[0]))
+                    print('Majority hamming distance:', np.argmax(hist[0]))
+            # ----/> Selection
+
+        # <---- Selection:
+        if selection_params is not None:
+            # Keep a histogram of the hamming distances at each generation:
+            with open(outbase + 'selection_sim.runstats.p', 'wb') as f:
+                pickle.dump(hd_generation, f)
+        # ----/> Selection
+
 
         if leaves_unterminated < N:
             raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
@@ -876,11 +1041,26 @@ def infer(args):
 
 
 def simulate(args):
-    '''simulation subprogram'''
+    '''
+    Simulation subprogram. Can simulate in two modes.
+    a) Neutral mode. A Galton–Watson process, with mutation probabilities according to a user defined motif model e.g. S5F
+    b) Selection mode. Using the same mutation process as in a), but in selection mode the poisson progeny distribution's lambda
+    is variable accordring to the hamming distance to a list of target sequences. The closer a sequence gets to one of the targets
+    the higher fitness and the closer lambda will approach 2, vice versa when the sequence is far away lambda approaches 0.
+    '''
+    mutation_model = MutationModel(args.mutability, args.substitution)
+    # <---- Selection:
+    if args.selection:
+        # Make a list of target sequences:
+        targetAAseqs = [mutation_model.one_mutant(args.sequence, args.target_dist, frame=args.frame) for i in range(args.target_count)]
+        A_total = args.carry_cap / 2  # When there is 50% binding lambda = 1, therefore total antigen is half of the carrying capacity
+        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.outbase]
+    else:
+        selection_params = None
+    # ----/> Selection
     if args.lambda0 is None:
         args.lambda0 = max([1, int(.01*len(args.sequence))])
     args.sequence = args.sequence.upper()
-    mutation_model = MutationModel(args.mutability, args.substitution)
     trials = 1000
     # this loop makes us resimulate if size too small, or backmutation
     for trial in range(trials):
@@ -891,8 +1071,13 @@ def simulate(args):
                                            n=args.n,
                                            N=args.N,
                                            T=args.T,
-                                           frame=args.frame)
-            collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
+                                           frame=args.frame,
+                                           verbose=args.verbose,
+                                           selection_params=selection_params)
+            if args.selection:
+                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=True, allow_repeats=True)
+            else:
+                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
             uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:
                 raise RuntimeError('collapsed tree contains {} sampled sequences, vacuous inference'.format(uniques))
@@ -928,6 +1113,48 @@ def simulate(args):
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
     collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
     collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')
+    if args.selection:
+        with open(args.outbase + 'selection_sim.runstats.p', 'rb') as fh:
+            runstats = pickle.load(fh)
+            plot_runstats(runstats, args.outbase)
+
+
+def plot_runstats(runstats, outbase):
+    def make_bounds(runstats):
+        all_counts = runstats[0][0].copy()
+        for l in runstats:
+            all_counts += l[0]
+        i = None
+        ii = None
+        for j, c in enumerate(all_counts):
+            if i is None and c > 0:
+                i = j
+            elif c > 0:
+                ii = j
+        return(i, ii)
+    # Total population size:
+    pop_size = np.array([sum(r[0]) for r in runstats])
+    # min:max of the hamming distances to plot:
+    bounds = make_bounds(runstats)
+
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    t = np.array(list(range(len(pop_size))))  # The x-axis are generations
+    ax.plot(t, pop_size, lw=2, label='All cells')  # Total population size is plotted
+    # Then plot the counts for each hamming distance as a function on generation:
+    for k in list(range(*bounds)):
+        ax.plot(t, np.array([r[0][k] for r in runstats]), lw=2, label='Dist {}'.format(k))
+
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
+
+    # Shrink current axis by 20% to make the legend fit:
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+    plt.ylabel('Count')
+    plt.xlabel('GC generation')
+    plt.title('Cell count as function of GC generation')
+    fig.savefig(outbase + 'selection_sim.runstats.svg')
 
 
 def main():
@@ -957,7 +1184,7 @@ def main():
     # parser for simulation subprogram
     parser_sim = subparsers.add_parser('simulate',
                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                       help='neutral model gctree simulation')
+                                       help='Neutral, and target selective, model gctree simulation')
     parser_sim.add_argument('sequence', type=str, help='seed naive nucleotide sequence')
     parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
@@ -966,6 +1193,17 @@ def main():
     parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
     parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
     parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
+    parser_sim.add_argument('--selection', type=int, default=0, help='Simulation with selection? 1/0. When doing simulation with selection an observation time cut must be set.')
+    parser_sim.add_argument('--carry_cap', type=int, default=1000, help='The carrying capacity of the simulation with selection. This number affects the fixation time of a new mutation.'
+                            'Fixation time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.')
+    parser_sim.add_argument('--target_count', type=int, default=10, help='The number of targets to generate.')
+    parser_sim.add_argument('--target_dist', type=int, default=5, help='The number of non-synonymous mutations the target should be away from the naive.')
+    parser_sim.add_argument('--naive_affy', type=float, default=1e-05, help='Affinity of the naive sequence.')
+    parser_sim.add_argument('--mature_affy', type=float, default=1e-09, help='Affinity of the mature sequences.')
+    parser_sim.add_argument('--skip_update', type=int, default=100, help='When iterating through the leafs the B:A fraction is recalculated every time.'
+                            'It is possible though to update less often and get the same approximate results. This parameter sets the number of iterations to skip,'
+                            'before updating the B:A results. skip_update < carry_cap/10 recommended.')
+    parser_sim.add_argument('--verbose', type=bool, default=False, help='Print progress during simulation. Mostly useful for simulation with selection since this can take a while.')
     parser_sim.set_defaults(func=simulate)
 
     # a common outbase parameter
@@ -974,7 +1212,7 @@ def main():
 
     # a common parameter for the inference and simulation subprograms
     for subparser in [parser_infer, parser_sim]:
-        subparser.add_argument('--frame', type=int, default=None, choices=(1,2,3), help='codon frame')
+        subparser.add_argument('--frame', type=int, default=None, choices=(1, 2, 3), help='codon frame')
 
     args = parser.parse_args()
     args.func(args)
