@@ -25,24 +25,23 @@ aggdat = pd.DataFrame()
 
 for i, fname in enumerate(args.input):
     df = pd.read_csv(fname, sep='\t')
-    lambda_, lambda0, r = map(float, path.dirname(fname).split(sep)[-3:])
+    lambda_, lambda0 = map(float, path.dirname(fname).split(sep)[-2:])
     df['lambda'] = lambda_
     df['lambda0'] = lambda0
-    df['r'] = r
     aggdat = aggdat.append(df)
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 columns = aggdat.columns.values.tolist()
 # columns.remove('lambda0')
 
-df = pd.melt(aggdat, id_vars=['method', 'N_taxa', 'lambda', 'lambda0', 'r'], value_vars=['RF','MRCA'], var_name='metric')
+df = pd.melt(aggdat, id_vars=['method', 'N_taxa', 'lambda', 'lambda0'], value_vars=['RF','MRCA'], var_name='metric')
 df.ix[df.ix[:,'metric'] == 'MRCA', 'value'] = np.log(1 + df.ix[df.ix[:,'metric'] == 'MRCA', 'value'])
 df.ix[df.ix[:,'metric'] == 'MRCA', 'metric'] = 'logMRCA'
 
 
-plot2var = [sns.swarmplot, sns.swarmplot, sns.swarmplot, sns.lmplot]
-variables = ['lambda', 'lambda0', 'r', 'N_taxa']
-options = [dict(split=True, size=3), dict(split=True, size=3), dict(split=True, size=3), dict(size=6)]
+plot2var = [sns.swarmplot, sns.swarmplot, sns.lmplot]
+variables = ['lambda', 'lambda0', 'N_taxa']
+options = [dict(split=True, size=3), dict(split=True, size=3), dict(size=6)]
 #options = [dict(size=3), dict(size=3), dict(size=3), dict(size=12)]
 
 

@@ -15,6 +15,8 @@ except:
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad
 
+from itertools import cycle
+
 import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
@@ -291,7 +293,7 @@ class CollapsedTree(LeavesAndClades):
         ts.rotation = 90
         ts.layout_fn = CollapsedTree.my_layout
         ts.show_scale = False
-        # self.tree.ladderize()
+        self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
 
     def write(self, file_name):
@@ -901,7 +903,7 @@ def simulate(args):
                                            N=args.N,
                                            T=args.T,
                                            frame=args.frame)
-            # tree.ladderize()
+            tree.ladderize()
             collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
             uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:
@@ -930,9 +932,9 @@ def simulate(args):
                                                     hamming_distance(node.sequence, args.sequence),
                                                     sum(hamming_distance(node.sequence, node2.sequence) == 1 for node2 in collapsed_tree.tree.traverse() if node2.frequency and node2 is not node))
                                                    for node in collapsed_tree.tree.traverse() if node.frequency])
-    stats = pd.DataFrame({'allele frequency':frequency,
-                          'Hamming distance to naive sequence':distance_from_naive,
-                          'degree':degree})
+    stats = pd.DataFrame({'genotype abundance':frequency,
+                          'distance to root genotype':distance_from_naive,
+                          'neighbor genotypes':degree})
     stats.to_csv(args.outbase+'.simulation.stats.tsv', sep='\t', index=False)
 
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
@@ -943,17 +945,22 @@ def simulate(args):
     ts = TreeStyle()
     ts.rotation = 90
     ts.show_leaf_name = False
+    ts.show_scale = False
+
     colors = {}
+    palette = SVG_COLORS
+    palette -= set(['black', 'white'])
+    palette = cycle(list(palette)) # <-- circular iterator
+
+    colors[tree.sequence] = 'black'
+
     for n in tree.traverse():
-       nstyle = NodeStyle()
-       if n == tree:
-           colors[n.sequence] = 'black'
-           SVG_COLORS.remove('black')
-       elif n.sequence not in colors:
-           colors[n.sequence] = SVG_COLORS.pop()
-       nstyle['fgcolor'] = colors[n.sequence]
-       nstyle["size"] = 10
-       n.set_style(nstyle)
+        if n.sequence not in colors:
+            colors[n.sequence] = next(palette)
+        nstyle = NodeStyle()
+        nstyle["size"] = 10
+        nstyle['fgcolor'] = colors[n.sequence]
+        n.set_style(nstyle)
     tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
 
 

@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml outdir naive mutability substitution lambda_ lambda0 n frame N T nsim CommandRunner')
+Import('env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -15,22 +15,8 @@ if gctree:
 w.add_aggregate('outeragg', list) # <-- aggregating results across parameters
 
 # Initialize our first nest level,
-if lambda_ is None:
-    w.add('lambda', [1.5, 2, 2.5, 3])
-else:
-    w.add('lambda', [lambda_])
-if lambda0 is None:
-    # Rule of thumb mutation rate in a BCR
-    # undergoing SHM is 10^-3, for 90 ammino acid
-    # that is 90*3*10^-3 = 0.27 \aprox 0.25
-    w.add('lambda0', [0.125, 0.25, 0.5])
-    # w.add('lambda0', arange(.1, 1.1, .1))
-else:
-    w.add('lambda0', [lambda0])
-if n is None:
-    w.add('n', [20, 50, 100])
-else:
-    w.add('n', [n])
+w.add('lambda', lambda_list)
+w.add('lambda0', lambda0_list)
 if gctree:
     w.add_aggregate('gctree_agg', list) # <-- for aggregating repeated simulations with the same parameters
 w.add_aggregate('agg', list) # <-- for aggregating inference result from repeated simulations with the same parameters
@@ -48,6 +34,7 @@ def gctree_sim(outdir, c):
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     T_arg = ' --T {} '.format(T) if T is not None else ''
     N_arg = ' --N {} '.format(N) if N is not None else ''
+    n_arg = ' --n {} '.format(n) if n is not None else ''
     tgt = CommandRunner([os.path.join(outdir, 'gctree.simulation.fasta'),
                          os.path.join(outdir, 'gctree.simulation.stats.tsv'),
                          os.path.join(outdir, 'gctree.simulation.collapsed_tree.p'),
@@ -56,10 +43,11 @@ def gctree_sim(outdir, c):
                         'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py simulate '+naive+
                         ' ${SOURCES[0]} ${SOURCES[1]}'+
                         ' --outbase '+os.path.join(outdir, 'gctree')+
-                        ' --lambda {0[lambda]} --lambda0 {0[lambda0]} --n {0[n]}'.format(c)+
+                        ' --lambda {0[lambda]} --lambda0 {0[lambda0]}'.format(c)+
                         frame_arg+
                         T_arg+
                         N_arg+
+                        n_arg+
                         ' > ${TARGETS[3]}')
     c['simstat_agg'].append(tgt[1])
     return tgt
