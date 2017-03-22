@@ -1128,6 +1128,31 @@ def simulate(args):
             runstats = pickle.load(fh)
             plot_runstats(runstats, args.outbase)
 
+    # render the full lineage tree
+    ts = TreeStyle()
+    ts.rotation = 90
+    ts.show_leaf_name = False
+    colors = {}
+    large_tree = False  # If the collapsed tree is larger then the number of colors skip rendering
+    for n in tree.traverse():
+       nstyle = NodeStyle()
+       if n == tree:
+           colors[n.sequence] = 'black'
+           SVG_COLORS.remove('black')
+       elif n.sequence not in colors:
+            try:
+                colors[n.sequence] = SVG_COLORS.pop()
+            except:
+                large_tree = True
+                continue
+       nstyle['fgcolor'] = colors[n.sequence]
+       nstyle["size"] = 10
+       n.set_style(nstyle)
+    if not large_tree:
+        tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
+    else:
+        print('Tree too large to make a colored lineage tree, skipping it.')
+
 
 def plot_runstats(runstats, outbase):
     def make_bounds(runstats):
@@ -1164,24 +1189,7 @@ def plot_runstats(runstats, outbase):
     plt.ylabel('Count')
     plt.xlabel('GC generation')
     plt.title('Cell count as function of GC generation')
-    fig.savefig(outbase + 'selection_sim.runstats.svg')
-
-    # render the full lineage tree
-    ts = TreeStyle()
-    ts.rotation = 90
-    ts.show_leaf_name = False
-    colors = {}
-    for n in tree.traverse():
-       nstyle = NodeStyle()
-       if n == tree:
-           colors[n.sequence] = 'black'
-           SVG_COLORS.remove('black')
-       elif n.sequence not in colors:
-           colors[n.sequence] = SVG_COLORS.pop()
-       nstyle['fgcolor'] = colors[n.sequence]
-       nstyle["size"] = 10
-       n.set_style(nstyle)
-    tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
+    fig.savefig(outbase + '.selection_sim.runstats.svg')
 
 
 def main():
