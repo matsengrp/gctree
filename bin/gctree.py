@@ -185,15 +185,13 @@ class CollapsedTree(LeavesAndClades):
 
         if tree is not None:
             self.tree = tree.copy()
-            if 0 in (node.dist for node in tree.iter_descendants()):
-                # iterate over the tree below root and collapse edges of zero length
-                for node in self.tree.get_descendants():
-                    if node.dist == 0:
-                        node.up.frequency += node.frequency
-                        if node.name and not node.up.name:
-                            node.up.name = node.name
-
-                        node.delete(prevent_nondicotomic=False)
+            # iterate over the tree below root and collapse edges of zero length
+            for node in self.tree.get_descendants():
+                if node.dist == 0:
+                    node.up.frequency += node.frequency
+                    if node.name and not node.up.name:
+                        node.up.name = node.name
+                    node.delete(prevent_nondicotomic=False)
 
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
             rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))

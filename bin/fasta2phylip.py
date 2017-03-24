@@ -46,9 +46,9 @@ def Tas_parse(aln_file, naive, frame=None):
 
     new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
     counts = {naive: seqs_unique_counts[naive_seq]}
-    for i, seq in enumerate(seqs_unique_counts):
-        new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)))
-        counts[str(i+1)] = seqs_unique_counts[seq]
+    for i, seq in enumerate(seqs_unique_counts, 1):
+        new_aln.append(SeqRecord(Seq(seq, generic_dna), id='seq'+str(i)))
+        counts[str(i)] = seqs_unique_counts[seq]
     return new_aln, counts
 
 
