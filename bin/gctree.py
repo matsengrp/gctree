@@ -274,20 +274,13 @@ class CollapsedTree(LeavesAndClades):
         '''return a string representation for printing'''
         return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
-    @staticmethod
-    # def my_layout(node):
-    #     if node.frequency > 1:
-    #         N = TextFace(node.frequency, fsize=14, fgcolor='black')
-    #         N.rotation = -90
-    #         faces.add_face_to_node(N, node, 0, position='branch-top')
-    def my_layout(node):
-        if node.frequency > 0:
-            C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color='lightgray', label={'text':str(node.frequency), 'color':'black'})
-            C.rotation = -90
-            faces.add_face_to_node(C, node, 0)
-
-    def render(self, outfile):
+    def render(self, outfile, colormap=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
+        def my_layout(node):
+            if node.frequency > 0:
+                C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color='lightgray' if colormap is None else colormap[node.name], label={'text':str(node.frequency), 'color':'black'})
+                C.rotation = -90
+                faces.add_face_to_node(C, node, 0)
         for node in self.tree.traverse():
             nstyle = NodeStyle()
             if node.frequency == 0:
@@ -318,7 +311,7 @@ class CollapsedTree(LeavesAndClades):
         ts = TreeStyle()
         ts.show_leaf_name = False
         ts.rotation = 90
-        ts.layout_fn = CollapsedTree.my_layout
+        ts.layout_fn = my_layout
         ts.show_scale = False
         self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
@@ -852,6 +845,10 @@ class MutationModel():
                 node.delete(prevent_nondicotomic=False)
                 node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)
 
+        # assign unique names to each node
+        for i, node in enumerate(tree.traverse(), 1):
+            node.name = 'seq{}'.format(i)
+
         # return the fine (uncollapsed) tree
         return tree
 
@@ -1196,8 +1193,6 @@ def simulate(args):
     stats.to_csv(args.outbase+'.simulation.stats.tsv', sep='\t', index=False)
 
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
-    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
-    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')
     if args.selection:
         with open(args.outbase + 'selection_sim.runstats.p', 'rb') as fh:
             runstats = pickle.load(fh)
@@ -1224,6 +1219,12 @@ def simulate(args):
         nstyle['fgcolor'] = colors[n.sequence]
         n.set_style(nstyle)
     tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
+
+    # render collapsed tree
+    # create an id-wise colormap
+    colormap = {node.name:colors[node.sequence]  for node in collapsed_tree.tree.traverse()}
+    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
+    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
 
 
 def plot_runstats(runstats, outbase):
