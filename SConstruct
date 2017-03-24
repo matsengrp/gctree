@@ -77,50 +77,56 @@ if simulate:
                       'ctcaaaagtcgaatctccatcactcgagacacatccaagaaccagtactacctgc'
                       'agttgaattctgtgactactgaggacacagccacatattactgt',
               help='sequence of naive from which to simulate')
+    naive = GetOption('naive')
     AddOption('--mutability',
               type='string',
               metavar='PATH',
               default='S5F/Mutability.csv',
               help='path to S5F mutability data')
+    mutability = GetOption('mutability')
     AddOption('--substitution',
               type='string',
               metavar='PATH',
               default='S5F/Substitution.csv',
               help='path to S5F substitution data')
+    substitution = GetOption('substitution')
     AddOption('--lambda',
               type='float',
-              default=None,
+              action='append',
+              default=[],
               help='Poisson branching parameter for simulation')
+    lambda_list = GetOption('lambda')
+    if len(lambda_list) == 0:
+        lambda_list = [2.]
     AddOption('--lambda0',
               type='float',
-              default=None,
+              action='append',
+              default=[],
               help='baseline mutation rate')
+    lambda0_list = GetOption('lambda0') 
+    if len(lambda0_list) == 0:
+        lambda0_list = [.25]
     AddOption('--n',
               type='int',
               default=None,
               help='cells downsampled')
+    n = GetOption('n')
     AddOption('--N',
               type='int',
               default=None,
               help='simulation size (number of cells observerved)')
+    N = GetOption('N')
     AddOption('--T',
               type='int',
               default=None,
               help='observation time')
+    T = GetOption('T')
     AddOption('--nsim',
               type='int',
               default=10,
               help='number of simulations with each parameter parameter choice')
-
-    naive = GetOption('naive')
-    mutability = GetOption('mutability')
-    substitution = GetOption('substitution')
-    lambda_ = GetOption('lambda')
-    lambda0 = GetOption('lambda0')
-    n = GetOption('n')
-    N = GetOption('N')
-    T = GetOption('T')
     nsim = GetOption('nsim')
+
 elif inference:
     AddOption('--fasta',
               dest='fasta',
@@ -147,7 +153,7 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml outdir naive mutability substitution lambda_ lambda0 n frame N T nsim CommandRunner')
+               exports='env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')

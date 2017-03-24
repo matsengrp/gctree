@@ -14,6 +14,7 @@ except:
     import pickle
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad, fsolve
+from itertools import cycle
 import random
 import numpy as np
 import matplotlib
@@ -184,15 +185,13 @@ class CollapsedTree(LeavesAndClades):
 
         if tree is not None:
             self.tree = tree.copy()
-            if 0 in (node.dist for node in tree.iter_descendants()):
-                # iterate over the tree below root and collapse edges of zero length
-                for node in self.tree.get_descendants():
-                    if node.dist == 0:
-                        node.up.frequency += node.frequency
-                        if node.name and not node.up.name:
-                            node.up.name = node.name
-
-                        node.delete(prevent_nondicotomic=False)
+            # iterate over the tree below root and collapse edges of zero length
+            for node in self.tree.get_descendants():
+                if node.dist == 0:
+                    node.up.frequency += node.frequency
+                    if node.name and not node.up.name:
+                        node.up.name = node.name
+                    node.delete(prevent_nondicotomic=False)
 
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
             rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
@@ -321,7 +320,7 @@ class CollapsedTree(LeavesAndClades):
         ts.rotation = 90
         ts.layout_fn = CollapsedTree.my_layout
         ts.show_scale = False
-        # self.tree.ladderize()
+        self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
 
     def write(self, file_name):
@@ -702,7 +701,7 @@ class MutationModel():
             # Assert that the target sequences are comparable to the naive sequence:
             aa = Seq(tree.sequence[(frame-1):(frame-1+(3*(((len(tree.sequence)-(frame-1))//3))))], generic_dna).translate()
             assert(sum([1 for t in targetAAseqs if len(t) != len(aa)]) == 0)  # All targets are same length
-            assert(sum([1 for t in targetAAseqs if hamming_distance(aa, t) == target_dist]))  # All target are "target_dist" away from the naive sequence 
+            assert(sum([1 for t in targetAAseqs if hamming_distance(aa, t) == target_dist]))  # All target are "target_dist" away from the naive sequence
             # Affinity is an exponential function of hamming distance:
             if target_dist > 0:
                 def hd2affy(hd): return(mature_affy + hd**k * (naive_affy - mature_affy) / target_dist**k)
@@ -1163,7 +1162,7 @@ def simulate(args):
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=True, allow_repeats=True)
             else:
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
-            # tree.ladderize()
+            tree.ladderize()
             uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:
                 raise RuntimeError('collapsed tree contains {} sampled sequences'.format(uniques))
@@ -1191,9 +1190,9 @@ def simulate(args):
                                                     hamming_distance(node.sequence, args.sequence),
                                                     sum(hamming_distance(node.sequence, node2.sequence) == 1 for node2 in collapsed_tree.tree.traverse() if node2.frequency and node2 is not node))
                                                    for node in collapsed_tree.tree.traverse() if node.frequency])
-    stats = pd.DataFrame({'allele frequency':frequency,
-                          'Hamming distance to naive sequence':distance_from_naive,
-                          'degree':degree})
+    stats = pd.DataFrame({'genotype abundance':frequency,
+                          'distance to root genotype':distance_from_naive,
+                          'neighbor genotypes':degree})
     stats.to_csv(args.outbase+'.simulation.stats.tsv', sep='\t', index=False)
 
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
@@ -1208,26 +1207,23 @@ def simulate(args):
     ts = TreeStyle()
     ts.rotation = 90
     ts.show_leaf_name = False
+    ts.show_scale = False
+
     colors = {}
-    large_tree = False  # If the collapsed tree is larger then the number of colors skip rendering
+    palette = SVG_COLORS
+    palette -= set(['black', 'white'])
+    palette = cycle(list(palette)) # <-- circular iterator
+
+    colors[tree.sequence] = 'black'
+
     for n in tree.traverse():
-       nstyle = NodeStyle()
-       if n == tree:
-           colors[n.sequence] = 'black'
-           SVG_COLORS.remove('black')
-       elif n.sequence not in colors:
-            try:
-                colors[n.sequence] = SVG_COLORS.pop()
-            except:
-                large_tree = True
-                continue
-       nstyle['fgcolor'] = colors[n.sequence]
-       nstyle["size"] = 10
-       n.set_style(nstyle)
-    if not large_tree:
-        tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
-    else:
-        print('Tree too large to make a colored lineage tree, skipping it.')
+        if n.sequence not in colors:
+            colors[n.sequence] = next(palette)
+        nstyle = NodeStyle()
+        nstyle["size"] = 10
+        nstyle['fgcolor'] = colors[n.sequence]
+        n.set_style(nstyle)
+    tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
 
 
 def plot_runstats(runstats, outbase):

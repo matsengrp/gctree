@@ -24,17 +24,16 @@ aggdat = pd.DataFrame()
 
 for i, fname in enumerate(args.input):
     df = pd.read_csv(fname, sep='\t')
-    lambda_, lambda0, r = map(float, path.dirname(fname).split(sep)[-3:])
+    lambda_, lambda0 = map(float, path.dirname(fname).split(sep)[-2:])
     df['lambda'] = lambda_
     df['lambda0'] = lambda0
-    df['r'] = r
     aggdat = aggdat.append(df)
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 columns = aggdat.columns.values.tolist()
 columns.remove('lambda0')
 
-if len(set(aggdat['lambda'])) == 1 and len(set(aggdat['r'])) == 1:
+if len(set(aggdat['lambda'])) == 1:
 
     gs = gridspec.GridSpec(5, 1, height_ratios=[1, 1, 2, 2, 2])
     gs2 = gridspec.GridSpec(5, 1, height_ratios=[1, 1, 2, 2, 2])
