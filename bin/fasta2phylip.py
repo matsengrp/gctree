@@ -45,7 +45,8 @@ def Tas_parse(aln_file, naive, frame=None):
             id_set.add(seq.id)
 
     new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
-    counts = {naive: seqs_unique_counts[naive_seq]}
+    counts = {naive: seqs_unique_counts[naive_seq]}  # Add the count for the naive sequence
+    del seqs_unique_counts[naive_seq]  # Now delete the naive so it does not appear twice
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=str(i+1)))
         counts[str(i+1)] = seqs_unique_counts[seq]
@@ -53,14 +54,14 @@ def Tas_parse(aln_file, naive, frame=None):
 
 
 def check_header(header):
-   try:
-       header.decode('ascii')
-   except UnicodeDecodeError as e:
-       print('Sequence header must be an ascii-encoded string:', header)
-       raise e
-   if len(header) > 10:
-       print('Sequence headers must be shorter than 10 characters:', header)
-       raise Exception
+    try:
+        header.decode('ascii')
+    except UnicodeDecodeError as e:
+        print('Sequence header must be an ascii-encoded string:', header)
+        raise e
+    if len(header) > 10:
+        print('Sequence headers must be shorter than 10 characters:', header)
+        raise Exception
     try:
         int(header)
         raise Exception('Sequence headers must be distinguishable from an integer. Please add a non number character.')
@@ -108,8 +109,8 @@ def default_parse(aln_file, naive, frame=None):
             seq2id[seqstr] = seq.id
 
     new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=seq2id[naive_seq])])
-    counts = {seq2id[naive_seq]: seqs_unique_counts[naive_seq]}
-    del seqs_unique_counts[naive_seq]
+    counts = {seq2id[naive_seq]: seqs_unique_counts[naive_seq]}  # Add the count for the naive sequence
+    del seqs_unique_counts[naive_seq]  # Now delete the naive so it does not appear twice
     for i, seq in enumerate(seqs_unique_counts):
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=seq2id[seq]))
         counts[seq2id[seq]] = seqs_unique_counts[seq]
