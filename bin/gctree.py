@@ -278,7 +278,9 @@ class CollapsedTree(LeavesAndClades):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
             if node.frequency > 0:
-                C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color='lightgray' if colormap is None else colormap[node.name], label={'text':str(node.frequency), 'color':'black'})
+                circle_color = 'lightgray' if colormap is None else colormap[node.name]
+                text_color = 'black'
+                C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color})
                 C.rotation = -90
                 faces.add_face_to_node(C, node, 0)
         for node in self.tree.traverse():
@@ -1206,10 +1208,10 @@ def simulate(args):
 
     colors = {}
     palette = SVG_COLORS
-    palette -= set(['black', 'white'])
+    palette -= set(['black', 'white', 'gray'])
     palette = cycle(list(palette)) # <-- circular iterator
 
-    colors[tree.sequence] = 'black'
+    colors[tree.sequence] = 'gray'
 
     for n in tree.traverse():
         if n.sequence not in colors:
