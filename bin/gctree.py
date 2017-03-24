@@ -13,7 +13,7 @@ try:
 except:
     import pickle
 from scipy.misc import logsumexp
-from scipy.optimize import minimize, check_grad
+from scipy.optimize import minimize, check_grad, fsolve
 import random
 import numpy as np
 import matplotlib
@@ -698,65 +698,65 @@ class MutationModel():
 
         if selection_params is not None:
             hd_generation = list()  # Collect an array of the counts of each hamming distance at each time step
-            mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, outbase = selection_params
+            mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, B_total, Lp, k, outbase = selection_params
             # Assert that the target sequences are comparable to the naive sequence:
             aa = Seq(tree.sequence[(frame-1):(frame-1+(3*(((len(tree.sequence)-(frame-1))//3))))], generic_dna).translate()
             assert(sum([1 for t in targetAAseqs if len(t) != len(aa)]) == 0)  # All targets are same length
             assert(sum([1 for t in targetAAseqs if hamming_distance(aa, t) == target_dist]))  # All target are "target_dist" away from the naive sequence 
             # Affinity is an exponential function of hamming distance:
-            def hd2affy(hd): return(mature_affy + hd**2 * (naive_affy - mature_affy) / target_dist**2)
+            if target_dist > 0:
+                def hd2affy(hd): return(mature_affy + hd**k * (naive_affy - mature_affy) / target_dist**k)
+            else:
+                def hd2affy(hd): return(mature_affy)
             # We store both the amino acid sequence and the affinity as tree features:
             tree.add_feature('AAseq', str(aa))
             tree.add_feature('Kd', calc_Kd(tree.AAseq, targetAAseqs, hd2affy))
 
-        def lambda_selection(node, tree, targetAAseqs, hd2affy, A_total):
+        def lambda_selection(node, tree, targetAAseqs, hd2affy, A_total, B_total, Lp):
             '''
             Given a node and its tree and a "hamming distance to affinity" transformation function
             reutrn the poisson lambda parameter for the progeny distribution.
             '''
-            def calc_BnA(Kd_n, A):
+            def calc_BnA(Kd_n, A, B_total):
                 '''
                 This calculated the fraction B:A (B bound to A), at equilibrium also referred to as "binding time",
                 of all the different Bs in the population given the number of free As in solution.
                 '''
-                BnA = 1/(1+Kd_n/A)
+                BnA = B_total/(1+Kd_n/A)
                 return(BnA)
 
-            def return_objective_A(Kd_n, A_total):
+            def return_objective_A(Kd_n, A_total, B_total):
                 '''
                 The objective function that solves the set of differential equations setup to find the number of free As,
                 at equilibrium, given a number of Bs with some affinity listed in Kd_n.
                 '''
-                def obj(A): return((A_total - (A + np.sum(1/(1+Kd_n/A))))**2)
+                def obj(A): return((A_total - (A + np.sum(B_total/(1+Kd_n/A))))**2)
                 return(obj)
 
-            def calc_binding_time(Kd_n, A_total):
+            def calc_binding_time(Kd_n, A_total, B_total):
                 '''
                 Solves the objective function to find the number of free As and then uses this,
                 to calculate the fraction B:A (B bound to A) for all the different Bs.
                 '''
-                obj = return_objective_A(Kd_n, A_total)
+                obj = return_objective_A(Kd_n, A_total, B_total)
                 # Different minimizers have been tested and 'L-BFGS-B' was significant faster than anything else:
                 obj_min = minimize(obj, A_total, bounds=[[1e-10, A_total]], method='L-BFGS-B', tol=1e-20)
-                BnA = calc_BnA(Kd_n, obj_min.x[0])
+                BnA = calc_BnA(Kd_n, obj_min.x[0], B_total)
                 # Terminate if the precision is not good enough:
                 assert(BnA.sum()+obj_min.x[0]-A_total < A_total/100)
                 return(BnA)
 
-            def trans_BA(BA, p):
+            def trans_BA(BA, Lp):
                 '''Transform the fraction B:A (B bound to A) to a poisson lambda between 0 and 2.'''
                 # We keep alpha to enable the possibility that there is a minimum lambda_:
-                alpha, beta, Q = p
+                alpha, beta, Q = Lp
                 lambda_ = alpha + (2 - alpha) / (1 + Q*np.exp(-beta*BA))
                 return(lambda_)
 
             # Update the list of affinities for all the live nodes:
             Kd_n = np.array([n.Kd for n in tree.iter_leaves() if not n.terminated])
-            BnA = calc_binding_time(Kd_n, A_total)
-            # Parameters for the generalized logistic function to transform B:A
-            # into a lambda parameter to the progeny distribution:
-            Tparams = [-0.002, 13.8, 996]
-            lambdas = trans_BA(BnA, Tparams)
+            BnA = calc_binding_time(Kd_n, A_total, B_total)
+            lambdas = trans_BA(BnA, Lp)
             i = 0
             for n in tree.iter_leaves():
                 if n.terminated:
@@ -780,9 +780,14 @@ class MutationModel():
                     # <---- Selection:
                     if selection_params is not None:
                         if skip_lambda_n == 0:
-                            skip_lambda_n = skip_update
-                            tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total)
-                        progeny = poisson(leaf.lambda_)
+                            skip_lambda_n = skip_update + 1  # Add one so skip_update=0 is no skip
+                            tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
+                        # Small lambdas are causing problems so make a minimum:
+                        lambda_min = 10e-10
+                        if leaf.lambda_ > lambda_min:
+                            progeny = poisson(leaf.lambda_)
+                        else:
+                            progeny = poisson(lambda_min)
                         skip_lambda_n -= 1
                     # ----/> Selection
                     n_children = progeny.rvs()
@@ -807,11 +812,16 @@ class MutationModel():
             # <---- Selection:
             if selection_params is not None:
                 hd_distrib = [min([hamming_distance(tn.AAseq, ta) for ta in targetAAseqs]) for tn in tree.iter_leaves() if not tn.terminated]
-                hist = np.histogram(hd_distrib, bins=list(range(target_dist*3)))
+                if target_dist > 0:
+                    hist = np.histogram(hd_distrib, bins=list(range(target_dist*10)))
+                else:  # Just make a minimum of 10 bins
+                    hist = np.histogram(hd_distrib, bins=list(range(10)))
                 hd_generation.append(hist)
                 if verbose and hd_distrib:
                     print('Total cell population:', sum(hist[0]))
                     print('Majority hamming distance:', np.argmax(hist[0]))
+                    print('Affinity of latest sampled leaf:', leaf.Kd)
+                    print('Progeny distribution lambda for the latest sampled leaf:', leaf.lambda_)
             # ----/> Selection
 
         # <---- Selection:
@@ -1049,6 +1059,67 @@ def infer(args):
         collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i))
 
 
+def find_A_total(carry_cap, B_total, f_full, mature_affy, U):
+    def A_total_fun(A, B_total, Kd_n): return(A + np.sum(B_total/(1+Kd_n/A)))
+
+    def C_A(A, A_total, f_full, U): return(U * (A_total - A) / f_full)
+
+    def A_obj(carry_cap, B_total, f_full, Kd_n, U):
+        def obj(A): return((carry_cap - C_A(A, A_total_fun(A, B_total, Kd_n), f_full, U))**2)
+        return(obj)
+
+    Kd_n = np.array([mature_affy] * carry_cap)
+    obj = A_obj(carry_cap, B_total, f_full, Kd_n, U)
+    # Some funny "zero encountered in true_divide" errors are not affecting results so ignore them:
+    old_settings = np.seterr(all='ignore')  # Keep old settings
+    np.seterr(divide='ignore')
+    obj_min = minimize(obj, 1e-20, bounds=[[1e-20, carry_cap]], method='L-BFGS-B', tol=1e-20)
+    np.seterr(**old_settings)  # Reset to default
+    A = obj_min.x[0]
+    A_total = A_total_fun(A, B_total, Kd_n)
+    assert(C_A(A, A_total, f_full, U) > carry_cap * 99/100)
+    return(A_total)
+
+
+def find_Lp(f_full, U):
+    assert(U > 1)
+    def T_BA(BA, p):
+        # We keep alpha to enable the possibility
+        # that there is a minimum lambda_
+        alpha, beta, Q = p
+        lambda_ = alpha + (2 - alpha) / (1 + Q*np.exp(-beta*BA))
+        return(lambda_)
+
+    def solve_T_BA(p, f_full, U):
+        epsilon = 1/1000
+        C1 = (T_BA(0, p) - 0)**2
+        C2 = (T_BA(f_full/U, p) - 1)**2
+        C3 = (T_BA(1*f_full, p) - (2 - 2*epsilon))**2
+        return(C1, C2, C3)
+
+    def solve_T_BA_low_epsilon(p, f_full, U):
+        epsilon = 1/1000
+        C1 = (T_BA(0, p) - 0)**2
+        C2 = (T_BA(f_full/U, p) - 1)**2
+        C3 = (T_BA(1*f_full, p) - (2 - 2*epsilon))**2 * ((2 - T_BA(1*f_full, p)) < 2*epsilon)
+        return(C1, C2, C3)
+
+    # Some funny "FloatingPointError" errors are not affecting results so ignore them:
+    old_settings = np.seterr(all='ignore')  # Keep old settings
+    np.seterr(over='ignore')
+    try:
+        def obj_T_A(p): return(solve_T_BA(p, f_full, U))
+        p = fsolve(obj_T_A, (0, 10e-5, 1), xtol=1e-20, maxfev=1000)
+        assert(sum(solve_T_BA(p, f_full, U)) < f_full * 1/1000)
+    except:
+        print('The U parameter is large and therefore the epsilon parameter has to be adjusted to find a valid solution.')
+        def obj_T_A(p): return(solve_T_BA_low_epsilon(p, f_full, U))
+        p = fsolve(obj_T_A, (0, 10e-5, 1), xtol=1e-20, maxfev=1000)
+        assert(sum(solve_T_BA(p, f_full, U)) < f_full * 1/1000)
+    np.seterr(**old_settings)  # Reset to default
+    return(p)
+
+
 def simulate(args):
     '''
     Simulation subprogram. Can simulate in two modes.
@@ -1060,10 +1131,15 @@ def simulate(args):
     mutation_model = MutationModel(args.mutability, args.substitution)
     # <---- Selection:
     if args.selection:
+        assert(args.B_total >= args.f_full)  # the fully activating fraction on BA must be possible to reach within B_total
         # Make a list of target sequences:
         targetAAseqs = [mutation_model.one_mutant(args.sequence, args.target_dist, frame=args.frame) for i in range(args.target_count)]
-        A_total = args.carry_cap / 2  # When there is 50% binding lambda = 1, therefore total antigen is half of the carrying capacity
-        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.outbase]
+        # Find the total amount of A necessary for sustaining the inputted carrying capacity:
+        print((args.carry_cap, args.B_total, args.f_full, args.mature_affy))
+        A_total = find_A_total(args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U)
+        # Calculate the parameters for the logistic function:
+        Lp = find_Lp(args.f_full, args.U)
+        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
     else:
         selection_params = None
     # ----/> Selection
@@ -1189,7 +1265,7 @@ def plot_runstats(runstats, outbase):
     plt.ylabel('Count')
     plt.xlabel('GC generation')
     plt.title('Cell count as function of GC generation')
-    fig.savefig(outbase + '.selection_sim.runstats.svg')
+    fig.savefig(outbase + '.selection_sim.runstats.pdf')
 
 
 def main():
@@ -1233,11 +1309,19 @@ def main():
                             'Fixation time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.')
     parser_sim.add_argument('--target_count', type=int, default=10, help='The number of targets to generate.')
     parser_sim.add_argument('--target_dist', type=int, default=5, help='The number of non-synonymous mutations the target should be away from the naive.')
-    parser_sim.add_argument('--naive_affy', type=float, default=1e-05, help='Affinity of the naive sequence.')
-    parser_sim.add_argument('--mature_affy', type=float, default=1e-09, help='Affinity of the mature sequences.')
+    parser_sim.add_argument('--naive_affy', type=float, default=100, help='Affinity of the naive sequence in nano molar.')
+    parser_sim.add_argument('--mature_affy', type=float, default=0.1, help='Affinity of the mature sequences in nano molar.')
     parser_sim.add_argument('--skip_update', type=int, default=100, help='When iterating through the leafs the B:A fraction is recalculated every time.'
                             'It is possible though to update less often and get the same approximate results. This parameter sets the number of iterations to skip,'
                             'before updating the B:A results. skip_update < carry_cap/10 recommended.')
+    parser_sim.add_argument('--B_total', type=float, default=1, help='Total number of BCRs per B cell normalized to 10e4. So 1 equals 10e4, 100 equals 10e6 etc.'
+                            'It is recommended to keep this as the default.')
+    parser_sim.add_argument('--U', type=float, default=2, help='Controls the fraction of BCRs binding antigen necessary to only sustain the life of the B cell'
+                            'It is recommended to keep this as the default.')
+    parser_sim.add_argument('--f_full', type=float, default=1, help='The fraction of antigen bound BCRs on a B cell that is needed to elicit close to maximum reponse.'
+                            'Cannot be smaller than B_total. It is recommended to keep this as the default.')
+    parser_sim.add_argument('--k', type=float, default=2, help='The exponent in the function to map hamming distance to affinity.'
+                            'It is recommended to keep this as the default.')
     parser_sim.add_argument('--verbose', type=bool, default=False, help='Print progress during simulation. Mostly useful for simulation with selection since this can take a while.')
     parser_sim.set_defaults(func=simulate)
 
