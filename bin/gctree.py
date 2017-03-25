@@ -205,11 +205,10 @@ class CollapsedTree(LeavesAndClades):
                 # add a partition feature and compute it recursively up the tree
                 node.add_feature('partition', node.frequency + sum(node2.partition for node2 in node.children))
                 # sort children of this node based on partion and sequence
-                node.children.sort(key=lambda node: (node.frequency, node.sequence))
+                node.children.sort(key=lambda node: (node.partition, node.sequence))
         else:
             self.tree = tree
             
-
     def l(self, params, sign=1):
         '''
         log likelihood of params, conditioned on collapsed tree, and its gradient wrt params
