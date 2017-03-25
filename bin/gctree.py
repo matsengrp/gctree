@@ -200,8 +200,15 @@ class CollapsedTree(LeavesAndClades):
             elif allow_repeats and rep_seq:
                 rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
                 print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+            # now we do a custom ladderize accounting for abundance and sequence to break ties in abundance
+            for node in self.tree.traverse(strategy='postorder'):
+                # add a partition feature and compute it recursively up the tree
+                node.add_feature('partition', node.frequency + sum(node2.partition for node2 in node.children))
+                # sort children of this node based on partion and sequence
+                node.children.sort(key=lambda node: (node.frequency, node.sequence))
         else:
             self.tree = tree
+            
 
     def l(self, params, sign=1):
         '''
@@ -315,7 +322,7 @@ class CollapsedTree(LeavesAndClades):
         ts.rotation = 90
         ts.layout_fn = my_layout
         ts.show_scale = False
-        self.tree.ladderize()
+        #self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
 
     def write(self, file_name):
