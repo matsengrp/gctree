@@ -329,6 +329,17 @@ class CollapsedTree(LeavesAndClades):
         with open(file_name, 'wb') as f:
             pickle.dump(self, f)
 
+    def compare(self, tree2, method='identity'):
+        '''compare this tree to the other tree'''
+        if method == 'identity':
+            # we compare lists of seq, parent, abundance
+            # return true if these lists are identical, else false
+            list1 = sorted((node.sequence, node.frequency, node.up.sequence if node.up is not None else None) for node in self.tree.traverse())
+            list2 = sorted((node.sequence, node.frequency, node.up.sequence if node.up is not None else None) for node in tree2.tree.traverse())
+            return list1 == list2
+        else:
+            raise ValueError('invalid distance method: '+method)
+
 
 class CollapsedForest(CollapsedTree):
     '''
@@ -1021,8 +1032,12 @@ def test(args):
 def infer(args):
     '''inference subprogram'''
     phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.countfile, args.naive)]
-
-    parsimony_forest = CollapsedForest(forest=phylip_collapsed)
+    phylip_collapsed_unique = []
+    for tree in phylip_collapsed:
+        if sum(tree.compare(tree2, method='identity') for tree2 in phylip_collapsed_unique) == 0:
+            phylip_collapsed_unique.append(tree)
+    
+    parsimony_forest = CollapsedForest(forest=phylip_collapsed_unique)
 
     if parsimony_forest.n_trees == 1:
         warnings.warn('only one parsimony tree reported from dnapars')
