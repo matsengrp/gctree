@@ -22,7 +22,7 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
-import seaborn as sns
+#import seaborn as sns; sns.set(style="white", color_codes=True)
 from scipy.stats import probplot, poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, SVG_COLORS
 from Bio.Seq import Seq
@@ -930,7 +930,7 @@ def test(args):
     theoretical_cdf = scipy.cumsum(scipy.exp(log_prob))
     empirical_cdf = scipy.cumsum(freq)/len_total
 
-    sns.reset_orig() # <-- don't use seaborn
+    #sns.reset_orig() # <-- don't use seaborn
     fig = plt.figure()
     fig.set_tight_layout(True)
     plt.rc('text', usetex=True)
@@ -1078,6 +1078,24 @@ def infer(args):
         alleles = sum(1 for _ in collapsed_tree.tree.traverse())
         print('{}\t{}\t{}'.format(i, alleles, l))
         collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i))
+
+    # rank plot of likelihoods
+    plt.figure()
+    plt.plot(scipy.exp(ls), 'ko')
+    plt.xlabel('parsimony tree')
+    plt.xlim([-.5, None])
+    plt.ylabel('GCtree likelihood')
+    plt.yscale('log')
+    plt.ylim([None, 1.1*max(scipy.exp(ls))])
+    plt.savefig(args.outbase + '.likelihood_rank.pdf')
+
+    # rank plot of observed allele frequencies
+    y = sorted((node.frequency for node in parsimony_forest.forest[0].tree.traverse() if node.frequency != 0), reverse=True)
+    plt.figure()
+    plt.bar(range(1, len(y) + 1), y, color='black')
+    plt.xlabel('genotype')
+    plt.ylabel('abundance')
+    plt.savefig(args.outbase + '.abundance_rank.pdf')
 
 
 def find_A_total(carry_cap, B_total, f_full, mature_affy, U):
