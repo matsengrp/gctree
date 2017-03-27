@@ -38,6 +38,7 @@ def gctree_sim(outdir, c):
     tgt = CommandRunner([os.path.join(outdir, 'gctree.simulation.fasta'),
                          os.path.join(outdir, 'gctree.simulation.stats.tsv'),
                          os.path.join(outdir, 'gctree.simulation.collapsed_tree.p'),
+                         os.path.join(outdir, 'gctree.simulation.collapsed_tree.colormap.tsv'),
                          os.path.join(outdir, 'gctree.simulation.log')],
                         [mutability, substitution],
                         'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py simulate '+naive+
@@ -48,7 +49,7 @@ def gctree_sim(outdir, c):
                         T_arg+
                         N_arg+
                         n_arg+
-                        ' > ${TARGETS[3]}')
+                        ' > ${TARGETS[4]}')
     c['simstat_agg'].append(tgt[1])
     return tgt
 
@@ -68,8 +69,8 @@ def validate(outdir, c):
     if gctree:
         outputs.append(os.path.join(outdir, 'validation.gctree.tsv')) # <-- special gctree output evaluating parsimony tree ranking
     tgt = CommandRunner(outputs,
-                   [c['gctree_sim'][2]] + [x[0] for x in c['infer']],
-                    'stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
+                   [c['gctree_sim'][2:4]] + [x[0] for x in c['infer']],
+                    'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
     if gctree:
         c['gctree_agg'].append(tgt[2])
     c['agg'].append(tgt[0])

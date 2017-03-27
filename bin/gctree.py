@@ -1020,7 +1020,9 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    parsimony_forest = CollapsedForest(forest=[CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.countfile, args.naive)])
+    phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.countfile, args.naive)]
+
+    parsimony_forest = CollapsedForest(forest=phylip_collapsed)
 
     if parsimony_forest.n_trees == 1:
         warnings.warn('only one parsimony tree reported from dnapars')
@@ -1233,6 +1235,10 @@ def simulate(args):
     colormap = {node.name:colors[node.sequence]  for node in collapsed_tree.tree.traverse()}
     collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
     collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
+    # print colormap to file
+    with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
+        for name, color in colormap.items():
+            f.write(name + '\t' + color + '\n')
 
 
 def plot_runstats(runstats, outbase):
