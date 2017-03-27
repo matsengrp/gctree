@@ -1075,7 +1075,7 @@ def infer(args):
 
     print('tree\talleles\tlogLikelihood')
     for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
-        alleles = len(collapsed_tree.tree)
+        alleles = sum(1 for _ in collapsed_tree.tree.traverse())
         print('{}\t{}\t{}'.format(i, alleles, l))
         collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i))
 
