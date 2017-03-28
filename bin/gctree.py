@@ -103,7 +103,7 @@ class LeavesAndClades():
     def f(self, params):
         '''
         Probability of getting c leaves that are clones of the root and m mutant clades off
-        the root line, given branching probability p and mutation probability q
+        the root lineage, given branching probability p and mutation probability q
         Also returns gradient wrt (p, q)
         Computed by dynamic programming
         '''
@@ -208,7 +208,7 @@ class CollapsedTree(LeavesAndClades):
                 node.children.sort(key=lambda node: (node.partition, node.sequence))
         else:
             self.tree = tree
-            
+
     def l(self, params, sign=1):
         '''
         log likelihood of params, conditioned on collapsed tree, and its gradient wrt params
@@ -1036,7 +1036,7 @@ def infer(args):
     for tree in phylip_collapsed:
         if sum(tree.compare(tree2, method='identity') for tree2 in phylip_collapsed_unique) == 0:
             phylip_collapsed_unique.append(tree)
-    
+
     parsimony_forest = CollapsedForest(forest=phylip_collapsed_unique)
 
     if parsimony_forest.n_trees == 1:
@@ -1231,8 +1231,8 @@ def simulate(args):
                                                     sum(hamming_distance(node.sequence, node2.sequence) == 1 for node2 in collapsed_tree.tree.traverse() if node2.frequency and node2 is not node))
                                                    for node in collapsed_tree.tree.traverse() if node.frequency])
     stats = pd.DataFrame({'genotype abundance':frequency,
-                          'distance to root genotype':distance_from_naive,
-                          'neighbor genotypes':degree})
+                          'Hamming distance to root genotype':distance_from_naive,
+                          'Hamming neighbor genotypes':degree})
     stats.to_csv(args.outbase+'.simulation.stats.tsv', sep='\t', index=False)
 
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
