@@ -198,7 +198,7 @@ def MRCA_distance(true_tree, tree):
     return d
 
 
-def validate(true_tree, inferences, outbase):
+def validate(true_tree, inferences, true_tree_colormap, outbase):
     '''
     inferences is a dict mapping infernce name, like "gctree" to pickle files of
     CollapsedForest
@@ -237,6 +237,13 @@ def validate(true_tree, inferences, outbase):
             plt.savefig(outbase+'.gctree.pdf')
 
         df.to_csv(outbase+'.gctree.tsv', sep='\t', index=False)
+        
+        for i, tree in enumerate(inferences['gctree'].forest, 1):
+            colormap = dict((node.name, true_tree_colormap[node.sequence]) if node.sequence in true_tree_colormap else (node.name, 'lightgray') for node in tree.tree.traverse())
+            tree.render(outbase+'.gctree.colored_tree.{}.svg'.format(i), colormap=colormap)
+
+
+
 
     # compare the inference methods
     # assume the first tree in the forest is the inferred tree
@@ -264,6 +271,7 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('true_tree', type=str, help='.p file containing true tree')
+    parser.add_argument('true_tree_colormap', type=str, help='.tsv colormap file for true tree')
     parser.add_argument('forest_files', type=str, nargs='*', help='.p files containing forests from each inference method')
     parser.add_argument('--outbase', type=str, required=True, help='output file base name')
     args = parser.parse_args()
@@ -274,7 +282,14 @@ def main():
     for forest_file in args.forest_files:
         with open(forest_file, 'rb') as f:
             inferences[os.path.basename(forest_file).split('.')[0]] = pickle.load(f)
-    validate(true_tree, inferences, args.outbase)
+    # now we rerender the inferred trees, but using colormap from true tree, makes visual comaprison easier
+    true_tree_colormap = {} # map for tree sequences
+    with open(args.true_tree_colormap, 'r') as f:
+        for line in f:
+            name, color = line.rstrip().split('\t')
+            true_tree_colormap[true_tree.tree.search_nodes(name=name)[0].sequence] = color
+
+    validate(true_tree, inferences, true_tree_colormap, args.outbase)
     print('Done')  # Print something to the log to make the wait_func run smooth
 
 

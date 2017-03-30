@@ -48,8 +48,9 @@ def Tas_parse(aln_file, naive, frame=None):
     counts = {naive: seqs_unique_counts[naive_seq]}  # Add the count for the naive sequence
     del seqs_unique_counts[naive_seq]  # Now delete the naive so it does not appear twice
     for i, seq in enumerate(seqs_unique_counts, 1):
-        new_aln.append(SeqRecord(Seq(seq, generic_dna), id='seq'+str(i)))
-        counts[str(i)] = seqs_unique_counts[seq]
+        new_id = 'seq'+str(i)
+        new_aln.append(SeqRecord(Seq(seq, generic_dna), id=new_id))
+        counts[new_id] = seqs_unique_counts[seq]
     return new_aln, counts
 
 

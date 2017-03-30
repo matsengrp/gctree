@@ -22,7 +22,7 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
-import seaborn as sns
+#import seaborn as sns; sns.set(style="white", color_codes=True)
 from scipy.stats import probplot, poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, SVG_COLORS
 from Bio.Seq import Seq
@@ -103,7 +103,7 @@ class LeavesAndClades():
     def f(self, params):
         '''
         Probability of getting c leaves that are clones of the root and m mutant clades off
-        the root line, given branching probability p and mutation probability q
+        the root lineage, given branching probability p and mutation probability q
         Also returns gradient wrt (p, q)
         Computed by dynamic programming
         '''
@@ -200,6 +200,12 @@ class CollapsedTree(LeavesAndClades):
             elif allow_repeats and rep_seq:
                 rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
                 print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+            # now we do a custom ladderize accounting for abundance and sequence to break ties in abundance
+            for node in self.tree.traverse(strategy='postorder'):
+                # add a partition feature and compute it recursively up the tree
+                node.add_feature('partition', node.frequency + sum(node2.partition for node2 in node.children))
+                # sort children of this node based on partion and sequence
+                node.children.sort(key=lambda node: (node.partition, node.sequence))
         else:
             self.tree = tree
 
@@ -274,20 +280,15 @@ class CollapsedTree(LeavesAndClades):
         '''return a string representation for printing'''
         return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
-    @staticmethod
-    # def my_layout(node):
-    #     if node.frequency > 1:
-    #         N = TextFace(node.frequency, fsize=14, fgcolor='black')
-    #         N.rotation = -90
-    #         faces.add_face_to_node(N, node, 0, position='branch-top')
-    def my_layout(node):
-        if node.frequency > 0:
-            C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color='lightgray', label={'text':str(node.frequency), 'color':'black'})
-            C.rotation = -90
-            faces.add_face_to_node(C, node, 0)
-
-    def render(self, outfile):
+    def render(self, outfile, colormap=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
+        def my_layout(node):
+            if node.frequency > 0:
+                circle_color = 'lightgray' if colormap is None else colormap[node.name]
+                text_color = 'black'
+                C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color})
+                C.rotation = -90
+                faces.add_face_to_node(C, node, 0)
         for node in self.tree.traverse():
             nstyle = NodeStyle()
             if node.frequency == 0:
@@ -318,15 +319,26 @@ class CollapsedTree(LeavesAndClades):
         ts = TreeStyle()
         ts.show_leaf_name = False
         ts.rotation = 90
-        ts.layout_fn = CollapsedTree.my_layout
+        ts.layout_fn = my_layout
         ts.show_scale = False
-        self.tree.ladderize()
+        #self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
 
     def write(self, file_name):
         '''serialize tree to file'''
         with open(file_name, 'wb') as f:
             pickle.dump(self, f)
+
+    def compare(self, tree2, method='identity'):
+        '''compare this tree to the other tree'''
+        if method == 'identity':
+            # we compare lists of seq, parent, abundance
+            # return true if these lists are identical, else false
+            list1 = sorted((node.sequence, node.frequency, node.up.sequence if node.up is not None else None) for node in self.tree.traverse())
+            list2 = sorted((node.sequence, node.frequency, node.up.sequence if node.up is not None else None) for node in tree2.tree.traverse())
+            return list1 == list2
+        else:
+            raise ValueError('invalid distance method: '+method)
 
 
 class CollapsedForest(CollapsedTree):
@@ -852,6 +864,10 @@ class MutationModel():
                 node.delete(prevent_nondicotomic=False)
                 node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)
 
+        # assign unique names to each node
+        for i, node in enumerate(tree.traverse(), 1):
+            node.name = 'seq{}'.format(i)
+
         # return the fine (uncollapsed) tree
         return tree
 
@@ -914,7 +930,7 @@ def test(args):
     theoretical_cdf = scipy.cumsum(scipy.exp(log_prob))
     empirical_cdf = scipy.cumsum(freq)/len_total
 
-    sns.reset_orig() # <-- don't use seaborn
+    #sns.reset_orig() # <-- don't use seaborn
     fig = plt.figure()
     fig.set_tight_layout(True)
     plt.rc('text', usetex=True)
@@ -1015,7 +1031,13 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    parsimony_forest = CollapsedForest(forest=[CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.countfile, args.naive)])
+    phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.countfile, args.naive)]
+    phylip_collapsed_unique = []
+    for tree in phylip_collapsed:
+        if sum(tree.compare(tree2, method='identity') for tree2 in phylip_collapsed_unique) == 0:
+            phylip_collapsed_unique.append(tree)
+
+    parsimony_forest = CollapsedForest(forest=phylip_collapsed_unique)
 
     if parsimony_forest.n_trees == 1:
         warnings.warn('only one parsimony tree reported from dnapars')
@@ -1053,9 +1075,27 @@ def infer(args):
 
     print('tree\talleles\tlogLikelihood')
     for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
-        alleles = len(collapsed_tree.tree)
+        alleles = sum(1 for _ in collapsed_tree.tree.traverse())
         print('{}\t{}\t{}'.format(i, alleles, l))
         collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i))
+
+    # rank plot of likelihoods
+    plt.figure()
+    plt.plot(scipy.exp(ls), 'ko')
+    plt.xlabel('parsimony tree')
+    plt.xlim([-.5, None])
+    plt.ylabel('GCtree likelihood')
+    plt.yscale('log')
+    plt.ylim([None, 1.1*max(scipy.exp(ls))])
+    plt.savefig(args.outbase + '.likelihood_rank.pdf')
+
+    # rank plot of observed allele frequencies
+    y = sorted((node.frequency for node in parsimony_forest.forest[0].tree.traverse() if node.frequency != 0), reverse=True)
+    plt.figure()
+    plt.bar(range(1, len(y) + 1), y, color='black')
+    plt.xlabel('genotype')
+    plt.ylabel('abundance')
+    plt.savefig(args.outbase + '.abundance_rank.pdf')
 
 
 def find_A_total(carry_cap, B_total, f_full, mature_affy, U):
@@ -1191,13 +1231,11 @@ def simulate(args):
                                                     sum(hamming_distance(node.sequence, node2.sequence) == 1 for node2 in collapsed_tree.tree.traverse() if node2.frequency and node2 is not node))
                                                    for node in collapsed_tree.tree.traverse() if node.frequency])
     stats = pd.DataFrame({'genotype abundance':frequency,
-                          'distance to root genotype':distance_from_naive,
-                          'neighbor genotypes':degree})
+                          'Hamming distance to root genotype':distance_from_naive,
+                          'Hamming neighbor genotypes':degree})
     stats.to_csv(args.outbase+'.simulation.stats.tsv', sep='\t', index=False)
 
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
-    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
-    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg')
     if args.selection:
         with open(args.outbase + 'selection_sim.runstats.p', 'rb') as fh:
             runstats = pickle.load(fh)
@@ -1211,10 +1249,10 @@ def simulate(args):
 
     colors = {}
     palette = SVG_COLORS
-    palette -= set(['black', 'white'])
+    palette -= set(['black', 'white', 'gray'])
     palette = cycle(list(palette)) # <-- circular iterator
 
-    colors[tree.sequence] = 'black'
+    colors[tree.sequence] = 'gray'
 
     for n in tree.traverse():
         if n.sequence not in colors:
@@ -1224,6 +1262,16 @@ def simulate(args):
         nstyle['fgcolor'] = colors[n.sequence]
         n.set_style(nstyle)
     tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
+
+    # render collapsed tree
+    # create an id-wise colormap
+    colormap = {node.name:colors[node.sequence]  for node in collapsed_tree.tree.traverse()}
+    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
+    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
+    # print colormap to file
+    with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
+        for name, color in colormap.items():
+            f.write(name + '\t' + color + '\n')
 
 
 def plot_runstats(runstats, outbase):

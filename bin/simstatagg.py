@@ -39,9 +39,9 @@ for i, fname in enumerate(args.input):
 
 # aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 
-fields = list(aggdat.columns)
-fields.remove('simulation')
-nfields = len(fields)
+# fields = list(aggdat.columns)
+# fields.remove('simulation')
+# nfields = len(fields)
 
 sims = set(aggdat['simulation'])
 nsims = len(sims)
@@ -55,47 +55,48 @@ if args.experimental is not None:
                                                     sum(hamming_distance(exp_dict[seq], exp_dict[seq2]) == 1 for seq2 in exp_dict if seq2 is not seq and counts[seq2] != 0))
                                                    for seq in exp_dict if counts[seq] != 0])
     exp_stats = pd.DataFrame({'genotype abundance':frequency,
-                              'distance to root genotype':distance_from_naive,
-                              'neighbor genotypes':degree})
+                              'Hamming distance to root genotype':distance_from_naive,
+                              'Hamming neighbor genotypes':degree})
 
 pp = PdfPages(args.outbase+'.pdf')
 # bw = .3
 alpha = min([.9, 20/nsims])
-bins = range(max(aggdat['distance to root genotype'].max(), exp_stats['distance to root genotype'].max() if args.experimental is not None else 0) + 2)
+bins = range(max(aggdat['Hamming distance to root genotype'].max(), exp_stats['Hamming distance to root genotype'].max() if args.experimental is not None else 0) + 2)
 
-fig = plt.figure()
+fig = plt.figure(figsize=plt.figaspect(1))
 for simulation, simulation_aggdat in aggdat.groupby('simulation'):
-    sns.distplot(simulation_aggdat[fields[0]], bins=bins, kde=False, hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':1})
+    sns.distplot(simulation_aggdat['Hamming distance to root genotype'], bins=bins, kde=False, hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':1})
 if args.experimental is not None:
-    sns.distplot(exp_stats[fields[0]], bins=bins, kde=False, hist_kws={'histtype':'step', 'cumulative':True, 'color':'k', 'lw':3, 'alpha':.8})
-plt.xlabel(fields[0])
+    sns.distplot(exp_stats['Hamming distance to root genotype'], bins=bins, kde=False, hist_kws={'histtype':'step', 'cumulative':True, 'color':'k', 'lw':3, 'alpha':.8})
+plt.xlabel('Hamming distance to root genotype')
 plt.xlim([0, bins[-1]])
+plt.ylabel('observed genotypes')
 pp.savefig()
 
 fig = plt.figure()
-g = sns.JointGrid(fields[1], fields[2], aggdat, space=0)
-levels = scipy.logspace(-2, 2, 10)
+g = sns.JointGrid('genotype abundance', 'Hamming neighbor genotypes', aggdat, space=0)
+# levels = scipy.logspace(-2, 2, 10)
 xbins = range(max(aggdat['genotype abundance'].max(), exp_stats['genotype abundance'].max() if args.experimental is not None else 0) + 2)
-ybins = range(max(aggdat['neighbor genotypes'].max(), exp_stats['neighbor genotypes'].max() if args.experimental is not None else 0) + 2)
+ybins = range(max(aggdat['Hamming neighbor genotypes'].max(), exp_stats['Hamming neighbor genotypes'].max() if args.experimental is not None else 0) + 2)
 for simulation, simulation_aggdat in aggdat.groupby('simulation'):
-    sns.distplot(simulation_aggdat[fields[1]], ax=g.ax_marg_x, axlabel=False, bins=xbins, kde=False, hist_kws={"histtype": "step", 'alpha':alpha, 'lw':1})
-    sns.distplot(simulation_aggdat[fields[2]], ax=g.ax_marg_y, axlabel=False, bins=ybins, kde=False, vertical=True, hist_kws={"histtype": "step", 'alpha':alpha, 'lw':1})
-    g.ax_joint.plot(simulation_aggdat[fields[1]], simulation_aggdat[fields[2]], '+', mew=1, alpha=alpha/2)
+    sns.distplot(simulation_aggdat['genotype abundance'], ax=g.ax_marg_x, axlabel=False, bins=xbins, kde=False, hist_kws={"histtype": "step", 'alpha':alpha, 'lw':1})
+    sns.distplot(simulation_aggdat['Hamming neighbor genotypes'], ax=g.ax_marg_y, axlabel=False, bins=ybins, kde=False, vertical=True, hist_kws={"histtype": "step", 'alpha':alpha, 'lw':1})
+    g.ax_joint.plot(simulation_aggdat['genotype abundance'], simulation_aggdat['Hamming neighbor genotypes'], '+', mew=1, alpha=alpha/2)
     # sns.kdeplot(simulation_aggdat[fields[1]], simulation_aggdat[fields[2]], bw=3*bw, ax=g.ax_joint, levels=levels, alpha=alpha, shade=False)
 if args.experimental is not None:
-    sns.distplot(exp_stats[fields[1]], ax=g.ax_marg_x, axlabel=False, bins=xbins, kde=False, hist_kws={"histtype": "step", 'alpha':.8, 'lw':1, 'color':'k', 'lw':3})
-    sns.distplot(exp_stats[fields[2]], ax=g.ax_marg_y, axlabel=False, bins=ybins, kde=False, vertical=True, hist_kws={"histtype": "step", 'alpha':.8, 'lw':1, 'color':'k', 'lw':3})
-    g.ax_joint.plot(exp_stats[fields[1]], exp_stats[fields[2]], 'o', mew=2, alpha=.8, markerfacecolor='none', color='k')
+    sns.distplot(exp_stats['genotype abundance'], ax=g.ax_marg_x, axlabel=False, bins=xbins, kde=False, hist_kws={"histtype": "step", 'alpha':.8, 'lw':1, 'color':'k', 'lw':3})
+    sns.distplot(exp_stats['Hamming neighbor genotypes'], ax=g.ax_marg_y, axlabel=False, bins=ybins, kde=False, vertical=True, hist_kws={"histtype": "step", 'alpha':.8, 'lw':1, 'color':'k', 'lw':3})
+    g.ax_joint.plot(exp_stats['genotype abundance'], exp_stats['Hamming neighbor genotypes'], 'o', mew=2, alpha=.8, markerfacecolor='none', color='k')
 
 
-# g.ax_joint.set_xscale('symlog')
-g.ax_joint.set_xlim([0, xbins[-1]])
-# g.ax_joint.set_yscale('symlog')
-g.ax_joint.set_ylim([0, ybins[-1]])
-# g.ax_marg_x.set_xscale('symlog')
-g.ax_marg_x.set_xlim([0, xbins[-1]])
-# g.ax_marg_y.set_yscale('symlog')
-g.ax_marg_y.set_ylim([0, ybins[-1]])
+g.ax_joint.set_xscale('symlog')
+# g.ax_joint.set_xlim([0, xbins[-1]])
+g.ax_joint.set_yscale('symlog')
+# g.ax_joint.set_ylim([0, ybins[-1]])
+g.ax_marg_x.set_xscale('symlog')
+# g.ax_marg_x.set_xlim([0, xbins[-1]])
+g.ax_marg_y.set_yscale('symlog')
+# g.ax_marg_y.set_ylim([0, ybins[-1]])
 
 pp.savefig()
 
