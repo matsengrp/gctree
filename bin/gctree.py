@@ -1107,10 +1107,17 @@ def infer(args):
         collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i))
 
     # rank plot of likelihoods
-    plt.figure()
-    plt.plot(scipy.exp(ls), 'ko')
+    plt.figure(figsize=(6.5,2))
+    plt.plot(scipy.exp(ls), 'ko', clip_on=False, markersize=4)
     plt.xlabel('parsimony tree')
-    plt.xlim([-.5, None])
+    plt.xlim([-1, len(ls)])
+    plt.tick_params(axis='y', direction='out', which='both')
+    plt.tick_params(
+    axis='x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom='off',      # ticks along the bottom edge are off
+    top='off',         # ticks along the top edge are off
+    labelbottom='off') # labels along the bottom edge are off
     plt.ylabel('GCtree likelihood')
     plt.yscale('log')
     plt.ylim([None, 1.1*max(scipy.exp(ls))])
