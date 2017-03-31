@@ -15,7 +15,7 @@ import argparse
 from fasta2phylip import Tas_parse
 # from gctree import hamming_distance
 import seaborn as sns
-sns.set(style="ticks", color_codes=True)
+sns.set(style="white", color_codes=True)
 from matplotlib.backends.backend_pdf import PdfPages
 
 # something in numpy/seaborn breaks if I import this from gctree
@@ -58,12 +58,12 @@ if args.experimental is not None:
                               'Hamming distance to root genotype':distance_from_naive,
                               'Hamming neighbor genotypes':degree})
 
-pp = PdfPages(args.outbase+'.pdf')
 # bw = .3
 alpha = min([.9, 20/nsims])
 bins = range(max(aggdat['Hamming distance to root genotype'].max(), exp_stats['Hamming distance to root genotype'].max() if args.experimental is not None else 0) + 2)
 
-fig = plt.figure(figsize=plt.figaspect(1))
+plt.figure(figsize=plt.figaspect(.5))
+plt.subplot(1, 2, 1)
 for simulation, simulation_aggdat in aggdat.groupby('simulation'):
     sns.distplot(simulation_aggdat['Hamming distance to root genotype'], bins=bins, kde=False, hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':1})
 if args.experimental is not None:
@@ -71,36 +71,23 @@ if args.experimental is not None:
 plt.xlabel('Hamming distance to root genotype')
 plt.xlim([0, bins[-1]])
 plt.ylabel('observed genotypes')
-pp.savefig()
 
-fig = plt.figure()
-g = sns.JointGrid('genotype abundance', 'Hamming neighbor genotypes', aggdat, space=0)
+plt.subplot(1, 2, 2)
+# g = sns.JointGrid('genotype abundance', 'Hamming neighbor genotypes', aggdat, space=0)
 # levels = scipy.logspace(-2, 2, 10)
 xbins = range(max(aggdat['genotype abundance'].max(), exp_stats['genotype abundance'].max() if args.experimental is not None else 0) + 2)
 ybins = range(max(aggdat['Hamming neighbor genotypes'].max(), exp_stats['Hamming neighbor genotypes'].max() if args.experimental is not None else 0) + 2)
 for simulation, simulation_aggdat in aggdat.groupby('simulation'):
-    sns.distplot(simulation_aggdat['genotype abundance'], ax=g.ax_marg_x, axlabel=False, bins=xbins, kde=False, hist_kws={"histtype": "step", 'alpha':alpha, 'lw':1})
-    sns.distplot(simulation_aggdat['Hamming neighbor genotypes'], ax=g.ax_marg_y, axlabel=False, bins=ybins, kde=False, vertical=True, hist_kws={"histtype": "step", 'alpha':alpha, 'lw':1})
-    g.ax_joint.plot(simulation_aggdat['genotype abundance'], simulation_aggdat['Hamming neighbor genotypes'], '+', mew=1, alpha=alpha/2)
-    # sns.kdeplot(simulation_aggdat[fields[1]], simulation_aggdat[fields[2]], bw=3*bw, ax=g.ax_joint, levels=levels, alpha=alpha, shade=False)
+    plt.plot(simulation_aggdat['genotype abundance'], simulation_aggdat['Hamming neighbor genotypes'], '+', mew=1, alpha=alpha/2)
 if args.experimental is not None:
-    sns.distplot(exp_stats['genotype abundance'], ax=g.ax_marg_x, axlabel=False, bins=xbins, kde=False, hist_kws={"histtype": "step", 'alpha':.8, 'lw':1, 'color':'k', 'lw':3})
-    sns.distplot(exp_stats['Hamming neighbor genotypes'], ax=g.ax_marg_y, axlabel=False, bins=ybins, kde=False, vertical=True, hist_kws={"histtype": "step", 'alpha':.8, 'lw':1, 'color':'k', 'lw':3})
-    g.ax_joint.plot(exp_stats['genotype abundance'], exp_stats['Hamming neighbor genotypes'], 'o', mew=2, alpha=.8, markerfacecolor='none', color='k')
-
-
-g.ax_joint.set_xscale('symlog')
-# g.ax_joint.set_xlim([0, xbins[-1]])
-g.ax_joint.set_yscale('symlog')
-# g.ax_joint.set_ylim([0, ybins[-1]])
-g.ax_marg_x.set_xscale('symlog')
-# g.ax_marg_x.set_xlim([0, xbins[-1]])
-g.ax_marg_y.set_yscale('symlog')
-# g.ax_marg_y.set_ylim([0, ybins[-1]])
-
-pp.savefig()
-
-pp.close()
+    plt.plot(exp_stats['genotype abundance'], exp_stats['Hamming neighbor genotypes'], 'o', mew=2, alpha=.8, markerfacecolor='none', color='k')
+plt.xlabel('genotype abundance')
+plt.ylabel('Hamming neighbor genotypes')
+plt.xscale('symlog')
+plt.yscale('symlog')
+plt.xlim([.9, None])
+plt.ylim([-.1, None])
+plt.savefig(args.outbase+'.pdf')
 
 # for sim in sims:
 #     sns.jointplot(aggdat[aggdat['simulation']==sim][fields[0]],aggdat[aggdat['simulation']==sim][fields[1]], kind='kde', space=0, kwargs=dict(bw=.5, shaded=False))

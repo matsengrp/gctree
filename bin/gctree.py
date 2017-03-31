@@ -220,8 +220,8 @@ class CollapsedTree(LeavesAndClades):
             raise ValueError('sign must be 1 or -1')
         leaves_and_clades_list = [LeavesAndClades(c=node.frequency, m=len(node.children)) for node in self.tree.traverse()]
         if leaves_and_clades_list[0].c == 0 and leaves_and_clades_list[0].m == 1 and leaves_and_clades_list[0].f(params)[0] == 0:
-            # if unifurcation not possible under current model, omit root
-            leaves_and_clades_list = leaves_and_clades_list[1:]
+            # if unifurcation not possible under current model, add a psuedocount for the naive
+            leaves_and_clades_list[0].c = 1
         # extract vector of function values and gradient components
         f_data = [leaves_and_clades.f(params) for leaves_and_clades in leaves_and_clades_list]
         fs = scipy.array([[x[0]] for x in f_data])
@@ -337,6 +337,22 @@ class CollapsedTree(LeavesAndClades):
             list1 = sorted((node.sequence, node.frequency, node.up.sequence if node.up is not None else None) for node in self.tree.traverse())
             list2 = sorted((node.sequence, node.frequency, node.up.sequence if node.up is not None else None) for node in tree2.tree.traverse())
             return list1 == list2
+        elif method == 'MRCA':
+            # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
+            # takes a true and inferred tree as CollapsedTree objects
+            taxa = [node.sequence for node in self.tree.traverse() if node.frequency]
+            n_taxa = len(taxa)
+            d = scipy.zeros(shape=(n_taxa, n_taxa))
+            for i in range(n_taxa):
+                nodei_true = self.tree.iter_search_nodes(sequence=taxa[i]).next()
+                nodei      =      tree2.tree.iter_search_nodes(sequence=taxa[i]).next()
+                for j in range(i + 1, n_taxa):
+                    nodej_true = self.tree.iter_search_nodes(sequence=taxa[j]).next()
+                    nodej      =      tree2.tree.iter_search_nodes(sequence=taxa[j]).next()
+                    MRCA_true = self.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
+                    MRCA =           tree2.tree.get_common_ancestor((nodei, nodej)).sequence
+                    d[i, j] = nodei.frequency*nodej.frequency*hamming_distance(MRCA_true, MRCA)
+            return d.sum()
         else:
             raise ValueError('invalid distance method: '+method)
 
@@ -1047,7 +1063,7 @@ def infer(args):
     # check for unifurcations at root
     unifurcations = sum(tree.tree.frequency == 0 and len(tree.tree.children) == 1 for tree in parsimony_forest.forest)
     if unifurcations:
-        print('WARNING: {} trees exhibit unifurcation from root, which is not possible under current model. Such nodes will be ommitted from likelihood calculation'.format(unifurcations))
+        print('WARNING: {} trees exhibit unobserved unifurcation from root, which is not possible under current model. Adding psuedocounts to these nodes'.format(unifurcations))
 
     # fit p and q using all trees
     # if we get floating point errors, try a few more times (starting params are random)
@@ -1087,7 +1103,7 @@ def infer(args):
     plt.ylabel('GCtree likelihood')
     plt.yscale('log')
     plt.ylim([None, 1.1*max(scipy.exp(ls))])
-    plt.savefig(args.outbase + '.likelihood_rank.pdf')
+    plt.savefig(args.outbase + '.inference.likelihood_rank.pdf')
 
     # rank plot of observed allele frequencies
     y = sorted((node.frequency for node in parsimony_forest.forest[0].tree.traverse() if node.frequency != 0), reverse=True)
@@ -1095,7 +1111,7 @@ def infer(args):
     plt.bar(range(1, len(y) + 1), y, color='black')
     plt.xlabel('genotype')
     plt.ylabel('abundance')
-    plt.savefig(args.outbase + '.abundance_rank.pdf')
+    plt.savefig(args.outbase + '.inference.abundance_rank.pdf')
 
 
 def find_A_total(carry_cap, B_total, f_full, mature_affy, U):

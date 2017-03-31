@@ -17,6 +17,7 @@ import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import seaborn as sns
+sns.set(style='whitegrid', color_codes=True)
 import os
 import numpy as np
 try:
@@ -178,26 +179,6 @@ def lineage_dist(true_tree, inferred_tree, penalty_cap=None, freq_weigthing=Fals
     return norm_lineage_dist
 
 
-def MRCA_distance(true_tree, tree):
-    '''
-    here's Erick's idea of matrix of hamming distance of common ancestors of taxa
-    takes a true and inferred tree as CollapsedTree objects
-    '''
-    taxa = [node.sequence for node in true_tree.tree.traverse() if node.frequency]
-    n_taxa = len(taxa)
-    d = scipy.zeros(shape=(n_taxa, n_taxa))
-    for i in range(n_taxa):
-        nodei_true = true_tree.tree.iter_search_nodes(sequence=taxa[i]).next()
-        nodei      =      tree.tree.iter_search_nodes(sequence=taxa[i]).next()
-        for j in range(i + 1, n_taxa):
-            nodej_true = true_tree.tree.iter_search_nodes(sequence=taxa[j]).next()
-            nodej      =      tree.tree.iter_search_nodes(sequence=taxa[j]).next()
-            MRCA_true = true_tree.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
-            MRCA =           tree.tree.get_common_ancestor((nodei, nodej)).sequence
-            d[i, j] = nodei.frequency*nodej.frequency*hamming_distance(MRCA_true, MRCA)
-    return d
-
-
 def validate(true_tree, inferences, true_tree_colormap, outbase):
     '''
     inferences is a dict mapping infernce name, like "gctree" to pickle files of
@@ -215,7 +196,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
         #       function sometimes thinks the collapsed trees are unrooted and barfs
         distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
                                         tree.l(inferences['gctree'].params)[0]) for tree in inferences['gctree'].forest])
-        MRCAs = [MRCA_distance(true_tree, tree).sum() for tree in inferences['gctree'].forest]
+        MRCAs = [true_tree.compare(tree, method='MRCA') for tree in inferences['gctree'].forest]
         lineage_distances = [all_lineage_dist(true_tree, tree) for tree in inferences['gctree'].forest]
         lineage_distances = zip(*lineage_distances)  # Unzip the forest tuple to get lineage_distances[ld0-3][tree_n]
         mean_frequencies = [scipy.mean([node.frequency for node in tree.tree.traverse()]) for tree in inferences['gctree'].forest]
@@ -232,12 +213,15 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
 
         if n_trees > 1:
             # plots
-            plt.figure()
-            sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), aspect=1.5)
+            plt.figure()#figsize=plt.figaspect(2))
+            g = sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), plot_kws={'color':'black', 'scatter_kws':{'clip_on':False}, 'line_kws':{'alpha':.5}}, size=5)
+            axes = g.axes
+            axes[0,0].set_ylim(0,)
+            axes[1,0].set_ylim(0,)
             plt.savefig(outbase+'.gctree.pdf')
 
         df.to_csv(outbase+'.gctree.tsv', sep='\t', index=False)
-        
+
         for i, tree in enumerate(inferences['gctree'].forest, 1):
             colormap = dict((node.name, true_tree_colormap[node.sequence]) if node.sequence in true_tree_colormap else (node.name, 'lightgray') for node in tree.tree.traverse())
             tree.render(outbase+'.gctree.colored_tree.{}.svg'.format(i), colormap=colormap)
@@ -255,7 +239,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
                                           attr_t1='sequence',
                                           attr_t2='sequence',
                                           unrooted_trees=True)[0],
-           MRCA_distance(true_tree, inferences[method].forest[0]).sum(),
+           true_tree.compare(inferences[method].forest[0], method='MRCA'),
            all_lineage_dist(true_tree, inferences[method].forest[0])) for method in inferences])
     lineage_distances = zip(*lineage_distances)  # Unzip the methods tuple to get lineage_distances[ld0-3][method]
     df = pd.DataFrame({'method':methods, 'N_taxa':n_taxa, 'RF':distances, 'MRCA':MRCAs, 'ld1':lineage_distances[0], 'ld2':lineage_distances[1], 'ld3':lineage_distances[2], 'ld4':lineage_distances[3]},
