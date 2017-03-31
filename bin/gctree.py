@@ -704,7 +704,7 @@ class MutationModel():
             # expected_progeny = progeny.mean()
             # if expected_progeny >= 1:
             #     raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
-        if n > N:
+        if N is not None and n > N:
             raise ValueError('n ({}) must not larger than N ({})'.format(n, N))
         if selection_params is not None and frame is None:
             raise ValueError('Simulation with selection was chosen. A frame must must be specified.')
@@ -865,8 +865,19 @@ class MutationModel():
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size
-        for leaf in random.sample(final_leaves, n if n is not None else N) if N is not None else final_leaves:
-            leaf.frequency = 1
+        if n is not None and len(final_leaves) >= n:
+            for leaf in random.sample(final_leaves, n):
+                leaf.frequency = 1
+        elif n is None and N is not None:
+            for leaf in random.sample(final_leaves, N):
+                leaf.frequency = 1
+        elif N is None and T is not None:
+            for leaf in final_leaves:
+                leaf.frequency = 1
+        elif n is not None and len(final_leaves) < n:
+            raise RuntimeError('tree terminated with {} leaves, less than what desired after downsampling {}'.format(leaves_unterminated, n))
+        else:
+            raise RuntimeError('Unknown option.')
 
         # prune away lineages that are unobserved
         for node in tree.iter_descendants():
@@ -1368,15 +1379,15 @@ def main():
     parser_sim.add_argument('--carry_cap', type=int, default=1000, help='The carrying capacity of the simulation with selection. This number affects the fixation time of a new mutation.'
                             'Fixation time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.')
     parser_sim.add_argument('--target_count', type=int, default=10, help='The number of targets to generate.')
-    parser_sim.add_argument('--target_dist', type=int, default=5, help='The number of non-synonymous mutations the target should be away from the naive.')
+    parser_sim.add_argument('--target_dist', type=int, default=10, help='The number of non-synonymous mutations the target should be away from the naive.')
     parser_sim.add_argument('--naive_affy', type=float, default=100, help='Affinity of the naive sequence in nano molar.')
-    parser_sim.add_argument('--mature_affy', type=float, default=0.1, help='Affinity of the mature sequences in nano molar.')
+    parser_sim.add_argument('--mature_affy', type=float, default=1, help='Affinity of the mature sequences in nano molar.')
     parser_sim.add_argument('--skip_update', type=int, default=100, help='When iterating through the leafs the B:A fraction is recalculated every time.'
                             'It is possible though to update less often and get the same approximate results. This parameter sets the number of iterations to skip,'
                             'before updating the B:A results. skip_update < carry_cap/10 recommended.')
     parser_sim.add_argument('--B_total', type=float, default=1, help='Total number of BCRs per B cell normalized to 10e4. So 1 equals 10e4, 100 equals 10e6 etc.'
                             'It is recommended to keep this as the default.')
-    parser_sim.add_argument('--U', type=float, default=2, help='Controls the fraction of BCRs binding antigen necessary to only sustain the life of the B cell'
+    parser_sim.add_argument('--U', type=float, default=5, help='Controls the fraction of BCRs binding antigen necessary to only sustain the life of the B cell'
                             'It is recommended to keep this as the default.')
     parser_sim.add_argument('--f_full', type=float, default=1, help='The fraction of antigen bound BCRs on a B cell that is needed to elicit close to maximum reponse.'
                             'Cannot be smaller than B_total. It is recommended to keep this as the default.')
