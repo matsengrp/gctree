@@ -28,6 +28,7 @@ from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, Cir
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 from Bio.Data.IUPACData import ambiguous_dna_values
+from utils import SVG2HEX
 try:
     # Last time I checked this module was the fastest kid on the block,
     # 5-10x faster than pure python, however 2x slower than a simple Cython function
@@ -45,6 +46,7 @@ except:
 
 
 scipy.seterr(all='raise')
+
 
 class LeavesAndClades():
     '''
@@ -749,6 +751,7 @@ class MutationModel():
             # We store both the amino acid sequence and the affinity as tree features:
             tree.add_feature('AAseq', str(aa))
             tree.add_feature('Kd', calc_Kd(tree.AAseq, targetAAseqs, hd2affy))
+            tree.add_feature('target_dist', min([hamming_distance(tree.AAseq, taa) for taa in targetAAseqs]))
 
         def lambda_selection(node, tree, targetAAseqs, hd2affy, A_total, B_total, Lp):
             '''
@@ -842,6 +845,7 @@ class MutationModel():
                             aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))], generic_dna).translate()
                             child.add_feature('AAseq', str(aa))
                             child.add_feature('Kd', calc_Kd(child.AAseq, targetAAseqs, hd2affy))
+                            child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))
                         # ----/> Selection
                         child.add_feature('frequency', 0)
                         child.add_feature('terminated' ,False)
@@ -1281,10 +1285,6 @@ def simulate(args):
     stats.to_csv(args.outbase+'.simulation.stats.tsv', sep='\t', index=False)
 
     print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
-    if args.selection:
-        with open(args.outbase + 'selection_sim.runstats.p', 'rb') as fh:
-            runstats = pickle.load(fh)
-            plot_runstats(runstats, args.outbase)
 
     # render the full lineage tree
     ts = TreeStyle()
@@ -1295,31 +1295,65 @@ def simulate(args):
     colors = {}
     palette = SVG_COLORS
     palette -= set(['black', 'white', 'gray'])
-    palette = cycle(list(palette)) # <-- circular iterator
+    palette = cycle(list(palette))  # <-- circular iterator
 
-    colors[tree.sequence] = 'gray'
+    # Either plot by DNA sequence or amino acid sequence:
+    if args.plotAA and args.selection:
+        colors[tree.AAseq] = 'gray'
+    else:
+        colors[tree.sequence] = 'gray'
 
     for n in tree.traverse():
-        if n.sequence not in colors:
-            colors[n.sequence] = next(palette)
         nstyle = NodeStyle()
         nstyle["size"] = 10
-        nstyle['fgcolor'] = colors[n.sequence]
+        if args.plotAA:
+            if n.AAseq not in colors:
+                colors[n.AAseq] = next(palette)
+            nstyle['fgcolor'] = colors[n.AAseq]
+        else:
+            if n.sequence not in colors:
+                colors[n.sequence] = next(palette)
+            nstyle['fgcolor'] = colors[n.sequence]
         n.set_style(nstyle)
+
     tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
 
     # render collapsed tree
     # create an id-wise colormap
-    colormap = {node.name:colors[node.sequence]  for node in collapsed_tree.tree.traverse()}
-    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
-    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
-    # print colormap to file
-    with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
-        for name, color in colormap.items():
-            f.write(name + '\t' + color + '\n')
+    if args.plotAA and args.selection:
+        colormap = {node.name:colors[node.AAseq] for node in collapsed_tree.tree.traverse()}
+        collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
+        collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
+        # print colormap to file
+        with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
+            for name, color in colormap.items():
+                f.write(name + '\t' + color + '\n')
+    else:
+        colormap = {node.name:colors[node.sequence] for node in collapsed_tree.tree.traverse()}
+        collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
+        collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
+        # print colormap to file
+        with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
+            for name, color in colormap.items():
+                f.write(name + '\t' + color + '\n')
 
 
-def plot_runstats(runstats, outbase):
+    if args.selection:
+        # Define a list a suitable colors that are easy to distinguish:
+        palette = ['crimson', 'purple', 'hotpink', 'limegreen', 'darkorange', 'darkkhaki', 'brown', 'lightsalmon', 'darkgreen', 'darkseagreen', 'darkslateblue', 'teal', 'olive', 'wheat', 'magenta', 'lightsteelblue', 'plum', 'gold']
+        palette = cycle(list(palette)) # <-- circular iterator
+        colors = {i: next(palette) for i in range(int(len(args.sequence) // 3))}
+        # The minimum distance to the target is colored:
+        colormap = {node.name:colors[node.target_dist] for node in collapsed_tree.tree.traverse()}
+        collapsed_tree.write( args.outbase+'.simulation.collapsed_runstat_color_tree.p')
+        collapsed_tree.render(args.outbase+'.simulation.collapsed_runstat_color_tree.svg', colormap=colormap)
+        # Write a file with the selection run stats. These are also plotted:
+        with open(args.outbase + 'selection_sim.runstats.p', 'rb') as fh:
+            runstats = pickle.load(fh)
+            plot_runstats(runstats, args.outbase, colors)
+
+
+def plot_runstats(runstats, outbase, colors):
     def make_bounds(runstats):
         all_counts = runstats[0][0].copy()
         for l in runstats:
@@ -1343,7 +1377,8 @@ def plot_runstats(runstats, outbase):
     ax.plot(t, pop_size, lw=2, label='All cells')  # Total population size is plotted
     # Then plot the counts for each hamming distance as a function on generation:
     for k in list(range(*bounds)):
-        ax.plot(t, np.array([r[0][k] for r in runstats]), lw=2, label='Dist {}'.format(k))
+        color = SVG2HEX[colors[k]]
+        ax.plot(t, np.array([r[0][k] for r in runstats]), lw=2, color=color, label='Dist {}'.format(k))
 
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
 
@@ -1393,7 +1428,7 @@ def main():
     parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
     parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
     parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
-    parser_sim.add_argument('--selection', type=int, default=0, help='Simulation with selection? 1/0. When doing simulation with selection an observation time cut must be set.')
+    parser_sim.add_argument('--selection', type=bool, default=False, help='Simulation with selection? true/false. When doing simulation with selection an observation time cut must be set.')
     parser_sim.add_argument('--carry_cap', type=int, default=1000, help='The carrying capacity of the simulation with selection. This number affects the fixation time of a new mutation.'
                             'Fixation time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.')
     parser_sim.add_argument('--target_count', type=int, default=10, help='The number of targets to generate.')
@@ -1411,6 +1446,7 @@ def main():
                             'Cannot be smaller than B_total. It is recommended to keep this as the default.')
     parser_sim.add_argument('--k', type=float, default=2, help='The exponent in the function to map hamming distance to affinity.'
                             'It is recommended to keep this as the default.')
+    parser_sim.add_argument('--plotAA', type=bool, default=False, help='Plot trees with collapsing and coloring on amino acid level.')
     parser_sim.add_argument('--verbose', type=bool, default=False, help='Print progress during simulation. Mostly useful for simulation with selection since this can take a while.')
     parser_sim.set_defaults(func=simulate)
 
