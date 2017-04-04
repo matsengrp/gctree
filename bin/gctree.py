@@ -351,8 +351,19 @@ class CollapsedTree(LeavesAndClades):
                     nodej      =      tree2.tree.iter_search_nodes(sequence=taxa[j]).next()
                     MRCA_true = self.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
                     MRCA =           tree2.tree.get_common_ancestor((nodei, nodej)).sequence
-                    d[i, j] = nodei.frequency*nodej.frequency*hamming_distance(MRCA_true, MRCA)
+                    d[i, j] = hamming_distance(MRCA_true, MRCA)
             return d.sum()
+        elif method == 'RF':
+            tree1_copy = self.tree.copy(method='deepcopy')
+            tree2_copy = tree2.tree.copy(method='deepcopy')
+            for treex in (tree1_copy, tree2_copy):
+                for node in list(treex.traverse()):
+                    # for _ in range(node.frequency):
+                    if node.frequency > 0:
+                        child = TreeNode()
+                        child.add_feature('sequence', node.sequence)
+                        node.add_child(child)
+            return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0]
         else:
             raise ValueError('invalid distance method: '+method)
 

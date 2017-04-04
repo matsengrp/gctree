@@ -194,7 +194,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
         n_trees = len(inferences['gctree'].forest)
         # note: the unrooted_trees flag is needed because, for some reason, the RF
         #       function sometimes thinks the collapsed trees are unrooted and barfs
-        distances, likelihoods = zip(*[(true_tree.tree.robinson_foulds(tree.tree, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0],
+        distances, likelihoods = zip(*[(true_tree.compare(tree, method='RF'),
                                         tree.l(inferences['gctree'].params)[0]) for tree in inferences['gctree'].forest])
         MRCAs = [true_tree.compare(tree, method='MRCA') for tree in inferences['gctree'].forest]
         lineage_distances = [all_lineage_dist(true_tree, tree) for tree in inferences['gctree'].forest]
@@ -235,10 +235,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
     methods, n_taxa, distances, MRCAs, lineage_distances = zip(
         *[(method,
            len(list(true_tree.tree.traverse())),  # Get all taxa in the tree
-           true_tree.tree.robinson_foulds(inferences[method].forest[0].tree,
-                                          attr_t1='sequence',
-                                          attr_t2='sequence',
-                                          unrooted_trees=True)[0],
+           true_tree.compare(inferences[method].forest[0], method='RF'),
            true_tree.compare(inferences[method].forest[0], method='MRCA'),
            all_lineage_dist(true_tree, inferences[method].forest[0])) for method in inferences])
     lineage_distances = zip(*lineage_distances)  # Unzip the methods tuple to get lineage_distances[ld0-3][method]

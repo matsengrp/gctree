@@ -125,13 +125,13 @@ def outer_aggregate(outdir, c):
     return tgt
 
 
-if gctree:
-    @w.add_target()
-    def gctree_aggregate(outdir, c):
-        '''aggregate different parameter values'''
-        tgt = env.Command([os.path.join(outdir, 'gctree.aggregation.tsv'),
-                           os.path.join(outdir, 'gctree.aggregation.log')],
-                          c['gctree_outeragg'],
-                          'stdbuf -oL python bin/aggregate.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.aggregation')+' > ${TARGETS[1]}')
-        env.AlwaysBuild(tgt)
-        return tgt
+# if gctree:
+#     @w.add_target()
+#     def gctree_aggregate(outdir, c):
+#         '''aggregate different parameter values'''
+#         tgt = env.Command([os.path.join(outdir, 'gctree.aggregation.tsv'),
+#                            os.path.join(outdir, 'gctree.aggregation.log')],
+#                           c['gctree_outeragg'],
+#                           'stdbuf -oL python bin/aggregate.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.aggregation')+' > ${TARGETS[1]}')
+#         env.AlwaysBuild(tgt)
+#         return tgt
