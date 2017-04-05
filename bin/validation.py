@@ -17,7 +17,7 @@ import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import seaborn as sns
-sns.set(style='whitegrid', color_codes=True)
+sns.set(style='white', color_codes=True)
 import os
 import numpy as np
 try:
@@ -214,10 +214,10 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
         if n_trees > 1:
             # plots
             plt.figure()#figsize=plt.figaspect(2))
-            g = sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('MRCA', 'RF'), plot_kws={'color':'black', 'scatter_kws':{'clip_on':False}, 'line_kws':{'alpha':.5}}, size=5)
+            g = sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('RF', 'MRCA'), plot_kws={'color':'black', 'scatter_kws':{'clip_on':False}, 'line_kws':{'alpha':.5}}, size=3)
             axes = g.axes
-            axes[0,0].set_ylim(0,)
-            axes[1,0].set_ylim(0,)
+            axes[0,0].set_ylim(0,1.1*df['RF'].max())
+            axes[1,0].set_ylim(0,1.1*df['MRCA'].max())
             plt.savefig(outbase+'.gctree.pdf')
 
         df.to_csv(outbase+'.gctree.tsv', sep='\t', index=False)
