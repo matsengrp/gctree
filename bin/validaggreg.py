@@ -41,6 +41,26 @@ aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 aggdat = aggdat[(aggdat['parsimony forest size'] >= 2)]
 
 plt.figure(figsize=(3, 6))
+bins = {}
+for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree'), 1):
+    plt.subplot(2, 1, i)
+    binmax = int(aggdat[metric].max()+1)
+    n, bins[metric], patches = plt.hist([aggdat[metric][aggdat['ismle']],
+                                         aggdat[metric][aggdat['ismle']==False]],
+                                        bins=range(binmax) if binmax <= 20 else 20,
+                                        color=['red', 'gray'],
+                                        label=['inferred GCtrees', 'other parsimony trees'],
+                                        histtype='barstacked',
+                                        align='left',
+                                        orientation='horizontal')
+    # plt.legend(frameon=True)
+    plt.ylabel(metric)
+    plt.ylim(bins[metric][0] - .5*(bins[metric][1] - bins[metric][0]), bins[metric][-1])
+    sns.despine()
+    plt.tight_layout()
+    plt.savefig(args.outbase+'.histogram.pdf')
+
+plt.figure(figsize=(3, 6))
 for metric in ('RF', 'MRCA'):
     x, y = zip(*[pearsonr(aggdat[aggdat['simulation']==ct]['log-likelihood'], aggdat[aggdat['simulation']==ct][metric+' distance to true tree']) for ct in set(aggdat['simulation'])])
     plt.plot(x, -scipy.log10(y), 'o', alpha=.75, label=metric, clip_on=False)
@@ -70,15 +90,18 @@ for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true t
     plt.subplot(2, 1, i)
     sns.boxplot(x='simulation', y=metric, data=aggdat, color='gray')
     sns.stripplot(x='simulation', y=metric, color='red', data=aggdat[aggdat['ismle']])
-    plt.ylim([-.5, None])
+    plt.ylim(bins[metric][0] - .5*(bins[metric][1] - bins[metric][0]), bins[metric][-1])
     plt.tick_params(
     axis='x',          # changes apply to the x-axis
     which='both',      # both major and minor ticks are affected
     bottom='off',      # ticks along the bottom edge are off
     top='off',         # ticks along the top edge are off
     labelbottom='off') # labels along the bottom edge are off
+    # plt.gca().spines['left'].set_color('none')
+    # plt.gca().yaxis.tick_right()
     plt.gca().spines['right'].set_color('none')
     plt.gca().spines['top'].set_color('none')
+    plt.tight_layout()
     plt.savefig(args.outbase+'.boxplot.pdf')
 
 # sns.regplot(x='parsimony forest size', y='trees with MRCA less than or equal to optimal tree',
