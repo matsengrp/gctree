@@ -213,11 +213,14 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
 
         if n_trees > 1:
             # plots
-            plt.figure()#figsize=plt.figaspect(2))
-            g = sns.pairplot(df, kind='reg', x_vars='log-likelihood', y_vars=('RF', 'MRCA'), plot_kws={'color':'black', 'scatter_kws':{'clip_on':False}, 'line_kws':{'alpha':.5}}, size=3)
-            axes = g.axes
-            axes[0,0].set_ylim(0,1.1*df['RF'].max())
-            axes[1,0].set_ylim(0,1.1*df['MRCA'].max())
+            maxll = df['log-likelihood'].max()
+            plt.figure(figsize=(3, 6))
+            for i, metric in enumerate(('RF', 'MRCA'), 1):
+                plt.subplot(2, 1, i)
+                ax = sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']!=maxll], fit_reg=False, color='black', scatter_kws={'alpha':.8, 'clip_on':False})
+                sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']==maxll], fit_reg=False, color='red', scatter_kws={'alpha':.8, 'clip_on':False}, ax=ax)
+                plt.ylim(0,1.1*df[metric].max())
+                plt.tight_layout()
             plt.savefig(outbase+'.gctree.pdf')
 
         df.to_csv(outbase+'.gctree.tsv', sep='\t', index=False)
