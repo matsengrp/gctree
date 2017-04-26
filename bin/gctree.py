@@ -191,8 +191,8 @@ class CollapsedTree(LeavesAndClades):
             for node in self.tree.get_descendants():
                 if node.dist == 0:
                     node.up.frequency += node.frequency
-                    if node.name and not node.up.name:
-                        node.up.name = node.name
+                    # if node.name and not node.up.name:
+                    node.up.name = node.name
                     node.delete(prevent_nondicotomic=False)
 
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
@@ -286,7 +286,7 @@ class CollapsedTree(LeavesAndClades):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
             if node.frequency > 0:
-                circle_color = 'lightgray' if colormap is None else colormap[node.name]
+                circle_color = 'lightgray' if colormap is None or node.name not in colormap else colormap[node.name]
                 text_color = 'black'
                 C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color})
                 C.rotation = -90
@@ -1115,11 +1115,20 @@ def infer(args):
     with open(args.outbase+'.inference.parsimony_forest.p', 'wb') as f:
         pickle.dump(parsimony_forest, f)
 
+    if args.colormapfile is not None:
+        with open(args.colormapfile, 'r') as f:
+            colormap = {}
+            for line in f:
+                seqid, color = line.rstrip().split('\t')
+                colormap[seqid] = color
+    else:
+        colormap = None
+
     print('tree\talleles\tlogLikelihood')
     for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
         alleles = sum(1 for _ in collapsed_tree.tree.traverse())
         print('{}\t{}\t{}'.format(i, alleles, l))
-        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i))
+        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i), colormap)
 
     # rank plot of likelihoods
     plt.figure(figsize=(6.5,2))
@@ -1414,6 +1423,7 @@ def main():
     parser_infer.add_argument('--naive', type=str, default=None, help='name of naive sequence (outgroup root)')
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.add_argument('countfile', type=str, help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
+    parser_infer.add_argument('--colormapfile', type=str, default=None, help='File containing color map in the format: "SeqID\tcolor"')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram

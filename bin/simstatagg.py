@@ -62,7 +62,7 @@ if args.experimental is not None:
 alpha = min([.9, 20/nsims])
 bins = range(max(aggdat['Hamming distance to root genotype'].max(), exp_stats['Hamming distance to root genotype'].max() if args.experimental is not None else 0) + 2)
 
-plt.figure(figsize=plt.figaspect(.5))
+plt.figure(figsize=(6, 3))
 plt.subplot(1, 2, 1)
 for simulation, simulation_aggdat in aggdat.groupby('simulation'):
     sns.distplot(simulation_aggdat['Hamming distance to root genotype'], bins=bins, kde=False, hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':1})
@@ -71,6 +71,7 @@ if args.experimental is not None:
 plt.xlabel('Hamming distance to root genotype')
 plt.xlim([0, bins[-1]])
 plt.ylabel('observed genotypes')
+plt.tight_layout()
 
 plt.subplot(1, 2, 2)
 # g = sns.JointGrid('genotype abundance', 'Hamming neighbor genotypes', aggdat, space=0)
@@ -87,6 +88,7 @@ plt.xscale('symlog')
 plt.yscale('symlog')
 plt.xlim([.9, None])
 plt.ylim([-.1, None])
+plt.tight_layout()
 plt.savefig(args.outbase+'.pdf')
 
 # for sim in sims:

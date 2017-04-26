@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 # aggdat = pd.DataFrame(columns=('parsimony forest size', 'mean allele frequency', 'mean branch length', 'MRCA distance to true tree', 'RF distance to true tree', 'trees with MRCA less than or equal to optimal tree'))
 
-aggdat = pd.DataFrame(columns=('simulations ranked by number of maximally parsimonious trees', 'parsimony forest size', 'MRCA distance to true tree', 'RF distance to true tree', 'log-likelihood', 'ismle'))
+aggdat = pd.DataFrame(columns=('simulations ranked by parsimony degeneracy', 'parsimony forest size', 'MRCA distance to true tree', 'RF distance to true tree', 'log-likelihood', 'ismle'))
 
 rowct = 0
 frames = []
@@ -42,7 +42,7 @@ aggdat = aggdat[(aggdat['parsimony forest size'] >= 2)]
 
 plt.figure(figsize=(3, 6))
 for metric in ('RF', 'MRCA'):
-    x, y = zip(*[pearsonr(aggdat[aggdat['simulations ranked by number of maximally parsimonious trees']==ct]['log-likelihood'], aggdat[aggdat['simulations ranked by number of maximally parsimonious trees']==ct][metric+' distance to true tree']) for ct in set(aggdat['simulations ranked by number of maximally parsimonious trees'])])
+    x, y = zip(*[pearsonr(aggdat[aggdat['simulations ranked by parsimony degeneracy']==ct]['log-likelihood'], aggdat[aggdat['simulations ranked by parsimony degeneracy']==ct][metric+' distance to true tree']) for ct in set(aggdat['simulations ranked by parsimony degeneracy'])])
     plt.plot(x, -scipy.log10(y), 'o', alpha=.75, label=metric, clip_on=False)
 #sns.regplot('Pearson r', '-log10 P', aggdat, fit_reg=False, color='black', scatter_kws={'clip_on':False})
 plt.xlabel('correlation of log-likelihood with\ndistance from true tree (Pearson r)')
@@ -57,7 +57,7 @@ plt.savefig(args.outbase+'.volcano.pdf')
 
 for metric in ('RF', 'MRCA'):
     plt.figure()
-    g = sns.FacetGrid(aggdat, col='simulations ranked by number of maximally parsimonious trees', size=3, ylim=[0, aggdat[metric+' distance to true tree'].max()], sharex=False)#, sharey=False)
+    g = sns.FacetGrid(aggdat, col='simulations ranked by parsimony degeneracy', size=3, ylim=[0, aggdat[metric+' distance to true tree'].max()], sharex=False)#, sharey=False)
     g.map(sns.regplot, 'log-likelihood', metric+' distance to true tree', scatter_kws={'color':'black', 'alpha':.5}, line_kws={'color':'grey', 'alpha':.5})
     g.set(clip_on=False, title='')
     g.fig.subplots_adjust(wspace=.15, hspace=.15)
@@ -71,8 +71,8 @@ plt.figure(figsize=(7, 6))
 for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree'), 1):
     maxy[metric] = 1.1*aggdat[metric].max()
     plt.subplot(2, 1, i)
-    sns.boxplot(x='simulations ranked by number of maximally parsimonious trees', y=metric, data=aggdat[aggdat['ismle']==False], color='gray')
-    sns.stripplot(x='simulations ranked by number of maximally parsimonious trees', y=metric, color='red', data=aggdat[aggdat['ismle']])
+    sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat[aggdat['ismle']==False], color='gray')
+    sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color='red', data=aggdat[aggdat['ismle']])
     plt.ylim(-.5, maxy[metric])
     plt.tick_params(
     axis='x',          # changes apply to the x-axis
