@@ -702,7 +702,8 @@ class MutationModel():
         raise RuntimeError('100 consecutive attempts for creating a target sequence failed.')
 
 
-    def simulate(self, sequence, progeny=poisson(.9), lambda0=1, frame=None, N=None, T=None, n=None, verbose=False, selection_params=None):
+    def simulate(self, sequence, seq_bounds=None, progeny=poisson(.9), lambda0=[1], frame=None,
+                 N=None, T=None, n=None, verbose=False, selection_params=None):
         '''
         simulate neutral binary branching process with mutation model
         progeny must be like a scipy.stats distribution, with rvs() and mean() methods
@@ -836,7 +837,13 @@ class MutationModel():
                     if not n_children:
                         leaf.terminated = True
                     for child_count in range(n_children):
-                        mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0, frame=frame)
+                        # If sequence pair mutate them separately with their own mutation rate:
+                        if seq_bounds is not None:
+                            mutated_sequence1 = self.mutate(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]], lambda0=lambda0[0], frame=frame)
+                            mutated_sequence2 = self.mutate(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]], lambda0=lambda0[1], frame=frame)
+                            mutated_sequence = mutated_sequence1 + mutated_sequence2
+                        else:
+                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0[0], frame=frame)
                         child = TreeNode()
                         child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
                         child.add_feature('sequence', mutated_sequence)
@@ -1228,6 +1235,8 @@ def simulate(args):
     mutation_model = MutationModel(args.mutability, args.substitution)
     # <---- Selection:
     if args.selection:
+        if args.frame is None:
+            raise Exception('Frame must be defined when simulating with selection.')
         assert(args.B_total >= args.f_full)  # the fully activating fraction on BA must be possible to reach within B_total
         # Make a list of target sequences:
         targetAAseqs = [mutation_model.one_mutant(args.sequence, args.target_dist, frame=args.frame) for i in range(args.target_count)]
@@ -1243,11 +1252,30 @@ def simulate(args):
     if args.lambda0 is None:
         args.lambda0 = max([1, int(.01*len(args.sequence))])
     args.sequence = args.sequence.upper()
+    if args.sequence2 is not None:
+        if len(args.lambda0) == 1:  # Use the same mutation rate on both sequences
+            args.lambda0 = [args.lambda0[0], args.lambda0[0]]
+        elif len(args.lambda0) != 2:
+            raise Exception('Only one or two lambda0 can be defined for a two sequence simulation.')
+        # Require both sequences to be in frame 1:
+        if args.frame is not None and args.frame != 1:
+            print('Warning: When simulating with two sequences they are truncated to be beginning at frame 1.')
+            args.sequence = args.sequence[(args.frame-1):(args.frame-1+(3*(((len(args.sequence)-(args.frame-1))//3))))]
+            args.sequence2 = args.sequence2[(args.frame-1):(args.frame-1+(3*(((len(args.sequence2)-(args.frame-1))//3))))]
+        # Extract the bounds between sequence 1 and 2:
+        seq_bounds = ((0, len(args.sequence)), (len(args.sequence), len(args.sequence)+len(args.sequence2)))
+        # Merge the two seqeunces to simplify future dealing with the pair:
+        args.sequence += args.sequence2.upper()
+
+    else:
+        seq_bounds = None
+
     trials = 1000
     # this loop makes us resimulate if size too small, or backmutation
     for trial in range(trials):
         try:
             tree = mutation_model.simulate(args.sequence,
+                                           seq_bounds=seq_bounds,
                                            progeny=poisson(args.lambda_),
                                            lambda0=args.lambda0,
                                            n=args.n,
@@ -1272,16 +1300,34 @@ def simulate(args):
     if trial == trials - 1:
         raise RuntimeError('{} attempts exceeded'.format(trials))
 
-    with open(args.outbase+'.simulation.fasta', 'w') as f:
-        f.write('>naive\n')
-        f.write(args.sequence+'\n')
+    # In the case of a sequence pair print them to separate files:
+    if args.sequence2 is not None:
+        fh1 = open(args.outbase+'.simulation_seq1.fasta', 'w')
+        fh2 = open(args.outbase+'.simulation_seq2.fasta', 'w') 
+        fh1.write('>naive\n')
+        fh1.write(args.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
+        fh2.write('>naive\n')
+        fh2.write(args.sequence[seq_bounds[1][0]:seq_bounds[1][1]]+'\n')
         i = 0
         for leaf in tree.iter_leaves():
             if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
                 i += 1
-                f.write('>seq{}\n'.format(i))
-                f.write(leaf.sequence+'\n')
+                fh1.write('>seq{}\n'.format(i))
+                fh1.write(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
+                fh2.write('>seq{}\n'.format(i))
+                fh2.write(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]]+'\n')
                 leaf.name = 'seq{}'.format(i)
+    else:
+        with open(args.outbase+'.simulation.fasta', 'w') as f:
+            f.write('>naive\n')
+            f.write(args.sequence+'\n')
+            i = 0
+            for leaf in tree.iter_leaves():
+                if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
+                    i += 1
+                    f.write('>seq{}\n'.format(i))
+                    f.write(leaf.sequence+'\n')
+                    leaf.name = 'seq{}'.format(i)
 
     # some observable simulation stats to write
     frequency, distance_from_naive, degree = zip(*[(node.frequency,
@@ -1433,8 +1479,11 @@ def main():
     parser_sim.add_argument('sequence', type=str, help='seed naive nucleotide sequence')
     parser_sim.add_argument('mutability', type=str, help='path to mutability model file')
     parser_sim.add_argument('substitution', type=str, help='path to substitution model file')
+    parser_sim.add_argument('--sequence2', type=str, default=None, help='Second seed naive nucleotide sequence. For simulating heavy/light chain co-evolution.')
     parser_sim.add_argument('--lambda', dest='lambda_', type=float, default=.9, help='poisson branching parameter')
-    parser_sim.add_argument('--lambda0', type=float, default=None, help='baseline mutation rate')
+    parser_sim.add_argument('--lambda0', type=float, default=None, nargs='*', help='List of one or two elements with the baseline mutation rates. Space separated input values.'
+                            'First element belonging to seed sequence one and optionally the next to sequence 2. If only one rate is provided for two sequences,'
+                            'this rate will be used on both.')
     parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
     parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
     parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
