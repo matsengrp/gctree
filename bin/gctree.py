@@ -1250,7 +1250,7 @@ def simulate(args):
         selection_params = None
     # ----/> Selection
     if args.lambda0 is None:
-        args.lambda0 = max([1, int(.01*len(args.sequence))])
+        args.lambda0 = [max([1, int(.01*len(args.sequence))])]
     args.sequence = args.sequence.upper()
     if args.sequence2 is not None:
         if len(args.lambda0) == 1:  # Use the same mutation rate on both sequences
@@ -1303,7 +1303,7 @@ def simulate(args):
     # In the case of a sequence pair print them to separate files:
     if args.sequence2 is not None:
         fh1 = open(args.outbase+'.simulation_seq1.fasta', 'w')
-        fh2 = open(args.outbase+'.simulation_seq2.fasta', 'w') 
+        fh2 = open(args.outbase+'.simulation_seq2.fasta', 'w')
         fh1.write('>naive\n')
         fh1.write(args.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
         fh2.write('>naive\n')
