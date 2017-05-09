@@ -24,7 +24,7 @@ from matplotlib import rc, ticker
 import pandas as pd
 #import seaborn as sns; sns.set(style="white", color_codes=True)
 from scipy.stats import probplot, poisson
-from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, SVG_COLORS
+from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, AttrFace, SVG_COLORS
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 from Bio.Data.IUPACData import ambiguous_dna_values
@@ -192,7 +192,8 @@ class CollapsedTree(LeavesAndClades):
                 if node.dist == 0:
                     node.up.frequency += node.frequency
                     # if node.name and not node.up.name:
-                    node.up.name = node.name
+                    if node.up != self.tree:
+                        node.up.name = node.name
                     node.delete(prevent_nondicotomic=False)
 
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
@@ -285,19 +286,33 @@ class CollapsedTree(LeavesAndClades):
     def render(self, outfile, colormap=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
-            if node.frequency > 0:
+            #if node.frequency > 0:
                 circle_color = 'lightgray' if colormap is None or node.name not in colormap else colormap[node.name]
                 text_color = 'black'
-                C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color})
-                C.rotation = -90
-                faces.add_face_to_node(C, node, 0)
+                if isinstance(circle_color, str):
+                    C = CircleFace(radius=max(3, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color} if node.frequency > 0 else None)
+                    C.rotation = -90
+                    C.hz_align = 1
+                    faces.add_face_to_node(C, node, 0)
+                else:
+                    #for color in circle_color:
+                    #    C = CircleFace(radius=max(.1, 10*scipy.sqrt(circle_color[color])), color=color, label={'text':str(circle_color[color]), 'color':text_color})
+                    #    C.rotation = -90
+                    #    faces.add_face_to_node(C, node, 0, position='float')
+                    P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=list(circle_color.keys()), line_color=None)
+                    T = TextFace(' '.join([str(x) for x in list(circle_color.values())]))
+                    T.hz_align = 1
+                    T.vt_align = 1
+                    T.rotation = -90
+                    faces.add_face_to_node(P, node, 0, position='float')#0)
+                    faces.add_face_to_node(T, node, 0, position='float')#0)
         for node in self.tree.traverse():
             nstyle = NodeStyle()
-            if node.frequency == 0:
-                nstyle['size'] = 5
-                nstyle['fgcolor'] = 'grey'
-            else:
-                nstyle['size'] = 0
+            #if node.frequency == 0:
+            #    nstyle['size'] = 5
+            #    nstyle['fgcolor'] = 'grey'
+            #else:
+            nstyle['size'] = 0
             #     nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.frequency)
             #     nstyle['fgcolor'] = 'black'
             if node.up is not None:
@@ -315,12 +330,13 @@ class CollapsedTree(LeavesAndClades):
                             nstyle['hz_line_width'] = nonsyn
                         else:
                             nstyle['hz_line_type'] = 1
-
             node.set_style(nstyle)
 
         ts = TreeStyle()
         ts.show_leaf_name = False
         ts.rotation = 90
+        ts.draw_aligned_faces_as_table = False
+        ts.allow_face_overlap = True
         ts.layout_fn = my_layout
         ts.show_scale = False
         #self.tree.ladderize()
@@ -1127,7 +1143,11 @@ def infer(args):
             colormap = {}
             for line in f:
                 seqid, color = line.rstrip().split('\t')
-                colormap[seqid] = color
+                if ',' in color:
+                    colors = {x.split(':')[0]:int(x.split(':')[1]) for x in color.split(',')}
+                    colormap[seqid] = colors
+                else:
+                    colormap[seqid] = color
     else:
         colormap = None
 
