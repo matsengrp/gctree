@@ -1224,22 +1224,6 @@ def simulate(args):
     the higher fitness and the closer lambda will approach 2, vice versa when the sequence is far away lambda approaches 0.
     '''
     mutation_model = MutationModel(args.mutability, args.substitution)
-    # <---- Selection:
-    if args.selection:
-        if args.frame is None:
-            raise Exception('Frame must be defined when simulating with selection.')
-        assert(args.B_total >= args.f_full)  # the fully activating fraction on BA must be possible to reach within B_total
-        # Make a list of target sequences:
-        targetAAseqs = [mutation_model.one_mutant(args.sequence, args.target_dist, frame=args.frame) for i in range(args.target_count)]
-        # Find the total amount of A necessary for sustaining the inputted carrying capacity:
-        print((args.carry_cap, args.B_total, args.f_full, args.mature_affy))
-        A_total = find_A_total(args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U)
-        # Calculate the parameters for the logistic function:
-        Lp = find_Lp(args.f_full, args.U)
-        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
-    else:
-        selection_params = None
-    # ----/> Selection
     if args.lambda0 is None:
         args.lambda0 = max([1, int(.01*len(args.sequence))])
     args.sequence = args.sequence.upper()
@@ -1257,9 +1241,24 @@ def simulate(args):
         seq_bounds = ((0, len(args.sequence)), (len(args.sequence), len(args.sequence)+len(args.sequence2)))
         # Merge the two seqeunces to simplify future dealing with the pair:
         args.sequence += args.sequence2.upper()
-
     else:
         seq_bounds = None
+    # <---- Selection:
+    if args.selection:
+        if args.frame is None:
+            raise Exception('Frame must be defined when simulating with selection.')
+        assert(args.B_total >= args.f_full)  # the fully activating fraction on BA must be possible to reach within B_total
+        # Make a list of target sequences:
+        targetAAseqs = [mutation_model.one_mutant(args.sequence, args.target_dist, frame=args.frame) for i in range(args.target_count)]
+        # Find the total amount of A necessary for sustaining the inputted carrying capacity:
+        print((args.carry_cap, args.B_total, args.f_full, args.mature_affy))
+        A_total = find_A_total(args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U)
+        # Calculate the parameters for the logistic function:
+        Lp = find_Lp(args.f_full, args.U)
+        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
+    else:
+        selection_params = None
+    # ----/> Selection
 
     trials = 1000
     # this loop makes us resimulate if size too small, or backmutation
