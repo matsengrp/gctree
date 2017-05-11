@@ -24,7 +24,7 @@ from matplotlib import rc, ticker
 import pandas as pd
 #import seaborn as sns; sns.set(style="white", color_codes=True)
 from scipy.stats import probplot, poisson
-from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, faces, AttrFace, SVG_COLORS
+from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, AttrFace, SVG_COLORS
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 from Bio.Data.IUPACData import ambiguous_dna_values
@@ -191,7 +191,8 @@ class CollapsedTree(LeavesAndClades):
             for node in self.tree.get_descendants():
                 if node.dist == 0:
                     node.up.frequency += node.frequency
-                    if node.name and not node.up.name:
+                    # if node.name and not node.up.name:
+                    if node.up != self.tree:
                         node.up.name = node.name
                     node.delete(prevent_nondicotomic=False)
 
@@ -285,19 +286,33 @@ class CollapsedTree(LeavesAndClades):
     def render(self, outfile, colormap=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
-            if node.frequency > 0:
-                circle_color = 'lightgray' if colormap is None else colormap[node.name]
+            #if node.frequency > 0:
+                circle_color = 'lightgray' if colormap is None or node.name not in colormap else colormap[node.name]
                 text_color = 'black'
-                C = CircleFace(radius=max(.1, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color})
-                C.rotation = -90
-                faces.add_face_to_node(C, node, 0)
+                if isinstance(circle_color, str):
+                    C = CircleFace(radius=max(3, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color} if node.frequency > 0 else None)
+                    C.rotation = -90
+                    C.hz_align = 1
+                    faces.add_face_to_node(C, node, 0)
+                else:
+                    #for color in circle_color:
+                    #    C = CircleFace(radius=max(.1, 10*scipy.sqrt(circle_color[color])), color=color, label={'text':str(circle_color[color]), 'color':text_color})
+                    #    C.rotation = -90
+                    #    faces.add_face_to_node(C, node, 0, position='float')
+                    P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=list(circle_color.keys()), line_color=None)
+                    T = TextFace(' '.join([str(x) for x in list(circle_color.values())]))
+                    T.hz_align = 1
+                    T.vt_align = 1
+                    T.rotation = -90
+                    faces.add_face_to_node(P, node, 0, position='float')#0)
+                    faces.add_face_to_node(T, node, 0, position='float')#0)
         for node in self.tree.traverse():
             nstyle = NodeStyle()
-            if node.frequency == 0:
-                nstyle['size'] = 5
-                nstyle['fgcolor'] = 'grey'
-            else:
-                nstyle['size'] = 0
+            #if node.frequency == 0:
+            #    nstyle['size'] = 5
+            #    nstyle['fgcolor'] = 'grey'
+            #else:
+            nstyle['size'] = 0
             #     nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.frequency)
             #     nstyle['fgcolor'] = 'black'
             if node.up is not None:
@@ -315,12 +330,13 @@ class CollapsedTree(LeavesAndClades):
                             nstyle['hz_line_width'] = nonsyn
                         else:
                             nstyle['hz_line_type'] = 1
-
             node.set_style(nstyle)
 
         ts = TreeStyle()
         ts.show_leaf_name = False
         ts.rotation = 90
+        ts.draw_aligned_faces_as_table = False
+        ts.allow_face_overlap = True
         ts.layout_fn = my_layout
         ts.show_scale = False
         #self.tree.ladderize()
@@ -1122,11 +1138,24 @@ def infer(args):
     with open(args.outbase+'.inference.parsimony_forest.p', 'wb') as f:
         pickle.dump(parsimony_forest, f)
 
+    if args.colormapfile is not None:
+        with open(args.colormapfile, 'r') as f:
+            colormap = {}
+            for line in f:
+                seqid, color = line.rstrip().split('\t')
+                if ',' in color:
+                    colors = {x.split(':')[0]:int(x.split(':')[1]) for x in color.split(',')}
+                    colormap[seqid] = colors
+                else:
+                    colormap[seqid] = color
+    else:
+        colormap = None
+
     print('tree\talleles\tlogLikelihood')
     for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
         alleles = sum(1 for _ in collapsed_tree.tree.traverse())
         print('{}\t{}\t{}'.format(i, alleles, l))
-        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i))
+        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i), colormap)
 
     # rank plot of likelihoods
     plt.figure(figsize=(6.5,2))
@@ -1225,7 +1254,7 @@ def simulate(args):
     '''
     mutation_model = MutationModel(args.mutability, args.substitution)
     if args.lambda0 is None:
-        args.lambda0 = max([1, int(.01*len(args.sequence))])
+        args.lambda0 = [max([1, int(.01*len(args.sequence))])]
     args.sequence = args.sequence.upper()
     if args.sequence2 is not None:
         if len(args.lambda0) == 1:  # Use the same mutation rate on both sequences
@@ -1293,7 +1322,7 @@ def simulate(args):
     # In the case of a sequence pair print them to separate files:
     if args.sequence2 is not None:
         fh1 = open(args.outbase+'.simulation_seq1.fasta', 'w')
-        fh2 = open(args.outbase+'.simulation_seq2.fasta', 'w') 
+        fh2 = open(args.outbase+'.simulation_seq2.fasta', 'w')
         fh1.write('>naive\n')
         fh1.write(args.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
         fh2.write('>naive\n')
@@ -1459,6 +1488,7 @@ def main():
     parser_infer.add_argument('--naive', type=str, default=None, help='name of naive sequence (outgroup root)')
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.add_argument('countfile', type=str, help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
+    parser_infer.add_argument('--colormapfile', type=str, default=None, help='File containing color map in the format: "SeqID\tcolor"')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram

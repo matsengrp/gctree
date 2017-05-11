@@ -42,9 +42,10 @@ if gctree or igphyml:
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
     phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
-                          os.path.join(outdir, basename)+'.counts'],
+                          os.path.join(outdir, basename)+'.counts',
+                          os.path.join(outdir, basename)+'.idmap'],
                           fasta,
-                          'stdbuf -oL python bin/fasta2phylip.py $SOURCE ${TARGETS[1]} '+ frame_arg+converter_arg+
+                          'stdbuf -oL python bin/fasta2phylip.py $SOURCE --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
                           '--naive '+naiveID+' > ${TARGETS[0]}')
 # Update the naive ID:
 naiveID = naiveID.lower()

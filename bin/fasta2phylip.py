@@ -9,9 +9,10 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
+from collections import defaultdict
 
 def Tas_parse(aln_file, naive, frame=None):
-    naive = naive.lower()
+    # naive = naive.lower()
     aln = AlignIO.read(aln_file, 'fasta')
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -21,37 +22,37 @@ def Tas_parse(aln_file, naive, frame=None):
         start = 0
         end = sequence_length
 
-    seqs_unique_counts = {}
+    seqs_unique_counts = defaultdict(list)
     id_set = set()
     for seq in aln:
-        seq.id = seq.id.lower()
+        # seq.id = seq.id.lower()
         # if id is just an integer, assume it represents count of that sequence
-        seqstr = str(seq.seq)[start:end]
-        if seq.id == naive:
-            naive_seq = seqstr
-            if seqstr not in seqs_unique_counts:
-                seqs_unique_counts[seqstr] = 0 # no observed naive unless we see it elsewhere
-        elif seq.id.isdigit():
-            seqs_unique_counts[seqstr] = int(seq.id)
-        elif str(seq.seq) not in seqs_unique_counts:
-            seqs_unique_counts[seqstr] = 1
-        else:
-            seqs_unique_counts[seqstr] += 1
-
         if seq.id in id_set:
             print('Sequence ID found multiple times:', seq.id)
             raise Exception
         else:
             id_set.add(seq.id)
+        seqstr = str(seq.seq)[start:end]
+        if seq.id == naive:
+            naive_seq = seqstr
+            if seqstr not in seqs_unique_counts:
+                seqs_unique_counts[seqstr] = [] # no observed naive unless we see it elsewhere
+        elif seq.id.isdigit():
+            seqs_unique_counts[seqstr] = [seq.id for _ in range(int(seq.id))]
+        else:
+            seqs_unique_counts[seqstr].append(seq.id)
 
-    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive)])
-    counts = {naive: seqs_unique_counts[naive_seq]}  # Add the count for the naive sequence
+
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
+    counts = {naive.lower(): len(seqs_unique_counts[naive_seq])}  # Add the count for the naive sequence
+    id_map = {naive.lower(): [x for x in seqs_unique_counts[naive_seq] if x != naive]}
     del seqs_unique_counts[naive_seq]  # Now delete the naive so it does not appear twice
     for i, seq in enumerate(seqs_unique_counts, 1):
         new_id = 'seq'+str(i)
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=new_id))
-        counts[new_id] = seqs_unique_counts[seq]
-    return new_aln, counts
+        counts[new_id] = len(seqs_unique_counts[seq])
+        id_map[new_id] = seqs_unique_counts[seq]
+    return new_aln, counts, id_map
 
 
 def check_header(header):
@@ -126,7 +127,8 @@ def main():
                                                  'For Vitora data any integer ids indicats frequency.'
                                                  'Because dnapars will name internal nodes by intergers a node name must include'
                                                  'at least one non number character.')
-    parser.add_argument('countfile', type=str, help='Filename for the output file containing the counts.')
+    parser.add_argument('--countfile', type=str, default=None, help='Filename for the output file containing the counts.')
+    parser.add_argument('--idmapfile', type=str, default=None, help='Filename for the output file containing the counts.')
     parser.add_argument('--converter', type=str, help='Use a special format convertion scheme e.g. for a Vitora lab GC fasta file. Options: [tas]')
     specified_coverters = ['tas']
     parser.add_argument('--naive', type=str, default='naive', help='naive sequence id')
@@ -134,7 +136,7 @@ def main():
     args = parser.parse_args()
 
     if args.converter is not None and args.converter.lower() in specified_coverters:
-        new_aln, counts = Tas_parse(args.infile, args.naive, frame=args.frame)
+        new_aln, counts, id_map = Tas_parse(args.infile, args.naive, frame=args.frame)
     elif args.converter is not None and args.converter.lower() not in specified_coverters:
         print('Cannot find the specified converter:', args.converter)
         print('Allowed converters:', specified_coverters.join(','))
@@ -146,6 +148,11 @@ def main():
         fh_out = open(args.countfile, 'w')
         for seqID, count in counts.items():
             print('{},{}'.format(seqID, count), file=fh_out)
+        fh_out.close()
+    if args.idmapfile is not None:
+        fh_out = open(args.idmapfile, 'w')
+        for seqID, seqIDs in id_map.items():
+            print('{},{}'.format(seqID, ':'.join(seqIDs)), file=fh_out)
         fh_out.close()
 
 if __name__ == '__main__':
