@@ -21,6 +21,7 @@ if gctree:
     w.add_aggregate('gctree_agg', list) # <-- for aggregating repeated simulations with the same parameters
 w.add_aggregate('agg', list) # <-- for aggregating inference result from repeated simulations with the same parameters
 w.add_aggregate('simstat_agg', list) # <-- for aggregating simulation stats with the same parameters
+w.add_aggregate('simstat_agg2', list) # <-- summary stats for CFT study (no abundance)
 
 # next nest, just random simulation reruns, same params
 w.add('runs', range(1, nsim+1))
@@ -51,6 +52,7 @@ def gctree_sim(outdir, c):
                         n_arg+
                         ' > ${TARGETS[4]}')
     c['simstat_agg'].append(tgt[1])
+    c['simstat_agg2'].append(tgt[0])
     return tgt
 
 @w.add_target()
@@ -100,6 +102,16 @@ def simstat_aggregate(outdir, c):
                       ' --experimental Tas_data/150228_Clone_3-8.fasta > ${TARGETS[0]}')
     env.AlwaysBuild(tgt)
     return tgt
+
+# @w.add_target()
+# def simstat_aggregate2(outdir, c):
+#     '''aggregate simulation stats CFT version'''
+#     tgt = env.Command([os.path.join(outdir, 'gctree.simulation.stats2.log')],
+#                       c['simstat_agg2'],
+#                       'stdbuf -oL python bin/summary_stats.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.stats')+
+#                       ' --experimental Tas_data/150228_Clone_3-8.fasta > ${TARGETS[0]}')
+#     env.AlwaysBuild(tgt)
+#     return tgt
 
 @w.add_target()
 def inner_aggregate(outdir, c):
