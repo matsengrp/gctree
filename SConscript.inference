@@ -81,6 +81,7 @@ if gctree:
 
 
 if igphyml:
+    # basename = 'igphyml'
     # Need the dedup phy as fa for ASR:
     dedup_fasta = env.Command([os.path.join(outdir, basename+'.dedup.fasta'),
                                os.path.join(outdir, basename+'.dedup.log')],

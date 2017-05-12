@@ -73,7 +73,7 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
     if penalty_cap is not None and gap_penalty < penalty_cap:
         gap_penalty = penalty_cap
 
-    # Regerate a score matrix matrix:
+    # Generate a score matrix matrix:
     kt = len(lt)
     ki = len(li)
     sc_mat = np.zeros((kt, ki), dtype=np.int64)
