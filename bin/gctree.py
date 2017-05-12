@@ -931,7 +931,7 @@ class MutationModel():
 
         # assign unique names to each node
         for i, node in enumerate(tree.traverse(), 1):
-            node.name = 'seq{}'.format(i)
+            node.name = 'simcell_gctreeinternal_{}'.format(i)
 
         # return the fine (uncollapsed) tree
         return tree
@@ -1331,11 +1331,11 @@ def simulate(args):
         for leaf in tree.iter_leaves():
             if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
                 i += 1
-                fh1.write('>seq{}\n'.format(i))
+                fh1.write('>simcell{}\n'.format(i))
                 fh1.write(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
-                fh2.write('>seq{}\n'.format(i))
+                fh2.write('>simcell{}\n'.format(i))
                 fh2.write(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]]+'\n')
-                leaf.name = 'seq{}'.format(i)
+                leaf.name = 'simcell{}'.format(i)
     else:
         with open(args.outbase+'.simulation.fasta', 'w') as f:
             f.write('>naive\n')
@@ -1344,9 +1344,9 @@ def simulate(args):
             for leaf in tree.iter_leaves():
                 if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
                     i += 1
-                    f.write('>seq{}\n'.format(i))
+                    f.write('>simcell{}\n'.format(i))
                     f.write(leaf.sequence+'\n')
-                    leaf.name = 'seq{}'.format(i)
+                    leaf.name = 'simcell{}'.format(i)
 
     # some observable simulation stats to write
     frequency, distance_from_naive, degree = zip(*[(node.frequency,
@@ -1396,20 +1396,14 @@ def simulate(args):
     # create an id-wise colormap
     if args.plotAA and args.selection:
         colormap = {node.name:colors[node.AAseq] for node in collapsed_tree.tree.traverse()}
-        collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
-        collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
-        # print colormap to file
-        with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
-            for name, color in colormap.items():
-                f.write(name + '\t' + color + '\n')
     else:
         colormap = {node.name:colors[node.sequence] for node in collapsed_tree.tree.traverse()}
-        collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
-        collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
-        # print colormap to file
-        with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
-            for name, color in colormap.items():
-                f.write(name + '\t' + color + '\n')
+    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
+    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
+    # print colormap to file
+    with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
+        for name, color in colormap.items():
+            f.write(name + '\t' + color + '\n')
 
 
     if args.selection:

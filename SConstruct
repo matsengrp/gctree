@@ -103,7 +103,7 @@ if simulate:
               action='append',
               default=[],
               help='baseline mutation rate')
-    lambda0_list = GetOption('lambda0') 
+    lambda0_list = GetOption('lambda0')
     if len(lambda0_list) == 0:
         lambda0_list = [.25]
     AddOption('--n',
@@ -126,6 +126,17 @@ if simulate:
               default=10,
               help='number of simulations with each parameter parameter choice')
     nsim = GetOption('nsim')
+    AddOption('--experimental',
+              type='string',
+              action='append',
+              default=[],
+              help='experimental fastas for comparing summary stats (CFT)')
+    experimental_list = GetOption('experimental')
+    AddOption('--naiveIDexp',
+              type='string',
+              default='naive0',
+              help='id of naive seq in the experimental data (CFT)')
+    naiveIDexp = GetOption('naiveIDexp')
 
 elif inference:
     AddOption('--fasta',
@@ -153,7 +164,7 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner')
+               exports='env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')

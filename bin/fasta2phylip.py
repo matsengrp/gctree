@@ -37,8 +37,11 @@ def fasta_parse(aln_file, naive, frame=None, converter=None):
             naive_seq = seqstr
             if seqstr not in seqs_unique_counts:
                 seqs_unique_counts[seqstr] = [] # no observed naive unless we see it elsewhere
-        elif seq.id.isdigit() and converter.lower() == 'tas':
-            seqs_unique_counts[seqstr] = [seq.id for _ in range(int(seq.id))]
+        elif seq.id.isdigit() and converter is not None:
+            if converter.lower() == 'tas':
+                seqs_unique_counts[seqstr] = [seq.id for _ in range(int(seq.id))]
+            else:
+                raise ValueError('invalid converter: '+converter)
         else:
             seqs_unique_counts[seqstr].append(seq.id)
 

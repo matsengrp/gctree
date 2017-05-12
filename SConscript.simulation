@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner')
+Import('env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -21,7 +21,7 @@ if gctree:
     w.add_aggregate('gctree_agg', list) # <-- for aggregating repeated simulations with the same parameters
 w.add_aggregate('agg', list) # <-- for aggregating inference result from repeated simulations with the same parameters
 w.add_aggregate('simstat_agg', list) # <-- for aggregating simulation stats with the same parameters
-w.add_aggregate('simstat_agg2', list) # <-- summary stats for CFT study (no abundance)
+w.add_aggregate('summary_stats', list) # <-- summary stats for CFT study (no abundance)
 
 # next nest, just random simulation reruns, same params
 w.add('runs', range(1, nsim+1))
@@ -52,7 +52,7 @@ def gctree_sim(outdir, c):
                         n_arg+
                         ' > ${TARGETS[4]}')
     c['simstat_agg'].append(tgt[1])
-    c['simstat_agg2'].append(tgt[0])
+    c['summary_stats'].append(tgt[0])
     return tgt
 
 @w.add_target()
@@ -103,15 +103,17 @@ def simstat_aggregate(outdir, c):
     env.AlwaysBuild(tgt)
     return tgt
 
-# @w.add_target()
-# def simstat_aggregate2(outdir, c):
-#     '''aggregate simulation stats CFT version'''
-#     tgt = env.Command([os.path.join(outdir, 'gctree.simulation.stats2.log')],
-#                       c['simstat_agg2'],
-#                       'stdbuf -oL python bin/summary_stats.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.stats')+
-#                       ' --experimental Tas_data/150228_Clone_3-8.fasta > ${TARGETS[0]}')
-#     env.AlwaysBuild(tgt)
-#     return tgt
+@w.add_target()
+def summary_stats(outdir, c):
+    '''aggregate simulation stats CFT version'''
+    exp_arg = ' --experimental ' + ' '.join(experimental_list) if len(experimental_list) > 0 else ''
+    tgt = env.Command([os.path.join(outdir, 'gctree.simulation.summary_stats.log')],
+                      c['summary_stats'],
+                      'stdbuf -oL python bin/summary_stats.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.summary_stats')+
+                      exp_arg +
+                      ' --naiveIDexp ' + naiveIDexp + ' > ${TARGETS[0]}')
+    env.AlwaysBuild(tgt)
+    return tgt
 
 @w.add_target()
 def inner_aggregate(outdir, c):
