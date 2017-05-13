@@ -57,7 +57,7 @@ def find_node_by_seq(tree, sequence):
     return node[0]
 
 
-def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
+def align_lineages(seq, tree_t, tree_i, penalty_cap=None, gap_penalty_pct=10, known_root=True, allow_double_gap=False):
     '''
     Standard implementation of a Needleman-Wunsch algorithm as described here:
     http://telliott99.blogspot.com/2009/08/alignment-needleman-wunsch.html
@@ -75,7 +75,7 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
         return False
 
     # Gap penalty chosen not too large:
-    gap_penalty = -10
+    gap_penalty = int((len(seq) / 100.0) * gap_penalty_pct)
     assert(gap_penalty < 0)  # Penalties must be negative
     if penalty_cap is not None and gap_penalty < penalty_cap:
         gap_penalty = penalty_cap
@@ -83,6 +83,23 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
     # Generate a score matrix matrix:
     kt = len(lt)
     ki = len(li)
+    # Disallow gaps in the longest list:
+    if allow_double_gap is False and kt > ki:
+        # If true is longer than inferred allow gap only in inferred:
+        gap_penalty_i = gap_penalty
+        gap_penalty_j = float('inf')
+    elif allow_double_gap is False and kt < ki:
+        # If inferred is longer than true allow gap only in true:
+        gap_penalty_i = float('inf')
+        gap_penalty_j = gap_penalty
+    elif allow_double_gap is False and kt == ki:
+        # If lists are equally long no gaps are allowed:
+        gap_penalty_i = float('inf')
+        gap_penalty_j = float('inf')
+    else:
+        gap_penalty_i = gap_penalty
+        gap_penalty_j = gap_penalty
+
     sc_mat = np.zeros((kt, ki), dtype=np.int64)
     for i in range(kt):
         for j in range(ki):
@@ -93,27 +110,27 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
     # Calculate the alignment scores:
     aln_sc = np.zeros((kt+1, ki+1), dtype=np.int64)
     for i in range(0, kt+1):
-        if args.known_root is True:
+        if known_root is True:
             aln_sc[i][0] = float('inf')
         else:
-            aln_sc[i][0] = gap_penalty * i
+            aln_sc[i][0] = gap_penalty_i * i
     for j in range(0, ki+1):
-        if args.known_root is True:
+        if known_root is True:
             aln_sc[0][j] = float('inf')
         else:
-            aln_sc[0][j] = gap_penalty * j
+            aln_sc[0][j] = gap_penalty_j * j
     aln_sc[0][0] = 0  # The top left is fixed to zero
     for i in range(1, kt+1):
         for j in range(1, ki+1):
             match = aln_sc[i-1][j-1] + sc_mat[i-1, j-1]
-            delete = aln_sc[i-1][j] + gap_penalty
-            insert = aln_sc[i][j-1] + gap_penalty
-            aln_sc[i][j] = max(match, delete, insert)
+            gap_in_inferred = aln_sc[i-1][j] + gap_penalty_i
+            gap_in_true = aln_sc[i][j-1] + gap_penalty_j
+            aln_sc[i][j] = max(match, gap_in_inferred, gap_in_true)
 
     # Traceback to compute the alignment:
     align_t, align_i, asr_align = list(), list(), list()
     i, j = kt, ki
-    while i > 0 or j > 0:
+    while i > 0 and j > 0:
         sc_current = aln_sc[i][j]
         sc_diagonal = aln_sc[i-1][j-1]
         sc_up = aln_sc[i][j-1]
@@ -128,25 +145,25 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
             align_i.append(li[j-1])
             i -= 1
             j -= 1
-        elif sc_current == (sc_left + gap_penalty):
-            asr_align.append(gap_penalty)
+        elif sc_current == (sc_left + gap_penalty_i):
+            asr_align.append(gap_penalty_i)
             align_t.append(lt[i-1])
             align_i.append('-')
             i -= 1
-        elif sc_current == (sc_up + gap_penalty):
-            asr_align.append(gap_penalty)
+        elif sc_current == (sc_up + gap_penalty_j):
+            asr_align.append(gap_penalty_j)
             align_t.append('-')
             align_i.append(li[j-1])
             j -= 1
 
     # If space left fill it with gaps:
     while i > 0:
-        asr_align.append(gap_penalty)
+        asr_align.append(gap_penalty_i)
         align_t.append(lt[i-1])
         align_i.append('-')
         i -= 1
     while j > 0:
-        asr_align.append(gap_penalty)
+        asr_align.append(gap_penalty_j)
         align_t.append('-')
         align_i.append(li[j-1])
         j -= 1
@@ -167,7 +184,7 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
     return [align_t, align_i, asr_align, penalty, max_penalty]
 
 
-def lineage_dist(true_tree, inferred_tree, penalty_cap=None, freq_weigthing=False):
+def lineage_dist(true_tree, inferred_tree, penalty_cap=None, freq_weigthing=False, known_root=True, allow_double_gap=False):
     total_lineage_dist = 0
     total_max_penalty = 0
     nlineages = 0
@@ -175,7 +192,7 @@ def lineage_dist(true_tree, inferred_tree, penalty_cap=None, freq_weigthing=Fals
         if not node.frequency > 0:
             continue
 
-        aln_res = align_lineages(node.sequence, true_tree.tree, inferred_tree.tree, penalty_cap=None)
+        aln_res = align_lineages(node.sequence, true_tree.tree, inferred_tree.tree, penalty_cap=None, known_root=known_root, allow_double_gap=allow_double_gap)
         if aln_res is  False:  # Skip lineages less than three members long
             continue
         align_t, align_i, asr_align, final_score, max_penalty = aln_res
@@ -271,7 +288,9 @@ def main():
     parser.add_argument('true_tree', type=str, help='.p file containing true tree')
     parser.add_argument('true_tree_colormap', type=str, help='.tsv colormap file for true tree')
     parser.add_argument('forest_files', type=str, nargs='*', help='.p files containing forests from each inference method')
-    parser.add_argument('known_root', type=bool, default=True, help='This is root sequence known in the inferred phylogeny? If yes, the alignment is forced to end in the top left corner of the alignment grid.')
+    # Uncomment and insert into function calls to allow for these settings:
+    # parser.add_argument('--known_root', type=bool, default=True, help='This is root sequence known in the inferred phylogeny? If yes, the alignment is forced to end in the top left corner of the alignment grid.')
+    # parser.add_argument('--allow_double_gap', type=bool, default=False, help='Allow the Needleman-Wunsch algorithm to move freely and possibly introducing gaps in both true and inferred list under the same comparison.')
     parser.add_argument('--outbase', type=str, required=True, help='output file base name')
     global args
     args = parser.parse_args()
