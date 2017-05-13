@@ -58,6 +58,13 @@ def find_node_by_seq(tree, sequence):
 
 
 def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
+    '''
+    Standard implementation of a Needleman-Wunsch algorithm as described here:
+    http://telliott99.blogspot.com/2009/08/alignment-needleman-wunsch.html
+    https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+    And implemented here:
+    https://github.com/alevchuk/pairwise-alignment-in-python/blob/master/alignment.py
+    '''
     assert(penalty_cap < 0)  # Penalties must be negative
     nt = find_node_by_seq(tree_t, seq)
     lt = reconstruct_lineage(tree_t, nt)
@@ -81,14 +88,21 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
         for j in range(ki):
             # Notice the score is defined by number of mismatches:
             #sc_mat[i, j] = len(lt[i]) - fast_hamming_dist(lt[i], li[j])
-            sc_mat[i, j] =  -1 * fast_hamming_dist(lt[i], li[j])
+            sc_mat[i, j] = -1 * fast_hamming_dist(lt[i], li[j])
 
     # Calculate the alignment scores:
     aln_sc = np.zeros((kt+1, ki+1), dtype=np.int64)
     for i in range(0, kt+1):
-        aln_sc[i][0] = gap_penalty * i
+        if args.known_root is True:
+            aln_sc[i][0] = float('inf')
+        else:
+            aln_sc[i][0] = gap_penalty * i
     for j in range(0, ki+1):
-        aln_sc[0][j] = gap_penalty * j
+        if args.known_root is True:
+            aln_sc[0][j] = float('inf')
+        else:
+            aln_sc[0][j] = gap_penalty * j
+    aln_sc[0][0] = 0  # The top left is fixed to zero
     for i in range(1, kt+1):
         for j in range(1, ki+1):
             match = aln_sc[i-1][j-1] + sc_mat[i-1, j-1]
@@ -99,7 +113,7 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
     # Traceback to compute the alignment:
     align_t, align_i, asr_align = list(), list(), list()
     i, j = kt, ki
-    while i > 0 and j > 0:
+    while i > 0 or j > 0:
         sc_current = aln_sc[i][j]
         sc_diagonal = aln_sc[i-1][j-1]
         sc_up = aln_sc[i][j-1]
@@ -257,7 +271,9 @@ def main():
     parser.add_argument('true_tree', type=str, help='.p file containing true tree')
     parser.add_argument('true_tree_colormap', type=str, help='.tsv colormap file for true tree')
     parser.add_argument('forest_files', type=str, nargs='*', help='.p files containing forests from each inference method')
+    parser.add_argument('known_root', type=bool, default=True, help='This is root sequence known in the inferred phylogeny? If yes, the alignment is forced to end in the top left corner of the alignment grid.')
     parser.add_argument('--outbase', type=str, required=True, help='output file base name')
+    global args
     args = parser.parse_args()
 
     with open(args.true_tree, 'rb') as f:
