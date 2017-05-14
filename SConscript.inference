@@ -37,8 +37,6 @@ return_list = []
 
 
 if gctree or igphyml:
-    # fasta_str = str(fasta)
-    print(fasta)
     if len(fasta) == 1:
         basename = '.'.join(os.path.basename(fasta[0]).split('.')[:-1])
     else:
