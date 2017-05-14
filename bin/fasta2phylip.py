@@ -11,13 +11,13 @@ from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 from collections import defaultdict
 
-def fasta_parse(aln_files, naive, frame=None, converter=None):
+def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
     # naive = naive.lower()
-    aln = AlignIO.read(aln_files[0], 'fasta')
-    if len(aln_files) == 2:
+    aln = AlignIO.read(aln_file, 'fasta')
+    if aln_file2 is not None:
         assert frame is None
         aln_combined = MultipleSeqAlignment([])
-        aln2 = AlignIO.read(aln_files[1], 'fasta')
+        aln2 = AlignIO.read(aln_file2, 'fasta')
         for seq in aln:
             cell = (seq.id[:-1] if seq.id != naive else naive)
             for seq2 in aln2:
@@ -152,7 +152,7 @@ def main():
         print('Cannot find the specified converter:', args.converter)
         print('Allowed converters:', specified_coverters.join(','))
         raise Exception
-    new_aln, counts, id_map = fasta_parse(args.infile, args.naive, frame=args.frame, converter=args.converter)
+    new_aln, counts, id_map = fasta_parse(args.infile[0], args.naive, frame=args.frame, aln_file2=args.infile[1] if len(args.infile) == 2 else None, converter=args.converter)
     print(new_aln.format('phylip'))
     if args.countfile is not None:
         fh_out = open(args.countfile, 'w')
