@@ -16,7 +16,7 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml frame fasta outdir naiveID converter CommandRunner')
+Import('env gctree igphyml frame fasta fasta2 outdir naiveID converter CommandRunner')
 
 
 def delete_on_failure():
@@ -38,15 +38,16 @@ return_list = []
 
 if gctree or igphyml:
     # fasta_str = str(fasta)
-    print(fasta)
-    if len(fasta) == 1:
-        basename = '.'.join(os.path.basename(fasta[0]).split('.')[:-1])
+    if fasta2 is not None: #isinstance(fasta, list):
+	basename = 'combined'
+    elif isinstance(fasta, str):
+        basename = '.'.join(os.path.basename(fasta).split('.')[:-1])
     else:
-        basename = 'combined'
+        basename = 'gctree.simulation'
     # parse fasta file to phylip, interpreting integer names as frequencies
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
-    phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
+    phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if fasta2 is None and isinstance(fasta, str) else os.path.join(outdir, 'gctree.combined.phylip') if fasta2 is not None else os.path.join(outdir, 'gctree.simulation.phylip'),
                           os.path.join(outdir, basename)+'.counts',
                           os.path.join(outdir, basename)+'.idmap'],
                           fasta,

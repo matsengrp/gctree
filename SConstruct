@@ -147,6 +147,11 @@ elif inference:
               metavar='PATH',
               help='path to input fasta')
     fasta = GetOption('fasta')
+    if len(fasta) == 1:
+        fasta = fasta[0]
+        fasta2 = None
+    else:
+        fasta, fasta2 = fasta
     AddOption('--naiveID',
               type='string',
               metavar='seqID',
@@ -170,4 +175,4 @@ if simulate and not GetOption('help'):
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID converter CommandRunner')
+    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta fasta2 outdir naiveID converter CommandRunner')
