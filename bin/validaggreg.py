@@ -59,7 +59,7 @@ else:
     plt.gca().spines['top'].set_color('none')
     plt.savefig(args.outbase+'.volcano.pdf')
 
-    for metric in ('RF', 'MRCA'):
+    for metric in ('RF', 'MRCA', 'COAR', 'COAR_fw'):
         plt.figure()
         g = sns.FacetGrid(aggdat, col='simulations ranked by parsimony degeneracy', size=3, ylim=[0, aggdat[metric+' distance to true tree'].max()], sharex=False)#, sharey=False)
         g.map(sns.regplot, 'log-likelihood', metric+' distance to true tree', scatter_kws={'color':'black', 'alpha':.5}, line_kws={'color':'grey', 'alpha':.5})

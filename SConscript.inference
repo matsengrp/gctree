@@ -23,11 +23,12 @@ def delete_on_failure():
     from SCons.Script import GetBuildFailures
     for bf in GetBuildFailures():
         try:
-            # shutil.rmtree(os.path.dirname(bf.node.abspath))
-            print('There was an error for target:', bf.node.abspath)
-            print('To resolve this the base folder was deleted. '
-                  'Restarting will possibly solve the issue in case '
-                  'this was just a bad simulation. Deleted folder:', os.path.dirname(bf.node.abspath))
+            if False:  # Turn on if failed folder should be deleted
+                # shutil.rmtree(os.path.dirname(bf.node.abspath))
+                print('There was an error for target:', bf.node.abspath)
+                print('To resolve this the base folder was deleted. '
+                      'Restarting will possibly solve the issue in case '
+                      'this was just a bad simulation. Deleted folder:', os.path.dirname(bf.node.abspath))
         except OSError:
             pass  # Allow this
 # atexit.register(delete_on_failure)
@@ -84,6 +85,7 @@ if gctree:
 
 
 if igphyml:
+    # basename = 'igphyml'
     # Need the dedup phy as fa for ASR:
     dedup_fasta = env.Command([os.path.join(outdir, basename+'.dedup.fasta'),
                                os.path.join(outdir, basename+'.dedup.log')],
