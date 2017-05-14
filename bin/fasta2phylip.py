@@ -11,9 +11,21 @@ from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 from collections import defaultdict
 
-def fasta_parse(aln_file, naive, frame=None, converter=None):
+def fasta_parse(aln_files, naive, frame=None, converter=None):
     # naive = naive.lower()
-    aln = AlignIO.read(aln_file, 'fasta')
+    aln = AlignIO.read(aln_files[0], 'fasta')
+    if len(aln_files) == 2:
+        assert frame is None
+        aln_combined = MultipleSeqAlignment([])
+        aln2 = AlignIO.read(aln_files[1], 'fasta')
+        for seq in aln:
+            cell = (seq.id[:-1] if seq.id != naive else naive)
+            for seq2 in aln2:
+                cell2 = (seq2.id[:-1] if seq2.id != naive else naive)
+                if cell2 == cell:
+                    aln_combined.append(SeqRecord(Seq(str(seq.seq) + str(seq2.seq), generic_dna), id=cell))
+        aln = aln_combined
+
     sequence_length = aln.get_alignment_length()
     if frame is not None:
         start = frame-1
@@ -28,8 +40,7 @@ def fasta_parse(aln_file, naive, frame=None, converter=None):
         # seq.id = seq.id.lower()
         # if id is just an integer, assume it represents count of that sequence
         if seq.id in id_set:
-            print('Sequence ID found multiple times:', seq.id)
-            raise Exception
+            raise ValueError('Sequence ID found multiple times:', seq.id)
         else:
             id_set.add(seq.id)
         seqstr = str(seq.seq)[start:end]
@@ -56,7 +67,6 @@ def fasta_parse(aln_file, naive, frame=None, converter=None):
         counts[new_id] = len(seqs_unique_counts[seq])
         id_map[new_id] = seqs_unique_counts[seq]
     return new_aln, counts, id_map
-
 
 def check_header(header):
     try:
@@ -126,7 +136,7 @@ def main():
     parser = argparse.ArgumentParser(description='Convert a fasta file to philyp format. Headers must be a unique ID of less than '
                                                  'or equal to 10 ASCII characters. A special option for converting a Victora lab '
                                                  'GC fasta file to phylip is also included. All headers are converted to lower case.')
-    parser.add_argument('infile', type=str, help='Fasta file with less than or equal to 10 characters unique header ID. '
+    parser.add_argument('infile', type=str, nargs='+', help='Fasta file with less than or equal to 10 characters unique header ID. '
                                                  'For Vitora data any integer ids indicats frequency.'
                                                  'Because dnapars will name internal nodes by intergers a node name must include'
                                                  'at least one non number character.')
