@@ -237,7 +237,8 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
                 plt.subplot(2, 2, i)
                 ax = sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']!=maxll], fit_reg=True, color='black', scatter_kws={'alpha':.8, 'clip_on':False})
                 sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']==maxll], fit_reg=False, color='red', scatter_kws={'alpha':.8, 'clip_on':False}, ax=ax)
-                plt.ylim(-0.1, 1.1*df[metric].max())
+                plt.ylim(0, 1.1*df[metric].max())
+                plt.xlim(df[metric].min(), df[metric].max())
                 plt.tight_layout()
             plt.savefig(outbase+'.gctree.pdf')
 
