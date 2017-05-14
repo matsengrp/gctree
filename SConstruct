@@ -142,6 +142,8 @@ elif inference:
     AddOption('--fasta',
               dest='fasta',
               type='string',
+              action='append',
+              default=[],
               metavar='PATH',
               help='path to input fasta')
     fasta = GetOption('fasta')
