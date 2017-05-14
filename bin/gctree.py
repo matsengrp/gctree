@@ -283,7 +283,7 @@ class CollapsedTree(LeavesAndClades):
         '''return a string representation for printing'''
         return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
-    def render(self, outfile, colormap=None):
+    def render(self, outfile, colormap=None, leftright_split=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
             #if node.frequency > 0:
@@ -317,6 +317,21 @@ class CollapsedTree(LeavesAndClades):
             #     nstyle['fgcolor'] = 'black'
             if node.up is not None:
                 if set(node.sequence.upper()) == set('ACGT'):
+                    if leftright_split is not None:
+                        assert self.frame is None
+                        if node.frequency > 0:
+                            print(node.sequence[:leftright_split], node.sequence[leftright_split:])
+                        leftseq_mutated = hamming_distance(node.sequence[:leftright_split], node.up.sequence[:leftright_split]) > 0
+                        rightseq_mutated = hamming_distance(node.sequence[leftright_split:], node.up.sequence[leftright_split:]) > 0
+                        if leftseq_mutated and rightseq_mutated:
+                            nstyle['hz_line_color'] = 'purple'
+                            nstyle['hz_line_width'] = 3
+                        elif leftseq_mutated:
+                            nstyle['hz_line_color'] = 'red'
+                            nstyle['hz_line_width'] = 2
+                        elif rightseq_mutated:
+                            nstyle['hz_line_color'] = 'blue'
+                            nstyle['hz_line_width'] = 2
                     if self.frame is not None:
                         aa = Seq(node.sequence[(self.frame-1):(self.frame-1+(3*(((len(node.sequence)-(self.frame-1))//3))))],
                                  generic_dna).translate()
@@ -1155,7 +1170,7 @@ def infer(args):
     for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
         alleles = sum(1 for _ in collapsed_tree.tree.traverse())
         print('{}\t{}\t{}'.format(i, alleles, l))
-        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i), colormap)
+        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i), colormap, args.leftright_split)
 
     # rank plot of likelihoods
     plt.figure(figsize=(6.5,2))
@@ -1483,6 +1498,7 @@ def main():
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.add_argument('countfile', type=str, help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
     parser_infer.add_argument('--colormapfile', type=str, default=None, help='File containing color map in the format: "SeqID\tcolor"')
+    parser_infer.add_argument('--leftright_split', type=int, default=None, help='split between heavy and light for combined seqs')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram

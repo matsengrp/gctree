@@ -37,8 +37,12 @@ return_list = []
 
 
 if gctree or igphyml:
-    fasta_str = str(fasta)
-    basename = '.'.join(os.path.basename(fasta_str).split('.')[:-1])
+    # fasta_str = str(fasta)
+    print(fasta)
+    if len(fasta) == 1:
+        basename = '.'.join(os.path.basename(fasta[0]).split('.')[:-1])
+    else:
+        basename = 'combined'
     # parse fasta file to phylip, interpreting integer names as frequencies
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
@@ -46,7 +50,7 @@ if gctree or igphyml:
                           os.path.join(outdir, basename)+'.counts',
                           os.path.join(outdir, basename)+'.idmap'],
                           fasta,
-                          'stdbuf -oL python bin/fasta2phylip.py $SOURCE --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
+                          'stdbuf -oL python bin/fasta2phylip.py $SOURCES --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
                           '--naive '+naiveID+' > ${TARGETS[0]}')
 # Update the naive ID:
 naiveID = naiveID.lower()
