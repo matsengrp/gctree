@@ -64,6 +64,8 @@ def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=10, known_root=True, all
     https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
     And implemented here:
     https://github.com/alevchuk/pairwise-alignment-in-python/blob/master/alignment.py
+
+    gap_penalty_pct is the gap penalty relative to the sequence length of the sequences on the tree.
     '''
     nt = find_node_by_seq(tree_t, seq)
     lt = reconstruct_lineage(tree_t, nt)
@@ -170,7 +172,10 @@ def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=10, known_root=True, all
             max_penalty += -len(a)
     # Notice that the root and the terminal node is excluded from this comparison.
     # by adding their length to the max_penalty:
-    max_penalty += 2 * len(lt[0])
+    if known_root is True:
+        max_penalty += 2 * len(lt[0])
+    else:  # Or in the case of an unknown root, just add the terminal node
+        max_penalty += len(lt[0])
     return [align_t, align_i, alignment_score, max_penalty]
 
 
@@ -232,17 +237,25 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
         if n_trees > 1:
             # plots
             maxll = df['log-likelihood'].max()
+            if len(df[df['log-likelihood']!=maxll]) >= 2:
+                fit_reg = True
+            else:
+                fit_reg = False
             plt.figure(figsize=(10, 10))
             for i, metric in enumerate(('RF', 'MRCA', 'COAR', 'COAR_fw'), 1):
                 plt.subplot(2, 2, i)
-                ax = sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']!=maxll], fit_reg=True, color='black', scatter_kws={'alpha':.8, 'clip_on':False})
+                ax = sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']!=maxll], fit_reg=fit_reg, color='black', scatter_kws={'alpha':.8, 'clip_on':False})
                 sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']==maxll], fit_reg=False, color='red', scatter_kws={'alpha':.8, 'clip_on':False}, ax=ax)
                 plt.ylim(0, 1.1*df[metric].max())
-                plt.xlim(df[metric].min(), df[metric].max())
+                plt.xlim(df['log-likelihood'].min(), df['log-likelihood'].max())
                 plt.tight_layout()
             plt.savefig(outbase+'.gctree.pdf')
 
         df.to_csv(outbase+'.gctree.tsv', sep='\t', index=False)
+
+        plt.figure(figsize=(14, 14))
+        sns.pairplot(df, kind="reg")
+        plt.savefig(outbase+'_pairplot.pdf')
 
         for i, tree in enumerate(inferences['gctree'].forest, 1):
             colormap = dict((node.name, true_tree_colormap[node.sequence]) if node.sequence in true_tree_colormap else (node.name, 'lightgray') for node in tree.tree.traverse())

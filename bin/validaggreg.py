@@ -22,18 +22,18 @@ args = parser.parse_args()
 
 # aggdat = pd.DataFrame(columns=('parsimony forest size', 'mean allele frequency', 'mean branch length', 'MRCA distance to true tree', 'RF distance to true tree', 'trees with MRCA less than or equal to optimal tree'))
 
-aggdat = pd.DataFrame(columns=('simulations ranked by parsimony degeneracy', 'parsimony forest size', 'MRCA distance to true tree', 'RF distance to true tree', 'log-likelihood', 'ismle'))
+aggdat = pd.DataFrame(columns=('simulations ranked by parsimony degeneracy', 'parsimony forest size', 'MRCA distance to true tree', 'RF distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree', 'log-likelihood', 'ismle'))
 
 rowct = 0
 frames = []
 for i, fname in enumerate(args.input):
-    df = pd.read_csv(fname, sep='\t', usecols=('MRCA', 'RF', 'log-likelihood'))
+    df = pd.read_csv(fname, sep='\t', usecols=('COAR', 'COAR_fw', 'MRCA', 'RF', 'log-likelihood'))
     frames.append(df)
 frames.sort(key=lambda df: len(df.index), reverse=True)
 for i, df in enumerate(frames):
     mle = df['log-likelihood'].max()
     for _, row in df.iterrows():
-        aggdat.loc[rowct] = (i, len(df.index), row['MRCA'], row['RF'], row['log-likelihood'], row['log-likelihood'] == mle)
+        aggdat.loc[rowct] = (i, len(df.index), row['MRCA'], row['RF'], row['COAR'], row['COAR_fw'], row['log-likelihood'], row['log-likelihood'] == mle)
         rowct += 1
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
@@ -44,7 +44,7 @@ if aggdat.shape[0] == 0:
     print('no simulations with parsimony degeneracy!')
 else:
 
-    plt.figure(figsize=(3, 6))
+    plt.figure(figsize=(3, 12))
     for metric in ('RF', 'MRCA'):
         x, y = zip(*[pearsonr(aggdat[aggdat['simulations ranked by parsimony degeneracy']==ct]['log-likelihood'], aggdat[aggdat['simulations ranked by parsimony degeneracy']==ct][metric+' distance to true tree']) for ct in set(aggdat['simulations ranked by parsimony degeneracy'])])
         plt.plot(x, -scipy.log10(y), 'o', alpha=.75, label=metric, clip_on=False)
@@ -71,13 +71,16 @@ else:
 
     maxy = {}
 
-    plt.figure(figsize=(7, 6))
-    for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree'), 1):
+    plt.figure(figsize=(7, 12))
+    for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'), 1):
         maxy[metric] = 1.1*aggdat[metric].max()
-        plt.subplot(2, 1, i)
+        plt.subplot(4, 1, i)
         sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat[aggdat['ismle']==False], color='gray')
         sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color='red', data=aggdat[aggdat['ismle']])
-        plt.ylim(-.5, maxy[metric])
+        if 'COAR' in metric:
+            plt.ylim(0, maxy[metric])
+        else:
+            plt.ylim(-.5, maxy[metric])
         plt.tick_params(
         axis='x',          # changes apply to the x-axis
         which='both',      # both major and minor ticks are affected
@@ -91,10 +94,10 @@ else:
         plt.tight_layout()
         plt.savefig(args.outbase+'.boxplot.pdf')
 
-    plt.figure(figsize=(2, 6))
+    plt.figure(figsize=(2, 12))
     #bins = {}
-    for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree'), 1):
-        plt.subplot(2, 1, i)
+    for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'), 1):
+        plt.subplot(4, 1, i)
         sns.boxplot(x='ismle', y=metric, data=aggdat, palette={False:'gray', True:'red'}, order=(True, False))
         #binmax = int(aggdat[metric].max()+1)
         #n, bins[metric], patches = plt.hist([aggdat[metric][aggdat['ismle']],
@@ -108,7 +111,10 @@ else:
         # plt.legend(frameon=True)
         #plt.ylabel(metric)
         #plt.ylim(bins[metric][0] - .5*(bins[metric][1] - bins[metric][0]), bins[metric][-1])
-        plt.ylim(-.5, maxy[metric])
+        if 'COAR' in metric:
+            plt.ylim(0, maxy[metric])
+        else:
+            plt.ylim(-.5, maxy[metric])
         plt.tick_params(
         axis='x',          # changes apply to the x-axis
         which='both',      # both major and minor ticks are affected
@@ -121,7 +127,7 @@ else:
         plt.tight_layout()
     plt.savefig(args.outbase+'.histogram.pdf')
 
-    for metric in ('RF distance to true tree', 'MRCA distance to true tree'):
+    for metric in ('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'):
         p = mannwhitneyu(aggdat[metric][aggdat['ismle']==True], aggdat[metric][aggdat['ismle']==False], alternative='less')[1]
         print('U test significance ({}): {}'.format(metric, p))
 
