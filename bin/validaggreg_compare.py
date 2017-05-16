@@ -55,10 +55,10 @@ for i in RF_cat:
         RFs.append(str(i))
 
 df = pd.DataFrame({'correlation':correlations, 'RF':RFs})
-sns.barplot(x="RF", y="correlation", data=df)
-plt.savefig(args.outbase+'_MRSAvsCOAR.pdf')
+if df.shape[0] > 0:
+    sns.barplot(x="RF", y="correlation", data=df)
+    plt.savefig(args.outbase+'_MRSAvsCOAR.pdf')
 
 
 sns.pairplot(aggdat, kind="reg")
 plt.savefig(args.outbase+'_pairplot.pdf')
-

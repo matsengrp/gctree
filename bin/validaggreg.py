@@ -125,7 +125,7 @@ else:
         plt.gca().spines['top'].set_color('none')
         plt.xlabel('aggregated')
         plt.tight_layout()
-    plt.savefig(args.outbase+'.histogram.pdf')
+    plt.savefig(args.outbase+'.boxplot_all.pdf')
 
     for metric in ('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'):
         p = mannwhitneyu(aggdat[metric][aggdat['ismle']==True], aggdat[metric][aggdat['ismle']==False], alternative='less')[1]

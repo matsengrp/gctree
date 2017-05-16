@@ -85,6 +85,7 @@ def main():
         sns.distplot(dataset_aggdat['distance to naive sequence'],
                      bins=bins,
                      kde=False,
+                     color='gray',
                      hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':1})
 
     if args.experimental is not None:
@@ -93,6 +94,7 @@ def main():
             sns.distplot(dataset_aggdat['distance to naive sequence'],
                          bins=bins,
                          kde=False,
+                         color='black',
                          hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':3})
     plt.xlabel('distance to naive sequence')
     plt.xlim([0, bins[-1]])
@@ -108,6 +110,7 @@ def main():
         sns.distplot(dataset_aggdat['nearest neighbor distance'],
                      bins=bins,
                      kde=False,
+                     color='gray',
                      hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':1})
     if args.experimental is not None:
         for dataset, dataset_aggdat in aggdat_exp.groupby('data set'):
@@ -115,6 +118,7 @@ def main():
             sns.distplot(dataset_aggdat['nearest neighbor distance'],
                          bins=bins,
                          kde=False,
+                         color='black',
                          hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':3})
     plt.xlabel('nearest neighbor distance')
     plt.xlim([0, bins[-1]])

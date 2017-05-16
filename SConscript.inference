@@ -16,7 +16,7 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml frame fasta fasta2 outdir naiveID converter CommandRunner')
+Import('env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner')
 
 
 def delete_on_failure():
@@ -36,7 +36,7 @@ def delete_on_failure():
 return_list = []
 
 
-if gctree or igphyml:
+if gctree or igphyml or dnaml:
     # fasta_str = str(fasta)
     if fasta2 is not None: #isinstance(fasta, list):
 	basename = 'combined'
@@ -56,16 +56,36 @@ if gctree or igphyml:
 # Update the naive ID:
 naiveID = naiveID.lower()
 
+if dnaml:
+    dnaml_config = env.Command(os.path.join(outdir, 'dnaml/config.cfg'),
+                                 phylip[0],
+                                 'stdbuf -oL python bin/mkconfig.py $SOURCE dnaml --naive ' + naiveID + ' > $TARGET')
+
+    # run dnaml (from phylip package) to generate maximum likelihood tree
+    dnaml = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']),
+                       dnaml_config,
+                       'cd ' + outdir + '/dnaml && rm -f outfile outtree && dnaml < ${SOURCE.file} > ${TARGETS[2].file}')
+    # Manually depend on phylip so that we rerun dnaml if the input sequences change (without this, dnaml will
+    # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
+    env.Depends(dnaml, phylip)
+
+    dnaml_tree = env.Command([os.path.join(outdir, 'dnaml.inferred_tree.p'),
+                                 os.path.join(outdir, 'dnaml.inferred_tree.log')],
+                                [dnaml[1], phylip[1]],
+                                'TMPDIR=/tmp xvfb-run -a python bin/phylip_parse.py ${SOURCES} --outputfile ${TARGETS[0]} --naive '+naiveID+' > ${TARGETS[1]}')
+    return_list.append(dnaml_tree)
+
 if gctree:
     # make config file for dnapars
-    dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
+    quick_arg = '--quick' if quick else ''
+    dnapars_config = env.Command(os.path.join(outdir, 'dnapars/config.cfg'),
                                  phylip[0],
-                                 'stdbuf -oL python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+                                 'stdbuf -oL python bin/mkconfig.py $SOURCE dnapars --naive ' + naiveID + ' ' + quick_arg + ' > $TARGET')
 
     # run dnapars (from phylip package) to generate parsimony trees
-    dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
+    dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']),
                        dnapars_config,
-                       'cd ' + outdir + ' && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
+                       'cd ' + outdir + '/dnapars && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
     # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
     # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
     env.Depends(dnapars, phylip)
