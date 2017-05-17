@@ -18,6 +18,7 @@ from scipy.stats import pearsonr, mannwhitneyu
 parser = argparse.ArgumentParser(description='aggregate validation of repeated runs with same parameters')
 parser.add_argument('input', type=str, nargs='+', help='gctree.validation.tsv files')
 parser.add_argument('--outbase', type=str, help='output file base name')
+parser.add_argument('--allmetrics', type=str, nargs='*', default=None, help='validation.tsv files containing other metrics')
 args = parser.parse_args()
 
 # aggdat = pd.DataFrame(columns=('parsimony forest size', 'mean allele frequency', 'mean branch length', 'MRCA distance to true tree', 'RF distance to true tree', 'trees with MRCA less than or equal to optimal tree'))
@@ -26,10 +27,12 @@ aggdat = pd.DataFrame(columns=('simulations ranked by parsimony degeneracy', 'pa
 
 rowct = 0
 frames = []
-for i, fname in enumerate(args.input):
+for fname in args.input:
     df = pd.read_csv(fname, sep='\t', usecols=('COAR', 'COAR_fw', 'MRCA', 'RF', 'log-likelihood'))
     frames.append(df)
-frames.sort(key=lambda df: len(df.index), reverse=True)
+sorted_indices = sorted(range(len(frames)), key=lambda i: len(frames[i].index), reverse=True)
+frames = [frames[i] for i in sorted_indices]
+
 for i, df in enumerate(frames):
     mle = df['log-likelihood'].max()
     for _, row in df.iterrows():
@@ -38,36 +41,54 @@ for i, df in enumerate(frames):
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 
-aggdat = aggdat[(aggdat['parsimony forest size'] >= 2)]
+if args.allmetrics is not None:
 
+    aggdat['method'] = 'parsimony'
+
+    aggdat_other = pd.DataFrame(columns=('simulations ranked by parsimony degeneracy', 'method', 'MRCA distance to true tree', 'RF distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'))
+
+    frames_other = []
+    for fname in args.allmetrics:
+        df = pd.read_csv(fname, sep='\t', usecols=('method', 'COAR', 'COAR_fw', 'MRCA', 'RF'))
+        frames_other.append(df)
+    frames_other = [frames_other[i] for i in sorted_indices]
+
+    for i, df in enumerate(frames_other):
+        for _, row in df.iterrows():
+            aggdat_other.loc[rowct] = (i, row['method'], row['MRCA'], row['RF'], row['COAR'], row['COAR_fw'])
+            rowct += 1
+
+    aggdat_other.to_csv(args.outbase+'.other_metrics.tsv', sep='\t', index=False)
+
+if args.allmetrics is None:
+    aggdat = aggdat[(aggdat['parsimony forest size'] >= 2)]
 if aggdat.shape[0] == 0:
     print('no simulations with parsimony degeneracy!')
 else:
+    # plt.figure(figsize=(3, 12))
+    # for metric in ('RF', 'MRCA'):
+    #     x, y = zip(*[pearsonr(aggdat[aggdat['simulations ranked by parsimony degeneracy']==ct]['log-likelihood'], aggdat[aggdat['simulations ranked by parsimony degeneracy']==ct][metric+' distance to true tree']) for ct in set(aggdat['simulations ranked by parsimony degeneracy'])])
+    #     plt.plot(x, -scipy.log10(y), 'o', alpha=.75, label=metric, clip_on=False)
+    # #sns.regplot('Pearson r', '-log10 P', aggdat, fit_reg=False, color='black', scatter_kws={'clip_on':False})
+    # plt.xlabel('correlation of log-likelihood with\ndistance from true tree (Pearson r)')
+    # plt.ylabel('-log10 p-value')
+    # plt.xlim([-1, 1])
+    # plt.legend(frameon=True)
+    # #plt.axvline(linewidth=1, ls='--', color='gray')
+    # plt.gca().spines['left'].set_position('center')
+    # plt.gca().spines['right'].set_color('none')
+    # plt.gca().spines['top'].set_color('none')
+    # plt.savefig(args.outbase+'.volcano.pdf')
 
-    plt.figure(figsize=(3, 12))
-    for metric in ('RF', 'MRCA'):
-        x, y = zip(*[pearsonr(aggdat[aggdat['simulations ranked by parsimony degeneracy']==ct]['log-likelihood'], aggdat[aggdat['simulations ranked by parsimony degeneracy']==ct][metric+' distance to true tree']) for ct in set(aggdat['simulations ranked by parsimony degeneracy'])])
-        plt.plot(x, -scipy.log10(y), 'o', alpha=.75, label=metric, clip_on=False)
-    #sns.regplot('Pearson r', '-log10 P', aggdat, fit_reg=False, color='black', scatter_kws={'clip_on':False})
-    plt.xlabel('correlation of log-likelihood with\ndistance from true tree (Pearson r)')
-    plt.ylabel('-log10 p-value')
-    plt.xlim([-1, 1])
-    plt.legend(frameon=True)
-    #plt.axvline(linewidth=1, ls='--', color='gray')
-    plt.gca().spines['left'].set_position('center')
-    plt.gca().spines['right'].set_color('none')
-    plt.gca().spines['top'].set_color('none')
-    plt.savefig(args.outbase+'.volcano.pdf')
-
-    for metric in ('RF', 'MRCA', 'COAR', 'COAR_fw'):
-        plt.figure()
-        g = sns.FacetGrid(aggdat, col='simulations ranked by parsimony degeneracy', size=3, ylim=[0, aggdat[metric+' distance to true tree'].max()], sharex=False)#, sharey=False)
-        g.map(sns.regplot, 'log-likelihood', metric+' distance to true tree', scatter_kws={'color':'black', 'alpha':.5}, line_kws={'color':'grey', 'alpha':.5})
-        g.set(clip_on=False, title='')
-        g.fig.subplots_adjust(wspace=.15, hspace=.15)
-        #for ax in g.axes[0]:
-        #    ax.set_ylim([0, None])
-        plt.savefig(args.outbase+'.'+metric+'.pdf')
+    # for metric in ('RF', 'MRCA', 'COAR', 'COAR_fw'):
+    #     plt.figure()
+    #     g = sns.FacetGrid(aggdat, col='simulations ranked by parsimony degeneracy', size=3, ylim=[0, aggdat[metric+' distance to true tree'].max()], sharex=False)#, sharey=False)
+    #     g.map(sns.regplot, 'log-likelihood', metric+' distance to true tree', scatter_kws={'color':'black', 'alpha':.5}, line_kws={'color':'grey', 'alpha':.5})
+    #     g.set(clip_on=False, title='')
+    #     g.fig.subplots_adjust(wspace=.15, hspace=.15)
+    #     #for ax in g.axes[0]:
+    #     #    ax.set_ylim([0, None])
+    #     plt.savefig(args.outbase+'.'+metric+'.pdf')
 
     maxy = {}
 
@@ -75,8 +96,12 @@ else:
     for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'), 1):
         maxy[metric] = 1.1*aggdat[metric].max()
         plt.subplot(4, 1, i)
-        sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat[aggdat['ismle']==False], color='gray')
-        sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color='red', data=aggdat[aggdat['ismle']])
+        if args.allmetrics is None:
+            sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat[aggdat['ismle']==False], color='gray')
+            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color='red', data=aggdat[aggdat['ismle']])
+        else:
+            # sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat)#, color='gray')
+            sns.swarmplot(x='simulations ranked by parsimony degeneracy', y=metric, hue='method', data=pd.concat([aggdat, aggdat_other]))
         if 'COAR' in metric:
             plt.ylim(0, maxy[metric])
         else:
@@ -98,7 +123,10 @@ else:
     #bins = {}
     for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'), 1):
         plt.subplot(4, 1, i)
-        sns.boxplot(x='ismle', y=metric, data=aggdat, palette={False:'gray', True:'red'}, order=(True, False))
+        if args.allmetrics is None:
+            sns.boxplot(x='ismle', y=metric, data=aggdat, palette={False:'gray', True:'red'}, order=(True, False))
+        else:
+            sns.boxplot(x='method', y=metric, data=pd.concat([aggdat, aggdat_other]))#, palette={False:'gray', True:'red'}, order=(True, False))
         #binmax = int(aggdat[metric].max()+1)
         #n, bins[metric], patches = plt.hist([aggdat[metric][aggdat['ismle']],
         #                                     aggdat[metric][aggdat['ismle']==False]],
