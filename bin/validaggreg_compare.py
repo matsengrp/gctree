@@ -48,15 +48,16 @@ correlations = list()
 for i in RF_cat:
     sl = aggdat[aggdat['RF'] == i]
     if len(aggdat[aggdat['RF'] == i]) < 10:
-    	continue
+        continue
     corr_tup = pearsonr(sl['MRCA'], sl['COAR'])
     if corr_tup[0]:
         correlations.append(corr_tup[0])
         RFs.append(str(i))
 
-df = pd.DataFrame({'correlation':correlations, 'RF':RFs})
-sns.barplot(x="RF", y="correlation", data=df)
-plt.savefig(args.outbase+'_MRSAvsCOAR.pdf')
+if len(correlations) > 0:
+    df = pd.DataFrame({'correlation':correlations, 'RF':RFs})
+    sns.barplot(x="RF", y="correlation", data=df)
+    plt.savefig(args.outbase+'_MRSAvsCOAR.pdf')
 
 
 sns.pairplot(aggdat, kind="reg")
