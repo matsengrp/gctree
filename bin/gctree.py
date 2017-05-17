@@ -23,12 +23,13 @@ from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
 #import seaborn as sns; sns.set(style="white", color_codes=True)
-from scipy.stats import probplot, poisson
+from scipy.stats import poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, AttrFace, SVG_COLORS
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
-from Bio.Data.IUPACData import ambiguous_dna_values
+# from Bio.Data.IUPACData import ambiguous_dna_values
 from utils import SVG2HEX
+import phylip_parse
 try:
     # Last time I checked this module was the fastest kid on the block,
     # 5-10x faster than pure python, however 2x slower than a simple Cython function
@@ -492,91 +493,6 @@ def disambiguate(tree):
                     if node2.sequence[site] == base:
                         node2.sequence = node2.sequence[:site] + new_base + node2.sequence[(site+1):]
     return tree
-
-def phylip_parse(phylip_outfile, countfile=None, naive=None):
-    '''parse phylip outfile and return ete trees'''
-    # parse phylip outfile
-    if countfile is not None:
-        counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(countfile)}
-    # No count, just make an empty count dictionary:
-    else:
-        counts = dict()
-    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
-
-    # ete trees
-    trees = []
-    for i, tree in enumerate(outfiledat):
-        tree_sequence_dict = {}
-        parent_dict = {}
-        names = []
-        for j, block in enumerate(tree):
-            if j == 0:
-                for line in block.split('\n'):
-                    fields = line.split()
-                    if len(fields) == 0:
-                        continue
-                    name = fields[1]
-                    names.append(name)
-                    if fields[0] == 'root':
-                        seq = ''.join(fields[2:])
-                        parent = None
-                    else:
-                        seq = ''.join(fields[3:])
-                        parent = fields[0]
-                    tree_sequence_dict[name] = seq
-                    parent_dict[name] = parent
-            else:
-                for line in block.split('\n'):
-                    fields = line.split()
-                    name = fields[1]
-                    if fields[0] == 'root':
-                        seq = ''.join(fields[2:])
-                    else:
-                        seq = ''.join(fields[3:])
-                    tree_sequence_dict[name] += seq
-
-        nodes = {}
-        for name in names:
-            node = TreeNode()
-            node.name = name
-            node.add_feature('sequence', tree_sequence_dict[node.name])
-
-### Removed by KD because it is replaced by a count file
-#            if '_' in node.name:
-#                node.add_feature('frequency', int(node.name.split('_')[-1]))
-#                node.name = '_'.join(node.name.split('_')[:-1])
-#            else:
-#                node.add_feature('frequency', 0)
-
-            if node.name in counts:
-                node.add_feature('frequency', counts[node.name])
-            else:
-                node.add_feature('frequency', 0)
-            nodes[name] = node
-        tree = nodes[names[0]] # naive is first
-        for name in parent_dict:
-            if parent_dict[name] is not None:
-                nodes[parent_dict[name]].add_child(nodes[name])
-        # reroot on naive
-        if naive is not None:
-            naive_id = [node for node in nodes if naive in node][0]
-            assert len(nodes[naive_id].children) == 0
-            assert nodes[naive_id] in tree.children
-            tree.remove_child(nodes[naive_id])
-            nodes[naive_id].add_child(tree)
-            tree = nodes[naive_id]
-
-        # make random choices for ambiguous bases
-        tree = disambiguate(tree)
-
-        # compute branch lengths
-        tree.dist = 0 # no branch above root
-        for node in tree.iter_descendants():
-            node.dist = hamming_distance(node.sequence, node.up.sequence)
-
-        trees.append(tree)
-
-    return trees
 
 
 class MutationModel():
@@ -1111,7 +1027,7 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.countfile, args.naive)]
+    phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse.parse_outfile(args.phylipfile, args.countfile, args.naive)]
     phylip_collapsed_unique = []
     for tree in phylip_collapsed:
         if sum(tree.compare(tree2, method='identity') for tree2 in phylip_collapsed_unique) == 0:
@@ -1174,7 +1090,15 @@ def infer(args):
 
     # rank plot of likelihoods
     plt.figure(figsize=(6.5,2))
-    plt.plot(scipy.exp(ls), 'ko', clip_on=False, markersize=4)
+    try:
+        plt.plot(scipy.exp(ls), 'ko', clip_on=False, markersize=4)
+        plt.ylabel('GCtree likelihood')
+        plt.yscale('log')
+        plt.ylim([None, 1.1*max(scipy.exp(ls))])
+    except FloatingPointError:
+        plt.plot(ls, 'ko', clip_on=False, markersize=4)
+        plt.ylabel('GCtree log-likelihood')
+        plt.ylim([None, 1.1*max(ls)])
     plt.xlabel('parsimony tree')
     plt.xlim([-1, len(ls)])
     plt.tick_params(axis='y', direction='out', which='both')
@@ -1184,9 +1108,6 @@ def infer(args):
     bottom='off',      # ticks along the bottom edge are off
     top='off',         # ticks along the top edge are off
     labelbottom='off') # labels along the bottom edge are off
-    plt.ylabel('GCtree likelihood')
-    plt.yscale('log')
-    plt.ylim([None, 1.1*max(scipy.exp(ls))])
     plt.savefig(args.outbase + '.inference.likelihood_rank.pdf')
 
     # rank plot of observed allele frequencies
@@ -1477,7 +1398,6 @@ def plot_runstats(runstats, outbase, colors):
 
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(description='germinal center tree inference and simulation')
     subparsers = parser.add_subparsers(help='which program to run')
 

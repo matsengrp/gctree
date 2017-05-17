@@ -62,4 +62,3 @@ if len(correlations) > 0:
 
 sns.pairplot(aggdat, kind="reg")
 plt.savefig(args.outbase+'_pairplot.pdf')
-

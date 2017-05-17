@@ -49,11 +49,18 @@ AddOption('--igphyml',
            action='store_true',
            help='use igphyml inference')
 igphyml = GetOption('igphyml')
+AddOption('--dnaml',
+           action='store_true',
+           help='use dnaml inference')
+dnaml = GetOption('dnaml')
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
 outdir = GetOption('outdir')
-
+AddOption('--quick',
+           action='store_true',
+           help='less thourough dnapars tree search (faster)')
+quick = GetOption('quick')
 
 class InputError(Exception):
     """Exception raised for errors in the input."""
@@ -171,8 +178,8 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp')
+               exports='env gctree igphyml dnaml quick outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta fasta2 outdir naiveID converter CommandRunner')
+    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner')
