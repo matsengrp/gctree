@@ -30,15 +30,15 @@ aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 plt.figure()
 df1 = pd.melt(aggdat.ix[:, aggdat.columns != 'N_taxa'], id_vars=['method'], var_name='metric')
 sns.factorplot(x="method", y="value", col="metric", col_wrap=2,
-                   data=df1, kind="swarm", size=2.5, aspect=.8, sharey=False)
+                   data=df1, kind="swarm", size=3, aspect=.8, sharey=False)
 plt.savefig(args.outbase+'.pdf')
 
 sns.factorplot(x="method", y="value", col="metric", col_wrap=2,
-                   data=df1, kind="box", size=2.5, aspect=.8, sharey=False)
+                   data=df1, kind="box", size=3, aspect=.8, sharey=False)
 plt.savefig(args.outbase+'_box.pdf')
 
 sns.factorplot(x="method", y="value", col="metric", col_wrap=2,
-                   data=df1, kind="violin", size=2.5, aspect=.8, sharey=False)
+                   data=df1, kind="violin", size=3, aspect=.8, sharey=False)
 plt.savefig(args.outbase+'_violin.pdf')
 
 plt.figure()
@@ -48,14 +48,14 @@ correlations = list()
 for i in RF_cat:
     sl = aggdat[aggdat['RF'] == i]
     if len(aggdat[aggdat['RF'] == i]) < 10:
-    	continue
+        continue
     corr_tup = pearsonr(sl['MRCA'], sl['COAR'])
     if corr_tup[0]:
         correlations.append(corr_tup[0])
         RFs.append(str(i))
 
-df = pd.DataFrame({'correlation':correlations, 'RF':RFs})
-if df.shape[0] > 0:
+if len(correlations) > 0:
+    df = pd.DataFrame({'correlation':correlations, 'RF':RFs})
     sns.barplot(x="RF", y="correlation", data=df)
     plt.savefig(args.outbase+'_MRSAvsCOAR.pdf')
 
