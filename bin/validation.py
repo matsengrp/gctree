@@ -57,7 +57,7 @@ def find_node_by_seq(tree, sequence):
     return node[0]
 
 
-def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=10, known_root=True, allow_double_gap=False):
+def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=0, known_root=True, allow_double_gap=False):
     '''
     Standard implementation of a Needleman-Wunsch algorithm as described here:
     http://telliott99.blogspot.com/2009/08/alignment-needleman-wunsch.html
@@ -77,7 +77,9 @@ def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=10, known_root=True, all
 
     # Gap penalty chosen not too large:
     gap_penalty = -1 * int((len(seq) / 100.0) * gap_penalty_pct)
-    assert(gap_penalty < 0)  # Penalties must be negative
+    assert(gap_penalty <= 0)  # Penalties must be negative
+    if gap_penalty == 0:  # If gap penalty is zero only gaps in the shortes sequence will be allowed
+        assert(allow_double_gap is False)
 
     # Generate a score matrix matrix:
     kt = len(lt)
@@ -176,12 +178,12 @@ def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=10, known_root=True, all
         max_penalty += 2 * len(lt[0])
     else:  # Or in the case of an unknown root, just add the terminal node
         max_penalty += len(lt[0])
+
     return [align_t, align_i, alignment_score, max_penalty]
 
 
 def lineage_dist(true_tree, inferred_tree, freq_weigthing=False, known_root=True, allow_double_gap=False):
-    total_lineage_dist = 0
-    total_max_penalty = 0
+    norm_lineage_dist = list()
     nlineages = 0
     for node in true_tree.tree.traverse():
         if not node.frequency > 0:
@@ -192,16 +194,23 @@ def lineage_dist(true_tree, inferred_tree, freq_weigthing=False, known_root=True
             continue
         align_t, align_i, final_score, max_penalty = aln_res
         if freq_weigthing is True:
-            total_max_penalty += max_penalty * node.frequency
-            total_lineage_dist += final_score * node.frequency
+            total_max_penalty = max_penalty * node.frequency
+            total_lineage_dist = final_score * node.frequency
+            # Normalize with the max penalty:
+            if total_max_penalty < 0:
+                norm_lineage_dist.append(total_lineage_dist/total_max_penalty)
         else:
-            total_max_penalty += max_penalty
-            total_lineage_dist += final_score
+            total_max_penalty = max_penalty
+            total_lineage_dist = final_score
+            # Normalize with the max penalty:
+            if total_max_penalty < 0:
+                norm_lineage_dist.append(total_lineage_dist/total_max_penalty)
 
-    if total_max_penalty == 0:  # There can be total_max_penalty == 0 when all lineages have less than three members
+    if len(norm_lineage_dist) == 0:  # There can be total_max_penalty == 0 when all lineages have less than three members
         return 0
-    norm_lineage_dist = total_lineage_dist / total_max_penalty  # Normalize with max penalty to get a number between 0 and 1
-    return norm_lineage_dist
+    # Take the mean of the distances:
+    mean_norm_lineage_dist = sum(norm_lineage_dist) / len(norm_lineage_dist)
+    return mean_norm_lineage_dist
 
 
 def validate(true_tree, inferences, true_tree_colormap, outbase):
