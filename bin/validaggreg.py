@@ -18,7 +18,7 @@ from scipy.stats import pearsonr, mannwhitneyu
 parser = argparse.ArgumentParser(description='aggregate validation of repeated runs with same parameters')
 parser.add_argument('input', type=str, nargs='+', help='gctree.validation.tsv files')
 parser.add_argument('--outbase', type=str, help='output file base name')
-parser.add_argument('--allmetrics', type=str, nargs='*', default=None, help='validation.tsv files containing other metrics')
+parser.add_argument('--allmetrics', action='store_true', default=False, help='use validation.tsv files containing other metrics')
 args = parser.parse_args()
 
 # aggdat = pd.DataFrame(columns=('parsimony forest size', 'mean allele frequency', 'mean branch length', 'MRCA distance to true tree', 'RF distance to true tree', 'trees with MRCA less than or equal to optimal tree'))
@@ -41,14 +41,14 @@ for i, df in enumerate(frames):
 
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 
-if args.allmetrics is not None:
+if args.allmetrics:
 
     aggdat['method'] = 'parsimony'
 
     aggdat_other = pd.DataFrame(columns=('simulations ranked by parsimony degeneracy', 'method', 'MRCA distance to true tree', 'RF distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'))
 
     frames_other = []
-    for fname in args.allmetrics:
+    for fname in [f.replace('.gctree', '') for f in args.input]:
         df = pd.read_csv(fname, sep='\t', usecols=('method', 'COAR', 'COAR_fw', 'MRCA', 'RF'))
         frames_other.append(df)
     frames_other = [frames_other[i] for i in sorted_indices]
@@ -60,7 +60,7 @@ if args.allmetrics is not None:
 
     aggdat_other.to_csv(args.outbase+'.other_metrics.tsv', sep='\t', index=False)
 
-if args.allmetrics is None:
+if not args.allmetrics:
     aggdat = aggdat[(aggdat['parsimony forest size'] >= 2)]
 if aggdat.shape[0] == 0:
     print('no simulations with parsimony degeneracy!')
@@ -96,7 +96,7 @@ else:
     for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'), 1):
         maxy[metric] = 1.1*aggdat[metric].max()
         plt.subplot(4, 1, i)
-        if args.allmetrics is None:
+        if not args.allmetrics:
             sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat[aggdat['ismle']==False], color='gray')
             sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color='red', data=aggdat[aggdat['ismle']])
         else:
@@ -123,7 +123,7 @@ else:
     #bins = {}
     for i, metric in enumerate(('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'), 1):
         plt.subplot(4, 1, i)
-        if args.allmetrics is None:
+        if not args.allmetrics:
             sns.boxplot(x='ismle', y=metric, data=aggdat, palette={False:'gray', True:'red'}, order=(True, False))
         else:
             sns.boxplot(x='method', y=metric, data=pd.concat([aggdat, aggdat_other]))#, palette={False:'gray', True:'red'}, order=(True, False))
@@ -155,9 +155,21 @@ else:
         plt.tight_layout()
     plt.savefig(args.outbase+'.boxplot_all.pdf')
 
-    for metric in ('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'):
-        p = mannwhitneyu(aggdat[metric][aggdat['ismle']==True], aggdat[metric][aggdat['ismle']==False], alternative='less')[1]
-        print('U test significance ({}): {}'.format(metric, p))
+    if args.allmetrics:
+        methods = list(set(aggdat_other['method']))
+        nmethods = len(methods)
+        for metric in ('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'):
+            for i in range(nmethods):
+                for j in range(i+1, nmethods):
+                    p = mannwhitneyu(aggdat_other[metric][aggdat_other['method']==methods[i]], aggdat_other[metric][aggdat_other['method']==methods[j]], alternative='two-sided')[1]
+                    print('U test significance ({}, {} vs {}): {}'.format(metric, methods[i], methods[j], p))
+                p = mannwhitneyu(aggdat_other[metric][aggdat_other['method']==methods[i]], aggdat[metric], alternative='two-sided')[1]
+                print('U test significance ({}, {} vs parsimony): {}'.format(metric, methods[i], p))
+
+    else:
+        for metric in ('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'):
+            p = mannwhitneyu(aggdat[metric][aggdat['ismle']==True], aggdat[metric][aggdat['ismle']==False], alternative='less')[1]
+            print('U test significance ({}): {}'.format(metric, p))
 
 
 # sns.regplot(x='parsimony forest size', y='trees with MRCA less than or equal to optimal tree',

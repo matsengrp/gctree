@@ -86,10 +86,11 @@ if gctree:
     @w.add_target()
     def gctree_aggregate(outdir, c):
         '''aggregate validation results'''
+        allmetrics_arg = ' --allmetrics' if igphyml or dnaml else ''
         tgt = env.Command([os.path.join(outdir, 'gctree.validaggreg.tsv'),
                            os.path.join(outdir, 'gctree.validaggreg.log')],
                           c['gctree_agg'],
-                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.validaggreg')+' > ${TARGETS[1]}')
+                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.validaggreg') + allmetrics_arg + ' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         c['gctree_outeragg'].append(tgt[0])
         return tgt
