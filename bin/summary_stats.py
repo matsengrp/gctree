@@ -95,7 +95,7 @@ def main():
                          bins=bins,
                          kde=False,
                          color='black',
-                         hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':3})
+                         hist_kws={'histtype':'step', 'cumulative':True, 'alpha':.5, 'lw':3})
     plt.xlabel('distance to naive sequence')
     plt.xlim([0, bins[-1]])
     plt.ylabel('observed sequences')
@@ -119,7 +119,7 @@ def main():
                          bins=bins,
                          kde=False,
                          color='black',
-                         hist_kws={'histtype':'step', 'cumulative':True, 'alpha':alpha, 'lw':3})
+                         hist_kws={'histtype':'step', 'cumulative':True, 'alpha':.5, 'lw':3})
     plt.xlabel('nearest neighbor distance')
     plt.xlim([0, bins[-1]])
     plt.ylabel('')
