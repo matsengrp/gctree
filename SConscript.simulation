@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml dnaml quick outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp')
+Import('env gctree igphyml dnaml quick outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -36,6 +36,7 @@ def gctree_sim(outdir, c):
     T_arg = ' --T {} '.format(T) if T is not None else ''
     N_arg = ' --N {} '.format(N) if N is not None else ''
     n_arg = ' --n {} '.format(n) if n is not None else ''
+    sele_arg = ' --selection True --target_dist {} --target_count {} --verbose {} --carry_cap {} --skip_update {}'.format(*selection_param) if selection_param is not None else ''
     tgt = CommandRunner([os.path.join(outdir, 'gctree.simulation.fasta'),
                          os.path.join(outdir, 'gctree.simulation.stats.tsv'),
                          os.path.join(outdir, 'gctree.simulation.collapsed_tree.p'),
@@ -50,6 +51,7 @@ def gctree_sim(outdir, c):
                         T_arg+
                         N_arg+
                         n_arg+
+                        sele_arg+
                         ' > ${TARGETS[4]}')
     c['simstat_agg'].append(tgt[1])
     c['summary_stats'].append(tgt[0])
