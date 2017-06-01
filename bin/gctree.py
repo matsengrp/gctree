@@ -802,7 +802,7 @@ class MutationModel():
                             child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))
                         # ----/> Selection
                         child.add_feature('frequency', 0)
-                        child.add_feature('terminated' ,False)
+                        child.add_feature('terminated', False)
                         child.add_feature('time', t)
                         leaf.add_child(child)
             # <---- Selection:
@@ -1240,7 +1240,7 @@ def simulate(args):
                                            verbose=args.verbose,
                                            selection_params=selection_params)
             if args.selection:
-                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=True, allow_repeats=True)
+                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=False, allow_repeats=True)
             else:
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
             tree.ladderize()

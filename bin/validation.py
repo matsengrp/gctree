@@ -18,7 +18,7 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set(style='white', color_codes=True)
-import os
+import os, sys
 import numpy as np
 try:
     import jellyfish  # Last time I checked this module was the fastest kid on the block, however 2x slower than a simple Cython function
@@ -48,8 +48,9 @@ def find_node_by_seq(tree, sequence):
     except Exception as e:
         print('Nodes list:')
         print(node)
-
+        print(sequence)
         print(tree)
+        print([(node.frequency , node.sequence) for node in tree.traverse()])
         print(node[0])
         print(node[1])
 
