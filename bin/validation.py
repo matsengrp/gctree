@@ -7,6 +7,7 @@ comparison of inference and simulated trees
 
 from __future__ import division, print_function
 from gctree import CollapsedTree, CollapsedForest, hamming_distance
+from random import randint
 try:
     import cPickle as pickle
 except:
@@ -42,20 +43,22 @@ def reconstruct_lineage(tree, node):
 
 
 def find_node_by_seq(tree, sequence):
-    node = [node for node in tree.traverse() if node.sequence == sequence and node.frequency > 0]
+    nodes = [node for node in tree.traverse() if node.sequence == sequence and node.frequency > 0]
+    if len(nodes) > 1:
+        nodes = [nodes[randint(0, len(nodes)-1)]]
     try:
-        assert(len(node) == 1)
+        assert(len(nodes) == 1)
     except Exception as e:
         print('Nodes list:')
-        print(node)
+        print(nodes)
         print(sequence)
         print(tree)
-        print([(node.frequency , node.sequence) for node in tree.traverse()])
-        print(node[0])
-        print(node[1])
+        print([(node.frequency, node.name, node.sequence) for node in tree.traverse()])
+        print(nodes[0])
+        print(nodes[1])
 
         raise e
-    return node[0]
+    return nodes[0]
 
 
 def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=0, known_root=True, allow_double_gap=False):

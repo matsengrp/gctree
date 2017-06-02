@@ -14,6 +14,8 @@ import pandas as pd
 import argparse
 import seaborn as sns; sns.set(style="white", color_codes=True)
 from scipy.stats import pearsonr, mannwhitneyu
+from itertools import cycle
+
 
 parser = argparse.ArgumentParser(description='aggregate validation of repeated runs with same parameters')
 parser.add_argument('input', type=str, nargs='+', help='gctree.validation.tsv files')
@@ -101,7 +103,12 @@ else:
             sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color='red', data=aggdat[aggdat['ismle']])
         else:
             # sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat)#, color='gray')
-            sns.swarmplot(x='simulations ranked by parsimony degeneracy', y=metric, hue='method', data=pd.concat([aggdat, aggdat_other]))
+            #sns.swarmplot(x='simulations ranked by parsimony degeneracy', y=metric, hue='method', size=2, data=pd.concat([aggdat, aggdat_other]))
+            palette = cycle(list(sns.color_palette()))
+            sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat[aggdat['ismle']==False], color=next(palette))
+            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'gctree'])
+            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'dnaml'])
+            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'igphyml'])
         if 'COAR' in metric:
             plt.ylim(0, maxy[metric])
         else:
@@ -126,7 +133,7 @@ else:
         if not args.allmetrics:
             sns.boxplot(x='ismle', y=metric, data=aggdat, palette={False:'gray', True:'red'}, order=(True, False))
         else:
-            sns.boxplot(x='method', y=metric, data=pd.concat([aggdat, aggdat_other]))#, palette={False:'gray', True:'red'}, order=(True, False))
+            ax = sns.boxplot(x='method', y=metric, data=pd.concat([aggdat, aggdat_other]), order=('parsimony', 'gctree', 'dnaml', 'igphyml'))#, palette={False:'gray', True:'red'}, order=(True, False))
         #binmax = int(aggdat[metric].max()+1)
         #n, bins[metric], patches = plt.hist([aggdat[metric][aggdat['ismle']],
         #                                     aggdat[metric][aggdat['ismle']==False]],
