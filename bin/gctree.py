@@ -397,7 +397,10 @@ class CollapsedTree(LeavesAndClades):
                         child = TreeNode()
                         child.add_feature('sequence', node.sequence)
                         node.add_child(child)
-            return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0]
+            try:
+                return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0]
+            except:
+                return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True, allow_dup=True)[0]
         else:
             raise ValueError('invalid distance method: '+method)
 
