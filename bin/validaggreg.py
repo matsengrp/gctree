@@ -106,9 +106,9 @@ else:
             #sns.swarmplot(x='simulations ranked by parsimony degeneracy', y=metric, hue='method', size=2, data=pd.concat([aggdat, aggdat_other]))
             palette = cycle(list(sns.color_palette()))
             sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat[aggdat['ismle']==False], color=next(palette))
-            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'gctree'])
-            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'dnaml'])
-            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'igphyml'])
+            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, size=4, alpha=.7, jitter=2, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'gctree'])
+            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, size=4, alpha=.7, jitter=2, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'dnaml'])
+            sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, size=4, alpha=.7, jitter=2, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'igphyml'])
         if 'COAR' in metric:
             plt.ylim(0, maxy[metric])
         else:
@@ -134,6 +134,7 @@ else:
             sns.boxplot(x='ismle', y=metric, data=aggdat, palette={False:'gray', True:'red'}, order=(True, False))
         else:
             ax = sns.boxplot(x='method', y=metric, data=pd.concat([aggdat, aggdat_other]), order=('parsimony', 'gctree', 'dnaml', 'igphyml'))#, palette={False:'gray', True:'red'}, order=(True, False))
+            #ax = sns.boxplot(x='method', y=metric, data=aggdat, order=('parsimony', 'gctree', 'dnaml', 'igphyml'))#, palette={False:'gray', True:'red'}, order=(True, False))
         #binmax = int(aggdat[metric].max()+1)
         #n, bins[metric], patches = plt.hist([aggdat[metric][aggdat['ismle']],
         #                                     aggdat[metric][aggdat['ismle']==False]],
