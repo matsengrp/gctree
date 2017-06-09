@@ -105,7 +105,7 @@ else:
             # sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat)#, color='gray')
             #sns.swarmplot(x='simulations ranked by parsimony degeneracy', y=metric, hue='method', size=2, data=pd.concat([aggdat, aggdat_other]))
             palette = cycle(list(sns.color_palette()))
-            sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat[aggdat['ismle']==False], color=next(palette))
+            sns.boxplot(x='simulations ranked by parsimony degeneracy', y=metric, data=aggdat, color=next(palette))
             sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, size=4, alpha=.7, jitter=2, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'gctree'])
             sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, size=4, alpha=.7, jitter=2, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'dnaml'])
             sns.stripplot(x='simulations ranked by parsimony degeneracy', y=metric, size=4, alpha=.7, jitter=2, color=next(palette), data=aggdat_other[aggdat_other['method'] == 'igphyml'])
