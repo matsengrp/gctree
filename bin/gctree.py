@@ -760,7 +760,9 @@ class MutationModel():
 
         t = 0  # <-- time
         leaves_unterminated = 1
-        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < T if T is not None else True):
+        # Small lambdas are causing problems so make a minimum:
+        lambda_min = 10e-10
+        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < max(T) if T is not None else True):
             if verbose:
                 print('At time:', t)
             skip_lambda_n = 0  # At every new round reset the all the lambdas
@@ -774,8 +776,6 @@ class MutationModel():
                         if skip_lambda_n == 0:
                             skip_lambda_n = skip_update + 1  # Add one so skip_update=0 is no skip
                             tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
-                        # Small lambdas are causing problems so make a minimum:
-                        lambda_min = 10e-10
                         if leaf.lambda_ > lambda_min:
                             progeny = poisson(leaf.lambda_)
                         else:
@@ -835,7 +835,10 @@ class MutationModel():
             raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
 
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
-        final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
+        if T is not None and len(T) > 1:
+            final_leaves = [leaf for leaf in tree.iter_descendants() if leaf.time in T]
+        else:
+            final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size
         if n is not None and len(final_leaves) >= n:
             for leaf in random.sample(final_leaves, n):
@@ -1438,7 +1441,7 @@ def main():
                             'this rate will be used on both.')
     parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
     parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
-    parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
+    parser_sim.add_argument('--T', type=int, nargs='+', default=None, help='observation time, if None we run until termination and take all leaves')
     parser_sim.add_argument('--selection', type=bool, default=False, help='Simulation with selection? true/false. When doing simulation with selection an observation time cut must be set.')
     parser_sim.add_argument('--carry_cap', type=int, default=1000, help='The carrying capacity of the simulation with selection. This number affects the fixation time of a new mutation.'
                             'Fixation time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.')

@@ -33,7 +33,7 @@ def gctree_sim(outdir, c):
     NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
     '''
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
-    T_arg = ' --T {} '.format(T) if T is not None else ''
+    T_arg = ' --T {} '.format(' '.join(map(str, T))) if T else ''
     N_arg = ' --N {} '.format(N) if N is not None else ''
     n_arg = ' --n {} '.format(n) if n is not None else ''
     sele_arg = ' --selection True --target_dist {} --target_count {} --verbose {} --carry_cap {} --skip_update {}'.format(*selection_param) if selection_param is not None else ''

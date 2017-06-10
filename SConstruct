@@ -125,7 +125,8 @@ if simulate:
     N = GetOption('N')
     AddOption('--T',
               type='int',
-              default=None,
+              action='append',
+              default=[],
               help='observation time')
     T = GetOption('T')
     AddOption('--nsim',
