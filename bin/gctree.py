@@ -783,6 +783,8 @@ class MutationModel():
                     leaf.terminated = True
                 if verbose:
                     print('Made an intermediate sample at time:', t-1)
+                # Update the list of unterminated leafs:
+                unterminated_leaves = [l for l in tree.iter_leaves() if not l.terminated]
 
             for leaf in unterminated_leaves:
                 # <---- Selection:
