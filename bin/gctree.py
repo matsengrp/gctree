@@ -18,7 +18,7 @@ from itertools import cycle
 import random
 import numpy as np
 import matplotlib
-matplotlib.use('PDF')
+matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
@@ -186,6 +186,7 @@ class CollapsedTree(LeavesAndClades):
                                 generic_dna).translate()
                 node.dist = hamming_distance(aa, aa_parent)
 
+
         if tree is not None:
             self.tree = tree.copy()
             # iterate over the tree below root and collapse edges of zero length
@@ -198,18 +199,19 @@ class CollapsedTree(LeavesAndClades):
                     node.delete(prevent_nondicotomic=False)
 
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
-            rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
-            if not allow_repeats and rep_seq:
-                raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
-            elif allow_repeats and rep_seq:
+            if 'sequence' in tree.features:
                 rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
-                print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+                if not allow_repeats and rep_seq:
+                    raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+                elif allow_repeats and rep_seq:
+                    rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
+                    print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
             # now we do a custom ladderize accounting for abundance and sequence to break ties in abundance
             for node in self.tree.traverse(strategy='postorder'):
                 # add a partition feature and compute it recursively up the tree
                 node.add_feature('partition', node.frequency + sum(node2.partition for node2 in node.children))
                 # sort children of this node based on partion and sequence
-                node.children.sort(key=lambda node: (node.partition, node.sequence))
+                node.children.sort(key=lambda node: (node.partition, node.sequence if 'sequence' in tree.features else None))
         else:
             self.tree = tree
 
@@ -397,10 +399,7 @@ class CollapsedTree(LeavesAndClades):
                         child = TreeNode()
                         child.add_feature('sequence', node.sequence)
                         node.add_child(child)
-            try:
-                return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0]
-            except:
-                return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True, allow_dup=True)[0]
+            return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0]
         else:
             raise ValueError('invalid distance method: '+method)
 
@@ -760,9 +759,7 @@ class MutationModel():
 
         t = 0  # <-- time
         leaves_unterminated = 1
-        # Small lambdas are causing problems so make a minimum:
-        lambda_min = 10e-10
-        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < max(T) if T is not None else True):
+        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < T if T is not None else True):
             if verbose:
                 print('At time:', t)
             skip_lambda_n = 0  # At every new round reset the all the lambdas
@@ -776,6 +773,8 @@ class MutationModel():
                         if skip_lambda_n == 0:
                             skip_lambda_n = skip_update + 1  # Add one so skip_update=0 is no skip
                             tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
+                        # Small lambdas are causing problems so make a minimum:
+                        lambda_min = 10e-10
                         if leaf.lambda_ > lambda_min:
                             progeny = poisson(leaf.lambda_)
                         else:
@@ -805,7 +804,7 @@ class MutationModel():
                             child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))
                         # ----/> Selection
                         child.add_feature('frequency', 0)
-                        child.add_feature('terminated', False)
+                        child.add_feature('terminated' ,False)
                         child.add_feature('time', t)
                         leaf.add_child(child)
             # <---- Selection:
@@ -835,10 +834,7 @@ class MutationModel():
             raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
 
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
-        if T is not None and len(T) > 1:
-            final_leaves = [leaf for leaf in tree.iter_descendants() if leaf.time in T]
-        else:
-            final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
+        final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size
         if n is not None and len(final_leaves) >= n:
             for leaf in random.sample(final_leaves, n):
@@ -880,9 +876,90 @@ def test(args):
     checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to plot_file
     command line arguments are p, q, number of trees to simulate, and plot file name
     '''
+
+    import seaborn as sns
+    sns.set(style='white', color_codes=True)
+    sns.set_style('ticks')
+    plt.rc('text', usetex=True)
+
+    # compare likelihood to empirical likelihood (might need large n)
+    n = 10000
+    df = pd.DataFrame(columns=('p', 'q', 'parameters', 'f', 'L'))
+    ct = 0
+    ps = (.1, .2, .3, .4)
+    qs = (.2, .4, .6, .8)
+    scipy.seterr(all='ignore')
+    for p in ps:
+        for q in qs:
+            forest = CollapsedForest((p, q), n)
+            print('parameters: p = {}, q = {}'.format(p, q))
+            forest.simulate()
+            tree_dict = {}
+            for tree in forest.forest:
+                tree_hash = tuple((node.frequency, len(node.children)) for node in tree.tree.traverse())
+                if tree_hash not in tree_dict:
+                    tree_dict[tree_hash] = [tree, tree.l((p, q))[0], 1]
+                else:
+                    tree_dict[tree_hash][-1] += 1
+            L_empirical, L_theoretical = zip(*[(tree_dict[tree_hash][2], scipy.exp(tree_dict[tree_hash][1])) for tree_hash in tree_dict if tree_dict[tree_hash][2]])
+            for tree_hash in tree_dict:
+                df.loc[ct] = (p, q, 'p={}, q={}'.format(p, q), tree_dict[tree_hash][2], scipy.exp(tree_dict[tree_hash][1]))
+                ct += 1
+    print()
+
+    plt.figure()
+    limx = (1/n, 1.1)
+    limy = (1, 1.1*n)
+    g = sns.lmplot(x='L', y='f', col='p', row='q', hue='parameters', data=df,
+                   fit_reg=False, scatter_kws={'alpha':.3}, size=1.5, legend=False,
+                   row_order=reversed(qs))
+    g.set(xscale='log', yscale='log', xlim=limx, ylim=limy)
+    # g.ax.legend(title='parameters', loc='lower right', frameon=True, bbox_to_anchor=(1.1, 0))
+    for i in range(len(ps)):
+        for j in range(len(qs)):
+            g.axes[i, j].plot(limx, limy, ls='--', c='black', lw=.5, zorder=0, markeredgewidth=.1)
+            g.axes[i, j].set_title('p={}, q={}'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.8, size='x-small', ha='left')
+    g.set_axis_labels('', '')
+    # g.axes[-1, len(ps)//2].set_xlabel('GCtree likelihood')
+    # g.axes[len(qs)//2, 0].set_ylabel('frequency among {} simulations'.format(n))
+    g.fig.text(0.45, .02, s='GCtree likelihood', multialignment='center')
+    g.fig.text(.02, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
+    plt.savefig(args.outbase+'.pdf')
+
+    # MLE check
+    n = 20
+    n2 = 500
+    df = pd.DataFrame(columns=('true parameters', '$\hat{p}$', '$\hat{q}$'))
+    ct = 0
+    for p in ps:
+        for q in qs:
+            for _ in range(n):
+                forest = CollapsedForest((p, q), n2)
+                print('parameters: p = {}, q = {}'.format(p, q))
+                forest.simulate()
+                result = forest.mle()
+                df.loc[ct] = ('p={}, q={}'.format(p, q), result.x[0], result.x[1])
+                ct += 1
+
+    plt.figure()
+    g = sns.lmplot(x='$\hat{p}$', y='$\hat{q}$', hue='true parameters', data=df,
+                   fit_reg=False, scatter_kws={'alpha':.2}, size=6, legend=False)
+    g.set(xlim=(0.05, .45), xticks=scipy.arange(0., .6, .1), ylim=(.1, .9), yticks=scipy.arange(0., 1.2, .2))
+    for i in range(len(ps)):
+        for j in range(len(qs)):
+            plt.scatter([ps[i]], [qs[j]], c='black', marker='+')
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    # plt.tight_layout()
+    plt.savefig(args.outbase+'.2.pdf')
+
+    return
+
+
+
     p = args.p
     q = args.q
     n = args.n
+
     plot_file = args.outbase
 
     if plot_file[-4:] != '.pdf':
@@ -909,11 +986,6 @@ def test(args):
     print( '    Now, our dynamic programming algorithm gives')
     print(u'    logP , \u2207logP =', tree.l((p, q)))
     print('')
-
-    print('Simulating a forest of {} trees'.format(n))
-    forest = CollapsedForest((p, q), n)
-    print('    true parameters: p = {}, q = {}'.format(p, q))
-    forest.simulate()
 
     # total leaf counts
     total_data = sorted([sum(node.frequency for node in tree.tree.traverse()) for tree in forest.forest])
@@ -1029,6 +1101,11 @@ def test(args):
 
     plt.savefig(plot_file)
     print('plot saved to', plot_file)
+
+
+
+
+
 
 
 def infer(args):
@@ -1246,7 +1323,7 @@ def simulate(args):
                                            verbose=args.verbose,
                                            selection_params=selection_params)
             if args.selection:
-                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=False, allow_repeats=True)
+                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=True, allow_repeats=True)
             else:
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
             tree.ladderize()
@@ -1411,9 +1488,6 @@ def main():
     parser_test = subparsers.add_parser('test',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                         help='run tests on library functions')
-    parser_test.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
-    parser_test.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
-    parser_test.add_argument('--n', type=int, default=50, help='forest size for test mode')
     parser_test.set_defaults(func=test)
 
     # parser for inference subprogram
@@ -1441,7 +1515,7 @@ def main():
                             'this rate will be used on both.')
     parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
     parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
-    parser_sim.add_argument('--T', type=int, nargs='+', default=None, help='observation time, if None we run until termination and take all leaves')
+    parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
     parser_sim.add_argument('--selection', type=bool, default=False, help='Simulation with selection? true/false. When doing simulation with selection an observation time cut must be set.')
     parser_sim.add_argument('--carry_cap', type=int, default=1000, help='The carrying capacity of the simulation with selection. This number affects the fixation time of a new mutation.'
                             'Fixation time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.')
