@@ -189,7 +189,8 @@ def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=0, known_root=True, allo
 def lineage_dist(true_tree, inferred_tree, freq_weigthing=False, known_root=True, allow_double_gap=False):
     norm_lineage_dist = list()
     nlineages = 0
-    for node in true_tree.tree.traverse():
+#    for node in true_tree.tree.traverse():
+    for node in true_tree.tree.iter_leaves():  # Iterate only through the leaves
         if not node.frequency > 0:
             continue
 
