@@ -9,8 +9,8 @@ from __future__ import division, print_function
 from gctree import CollapsedTree, CollapsedForest
 import pandas as pd
 import scipy
-import matplotlib
-matplotlib.use('PDF')
+#import matplotlib
+#matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set(style='white', color_codes=True)
@@ -87,7 +87,7 @@ def main():
     for i, heavy_tree in enumerate(heavy_log):
         dat2.loc[i] = [heavy_log[i], 'IgH\n(n={})'.format(len(heavy_log)), True if i == 0 else False]
     for j, light_tree in enumerate(light_log):
-        dat2.loc[i + 1 + j] = [light_log[j], 'IgK\n(n={})'.format(len(light_log)), True if j == 0 else False]
+        dat2.loc[i + 1 + j] = [light_log[j], 'IgL\n(n={})'.format(len(light_log)), True if j == 0 else False]
 
     plt.figure(figsize=(1.75, 3))
     sns.boxplot(x='chain', y='logLikelihood', data=dat2[dat2['mle']==False], color='gray')
@@ -103,12 +103,12 @@ def main():
     plt.hist((dat['RF'][dat['mle']=='both'], dat['RF'][dat['mle']=='heavy'], dat['RF'][dat['mle']=='light'], dat['RF'][dat['mle']=='neither']),
              bins=scipy.arange(-.5, max(dat['RF'])+1.5, 1.),
              histtype='barstacked',
-             label=('IgH and IgK MLE', 'IgH MLE', 'IgK MLE'),
+             label=('IgH and IgL MLE', 'IgH MLE', 'IgL MLE'),
              color=('red', 'orange', 'yellow', 'gray'))
     plt.legend(loc='upper left')
     plt.xlim([min(dat['RF'])-1.5, max(dat['RF'])+1.5])
-    plt.xlabel('RF distance between IgH tree and IgK tree\nlabelled by cell identity')
-    plt.ylabel('IgH/IgK parsimony tree pairs (n={})'.format(len(dat)))
+    plt.xlabel('RF distance between IgH tree and IgL tree\nlabelled by cell identity')
+    plt.ylabel('IgH/IgL parsimony tree pairs (n={})'.format(len(dat)))
     plt.gca().spines['right'].set_color('none')
     plt.gca().spines['top'].set_color('none')
     plt.tight_layout()

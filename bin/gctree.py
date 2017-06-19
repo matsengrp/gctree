@@ -938,24 +938,25 @@ def test(args):
     limx = (1/n, 1.1)
     limy = (1, 1.1*n)
     g = sns.lmplot(x='L', y='f', col='p', row='q', hue='parameters', data=df,
-                   fit_reg=False, scatter_kws={'alpha':.3}, size=1.5, legend=False,
+                   fit_reg=False, scatter_kws={'alpha':.3}, size=1.2, legend=False,
                    row_order=reversed(qs))
     g.set(xscale='log', yscale='log', xlim=limx, ylim=limy)
+    g.fig.subplots_adjust(hspace=0.4, wspace=0.4)
     # g.ax.legend(title='parameters', loc='lower right', frameon=True, bbox_to_anchor=(1.1, 0))
     for i in range(len(ps)):
         for j in range(len(qs)):
             g.axes[i, j].plot(limx, limy, ls='--', c='black', lw=.5, zorder=0, markeredgewidth=.1)
-            g.axes[i, j].set_title('p={}, q={}'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.8, size='x-small', ha='left')
+            g.axes[i, j].set_title('$p={}$\n$q={}$'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.9, size='x-small', ha='left', va='top')
     g.set_axis_labels('', '')
     # g.axes[-1, len(ps)//2].set_xlabel('GCtree likelihood')
     # g.axes[len(qs)//2, 0].set_ylabel('frequency among {} simulations'.format(n))
     g.fig.text(0.45, .02, s='GCtree likelihood', multialignment='center')
-    g.fig.text(.02, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
+    g.fig.text(.03, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
     plt.savefig(args.outbase+'.pdf')
 
     # MLE check
-    n = 20
-    n2 = 500
+    n = 10
+    n2 = 1000
     df = pd.DataFrame(columns=('true parameters', '$\hat{p}$', '$\hat{q}$'))
     ct = 0
     for p in ps:
@@ -970,11 +971,11 @@ def test(args):
 
     plt.figure()
     g = sns.lmplot(x='$\hat{p}$', y='$\hat{q}$', hue='true parameters', data=df,
-                   fit_reg=False, scatter_kws={'alpha':.2}, size=6, legend=False)
+                   fit_reg=False, scatter_kws={'alpha':.5}, size=4.5, legend=False)
     g.set(xlim=(0.05, .45), xticks=scipy.arange(0., .6, .1), ylim=(.1, .9), yticks=scipy.arange(0., 1.2, .2))
     for i in range(len(ps)):
         for j in range(len(qs)):
-            plt.scatter([ps[i]], [qs[j]], c='black', marker='+')
+            plt.scatter([ps[i]], [qs[j]], c='black', marker='+', zorder=0)
     # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     # plt.tight_layout()
     plt.savefig(args.outbase+'.2.pdf')
