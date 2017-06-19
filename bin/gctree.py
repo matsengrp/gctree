@@ -908,6 +908,86 @@ def test(args):
     checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to plot_file
     command line arguments are p, q, number of trees to simulate, and plot file name
     '''
+
+    import seaborn as sns
+    sns.set(style='white', color_codes=True)
+    sns.set_style('ticks')
+    plt.rc('text', usetex=True)
+
+    # compare likelihood to empirical likelihood (might need large n)
+    n = 10000
+    df = pd.DataFrame(columns=('p', 'q', 'parameters', 'f', 'L'))
+    ct = 0
+    ps = (.1, .2, .3, .4)
+    qs = (.2, .4, .6, .8)
+    scipy.seterr(all='ignore')
+    for p in ps:
+        for q in qs:
+            forest = CollapsedForest((p, q), n)
+            print('parameters: p = {}, q = {}'.format(p, q))
+            forest.simulate()
+            tree_dict = {}
+            for tree in forest.forest:
+                tree_hash = tuple((node.frequency, len(node.children)) for node in tree.tree.traverse())
+                if tree_hash not in tree_dict:
+                    tree_dict[tree_hash] = [tree, tree.l((p, q))[0], 1]
+                else:
+                    tree_dict[tree_hash][-1] += 1
+            L_empirical, L_theoretical = zip(*[(tree_dict[tree_hash][2], scipy.exp(tree_dict[tree_hash][1])) for tree_hash in tree_dict if tree_dict[tree_hash][2]])
+            for tree_hash in tree_dict:
+                df.loc[ct] = (p, q, 'p={}, q={}'.format(p, q), tree_dict[tree_hash][2], scipy.exp(tree_dict[tree_hash][1]))
+                ct += 1
+    print()
+
+    plt.figure()
+    limx = (1/n, 1.1)
+    limy = (1, 1.1*n)
+    g = sns.lmplot(x='L', y='f', col='p', row='q', hue='parameters', data=df,
+                   fit_reg=False, scatter_kws={'alpha':.3}, size=1.2, legend=False,
+                   row_order=reversed(qs))
+    g.set(xscale='log', yscale='log', xlim=limx, ylim=limy)
+    g.fig.subplots_adjust(hspace=0.4, wspace=0.4)
+    # g.ax.legend(title='parameters', loc='lower right', frameon=True, bbox_to_anchor=(1.1, 0))
+    for i in range(len(ps)):
+        for j in range(len(qs)):
+            g.axes[i, j].plot(limx, limy, ls='--', c='black', lw=.5, zorder=0, markeredgewidth=.1)
+            g.axes[i, j].set_title('$p={}$\n$q={}$'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.9, size='x-small', ha='left', va='top')
+    g.set_axis_labels('', '')
+    # g.axes[-1, len(ps)//2].set_xlabel('GCtree likelihood')
+    # g.axes[len(qs)//2, 0].set_ylabel('frequency among {} simulations'.format(n))
+    g.fig.text(0.45, .02, s='GCtree likelihood', multialignment='center')
+    g.fig.text(.03, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
+    plt.savefig(args.outbase+'.pdf')
+
+    # MLE check
+    n = 10
+    n2 = 1000
+    df = pd.DataFrame(columns=('true parameters', '$\hat{p}$', '$\hat{q}$'))
+    ct = 0
+    for p in ps:
+        for q in qs:
+            for _ in range(n):
+                forest = CollapsedForest((p, q), n2)
+                print('parameters: p = {}, q = {}'.format(p, q))
+                forest.simulate()
+                result = forest.mle()
+                df.loc[ct] = ('p={}, q={}'.format(p, q), result.x[0], result.x[1])
+                ct += 1
+
+    plt.figure()
+    g = sns.lmplot(x='$\hat{p}$', y='$\hat{q}$', hue='true parameters', data=df,
+                   fit_reg=False, scatter_kws={'alpha':.5}, size=4.5, legend=False)
+    g.set(xlim=(0.05, .45), xticks=scipy.arange(0., .6, .1), ylim=(.1, .9), yticks=scipy.arange(0., 1.2, .2))
+    for i in range(len(ps)):
+        for j in range(len(qs)):
+            plt.scatter([ps[i]], [qs[j]], c='black', marker='+', zorder=0)
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    # plt.tight_layout()
+    plt.savefig(args.outbase+'.2.pdf')
+
+    return
+
+
     p = args.p
     q = args.q
     n = args.n
