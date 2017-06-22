@@ -860,7 +860,8 @@ class MutationModel():
                     raise RuntimeError('tree terminated with {} leaves, less than what desired after downsampling {}'.format(leaves_unterminated, n))
                 for leaf in final_leaves:  # No need to down-sample, this was already done in the simulation loop
                     leaf.frequency = 1
-        assert(max(T) == t)
+        if selection_params and max(T) != t:
+            raise RuntimeError('tree terminated before the requested sample time.')
         # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size
