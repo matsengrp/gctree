@@ -1,18 +1,23 @@
 #!/usr/bin/env perl
-#Kenneth B. Hoehn
-#23/8/2016
-#Predict ancestral sequences under HLP16 model
-#Parameters read in through config file
-#See supplied README.txt for instructions for use
+#Kenneth B. Hoehn (kenneth.hoehn@oriel.ox.ac.uk)
 
-###############################################################################
-# Currently the paper detailing this code is under review.                    #
-# We are sharing this code with the understanding that you won't publish it   #
-# or any analyses using it until after our paper detailing it is published.   #
-# If you use this code in an analysis, please contact me                      #
-# (kenneth.hoehn@oriel.ox.ac.uk), especially if you plan to include it in a   #
-# manuscript for publication.                                                 #
-###############################################################################
+# Script written by Kenneth B. Hoehn and used in article:
+# A Phylogenetic Codon Substitution Model for Antibody Lineages
+# http://www.genetics.org/content/early/2017/03/15/genetics.116.196303
+=pod
+@article{hoehn2017phylogenetic,
+  title={A phylogenetic codon substitution model for antibody lineages},
+  author={Hoehn, Kenneth B and Lunter, Gerton and Pybus, Oliver G},
+  journal={Genetics},
+  volume={206},
+  number={1},
+  pages={417--427},
+  year={2017},
+  publisher={Genetics Soc America}
+}
+=cut
+
+
 
 use strict;
 use warnings;
@@ -1278,10 +1283,4 @@ close(OUT);
 
 print "\n\n".'###############################################################################
 #                            It worked - congrats!                            #
-# Please note: Currently the paper detailing this code is under review.       #
-# We are sharing this code with the understanding that you won\'t publish it   #
-# or any analyses using it until after our paper detailing it is published.   #
-# If you use this code in an analysis, please contact me                      #
-# (kenneth.hoehn@oriel.ox.ac.uk), especially if you plan to include it in a   #
-# manuscript for publication.                                                 #
 ###############################################################################'."\n\n";
