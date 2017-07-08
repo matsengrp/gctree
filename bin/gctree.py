@@ -692,7 +692,7 @@ class MutationModel():
 
         if selection_params is not None:
             hd_generation = list()  # Collect an array of the counts of each hamming distance at each time step
-            mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, B_total, Lp, k, outbase = selection_params
+            stop_dist, mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, B_total, Lp, k, outbase = selection_params
             # Assert that the target sequences are comparable to the naive sequence:
             aa = Seq(tree.sequence[(frame-1):(frame-1+(3*(((len(tree.sequence)-(frame-1))//3))))], generic_dna).translate()
             assert(sum([1 for t in targetAAseqs if len(t) != len(aa)]) == 0)  # All targets are same length
@@ -765,7 +765,7 @@ class MutationModel():
         leaves_unterminated = 1
         # Small lambdas are causing problems so make a minimum:
         lambda_min = 10e-10
-        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < max(T) if T is not None else True):
+        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < max(T) if T is not None else True) and (stop_dist >= min(hd_distrib) if stop_dist is not None and t > 0 else True):
             t += 1
             if verbose:
                 print('At time:', t)
@@ -1251,7 +1251,7 @@ def simulate(args):
         A_total = find_A_total(args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U)
         # Calculate the parameters for the logistic function:
         Lp = find_Lp(args.f_full, args.U)
-        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
+        selection_params = [args.stop_dist, args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
     else:
         selection_params = None
     # ----/> Selection
@@ -1468,6 +1468,7 @@ def main():
     parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
     parser_sim.add_argument('--T', type=int, nargs='+', default=None, help='observation time, if None we run until termination and take all leaves')
     parser_sim.add_argument('--selection', type=bool, default=False, help='Simulation with selection? true/false. When doing simulation with selection an observation time cut must be set.')
+    parser_sim.add_argument('--stop_dist', type=int, default=None, help='Stop when this distance has been reached in the selection model.')
     parser_sim.add_argument('--carry_cap', type=int, default=1000, help='The carrying capacity of the simulation with selection. This number affects the fixation time of a new mutation.'
                             'Fixation time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.')
     parser_sim.add_argument('--target_count', type=int, default=10, help='The number of targets to generate.')
