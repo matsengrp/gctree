@@ -377,6 +377,7 @@ class CollapsedTree(LeavesAndClades):
             taxa = [node.sequence for node in self.tree.traverse() if node.frequency]
             n_taxa = len(taxa)
             d = scipy.zeros(shape=(n_taxa, n_taxa))
+            sum_sites = scipy.zeros(shape=(n_taxa, n_taxa))
             for i in range(n_taxa):
                 nodei_true = self.tree.iter_search_nodes(sequence=taxa[i]).next()
                 nodei      =      tree2.tree.iter_search_nodes(sequence=taxa[i]).next()
@@ -386,7 +387,8 @@ class CollapsedTree(LeavesAndClades):
                     MRCA_true = self.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
                     MRCA =           tree2.tree.get_common_ancestor((nodei, nodej)).sequence
                     d[i, j] = hamming_distance(MRCA_true, MRCA)
-            return d.sum()
+                    sum_sites[i, j] = len(MRCA_true)
+            return d.sum() / sum_sites.sum()
         elif method == 'RF':
             tree1_copy = self.tree.copy(method='deepcopy')
             tree2_copy = tree2.tree.copy(method='deepcopy')
