@@ -120,7 +120,7 @@ if igphyml:
                                            'igphyml -i $SOURCE -m GY -w M0 -t e --run_id gy94 > ${TARGETS[1]}')
 
     # Run IgPhyML with the HLP16 model using the GY94 tree topology as starting point:
-    igphyml_opti = 'tlrs'  # <--- can be changed to 'lr' or 'r'
+    igphyml_opti = 'tlr -s'  # <--- can be changed to 'lr' or 'r'
     ### Full motif model: --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e
     ### Less parameter rich motif model: --motifs WRC_2:0,GYW_0:0,WA_1:1,TW_0:2,SYC_2:3,GRS_0:3 --hotness e,e,e,e
     igphyml_hlp16 = CommandRunner([os.path.join(outdir, basename+'.phylip_igphyml_tree.txt_hlp16'),
