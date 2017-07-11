@@ -895,9 +895,6 @@ class MutationModel():
         for i, node in enumerate(tree.traverse(), 1):
             node.name = 'simcell_gctreeinternal_{}'.format(i)
 
-        # Dump true tree as newick:
-        tree.write(format=1, outfile='{}truetree.newick'.format(outbase))
-
         # return the fine (uncollapsed) tree
         return tree
 
@@ -1442,7 +1439,8 @@ def simulate(args):
                 colors[n.sequence] = next(palette)
             nstyle['fgcolor'] = colors[n.sequence]
         n.set_style(nstyle)
-
+    # Dump true tree as simple newick:
+    tree.write(format=9, outfile='{}.truetree.newick'.format(args.outbase))
     tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
 
     # render collapsed tree
