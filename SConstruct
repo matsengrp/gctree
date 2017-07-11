@@ -49,11 +49,18 @@ AddOption('--igphyml',
            action='store_true',
            help='use igphyml inference')
 igphyml = GetOption('igphyml')
+AddOption('--dnaml',
+           action='store_true',
+           help='use dnaml inference')
+dnaml = GetOption('dnaml')
 AddOption('--outdir',
           type='string',
           help="directory in which to output results")
 outdir = GetOption('outdir')
-
+AddOption('--quick',
+           action='store_true',
+           help='less thourough dnapars tree search (faster)')
+quick = GetOption('quick')
 
 class InputError(Exception):
     """Exception raised for errors in the input."""
@@ -103,7 +110,7 @@ if simulate:
               action='append',
               default=[],
               help='baseline mutation rate')
-    lambda0_list = GetOption('lambda0') 
+    lambda0_list = GetOption('lambda0')
     if len(lambda0_list) == 0:
         lambda0_list = [.25]
     AddOption('--n',
@@ -118,7 +125,8 @@ if simulate:
     N = GetOption('N')
     AddOption('--T',
               type='int',
-              default=None,
+              action='append',
+              default=[],
               help='observation time')
     T = GetOption('T')
     AddOption('--nsim',
@@ -126,14 +134,64 @@ if simulate:
               default=10,
               help='number of simulations with each parameter parameter choice')
     nsim = GetOption('nsim')
+    AddOption('--experimental',
+              type='string',
+              action='append',
+              default=[],
+              help='experimental fastas for comparing summary stats (CFT)')
+    experimental_list = GetOption('experimental')
+    AddOption('--naiveIDexp',
+              type='string',
+              default='naive0',
+              help='id of naive seq in the experimental data (CFT)')
+    naiveIDexp = GetOption('naiveIDexp')
+    AddOption('--selection',
+              action='store_true',
+              help='Simulation with affinity selection.')
+    selection = GetOption('selection')
+    if selection:
+        AddOption('--target_dist',
+                  type='int',
+                  default=10,
+                  help='Distance to selection target.')
+        target_dist = GetOption('target_dist')
+        AddOption('--target_count',
+                  type='int',
+                  default=10,
+                  help='Number of targets.')
+        target_count = GetOption('target_count')
+        AddOption('--verbose',
+                  action='store_true',
+                  help='Verbose printing.')
+        verbose = GetOption('verbose')
+        AddOption('--carry_cap',
+                  type='int',
+                  default=1000,
+                  help='Number of targets.')
+        carry_cap = GetOption('carry_cap')
+        AddOption('--skip_update',
+                  type='int',
+                  default=100,
+                  help='Skip update step.')
+        skip_update = GetOption('skip_update')
+        selection_param = (target_dist, target_count, verbose, carry_cap, skip_update)
+    else:
+        selection_param = None
 
 elif inference:
     AddOption('--fasta',
               dest='fasta',
               type='string',
+              action='append',
+              default=[],
               metavar='PATH',
               help='path to input fasta')
     fasta = GetOption('fasta')
+    if len(fasta) == 1:
+        fasta = fasta[0]
+        fasta2 = None
+    else:
+        fasta, fasta2 = fasta
     AddOption('--naiveID',
               type='string',
               metavar='seqID',
@@ -153,8 +211,8 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner')
+               exports='env gctree igphyml dnaml quick outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID converter CommandRunner')
+    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner')

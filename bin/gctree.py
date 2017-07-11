@@ -18,17 +18,18 @@ from itertools import cycle
 import random
 import numpy as np
 import matplotlib
-matplotlib.use('PDF')
+matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
 #import seaborn as sns; sns.set(style="white", color_codes=True)
-from scipy.stats import probplot, poisson
+from scipy.stats import poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, AttrFace, SVG_COLORS
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
-from Bio.Data.IUPACData import ambiguous_dna_values
+# from Bio.Data.IUPACData import ambiguous_dna_values
 from utils import SVG2HEX
+import phylip_parse
 try:
     # Last time I checked this module was the fastest kid on the block,
     # 5-10x faster than pure python, however 2x slower than a simple Cython function
@@ -185,6 +186,7 @@ class CollapsedTree(LeavesAndClades):
                                 generic_dna).translate()
                 node.dist = hamming_distance(aa, aa_parent)
 
+
         if tree is not None:
             self.tree = tree.copy()
             # iterate over the tree below root and collapse edges of zero length
@@ -197,18 +199,19 @@ class CollapsedTree(LeavesAndClades):
                     node.delete(prevent_nondicotomic=False)
 
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
-            rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
-            if not allow_repeats and rep_seq:
-                raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
-            elif allow_repeats and rep_seq:
+            if 'sequence' in tree.features:
                 rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
-                print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+                if not allow_repeats and rep_seq:
+                    raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+                elif allow_repeats and rep_seq:
+                    rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
+                    print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
             # now we do a custom ladderize accounting for abundance and sequence to break ties in abundance
             for node in self.tree.traverse(strategy='postorder'):
                 # add a partition feature and compute it recursively up the tree
                 node.add_feature('partition', node.frequency + sum(node2.partition for node2 in node.children))
                 # sort children of this node based on partion and sequence
-                node.children.sort(key=lambda node: (node.partition, node.sequence))
+                node.children.sort(key=lambda node: (node.partition, node.sequence if 'sequence' in tree.features else None))
         else:
             self.tree = tree
 
@@ -283,7 +286,7 @@ class CollapsedTree(LeavesAndClades):
         '''return a string representation for printing'''
         return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
-    def render(self, outfile, colormap=None):
+    def render(self, outfile, colormap=None, leftright_split=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
             #if node.frequency > 0:
@@ -317,6 +320,21 @@ class CollapsedTree(LeavesAndClades):
             #     nstyle['fgcolor'] = 'black'
             if node.up is not None:
                 if set(node.sequence.upper()) == set('ACGT'):
+                    if leftright_split is not None:
+                        assert self.frame is None
+                        if node.frequency > 0:
+                            print(node.sequence[:leftright_split], node.sequence[leftright_split:])
+                        leftseq_mutated = hamming_distance(node.sequence[:leftright_split], node.up.sequence[:leftright_split]) > 0
+                        rightseq_mutated = hamming_distance(node.sequence[leftright_split:], node.up.sequence[leftright_split:]) > 0
+                        if leftseq_mutated and rightseq_mutated:
+                            nstyle['hz_line_color'] = 'purple'
+                            nstyle['hz_line_width'] = 3
+                        elif leftseq_mutated:
+                            nstyle['hz_line_color'] = 'red'
+                            nstyle['hz_line_width'] = 2
+                        elif rightseq_mutated:
+                            nstyle['hz_line_color'] = 'blue'
+                            nstyle['hz_line_width'] = 2
                     if self.frame is not None:
                         aa = Seq(node.sequence[(self.frame-1):(self.frame-1+(3*(((len(node.sequence)-(self.frame-1))//3))))],
                                  generic_dna).translate()
@@ -477,91 +495,6 @@ def disambiguate(tree):
                     if node2.sequence[site] == base:
                         node2.sequence = node2.sequence[:site] + new_base + node2.sequence[(site+1):]
     return tree
-
-def phylip_parse(phylip_outfile, countfile=None, naive=None):
-    '''parse phylip outfile and return ete trees'''
-    # parse phylip outfile
-    if countfile is not None:
-        counts = {l.split(',')[0]:int(l.split(',')[1]) for l in open(countfile)}
-    # No count, just make an empty count dictionary:
-    else:
-        counts = dict()
-    outfiledat = [block.split('\n\n\n')[0].split('\n\n') for block in open(phylip_outfile, 'r').read().split('From    To     Any Steps?    State at upper node')[1:]]
-
-    # ete trees
-    trees = []
-    for i, tree in enumerate(outfiledat):
-        tree_sequence_dict = {}
-        parent_dict = {}
-        names = []
-        for j, block in enumerate(tree):
-            if j == 0:
-                for line in block.split('\n'):
-                    fields = line.split()
-                    if len(fields) == 0:
-                        continue
-                    name = fields[1]
-                    names.append(name)
-                    if fields[0] == 'root':
-                        seq = ''.join(fields[2:])
-                        parent = None
-                    else:
-                        seq = ''.join(fields[3:])
-                        parent = fields[0]
-                    tree_sequence_dict[name] = seq
-                    parent_dict[name] = parent
-            else:
-                for line in block.split('\n'):
-                    fields = line.split()
-                    name = fields[1]
-                    if fields[0] == 'root':
-                        seq = ''.join(fields[2:])
-                    else:
-                        seq = ''.join(fields[3:])
-                    tree_sequence_dict[name] += seq
-
-        nodes = {}
-        for name in names:
-            node = TreeNode()
-            node.name = name
-            node.add_feature('sequence', tree_sequence_dict[node.name])
-
-### Removed by KD because it is replaced by a count file
-#            if '_' in node.name:
-#                node.add_feature('frequency', int(node.name.split('_')[-1]))
-#                node.name = '_'.join(node.name.split('_')[:-1])
-#            else:
-#                node.add_feature('frequency', 0)
-
-            if node.name in counts:
-                node.add_feature('frequency', counts[node.name])
-            else:
-                node.add_feature('frequency', 0)
-            nodes[name] = node
-        tree = nodes[names[0]] # naive is first
-        for name in parent_dict:
-            if parent_dict[name] is not None:
-                nodes[parent_dict[name]].add_child(nodes[name])
-        # reroot on naive
-        if naive is not None:
-            naive_id = [node for node in nodes if naive in node][0]
-            assert len(nodes[naive_id].children) == 0
-            assert nodes[naive_id] in tree.children
-            tree.remove_child(nodes[naive_id])
-            nodes[naive_id].add_child(tree)
-            tree = nodes[naive_id]
-
-        # make random choices for ambiguous bases
-        tree = disambiguate(tree)
-
-        # compute branch lengths
-        tree.dist = 0 # no branch above root
-        for node in tree.iter_descendants():
-            node.dist = hamming_distance(node.sequence, node.up.sequence)
-
-        trees.append(tree)
-
-    return trees
 
 
 class MutationModel():
@@ -738,12 +671,15 @@ class MutationModel():
             raise ValueError('n ({}) must not larger than N ({})'.format(n, N))
         if selection_params is not None and frame is None:
             raise ValueError('Simulation with selection was chosen. A frame must must be specified.')
+        if T is not None and len(T) > 1 and n is None:
+            raise ValueError('When sampling intermediate time points it must be a subsample of the full population specified by "n".')
 
         # Planting the tree:
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
         tree.add_feature('terminated', False)
+        tree.add_feature('sampled', False)
         tree.add_feature('frequency', 0)
         tree.add_feature('time', 0)
 
@@ -826,54 +762,68 @@ class MutationModel():
 
         t = 0  # <-- time
         leaves_unterminated = 1
-        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < T if T is not None else True):
+        # Small lambdas are causing problems so make a minimum:
+        lambda_min = 10e-10
+        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < max(T) if T is not None else True):
+            t += 1
             if verbose:
                 print('At time:', t)
-            skip_lambda_n = 0  # At every new round reset the all the lambdas
-            t += 1
-            list_of_leaves = list(tree.iter_leaves())
-            random.shuffle(list_of_leaves)
-            for leaf in list_of_leaves:
-                if not leaf.terminated:
+            skip_lambda_n = 0  # At every new round reset all the lambdas
+            unterminated_leaves = [l for l in tree.iter_leaves() if not l.terminated]
+            random.shuffle(unterminated_leaves)
+            # Sample intermediate time point:
+            if T is not None and len(T) > 1 and (t-1) in T:
+                if len(unterminated_leaves) < n:
+                    raise RuntimeError('tree terminated with {} leaves, less than what desired after downsampling {}'.format(leaves_unterminated, n))
+                # Make the sample and kill the cells sampled:
+                for leaf in random.sample(unterminated_leaves, n):
+                    leaves_unterminated -= 1
+                    leaf.sampled = True
+                    leaf.terminated = True
+                if verbose:
+                    print('Made an intermediate sample at time:', t-1)
+                # Update the list of unterminated leafs:
+                unterminated_leaves = [l for l in tree.iter_leaves() if not l.terminated]
+
+            for leaf in unterminated_leaves:
+                # <---- Selection:
+                if selection_params is not None:
+                    if skip_lambda_n == 0:
+                        skip_lambda_n = skip_update + 1  # Add one so skip_update=0 is no skip
+                        tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
+                    if leaf.lambda_ > lambda_min:
+                        progeny = poisson(leaf.lambda_)
+                    else:
+                        progeny = poisson(lambda_min)
+                    skip_lambda_n -= 1
+                # ----/> Selection
+                n_children = progeny.rvs()
+                leaves_unterminated += n_children - 1 # <-- this kills the parent if we drew a zero
+                if not n_children:
+                    leaf.terminated = True
+                for child_count in range(n_children):
+                    # If sequence pair mutate them separately with their own mutation rate:
+                    if seq_bounds is not None:
+                        mutated_sequence1 = self.mutate(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]], lambda0=lambda0[0], frame=frame)
+                        mutated_sequence2 = self.mutate(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]], lambda0=lambda0[1], frame=frame)
+                        mutated_sequence = mutated_sequence1 + mutated_sequence2
+                    else:
+                        mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0[0], frame=frame)
+                    child = TreeNode()
+                    child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
+                    child.add_feature('sequence', mutated_sequence)
                     # <---- Selection:
                     if selection_params is not None:
-                        if skip_lambda_n == 0:
-                            skip_lambda_n = skip_update + 1  # Add one so skip_update=0 is no skip
-                            tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
-                        # Small lambdas are causing problems so make a minimum:
-                        lambda_min = 10e-10
-                        if leaf.lambda_ > lambda_min:
-                            progeny = poisson(leaf.lambda_)
-                        else:
-                            progeny = poisson(lambda_min)
-                        skip_lambda_n -= 1
+                        aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))], generic_dna).translate()
+                        child.add_feature('AAseq', str(aa))
+                        child.add_feature('Kd', calc_Kd(child.AAseq, targetAAseqs, hd2affy))
+                        child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))
                     # ----/> Selection
-                    n_children = progeny.rvs()
-                    leaves_unterminated += n_children - 1 # <-- this kills the parent if we drew a zero
-                    if not n_children:
-                        leaf.terminated = True
-                    for child_count in range(n_children):
-                        # If sequence pair mutate them separately with their own mutation rate:
-                        if seq_bounds is not None:
-                            mutated_sequence1 = self.mutate(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]], lambda0=lambda0[0], frame=frame)
-                            mutated_sequence2 = self.mutate(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]], lambda0=lambda0[1], frame=frame)
-                            mutated_sequence = mutated_sequence1 + mutated_sequence2
-                        else:
-                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0[0], frame=frame)
-                        child = TreeNode()
-                        child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
-                        child.add_feature('sequence', mutated_sequence)
-                        # <---- Selection:
-                        if selection_params is not None:
-                            aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))], generic_dna).translate()
-                            child.add_feature('AAseq', str(aa))
-                            child.add_feature('Kd', calc_Kd(child.AAseq, targetAAseqs, hd2affy))
-                            child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))
-                        # ----/> Selection
-                        child.add_feature('frequency', 0)
-                        child.add_feature('terminated' ,False)
-                        child.add_feature('time', t)
-                        leaf.add_child(child)
+                    child.add_feature('frequency', 0)
+                    child.add_feature('terminated', False)
+                    child.add_feature('sampled', False)
+                    child.add_feature('time', t)
+                    leaf.add_child(child)
             # <---- Selection:
             if selection_params is not None:
                 hd_distrib = [min([hamming_distance(tn.AAseq, ta) for ta in targetAAseqs]) for tn in tree.iter_leaves() if not tn.terminated]
@@ -896,11 +846,23 @@ class MutationModel():
                 pickle.dump(hd_generation, f)
         # ----/> Selection
 
-
         if leaves_unterminated < N:
             raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
 
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
+        if T is not None and len(T) > 1:
+            # Iterate the intermediate time steps:
+            for Ti in sorted(T)[:-1]:
+                # Only sample those that have been 'sampled' at intermediate sampling times:
+                final_leaves = [leaf for leaf in tree.iter_descendants() if leaf.time == Ti and leaf.sampled]
+                if len(final_leaves) < n:
+                    raise RuntimeError('tree terminated with {} leaves, less than what desired after downsampling {}'.format(leaves_unterminated, n))
+                for leaf in final_leaves:  # No need to down-sample, this was already done in the simulation loop
+                    leaf.frequency = 1
+        if selection_params and max(T) != t:
+            raise RuntimeError('tree terminated with before the requested sample time.')
+
+        # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size
         if n is not None and len(final_leaves) >= n:
@@ -931,7 +893,7 @@ class MutationModel():
 
         # assign unique names to each node
         for i, node in enumerate(tree.traverse(), 1):
-            node.name = 'seq{}'.format(i)
+            node.name = 'simcell_gctreeinternal_{}'.format(i)
 
         # return the fine (uncollapsed) tree
         return tree
@@ -943,9 +905,91 @@ def test(args):
     checks likelihood against a by-hand calculation for a simple tree, simulates a forest, computes MLE parameters, and plots some sanity check figures to plot_file
     command line arguments are p, q, number of trees to simulate, and plot file name
     '''
+
+    import seaborn as sns
+    sns.set(style='white', color_codes=True)
+    sns.set_style('ticks')
+    plt.rc('text', usetex=True)
+
+    # compare likelihood to empirical likelihood (might need large n)
+    n = 10000
+    df = pd.DataFrame(columns=('p', 'q', 'parameters', 'f', 'L'))
+    ct = 0
+    ps = (.1, .2, .3, .4)
+    qs = (.2, .4, .6, .8)
+    scipy.seterr(all='ignore')
+    for p in ps:
+        for q in qs:
+            forest = CollapsedForest((p, q), n)
+            print('parameters: p = {}, q = {}'.format(p, q))
+            forest.simulate()
+            tree_dict = {}
+            for tree in forest.forest:
+                tree_hash = tuple((node.frequency, len(node.children)) for node in tree.tree.traverse())
+                if tree_hash not in tree_dict:
+                    tree_dict[tree_hash] = [tree, tree.l((p, q))[0], 1]
+                else:
+                    tree_dict[tree_hash][-1] += 1
+            L_empirical, L_theoretical = zip(*[(tree_dict[tree_hash][2], scipy.exp(tree_dict[tree_hash][1])) for tree_hash in tree_dict if tree_dict[tree_hash][2]])
+            for tree_hash in tree_dict:
+                df.loc[ct] = (p, q, 'p={}, q={}'.format(p, q), tree_dict[tree_hash][2], scipy.exp(tree_dict[tree_hash][1]))
+                ct += 1
+    print()
+
+    plt.figure()
+    limx = (1/n, 1.1)
+    limy = (1, 1.1*n)
+    g = sns.lmplot(x='L', y='f', col='p', row='q', hue='parameters', data=df,
+                   fit_reg=False, scatter_kws={'alpha':.3}, size=1.2, legend=False,
+                   row_order=reversed(qs))
+    g.set(xscale='log', yscale='log', xlim=limx, ylim=limy)
+    g.fig.subplots_adjust(hspace=0.4, wspace=0.4)
+    # g.ax.legend(title='parameters', loc='lower right', frameon=True, bbox_to_anchor=(1.1, 0))
+    for i in range(len(ps)):
+        for j in range(len(qs)):
+            g.axes[i, j].plot(limx, limy, ls='--', c='black', lw=.5, zorder=0, markeredgewidth=.1)
+            g.axes[i, j].set_title('$p={}$\n$q={}$'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.9, size='x-small', ha='left', va='top')
+    g.set_axis_labels('', '')
+    # g.axes[-1, len(ps)//2].set_xlabel('GCtree likelihood')
+    # g.axes[len(qs)//2, 0].set_ylabel('frequency among {} simulations'.format(n))
+    g.fig.text(0.45, .02, s='GCtree likelihood', multialignment='center')
+    g.fig.text(.03, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
+    plt.savefig(args.outbase+'.pdf')
+
+    # MLE check
+    n = 10
+    n2 = 1000
+    df = pd.DataFrame(columns=('true parameters', '$\hat{p}$', '$\hat{q}$'))
+    ct = 0
+    for p in ps:
+        for q in qs:
+            for _ in range(n):
+                forest = CollapsedForest((p, q), n2)
+                print('parameters: p = {}, q = {}'.format(p, q))
+                forest.simulate()
+                result = forest.mle()
+                df.loc[ct] = ('p={}, q={}'.format(p, q), result.x[0], result.x[1])
+                ct += 1
+
+    plt.figure()
+    g = sns.lmplot(x='$\hat{p}$', y='$\hat{q}$', hue='true parameters', data=df,
+                   fit_reg=False, scatter_kws={'alpha':.5}, size=4.5, legend=False)
+    g.set(xlim=(0.05, .45), xticks=scipy.arange(0., .6, .1), ylim=(.1, .9), yticks=scipy.arange(0., 1.2, .2))
+    for i in range(len(ps)):
+        for j in range(len(qs)):
+            plt.scatter([ps[i]], [qs[j]], c='black', marker='+', zorder=0)
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    # plt.tight_layout()
+    plt.savefig(args.outbase+'.2.pdf')
+
+    return
+
+
+
     p = args.p
     q = args.q
     n = args.n
+
     plot_file = args.outbase
 
     if plot_file[-4:] != '.pdf':
@@ -972,11 +1016,6 @@ def test(args):
     print( '    Now, our dynamic programming algorithm gives')
     print(u'    logP , \u2207logP =', tree.l((p, q)))
     print('')
-
-    print('Simulating a forest of {} trees'.format(n))
-    forest = CollapsedForest((p, q), n)
-    print('    true parameters: p = {}, q = {}'.format(p, q))
-    forest.simulate()
 
     # total leaf counts
     total_data = sorted([sum(node.frequency for node in tree.tree.traverse()) for tree in forest.forest])
@@ -1094,9 +1133,14 @@ def test(args):
     print('plot saved to', plot_file)
 
 
+
+
+
+
+
 def infer(args):
     '''inference subprogram'''
-    phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse(args.phylipfile, args.countfile, args.naive)]
+    phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse.parse_outfile(args.phylipfile, args.countfile, args.naive)]
     phylip_collapsed_unique = []
     for tree in phylip_collapsed:
         if sum(tree.compare(tree2, method='identity') for tree2 in phylip_collapsed_unique) == 0:
@@ -1155,11 +1199,19 @@ def infer(args):
     for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
         alleles = sum(1 for _ in collapsed_tree.tree.traverse())
         print('{}\t{}\t{}'.format(i, alleles, l))
-        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i), colormap)
+        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i), colormap, args.leftright_split)
 
     # rank plot of likelihoods
     plt.figure(figsize=(6.5,2))
-    plt.plot(scipy.exp(ls), 'ko', clip_on=False, markersize=4)
+    try:
+        plt.plot(scipy.exp(ls), 'ko', clip_on=False, markersize=4)
+        plt.ylabel('GCtree likelihood')
+        plt.yscale('log')
+        plt.ylim([None, 1.1*max(scipy.exp(ls))])
+    except FloatingPointError:
+        plt.plot(ls, 'ko', clip_on=False, markersize=4)
+        plt.ylabel('GCtree log-likelihood')
+        plt.ylim([None, 1.1*max(ls)])
     plt.xlabel('parsimony tree')
     plt.xlim([-1, len(ls)])
     plt.tick_params(axis='y', direction='out', which='both')
@@ -1169,9 +1221,6 @@ def infer(args):
     bottom='off',      # ticks along the bottom edge are off
     top='off',         # ticks along the top edge are off
     labelbottom='off') # labels along the bottom edge are off
-    plt.ylabel('GCtree likelihood')
-    plt.yscale('log')
-    plt.ylim([None, 1.1*max(scipy.exp(ls))])
     plt.savefig(args.outbase + '.inference.likelihood_rank.pdf')
 
     # rank plot of observed allele frequencies
@@ -1331,11 +1380,11 @@ def simulate(args):
         for leaf in tree.iter_leaves():
             if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
                 i += 1
-                fh1.write('>seq{}\n'.format(i))
+                fh1.write('>simcell{}\n'.format(i))
                 fh1.write(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
-                fh2.write('>seq{}\n'.format(i))
+                fh2.write('>simcell{}\n'.format(i))
                 fh2.write(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]]+'\n')
-                leaf.name = 'seq{}'.format(i)
+                leaf.name = 'simcell{}'.format(i)
     else:
         with open(args.outbase+'.simulation.fasta', 'w') as f:
             f.write('>naive\n')
@@ -1344,9 +1393,9 @@ def simulate(args):
             for leaf in tree.iter_leaves():
                 if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
                     i += 1
-                    f.write('>seq{}\n'.format(i))
+                    f.write('>simcell{}\n'.format(i))
                     f.write(leaf.sequence+'\n')
-                    leaf.name = 'seq{}'.format(i)
+                    leaf.name = 'simcell{}'.format(i)
 
     # some observable simulation stats to write
     frequency, distance_from_naive, degree = zip(*[(node.frequency,
@@ -1396,20 +1445,14 @@ def simulate(args):
     # create an id-wise colormap
     if args.plotAA and args.selection:
         colormap = {node.name:colors[node.AAseq] for node in collapsed_tree.tree.traverse()}
-        collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
-        collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
-        # print colormap to file
-        with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
-            for name, color in colormap.items():
-                f.write(name + '\t' + color + '\n')
     else:
         colormap = {node.name:colors[node.sequence] for node in collapsed_tree.tree.traverse()}
-        collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
-        collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
-        # print colormap to file
-        with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
-            for name, color in colormap.items():
-                f.write(name + '\t' + color + '\n')
+    collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
+    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
+    # print colormap to file
+    with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
+        for name, color in colormap.items():
+            f.write(name + '\t' + color + '\n')
 
 
     if args.selection:
@@ -1468,7 +1511,6 @@ def plot_runstats(runstats, outbase, colors):
 
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(description='germinal center tree inference and simulation')
     subparsers = parser.add_subparsers(help='which program to run')
 
@@ -1476,9 +1518,6 @@ def main():
     parser_test = subparsers.add_parser('test',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                         help='run tests on library functions')
-    parser_test.add_argument('--p', type=float, default=.4, help='branching probability for test mode')
-    parser_test.add_argument('--q', type=float, default=.5, help='mutation probability for test mode')
-    parser_test.add_argument('--n', type=int, default=50, help='forest size for test mode')
     parser_test.set_defaults(func=test)
 
     # parser for inference subprogram
@@ -1489,6 +1528,7 @@ def main():
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.add_argument('countfile', type=str, help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
     parser_infer.add_argument('--colormapfile', type=str, default=None, help='File containing color map in the format: "SeqID\tcolor"')
+    parser_infer.add_argument('--leftright_split', type=int, default=None, help='split between heavy and light for combined seqs')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram

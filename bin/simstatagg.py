@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
 import argparse
-from fasta2phylip import Tas_parse
+from fasta2phylip import fasta_parse
 # from gctree import hamming_distance
 import seaborn as sns
 sns.set(style="white", color_codes=True)
@@ -47,7 +47,7 @@ sims = set(aggdat['simulation'])
 nsims = len(sims)
 
 if args.experimental is not None:
-    new_aln, counts = Tas_parse(args.experimental, naive='GL')
+    new_aln, counts = fasta_parse(args.experimental, naive='GL', converter='tas')[:2]
     exp_dict = {seq.id:str(seq.seq) for seq in new_aln}
     naive_id = [seq for seq in exp_dict if 'gl' in seq][0]
     frequency, distance_from_naive, degree = zip(*[(counts[seq],

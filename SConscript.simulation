@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner')
+Import('env gctree igphyml dnaml quick outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -21,6 +21,7 @@ if gctree:
     w.add_aggregate('gctree_agg', list) # <-- for aggregating repeated simulations with the same parameters
 w.add_aggregate('agg', list) # <-- for aggregating inference result from repeated simulations with the same parameters
 w.add_aggregate('simstat_agg', list) # <-- for aggregating simulation stats with the same parameters
+w.add_aggregate('summary_stats', list) # <-- summary stats for CFT study (no abundance)
 
 # next nest, just random simulation reruns, same params
 w.add('runs', range(1, nsim+1))
@@ -32,9 +33,10 @@ def gctree_sim(outdir, c):
     NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
     '''
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
-    T_arg = ' --T {} '.format(T) if T is not None else ''
+    T_arg = ' --T {} '.format(' '.join(map(str, T))) if T else ''
     N_arg = ' --N {} '.format(N) if N is not None else ''
     n_arg = ' --n {} '.format(n) if n is not None else ''
+    sele_arg = ' --selection True --target_dist {} --target_count {} --verbose {} --carry_cap {} --skip_update {}'.format(*selection_param) if selection_param is not None else ''
     tgt = CommandRunner([os.path.join(outdir, 'gctree.simulation.fasta'),
                          os.path.join(outdir, 'gctree.simulation.stats.tsv'),
                          os.path.join(outdir, 'gctree.simulation.collapsed_tree.p'),
@@ -49,17 +51,20 @@ def gctree_sim(outdir, c):
                         T_arg+
                         N_arg+
                         n_arg+
+                        sele_arg+
                         ' > ${TARGETS[4]}')
     c['simstat_agg'].append(tgt[1])
+    c['summary_stats'].append(tgt[0])
     return tgt
 
 @w.add_target()
 def infer(outdir, c):
     '''now do inference on the simulation results'''
     fasta = c['gctree_sim'][0]
+    fasta2 = None
     naiveID = 'naive' # this is what the simulation routine names the naive
     converter = None  # No problem with weird fasta formating from the simulated data
-    return SConscript('SConscript.inference', exports='env gctree igphyml frame fasta outdir naiveID converter CommandRunner')
+    return SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner')
 
 @w.add_target()
 def validate(outdir, c):
@@ -83,10 +88,11 @@ if gctree:
     @w.add_target()
     def gctree_aggregate(outdir, c):
         '''aggregate validation results'''
+        allmetrics_arg = ' --allmetrics' if igphyml or dnaml else ''
         tgt = env.Command([os.path.join(outdir, 'gctree.validaggreg.tsv'),
                            os.path.join(outdir, 'gctree.validaggreg.log')],
                           c['gctree_agg'],
-                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.validaggreg')+' > ${TARGETS[1]}')
+                          'stdbuf -oL python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.validaggreg') + allmetrics_arg + ' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         c['gctree_outeragg'].append(tgt[0])
         return tgt
@@ -98,6 +104,18 @@ def simstat_aggregate(outdir, c):
                       c['simstat_agg'],
                       'stdbuf -oL python bin/simstatagg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.stats')+
                       ' --experimental Tas_data/150228_Clone_3-8.fasta > ${TARGETS[0]}')
+    env.AlwaysBuild(tgt)
+    return tgt
+
+@w.add_target()
+def summary_stats(outdir, c):
+    '''aggregate simulation stats CFT version'''
+    exp_arg = ' --experimental ' + ' '.join(experimental_list) if len(experimental_list) > 0 else ''
+    tgt = env.Command([os.path.join(outdir, 'gctree.simulation.summary_stats.log')],
+                      c['summary_stats'],
+                      'stdbuf -oL python bin/summary_stats.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.summary_stats')+
+                      exp_arg +
+                      ' --naiveIDexp ' + naiveIDexp + ' > ${TARGETS[0]}')
     env.AlwaysBuild(tgt)
     return tgt
 

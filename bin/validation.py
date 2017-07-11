@@ -7,6 +7,7 @@ comparison of inference and simulated trees
 
 from __future__ import division, print_function
 from gctree import CollapsedTree, CollapsedForest, hamming_distance
+from random import randint
 try:
     import cPickle as pickle
 except:
@@ -18,7 +19,7 @@ matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set(style='white', color_codes=True)
-import os
+import os, sys
 import numpy as np
 try:
     import jellyfish  # Last time I checked this module was the fastest kid on the block, however 2x slower than a simple Cython function
@@ -42,23 +43,34 @@ def reconstruct_lineage(tree, node):
 
 
 def find_node_by_seq(tree, sequence):
-    node = [node for node in tree.traverse() if node.sequence == sequence and node.frequency > 0]
+    nodes = [node for node in tree.traverse() if node.sequence == sequence and node.frequency > 0]
+    if len(nodes) > 1:
+        nodes = [nodes[randint(0, len(nodes)-1)]]
     try:
-        assert(len(node) == 1)
+        assert(len(nodes) == 1)
     except Exception as e:
         print('Nodes list:')
-        print(node)
-
+        print(nodes)
+        print(sequence)
         print(tree)
-        print(node[0])
-        print(node[1])
+        print([(node.frequency, node.name, node.sequence) for node in tree.traverse()])
+        print(nodes[0])
+        print(nodes[1])
 
         raise e
-    return node[0]
+    return nodes[0]
 
 
-def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
-    assert(penalty_cap < 0)  # Penalties must be negative
+def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=0, known_root=True, allow_double_gap=False):
+    '''
+    Standard implementation of a Needleman-Wunsch algorithm as described here:
+    http://telliott99.blogspot.com/2009/08/alignment-needleman-wunsch.html
+    https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+    And implemented here:
+    https://github.com/alevchuk/pairwise-alignment-in-python/blob/master/alignment.py
+
+    gap_penalty_pct is the gap penalty relative to the sequence length of the sequences on the tree.
+    '''
     nt = find_node_by_seq(tree_t, seq)
     lt = reconstruct_lineage(tree_t, nt)
     ni = find_node_by_seq(tree_i, seq)
@@ -68,37 +80,64 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
         return False
 
     # Gap penalty chosen not too large:
-    gap_penalty = -10
-    assert(gap_penalty < 0)  # Penalties must be negative
-    if penalty_cap is not None and gap_penalty < penalty_cap:
-        gap_penalty = penalty_cap
+    gap_penalty = -1 * int((len(seq) / 100.0) * gap_penalty_pct)
+    assert(gap_penalty <= 0)  # Penalties must be negative
+    if gap_penalty == 0:  # If gap penalty is zero only gaps in the shortes sequence will be allowed
+        assert(allow_double_gap is False)
 
-    # Regerate a score matrix matrix:
+    # Generate a score matrix matrix:
     kt = len(lt)
     ki = len(li)
-    sc_mat = np.zeros((kt, ki), dtype=np.int64)
+    # Disallow gaps in the longest list:
+    if allow_double_gap is False and kt > ki:
+        # If true is longer than inferred allow gap only in inferred:
+        gap_penalty_i = gap_penalty
+        gap_penalty_j = -1 * float('inf')
+    elif allow_double_gap is False and kt < ki:
+        # If inferred is longer than true allow gap only in true:
+        gap_penalty_i = -1 * float('inf')
+        gap_penalty_j = gap_penalty
+    elif allow_double_gap is False and kt == ki:
+        # If lists are equally long no gaps are allowed:
+        gap_penalty_i = -1 * float('inf')
+        gap_penalty_j = -1 * float('inf')
+    else:
+        gap_penalty_i = gap_penalty
+        gap_penalty_j = gap_penalty
+
+    sc_mat = np.zeros((kt, ki), dtype=np.float64)
     for i in range(kt):
         for j in range(ki):
             # Notice the score is defined by number of mismatches:
             #sc_mat[i, j] = len(lt[i]) - fast_hamming_dist(lt[i], li[j])
-            sc_mat[i, j] =  -1 * fast_hamming_dist(lt[i], li[j])
+            sc_mat[i, j] = -1 * fast_hamming_dist(lt[i], li[j])
 
+###    print(sc_mat)
     # Calculate the alignment scores:
-    aln_sc = np.zeros((kt+1, ki+1), dtype=np.int64)
+    aln_sc = np.zeros((kt+1, ki+1), dtype=np.float64)
     for i in range(0, kt+1):
-        aln_sc[i][0] = gap_penalty * i
+        if known_root is True:
+            aln_sc[i][0] = -1 * float('inf')
+        else:
+            aln_sc[i][0] = gap_penalty_i * i
     for j in range(0, ki+1):
-        aln_sc[0][j] = gap_penalty * j
+        if known_root is True:
+            aln_sc[0][j] = -1 * float('inf')
+        else:
+            aln_sc[0][j] = gap_penalty_j * j
+    aln_sc[0][0] = 0  # The top left is fixed to zero
+###    print(aln_sc)
     for i in range(1, kt+1):
         for j in range(1, ki+1):
             match = aln_sc[i-1][j-1] + sc_mat[i-1, j-1]
-            delete = aln_sc[i-1][j] + gap_penalty
-            insert = aln_sc[i][j-1] + gap_penalty
-            aln_sc[i][j] = max(match, delete, insert)
-
+            gap_in_inferred = aln_sc[i-1][j] + gap_penalty_i
+            gap_in_true = aln_sc[i][j-1] + gap_penalty_j
+            aln_sc[i][j] = max(match, gap_in_inferred, gap_in_true)
+###    print(aln_sc)
     # Traceback to compute the alignment:
     align_t, align_i, asr_align = list(), list(), list()
     i, j = kt, ki
+    alignment_score = aln_sc[i][j]
     while i > 0 and j > 0:
         sc_current = aln_sc[i][j]
         sc_diagonal = aln_sc[i-1][j-1]
@@ -106,77 +145,77 @@ def align_lineages(seq, tree_t, tree_i, penalty_cap=None):
         sc_left = aln_sc[i-1][j]
 
         if sc_current == (sc_diagonal + sc_mat[i-1, j-1]):
-            if penalty_cap is not None and sc_mat[i-1, j-1] > penalty_cap:
-                asr_align.append(penalty_cap)
-            else:
-                asr_align.append(sc_mat[i-1, j-1])
             align_t.append(lt[i-1])
             align_i.append(li[j-1])
             i -= 1
             j -= 1
-        elif sc_current == (sc_left + gap_penalty):
-            asr_align.append(gap_penalty)
+        elif sc_current == (sc_left + gap_penalty_i):
             align_t.append(lt[i-1])
             align_i.append('-')
             i -= 1
-        elif sc_current == (sc_up + gap_penalty):
-            asr_align.append(gap_penalty)
+        elif sc_current == (sc_up + gap_penalty_j):
             align_t.append('-')
             align_i.append(li[j-1])
             j -= 1
 
     # If space left fill it with gaps:
     while i > 0:
-        asr_align.append(gap_penalty)
+        asr_align.append(gap_penalty_i)
         align_t.append(lt[i-1])
         align_i.append('-')
         i -= 1
     while j > 0:
-        asr_align.append(gap_penalty)
+        asr_align.append(gap_penalty_j)
         align_t.append('-')
         align_i.append(li[j-1])
         j -= 1
 
     max_penalty = 0
-    penalty = sum(asr_align)
-    for a in align_t:
-        if a == '_':
+    for a, b in zip(align_t, align_i):
+        if a == '-' or b == '-':
             max_penalty += gap_penalty
         else:
-            if penalty_cap is not None:
-                max_penalty += penalty_cap
-            else:
-                max_penalty += -len(a)
+            max_penalty += -len(a)
     # Notice that the root and the terminal node is excluded from this comparison.
     # by adding their length to the max_penalty:
-    max_penalty += 2 * len(lt[0])
-    return [align_t, align_i, asr_align, penalty, max_penalty]
+    if known_root is True:
+        max_penalty += 2 * len(lt[0])
+    else:  # Or in the case of an unknown root, just add the terminal node
+        max_penalty += len(lt[0])
+
+    return [align_t, align_i, alignment_score, max_penalty]
 
 
-def lineage_dist(true_tree, inferred_tree, penalty_cap=None, freq_weigthing=False):
-    total_lineage_dist = 0
-    total_max_penalty = 0
+def lineage_dist(true_tree, inferred_tree, freq_weigthing=False, known_root=True, allow_double_gap=False):
+    norm_lineage_dist = list()
     nlineages = 0
-    for node in true_tree.tree.traverse():
+#    for node in true_tree.tree.traverse():
+    for node in true_tree.tree.iter_leaves():  # Iterate only through the leaves
         if not node.frequency > 0:
             continue
 
-        aln_res = align_lineages(node.sequence, true_tree.tree, inferred_tree.tree, penalty_cap=None)
+        aln_res = align_lineages(node.sequence, true_tree.tree, inferred_tree.tree, known_root=known_root, allow_double_gap=allow_double_gap)
         if aln_res is  False:  # Skip lineages less than three members long
             continue
-        align_t, align_i, asr_align, final_score, max_penalty = aln_res
-        assert(sum(asr_align) == final_score)
+        align_t, align_i, final_score, max_penalty = aln_res
         if freq_weigthing is True:
-            total_max_penalty += max_penalty * node.frequency
-            total_lineage_dist += final_score * node.frequency
+            total_max_penalty = max_penalty * node.frequency
+            total_lineage_dist = final_score * node.frequency
+            # Normalize with the max penalty:
+            if total_max_penalty < 0:
+                norm_lineage_dist.append(total_lineage_dist/total_max_penalty)
         else:
-            total_max_penalty += max_penalty
-            total_lineage_dist += final_score
+            total_max_penalty = max_penalty
+            total_lineage_dist = final_score
+            # Normalize with the max penalty:
+            if total_max_penalty < 0:
+                norm_lineage_dist.append(total_lineage_dist/total_max_penalty)
 
-    if total_max_penalty == 0:  # There can be total_max_penalty == 0 when all lineages have less than three members
+    if len(norm_lineage_dist) == 0:  # There can be total_max_penalty == 0 when all lineages have less than three members
         return 0
-    norm_lineage_dist = total_lineage_dist / total_max_penalty  # Normalize with max penalty to get a number between 0 and 1
-    return norm_lineage_dist
+    # Take the mean of the distances:
+    mean_norm_lineage_dist = sum(norm_lineage_dist) / len(norm_lineage_dist)
+    return mean_norm_lineage_dist
 
 
 def validate(true_tree, inferences, true_tree_colormap, outbase):
@@ -185,8 +224,8 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
     CollapsedForest
     '''
 
-    # [(None, False), (1, False), (None, True), (1, True)]
-    all_lineage_dist = lambda x, y: [lineage_dist(x, y, i1, i2) for i2 in [False, True] for i1 in [None, 1]]
+    # With/without frequency weighting:
+    all_lineage_dist = lambda x, y: [lineage_dist(x, y, freq_weigthing=fw) for fw in [False, True]]
 
     # if gctre is among the inferences, let's evaluate the likelihood ranking
     # among the parsimony trees
@@ -204,26 +243,33 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
         df = pd.DataFrame({'log-likelihood':likelihoods,
                            'RF':distances,
                            'MRCA':MRCAs,
-                           'ld1':lineage_distances[0],
-                           'ld2':lineage_distances[1],
-                           'ld3':lineage_distances[2],
-                           'ld4':lineage_distances[3],
+                           'COAR':lineage_distances[0],
+                           'COAR_fw':lineage_distances[1],
                            'mean_frequency':mean_frequencies,
                            'mean_branch_length':mean_branch_lengths})
 
         if n_trees > 1:
             # plots
             maxll = df['log-likelihood'].max()
-            plt.figure(figsize=(3, 6))
-            for i, metric in enumerate(('RF', 'MRCA'), 1):
-                plt.subplot(2, 1, i)
-                ax = sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']!=maxll], fit_reg=False, color='black', scatter_kws={'alpha':.8, 'clip_on':False})
+            if len(df[df['log-likelihood']!=maxll]) >= 2:
+                fit_reg = True
+            else:
+                fit_reg = False
+            plt.figure(figsize=(10, 10))
+            for i, metric in enumerate(('RF', 'MRCA', 'COAR', 'COAR_fw'), 1):
+                plt.subplot(2, 2, i)
+                ax = sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']!=maxll], fit_reg=fit_reg, color='black', scatter_kws={'alpha':.8, 'clip_on':False})
                 sns.regplot('log-likelihood', metric, data=df[df['log-likelihood']==maxll], fit_reg=False, color='red', scatter_kws={'alpha':.8, 'clip_on':False}, ax=ax)
-                plt.ylim(0,1.1*df[metric].max())
+                plt.ylim(0, 1.1*df[metric].max())
+                plt.xlim(df['log-likelihood'].min(), df['log-likelihood'].max())
                 plt.tight_layout()
             plt.savefig(outbase+'.gctree.pdf')
 
         df.to_csv(outbase+'.gctree.tsv', sep='\t', index=False)
+
+        plt.figure(figsize=(14, 14))
+        sns.pairplot(df, kind="reg")
+        plt.savefig(outbase+'_pairplot.pdf')
 
         for i, tree in enumerate(inferences['gctree'].forest, 1):
             colormap = dict((node.name, true_tree_colormap[node.sequence]) if node.sequence in true_tree_colormap else (node.name, 'lightgray') for node in tree.tree.traverse())
@@ -242,8 +288,8 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
            true_tree.compare(inferences[method].forest[0], method='MRCA'),
            all_lineage_dist(true_tree, inferences[method].forest[0])) for method in inferences])
     lineage_distances = zip(*lineage_distances)  # Unzip the methods tuple to get lineage_distances[ld0-3][method]
-    df = pd.DataFrame({'method':methods, 'N_taxa':n_taxa, 'RF':distances, 'MRCA':MRCAs, 'ld1':lineage_distances[0], 'ld2':lineage_distances[1], 'ld3':lineage_distances[2], 'ld4':lineage_distances[3]},
-                      columns=('method', 'N_taxa', 'RF', 'MRCA', 'ld1', 'ld2', 'ld3', 'ld4'))
+    df = pd.DataFrame({'method':methods, 'N_taxa':n_taxa, 'RF':distances, 'MRCA':MRCAs, 'COAR':lineage_distances[0], 'COAR_fw':lineage_distances[1]},
+                      columns=('method', 'N_taxa', 'RF', 'MRCA', 'COAR', 'COAR_fw'))
     df.to_csv(outbase+'.tsv', sep='\t', index=False)
 
 
@@ -257,7 +303,11 @@ def main():
     parser.add_argument('true_tree', type=str, help='.p file containing true tree')
     parser.add_argument('true_tree_colormap', type=str, help='.tsv colormap file for true tree')
     parser.add_argument('forest_files', type=str, nargs='*', help='.p files containing forests from each inference method')
+    # Uncomment and insert into function calls to allow for these settings:
+    # parser.add_argument('--known_root', type=bool, default=True, help='This is root sequence known in the inferred phylogeny? If yes, the alignment is forced to end in the top left corner of the alignment grid.')
+    # parser.add_argument('--allow_double_gap', type=bool, default=False, help='Allow the Needleman-Wunsch algorithm to move freely and possibly introducing gaps in both true and inferred list under the same comparison.')
     parser.add_argument('--outbase', type=str, required=True, help='output file base name')
+    global args
     args = parser.parse_args()
 
     with open(args.true_tree, 'rb') as f:

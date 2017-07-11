@@ -16,18 +16,19 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml frame fasta outdir naiveID converter CommandRunner')
+Import('env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner')
 
 
 def delete_on_failure():
     from SCons.Script import GetBuildFailures
     for bf in GetBuildFailures():
         try:
-            # shutil.rmtree(os.path.dirname(bf.node.abspath))
-            print('There was an error for target:', bf.node.abspath)
-            print('To resolve this the base folder was deleted. '
-                  'Restarting will possibly solve the issue in case '
-                  'this was just a bad simulation. Deleted folder:', os.path.dirname(bf.node.abspath))
+            if False:  # Turn on if failed folder should be deleted
+                # shutil.rmtree(os.path.dirname(bf.node.abspath))
+                print('There was an error for target:', bf.node.abspath)
+                print('To resolve this the base folder was deleted. '
+                      'Restarting will possibly solve the issue in case '
+                      'this was just a bad simulation. Deleted folder:', os.path.dirname(bf.node.abspath))
         except OSError:
             pass  # Allow this
 # atexit.register(delete_on_failure)
@@ -35,31 +36,56 @@ def delete_on_failure():
 return_list = []
 
 
-if gctree or igphyml:
-    fasta_str = str(fasta)
-    basename = '.'.join(os.path.basename(fasta_str).split('.')[:-1])
+if gctree or igphyml or dnaml:
+    # fasta_str = str(fasta)
+    if fasta2 is not None: #isinstance(fasta, list):
+	basename = 'combined'
+    elif isinstance(fasta, str):
+        basename = '.'.join(os.path.basename(fasta).split('.')[:-1])
+    else:
+        basename = 'gctree.simulation'
     # parse fasta file to phylip, interpreting integer names as frequencies
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
-    phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if isinstance(fasta, str) else os.path.join(outdir, 'gctree.simulation.phylip'),
+    phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if fasta2 is None and isinstance(fasta, str) else os.path.join(outdir, 'gctree.combined.phylip') if fasta2 is not None else os.path.join(outdir, 'gctree.simulation.phylip'),
                           os.path.join(outdir, basename)+'.counts',
                           os.path.join(outdir, basename)+'.idmap'],
                           fasta,
-                          'stdbuf -oL python bin/fasta2phylip.py $SOURCE --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
+                          'stdbuf -oL python bin/fasta2phylip.py $SOURCES --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
                           '--naive '+naiveID+' > ${TARGETS[0]}')
 # Update the naive ID:
 naiveID = naiveID.lower()
 
+if dnaml:
+    dnaml_config = env.Command(os.path.join(outdir, 'dnaml/config.cfg'),
+                                 phylip[0],
+                                 'stdbuf -oL python bin/mkconfig.py $SOURCE dnaml --naive ' + naiveID + ' > $TARGET')
+
+    # run dnaml (from phylip package) to generate maximum likelihood tree
+    dnaml = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']),
+                       dnaml_config,
+                       'cd ' + outdir + '/dnaml && rm -f outfile outtree && dnaml < ${SOURCE.file} > ${TARGETS[2].file}')
+    # Manually depend on phylip so that we rerun dnaml if the input sequences change (without this, dnaml will
+    # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
+    env.Depends(dnaml, phylip)
+
+    dnaml_tree = env.Command([os.path.join(outdir, 'dnaml.inferred_tree.p'),
+                                 os.path.join(outdir, 'dnaml.inferred_tree.log')],
+                                [dnaml[1], phylip[1]],
+                                'TMPDIR=/tmp xvfb-run -a python bin/phylip_parse.py ${SOURCES} --outputfile ${TARGETS[0]} --naive '+naiveID+' > ${TARGETS[1]}')
+    return_list.append(dnaml_tree)
+
 if gctree:
     # make config file for dnapars
-    dnapars_config = env.Command(os.path.join(outdir, 'dnapars.cfg'),
+    quick_arg = '--quick' if quick else ''
+    dnapars_config = env.Command(os.path.join(outdir, 'dnapars/config.cfg'),
                                  phylip[0],
-                                 'stdbuf -oL python bin/mkdnaparsconfig.py $SOURCE --naive {} > $TARGET'.format(naiveID))
+                                 'stdbuf -oL python bin/mkconfig.py $SOURCE dnapars --naive ' + naiveID + ' ' + quick_arg + ' > $TARGET')
 
     # run dnapars (from phylip package) to generate parsimony trees
-    dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars.outtree', 'dnapars.outfile', 'dnapars.log']),
+    dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']),
                        dnapars_config,
-                       'cd ' + outdir + ' && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file} && mv outfile dnapars.outfile && mv outtree dnapars.outtree')
+                       'cd ' + outdir + '/dnapars && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
     # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
     # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
     env.Depends(dnapars, phylip)
@@ -80,6 +106,7 @@ if gctree:
 
 
 if igphyml:
+    # basename = 'igphyml'
     # Need the dedup phy as fa for ASR:
     dedup_fasta = env.Command([os.path.join(outdir, basename+'.dedup.fasta'),
                                os.path.join(outdir, basename+'.dedup.log')],
