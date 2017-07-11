@@ -651,7 +651,7 @@ class MutationModel():
         raise RuntimeError('100 consecutive attempts for creating a target sequence failed.')
 
 
-    def simulate(self, sequence, seq_bounds=None, progeny=poisson(.9), lambda0=[1], frame=None,
+    def simulate(self, sequence, outbase, seq_bounds=None, progeny=poisson(.9), lambda0=[1], frame=None,
                  N=None, T=None, n=None, verbose=False, selection_params=None):
         '''
         simulate neutral binary branching process with mutation model
@@ -691,7 +691,7 @@ class MutationModel():
 
         if selection_params is not None:
             hd_generation = list()  # Collect an array of the counts of each hamming distance at each time step
-            mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, B_total, Lp, k, outbase = selection_params
+            mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, B_total, Lp, k = selection_params
             # Assert that the target sequences are comparable to the naive sequence:
             aa = Seq(tree.sequence[(frame-1):(frame-1+(3*(((len(tree.sequence)-(frame-1))//3))))], generic_dna).translate()
             assert(sum([1 for t in targetAAseqs if len(t) != len(aa)]) == 0)  # All targets are same length
@@ -894,6 +894,9 @@ class MutationModel():
         # assign unique names to each node
         for i, node in enumerate(tree.traverse(), 1):
             node.name = 'simcell_gctreeinternal_{}'.format(i)
+
+        # Dump true tree as newick:
+        tree.write(format=1, outfile='{}truetree.newick'.format(outbase))
 
         # return the fine (uncollapsed) tree
         return tree
@@ -1333,7 +1336,7 @@ def simulate(args):
         A_total = find_A_total(args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U)
         # Calculate the parameters for the logistic function:
         Lp = find_Lp(args.f_full, args.U)
-        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
+        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k]
     else:
         selection_params = None
     # ----/> Selection
@@ -1343,6 +1346,7 @@ def simulate(args):
     for trial in range(trials):
         try:
             tree = mutation_model.simulate(args.sequence,
+                                           args.outbase,
                                            seq_bounds=seq_bounds,
                                            progeny=poisson(args.lambda_),
                                            lambda0=args.lambda0,
