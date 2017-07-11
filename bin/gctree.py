@@ -660,6 +660,7 @@ class MutationModel():
         simulate neutral binary branching process with mutation model
         progeny must be like a scipy.stats distribution, with rvs() and mean() methods
         '''
+        stop_dist = None  # Default stopping criterium for affinity simulation
         # Checking the validity of the input parameters:
         if N is not None and T is not None:
             raise ValueError('Only one of N and T can be used. One must be None.')
