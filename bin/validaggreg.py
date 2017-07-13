@@ -112,7 +112,7 @@ else:
         if 'COAR' in metric:
             plt.ylim(0, maxy[metric])
         else:
-            plt.ylim(-.5, maxy[metric])
+            plt.ylim(0, maxy[metric])
         plt.tick_params(
         axis='x',          # changes apply to the x-axis
         which='both',      # both major and minor ticks are affected
@@ -150,7 +150,7 @@ else:
         if 'COAR' in metric:
             plt.ylim(0, maxy[metric])
         else:
-            plt.ylim(-.5, maxy[metric])
+            plt.ylim(0, maxy[metric])
         plt.tick_params(
         axis='x',          # changes apply to the x-axis
         which='both',      # both major and minor ticks are affected

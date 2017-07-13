@@ -186,7 +186,6 @@ class CollapsedTree(LeavesAndClades):
                                 generic_dna).translate()
                 node.dist = hamming_distance(aa, aa_parent)
 
-
         if tree is not None:
             self.tree = tree.copy()
             # iterate over the tree below root and collapse edges of zero length
@@ -199,19 +198,18 @@ class CollapsedTree(LeavesAndClades):
                     node.delete(prevent_nondicotomic=False)
 
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
-            if 'sequence' in tree.features:
+            rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
+            if not allow_repeats and rep_seq:
+                raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+            elif allow_repeats and rep_seq:
                 rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
-                if not allow_repeats and rep_seq:
-                    raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
-                elif allow_repeats and rep_seq:
-                    rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
-                    print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+                print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
             # now we do a custom ladderize accounting for abundance and sequence to break ties in abundance
             for node in self.tree.traverse(strategy='postorder'):
                 # add a partition feature and compute it recursively up the tree
                 node.add_feature('partition', node.frequency + sum(node2.partition for node2 in node.children))
                 # sort children of this node based on partion and sequence
-                node.children.sort(key=lambda node: (node.partition, node.sequence if 'sequence' in tree.features else None))
+                node.children.sort(key=lambda node: (node.partition, node.sequence))
         else:
             self.tree = tree
 
@@ -379,6 +377,7 @@ class CollapsedTree(LeavesAndClades):
             taxa = [node.sequence for node in self.tree.traverse() if node.frequency]
             n_taxa = len(taxa)
             d = scipy.zeros(shape=(n_taxa, n_taxa))
+            sum_sites = scipy.zeros(shape=(n_taxa, n_taxa))
             for i in range(n_taxa):
                 nodei_true = self.tree.iter_search_nodes(sequence=taxa[i]).next()
                 nodei      =      tree2.tree.iter_search_nodes(sequence=taxa[i]).next()
@@ -388,7 +387,8 @@ class CollapsedTree(LeavesAndClades):
                     MRCA_true = self.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
                     MRCA =           tree2.tree.get_common_ancestor((nodei, nodej)).sequence
                     d[i, j] = hamming_distance(MRCA_true, MRCA)
-            return d.sum()
+                    sum_sites[i, j] = len(MRCA_true)
+            return d.sum() / sum_sites.sum()
         elif method == 'RF':
             tree1_copy = self.tree.copy(method='deepcopy')
             tree2_copy = tree2.tree.copy(method='deepcopy')
@@ -399,7 +399,10 @@ class CollapsedTree(LeavesAndClades):
                         child = TreeNode()
                         child.add_feature('sequence', node.sequence)
                         node.add_child(child)
-            return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0]
+            try:
+                return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True)[0]
+            except:
+                return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True, allow_dup=True)[0]
         else:
             raise ValueError('invalid distance method: '+method)
 
@@ -657,6 +660,7 @@ class MutationModel():
         simulate neutral binary branching process with mutation model
         progeny must be like a scipy.stats distribution, with rvs() and mean() methods
         '''
+        stop_dist = None  # Default stopping criterium for affinity simulation
         # Checking the validity of the input parameters:
         if N is not None and T is not None:
             raise ValueError('Only one of N and T can be used. One must be None.')
@@ -688,7 +692,7 @@ class MutationModel():
 
         if selection_params is not None:
             hd_generation = list()  # Collect an array of the counts of each hamming distance at each time step
-            mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, B_total, Lp, k, outbase = selection_params
+            stop_dist, mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, B_total, Lp, k, outbase = selection_params
             # Assert that the target sequences are comparable to the naive sequence:
             aa = Seq(tree.sequence[(frame-1):(frame-1+(3*(((len(tree.sequence)-(frame-1))//3))))], generic_dna).translate()
             assert(sum([1 for t in targetAAseqs if len(t) != len(aa)]) == 0)  # All targets are same length
@@ -759,7 +763,10 @@ class MutationModel():
 
         t = 0  # <-- time
         leaves_unterminated = 1
-        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < T if T is not None else True):
+        # Small lambdas are causing problems so make a minimum:
+        lambda_min = 10e-10
+        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < max(T) if T is not None else True) and (stop_dist >= min(hd_distrib) if stop_dist is not None and t > 0 else True):
+            t += 1
             if verbose:
                 print('At time:', t)
             skip_lambda_n = 0  # At every new round reset the all the lambdas
@@ -834,6 +841,18 @@ class MutationModel():
             raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
 
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
+        if T is not None and len(T) > 1:
+            # Iterate the intermediate time steps:
+            for Ti in sorted(T)[:-1]:
+                # Only sample those that have been 'sampled' at intermediate sampling times:
+                final_leaves = [leaf for leaf in tree.iter_descendants() if leaf.time == Ti and leaf.sampled]
+                if len(final_leaves) < n:
+                    raise RuntimeError('tree terminated with {} leaves, less than what desired after downsampling {}'.format(leaves_unterminated, n))
+                for leaf in final_leaves:  # No need to down-sample, this was already done in the simulation loop
+                    leaf.frequency = 1
+        if selection_params and max(T) != t:
+            raise RuntimeError('tree terminated with before the requested sample time.')
+        # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size
         if n is not None and len(final_leaves) >= n:
@@ -955,11 +974,9 @@ def test(args):
     return
 
 
-
     p = args.p
     q = args.q
     n = args.n
-
     plot_file = args.outbase
 
     if plot_file[-4:] != '.pdf':
@@ -1101,11 +1118,6 @@ def test(args):
 
     plt.savefig(plot_file)
     print('plot saved to', plot_file)
-
-
-
-
-
 
 
 def infer(args):
@@ -1303,7 +1315,7 @@ def simulate(args):
         A_total = find_A_total(args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U)
         # Calculate the parameters for the logistic function:
         Lp = find_Lp(args.f_full, args.U)
-        selection_params = [args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
+        selection_params = [args.stop_dist, args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
     else:
         selection_params = None
     # ----/> Selection
@@ -1323,7 +1335,7 @@ def simulate(args):
                                            verbose=args.verbose,
                                            selection_params=selection_params)
             if args.selection:
-                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=True, allow_repeats=True)
+                collapsed_tree = CollapsedTree(tree=tree, frame=args.frame, collapse_syn=False, allow_repeats=True)
             else:
                 collapsed_tree = CollapsedTree(tree=tree, frame=args.frame) # <-- this will fail if backmutations
             tree.ladderize()
@@ -1515,8 +1527,9 @@ def main():
                             'this rate will be used on both.')
     parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
     parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
-    parser_sim.add_argument('--T', type=int, default=None, help='observation time, if None we run until termination and take all leaves')
+    parser_sim.add_argument('--T', type=int, nargs='+', default=None, help='observation time, if None we run until termination and take all leaves')
     parser_sim.add_argument('--selection', type=bool, default=False, help='Simulation with selection? true/false. When doing simulation with selection an observation time cut must be set.')
+    parser_sim.add_argument('--stop_dist', type=int, default=None, help='Stop when this distance has been reached in the selection model.')
     parser_sim.add_argument('--carry_cap', type=int, default=1000, help='The carrying capacity of the simulation with selection. This number affects the fixation time of a new mutation.'
                             'Fixation time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.')
     parser_sim.add_argument('--target_count', type=int, default=10, help='The number of targets to generate.')
