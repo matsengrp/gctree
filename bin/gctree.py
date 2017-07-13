@@ -671,15 +671,12 @@ class MutationModel():
             raise ValueError('n ({}) must not larger than N ({})'.format(n, N))
         if selection_params is not None and frame is None:
             raise ValueError('Simulation with selection was chosen. A frame must must be specified.')
-        if T is not None and len(T) > 1 and n is None:
-            raise ValueError('When sampling intermediate time points it must be a subsample of the full population specified by "n".')
 
         # Planting the tree:
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature('sequence', sequence)
         tree.add_feature('terminated', False)
-        tree.add_feature('sampled', False)
         tree.add_feature('frequency', 0)
         tree.add_feature('time', 0)
 
@@ -762,68 +759,54 @@ class MutationModel():
 
         t = 0  # <-- time
         leaves_unterminated = 1
-        # Small lambdas are causing problems so make a minimum:
-        lambda_min = 10e-10
-        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < max(T) if T is not None else True):
-            t += 1
+        while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < T if T is not None else True):
             if verbose:
                 print('At time:', t)
-            skip_lambda_n = 0  # At every new round reset all the lambdas
-            unterminated_leaves = [l for l in tree.iter_leaves() if not l.terminated]
-            random.shuffle(unterminated_leaves)
-            # Sample intermediate time point:
-            if T is not None and len(T) > 1 and (t-1) in T:
-                if len(unterminated_leaves) < n:
-                    raise RuntimeError('tree terminated with {} leaves, less than what desired after downsampling {}'.format(leaves_unterminated, n))
-                # Make the sample and kill the cells sampled:
-                for leaf in random.sample(unterminated_leaves, n):
-                    leaves_unterminated -= 1
-                    leaf.sampled = True
-                    leaf.terminated = True
-                if verbose:
-                    print('Made an intermediate sample at time:', t-1)
-                # Update the list of unterminated leafs:
-                unterminated_leaves = [l for l in tree.iter_leaves() if not l.terminated]
-
-            for leaf in unterminated_leaves:
-                # <---- Selection:
-                if selection_params is not None:
-                    if skip_lambda_n == 0:
-                        skip_lambda_n = skip_update + 1  # Add one so skip_update=0 is no skip
-                        tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
-                    if leaf.lambda_ > lambda_min:
-                        progeny = poisson(leaf.lambda_)
-                    else:
-                        progeny = poisson(lambda_min)
-                    skip_lambda_n -= 1
-                # ----/> Selection
-                n_children = progeny.rvs()
-                leaves_unterminated += n_children - 1 # <-- this kills the parent if we drew a zero
-                if not n_children:
-                    leaf.terminated = True
-                for child_count in range(n_children):
-                    # If sequence pair mutate them separately with their own mutation rate:
-                    if seq_bounds is not None:
-                        mutated_sequence1 = self.mutate(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]], lambda0=lambda0[0], frame=frame)
-                        mutated_sequence2 = self.mutate(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]], lambda0=lambda0[1], frame=frame)
-                        mutated_sequence = mutated_sequence1 + mutated_sequence2
-                    else:
-                        mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0[0], frame=frame)
-                    child = TreeNode()
-                    child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
-                    child.add_feature('sequence', mutated_sequence)
+            skip_lambda_n = 0  # At every new round reset the all the lambdas
+            t += 1
+            list_of_leaves = list(tree.iter_leaves())
+            random.shuffle(list_of_leaves)
+            for leaf in list_of_leaves:
+                if not leaf.terminated:
                     # <---- Selection:
                     if selection_params is not None:
-                        aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))], generic_dna).translate()
-                        child.add_feature('AAseq', str(aa))
-                        child.add_feature('Kd', calc_Kd(child.AAseq, targetAAseqs, hd2affy))
-                        child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))
+                        if skip_lambda_n == 0:
+                            skip_lambda_n = skip_update + 1  # Add one so skip_update=0 is no skip
+                            tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
+                        # Small lambdas are causing problems so make a minimum:
+                        lambda_min = 10e-10
+                        if leaf.lambda_ > lambda_min:
+                            progeny = poisson(leaf.lambda_)
+                        else:
+                            progeny = poisson(lambda_min)
+                        skip_lambda_n -= 1
                     # ----/> Selection
-                    child.add_feature('frequency', 0)
-                    child.add_feature('terminated', False)
-                    child.add_feature('sampled', False)
-                    child.add_feature('time', t)
-                    leaf.add_child(child)
+                    n_children = progeny.rvs()
+                    leaves_unterminated += n_children - 1 # <-- this kills the parent if we drew a zero
+                    if not n_children:
+                        leaf.terminated = True
+                    for child_count in range(n_children):
+                        # If sequence pair mutate them separately with their own mutation rate:
+                        if seq_bounds is not None:
+                            mutated_sequence1 = self.mutate(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]], lambda0=lambda0[0], frame=frame)
+                            mutated_sequence2 = self.mutate(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]], lambda0=lambda0[1], frame=frame)
+                            mutated_sequence = mutated_sequence1 + mutated_sequence2
+                        else:
+                            mutated_sequence = self.mutate(leaf.sequence, lambda0=lambda0[0], frame=frame)
+                        child = TreeNode()
+                        child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
+                        child.add_feature('sequence', mutated_sequence)
+                        # <---- Selection:
+                        if selection_params is not None:
+                            aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))], generic_dna).translate()
+                            child.add_feature('AAseq', str(aa))
+                            child.add_feature('Kd', calc_Kd(child.AAseq, targetAAseqs, hd2affy))
+                            child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))
+                        # ----/> Selection
+                        child.add_feature('frequency', 0)
+                        child.add_feature('terminated' ,False)
+                        child.add_feature('time', t)
+                        leaf.add_child(child)
             # <---- Selection:
             if selection_params is not None:
                 hd_distrib = [min([hamming_distance(tn.AAseq, ta) for ta in targetAAseqs]) for tn in tree.iter_leaves() if not tn.terminated]
@@ -846,21 +829,11 @@ class MutationModel():
                 pickle.dump(hd_generation, f)
         # ----/> Selection
 
+
         if leaves_unterminated < N:
             raise RuntimeError('tree terminated with {} leaves, {} desired'.format(leaves_unterminated, N))
 
         # each leaf in final generation gets an observation frequency of 1, unless downsampled
-        if T is not None and len(T) > 1:
-            # Iterate the intermediate time steps:
-            for Ti in sorted(T)[:-1]:
-                # Only sample those that have been 'sampled' at intermediate sampling times:
-                final_leaves = [leaf for leaf in tree.iter_descendants() if leaf.time == Ti and leaf.sampled]
-                if len(final_leaves) < n:
-                    raise RuntimeError('tree terminated with {} leaves, less than what desired after downsampling {}'.format(leaves_unterminated, n))
-                for leaf in final_leaves:  # No need to down-sample, this was already done in the simulation loop
-                    leaf.frequency = 1
-        assert(max(T) == t)
-        # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size
         if n is not None and len(final_leaves) >= n:
@@ -938,25 +911,24 @@ def test(args):
     limx = (1/n, 1.1)
     limy = (1, 1.1*n)
     g = sns.lmplot(x='L', y='f', col='p', row='q', hue='parameters', data=df,
-                   fit_reg=False, scatter_kws={'alpha':.3}, size=1.2, legend=False,
+                   fit_reg=False, scatter_kws={'alpha':.3}, size=1.5, legend=False,
                    row_order=reversed(qs))
     g.set(xscale='log', yscale='log', xlim=limx, ylim=limy)
-    g.fig.subplots_adjust(hspace=0.4, wspace=0.4)
     # g.ax.legend(title='parameters', loc='lower right', frameon=True, bbox_to_anchor=(1.1, 0))
     for i in range(len(ps)):
         for j in range(len(qs)):
             g.axes[i, j].plot(limx, limy, ls='--', c='black', lw=.5, zorder=0, markeredgewidth=.1)
-            g.axes[i, j].set_title('$p={}$\n$q={}$'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.9, size='x-small', ha='left', va='top')
+            g.axes[i, j].set_title('p={}, q={}'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.8, size='x-small', ha='left')
     g.set_axis_labels('', '')
     # g.axes[-1, len(ps)//2].set_xlabel('GCtree likelihood')
     # g.axes[len(qs)//2, 0].set_ylabel('frequency among {} simulations'.format(n))
     g.fig.text(0.45, .02, s='GCtree likelihood', multialignment='center')
-    g.fig.text(.03, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
+    g.fig.text(.02, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
     plt.savefig(args.outbase+'.pdf')
 
     # MLE check
-    n = 10
-    n2 = 1000
+    n = 20
+    n2 = 500
     df = pd.DataFrame(columns=('true parameters', '$\hat{p}$', '$\hat{q}$'))
     ct = 0
     for p in ps:
@@ -971,11 +943,11 @@ def test(args):
 
     plt.figure()
     g = sns.lmplot(x='$\hat{p}$', y='$\hat{q}$', hue='true parameters', data=df,
-                   fit_reg=False, scatter_kws={'alpha':.5}, size=4.5, legend=False)
+                   fit_reg=False, scatter_kws={'alpha':.2}, size=6, legend=False)
     g.set(xlim=(0.05, .45), xticks=scipy.arange(0., .6, .1), ylim=(.1, .9), yticks=scipy.arange(0., 1.2, .2))
     for i in range(len(ps)):
         for j in range(len(qs)):
-            plt.scatter([ps[i]], [qs[j]], c='black', marker='+', zorder=0)
+            plt.scatter([ps[i]], [qs[j]], c='black', marker='+')
     # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     # plt.tight_layout()
     plt.savefig(args.outbase+'.2.pdf')

@@ -54,12 +54,15 @@ def iter_edges(fh):
 def parse_seqdict(fh, mode='dnaml'):
     #  152        sssssssssG AGGTGCAGCT GTTGGAGTCT GGGGGAGGCT TGGTACAGCC TGGGGGGTCC
     seqs = defaultdict(str)
-    patterns = {
-        'dnaml': re.compile("^\s*(?P<id>[a-zA-Z0-9>_.-]*)\s+(?P<seq>[a-zA-Z \-]+)"),
-        'dnapars': re.compile("^\s*\S+\s+(?P<id>[a-zA-Z0-9>_.-]*)\s+(yes\s+|no\s+|maybe\s+)?(?P<seq>[a-zA-Z \-]+)")}
+    if mode == 'dnaml':
+        patterns = re.compile("^\s*(?P<id>[a-zA-Z0-9>_.-]*)\s+(?P<seq>[a-zA-Z \-]+)")
+    elif mode == 'dnapars':
+        patterns = re.compile("^\s*\S+\s+(?P<id>[a-zA-Z0-9>_.-]*)\s+(yes\s+|no\s+|maybe\s+)?(?P<seq>[a-zA-Z \-]+)")
+    else:
+        raise ValueError('invalid mode '+mode)
     fh.next()
     for line in fh:
-        m = patterns[mode].match(line)
+        m = patterns.match(line)
         if m and m.group("id") is not '':
             seqs[m.group("id")] += m.group("seq").replace(" ", "").upper()
         elif line.rstrip() == '':
@@ -91,7 +94,7 @@ def parse_outfile(outfile, countfile=None, naive='naive'):
                 # sanity check;  a valid tree should have exactly one node that is parentless
                 if not len(parents) == len(sequences) - 1:
                     raise RuntimeError('invalid results attempting to parse {}: there are {} parentless sequences'.format(outfile, len(sequences) - len(parents)))
-                trees.append(disambiguate(build_tree(sequences, parents, counts, naive)))
+                trees.append(build_tree(sequences, parents, counts, naive))
             else:
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
     return trees
@@ -120,13 +123,6 @@ def build_tree(sequences, parents, counts=None, naive='naive'):
         node = Tree()
         node.name = name
         node.add_feature('sequence', sequences[node.name])
-
-### Removed by KD because it is replaced by a count file
-#            if '_' in node.name:
-#                node.add_feature('frequency', int(node.name.split('_')[-1]))
-#                node.name = '_'.join(node.name.split('_')[:-1])
-#            else:
-#                node.add_feature('frequency', 0)
         if counts is not None:
             if node.name in counts:
                 node.add_feature('frequency', counts[node.name])
