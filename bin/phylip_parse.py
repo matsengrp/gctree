@@ -21,7 +21,8 @@ def sections(fh):
     patterns = {
         "parents": "\s+between\s+and\s+length",
         ("sequences", 'dnaml'): "\s*node\s+reconstructed\s+sequence",
-        ('sequences', 'dnapars'): "from\s+to\s+any steps"}
+        ('sequences', 'dnapars'): "from\s+to\s+any steps",
+        "seqboot_dataset": "Data\s*set"}
     patterns = {k: re.compile(v, re.IGNORECASE) for (k,v) in patterns.items()}
     for line in fh:
         for k, pat in patterns.items():
@@ -64,9 +65,14 @@ def parse_seqdict(fh, mode='dnaml'):
     for line in fh:
         m = patterns.match(line)
         if m and m.group("id") is not '':
+            last_blank = False
             seqs[m.group("id")] += m.group("seq").replace(" ", "").upper()
         elif line.rstrip() == '':
-            continue
+            if last_blank:
+                break
+            else:
+                last_blank = True
+                continue
         else:
             break
     return seqs
@@ -83,6 +89,7 @@ def parse_outfile(outfile, countfile=None, naive='naive'):
     else:
         counts = None
     trees = []
+    bootstrap = False
     # Ugg... for compilation need to let python know that these will definely both be defined :-/
     sequences, parents = {}, {}
     with open(outfile, 'rU') as fh:
@@ -94,7 +101,13 @@ def parse_outfile(outfile, countfile=None, naive='naive'):
                 # sanity check;  a valid tree should have exactly one node that is parentless
                 if not len(parents) == len(sequences) - 1:
                     raise RuntimeError('invalid results attempting to parse {}: there are {} parentless sequences'.format(outfile, len(sequences) - len(parents)))
-                trees.append(build_tree(sequences, parents, counts, naive))
+                if bootstrap:
+                    trees[-1].append(build_tree(sequences, parents, counts, naive))
+                else:
+                    trees.append(build_tree(sequences, parents, counts, naive))
+            elif sect == 'seqboot_dataset':
+                bootstrap = True
+                trees.append([])
             else:
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
     return trees
@@ -138,9 +151,9 @@ def build_tree(sequences, parents, counts=None, naive='naive'):
     if naive is not None:
         naive_id = [node for node in nodes if naive in node][0]
         assert len(nodes[naive_id].children) == 0
-        assert nodes[naive_id] in tree.children
-        tree.remove_child(nodes[naive_id])
-        nodes[naive_id].add_child(tree)
+        naive_parent = nodes[naive_id].up
+        naive_parent.remove_child(nodes[naive_id])
+        nodes[naive_id].add_child(naive_parent)
         tree = nodes[naive_id]
 
     # make random choices for ambiguous bases
@@ -176,12 +189,17 @@ def main():
 
     args = parser.parse_args()
 
-    # basename of outputfiles is taken from --basename if supplied, otherwise basename of DNAML.
     if args.outputfile is None:
         args.outputfile = args.phylip_outfile + '.collapsed_forest.p'
-
-    trees = [gctree.CollapsedTree(tree=tree) for tree in parse_outfile(args.phylip_outfile, args.countfile, args.naive)]
-    pickle.dump(gctree.CollapsedForest(forest=trees), open(args.outputfile, 'w'))
+    trees = parse_outfile(args.phylip_outfile, args.countfile, args.naive)
+    if isinstance(trees[0], list):
+        print(trees[0][0])
+        print(gctree.CollapsedTree(tree=trees[0][0]))
+        bootstraps = [[gctree.CollapsedTree(tree=tree) for tree in bootstrap] for bootstrap in trees]
+        pickle.dump([gctree.CollapsedForest(forest=trees) for trees in bootstraps], open(args.outputfile, 'w'))
+    else:
+        trees = [gctree.CollapsedTree(tree=tree) for tree in trees]
+        pickle.dump(gctree.CollapsedForest(forest=trees), open(args.outputfile, 'w'))
 
 if __name__ == "__main__":
     main()

@@ -9,10 +9,9 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
-from Bio.Phylo.Consensus import bootstrap
 from collections import defaultdict
 
-def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None, resample=False):
+def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
     # naive = naive.lower()
     aln = AlignIO.read(aln_file, 'fasta')
     if aln_file2 is not None:
@@ -26,9 +25,6 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None, res
                 if cell2 == cell:
                     aln_combined.append(SeqRecord(Seq(str(seq.seq) + str(seq2.seq), generic_dna), id=cell))
         aln = aln_combined
-
-    if resample:
-        aln = bootstrap(aln, 1).next()
 
     sequence_length = aln.get_alignment_length()
     if frame is not None:
@@ -70,6 +66,7 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None, res
         new_aln.append(SeqRecord(Seq(seq, generic_dna), id=new_id))
         counts[new_id] = len(seqs_unique_counts[seq])
         id_map[new_id] = seqs_unique_counts[seq]
+
     return new_aln, counts, id_map
 
 def check_header(header):
@@ -150,7 +147,6 @@ def main():
     specified_coverters = ['tas']
     parser.add_argument('--naive', type=str, default='naive', help='naive sequence id')
     parser.add_argument('--frame', type=int, default=None, help='codon frame', choices=(1,2,3))
-    parser.add_argument('--resample', action='store_true', help='bootstrap resample columns')
     args = parser.parse_args()
 
     if args.converter is not None and args.converter.lower() not in specified_coverters:
@@ -161,8 +157,7 @@ def main():
                                           args.naive,
                                           frame=args.frame,
                                           aln_file2=args.infile[1] if len(args.infile) == 2 else None,
-                                          converter=args.converter,
-                                          resample=args.resample)
+                                          converter=args.converter)
     print(new_aln.format('phylip'))
     if args.countfile is not None:
         fh_out = open(args.countfile, 'w')

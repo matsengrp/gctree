@@ -8,7 +8,6 @@ import atexit
 import shutil
 import re
 
-
 def which(executable):
     for path in os.environ["PATH"].split(os.pathsep):
         if os.path.exists(os.path.join(path, executable)):
@@ -16,8 +15,7 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner')
-
+Import('env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')
 
 def delete_on_failure():
     from SCons.Script import GetBuildFailures
@@ -53,13 +51,32 @@ if gctree or igphyml or dnaml:
                           fasta,
                           'stdbuf -oL python bin/fasta2phylip.py $SOURCES --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
                           '--naive '+naiveID+' > ${TARGETS[0]}')
+
+    if bootstrap:
+        seqboot_config = env.Command(os.path.join(outdir, 'seqboot/config.cfg'),
+                                     phylip[0],
+                                     'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} seqboot > $TARGET')
+
+        seqboot = CommandRunner(map(lambda x: os.path.join(outdir, x), ['seqboot/outfile', 'seqboot/log.log']),
+                           seqboot_config,
+                           'cd ' + outdir + '/seqboot && rm -f outfile && seqboot < ${SOURCE.file} > ${TARGETS[1].file}')
+        # Manually depend on phylip so that we rerun seqboot if the input sequences change (without this, dnaml will
+        # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
+        env.Depends(seqboot, phylip)
+
+        bootstrap_arg = ' --bootstrap '
+        seq_input = seqboot
+    else:
+        bootstrap_arg = ''
+        seq_input = phylip
+
 # Update the naive ID:
 naiveID = naiveID.lower()
 
 if dnaml:
     dnaml_config = env.Command(os.path.join(outdir, 'dnaml/config.cfg'),
-                                 phylip[0],
-                                 'stdbuf -oL python bin/mkconfig.py $SOURCE dnaml --naive ' + naiveID + ' > $TARGET')
+                                 seq_input[0],
+                                 'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnaml ' + bootstrap_arg + ' > $TARGET')
 
     # run dnaml (from phylip package) to generate maximum likelihood tree
     dnaml = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']),
@@ -67,7 +84,7 @@ if dnaml:
                        'cd ' + outdir + '/dnaml && rm -f outfile outtree && dnaml < ${SOURCE.file} > ${TARGETS[2].file}')
     # Manually depend on phylip so that we rerun dnaml if the input sequences change (without this, dnaml will
     # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
-    env.Depends(dnaml, phylip)
+    env.Depends(dnaml, seq_input)
 
     dnaml_tree = env.Command([os.path.join(outdir, 'dnaml.inferred_tree.p'),
                                  os.path.join(outdir, 'dnaml.inferred_tree.log')],
@@ -79,8 +96,8 @@ if gctree:
     # make config file for dnapars
     quick_arg = '--quick' if quick else ''
     dnapars_config = env.Command(os.path.join(outdir, 'dnapars/config.cfg'),
-                                 phylip[0],
-                                 'stdbuf -oL python bin/mkconfig.py $SOURCE dnapars --naive ' + naiveID + ' ' + quick_arg + ' > $TARGET')
+                                 seq_input[0],
+                                 'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnapars ' + ' ' + quick_arg + bootstrap_arg + ' > $TARGET')
 
     # run dnapars (from phylip package) to generate parsimony trees
     dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']),
@@ -88,7 +105,7 @@ if gctree:
                        'cd ' + outdir + '/dnapars && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
     # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
     # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
-    env.Depends(dnapars, phylip)
+    env.Depends(dnapars, seq_input)
 
     # ML tree from parsimony trees
     # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101

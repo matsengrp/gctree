@@ -203,7 +203,10 @@ elif inference:
               default=None,
               help='Converter to convert input fasta format e.g. the Victora lab GC fasta format')
     converter = GetOption('converter')
-
+    AddOption('--bootstrap',
+              action='store_true',
+              help='boostrap resampling, and inference on each')
+    bootstrap = GetOption('bootstrap')
 
 # First call after all arguments have been parsed
 # to enable correct command line help.
@@ -215,4 +218,4 @@ if simulate and not GetOption('help'):
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner')
+    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')

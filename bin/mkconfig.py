@@ -46,56 +46,48 @@ import re
 import os
 import argparse
 from warnings import warn
-from Bio import AlignIO
 
 def main():
 
-    def existing_file(fname):
-        """
-        Argparse type for an existing file
-        """
-        if not os.path.isfile(fname):
-            raise ValueError("Invalid file: " + str(fname))
-        return fname
-
     parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('phylip', help='PHYLIP input', type=existing_file)
+    parser.add_argument('phylip', help='PHYLIP input', type=str)
     parser.add_argument('treeprog', help='dnaml or dnapars', type=str)
-    parser.add_argument('--naive', default='naive', help='naive sequence id', type=str)
     parser.add_argument('--quick', action='store_true', help='quicker (less thourough) dnapars')
+    parser.add_argument('--bootstrap', action='store_true', help='input is seqboot output')
     args = parser.parse_args()
 
-    aln = AlignIO.read(args.phylip, 'phylip')
-    nseqs = len(aln)
-    for naive_number, seq in enumerate(aln, 1):
-        if seq.id == args.naive:
-            break
-        elif naive_number == nseqs:
-            raise ValueError('naive sequence ' + args.naive + ' not found.')
-
-    print("../{}".format(os.path.basename(args.phylip)))		# phylip input file
-    print("O")						# Outgroup root
-    print(str(naive_number))		# naive index in phylip
+    print(args.phylip)		# phylip input file
+    if args.treeprog == 'seqboot':
+        print('Y')
+        print('1') # random seed for bootstrap
+        return
+    if args.bootstrap:
+        print('M')
+        print('D')
+        print('100')
+        print('13')
+        print('10')
     if args.treeprog == 'dnapars':
+        print("O")						# Outgroup root
+        print(1)		# arbitrary root on first
         if args.quick:
             print('S')
             print('Y')
-        print('J')
-        print('13')
-        print('10')
         print('4')
         print('5')
         print('.')
         print('Y')
     elif args.treeprog == 'dnaml':
+        print("O")						# Outgroup root
+        print(1)		# arbitrary root on first
         print("R") # gamma
         print("5")                                         # Reconstruct hypothetical seq
         print("Y")                                         # accept these
         print("1.41421356237") # CV = sqrt(2) (alpha = .5)
         print("4") # 4 catagories
     else:
-        raise RuntimeError('treeprog='+args.treeprog+' is not "dnaml" or "dnapars"')
+        raise RuntimeError('treeprog='+args.treeprog+' is not "dnaml", "dnapars", or "seqboot"')
 
 
 if __name__ == "__main__":
