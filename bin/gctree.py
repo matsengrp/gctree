@@ -1129,6 +1129,8 @@ def infer(args):
     if bootstrap:
         # store bootstrap parameter data
         df = pd.DataFrame(columns=('$\hat{p}$', '$\hat{q}$'))
+        mles = [] # we'll store the mle gctrees here for computing consensus later
+
     for i, content in enumerate(outfile_content, 1) if bootstrap else [(0, outfile_content)]:
         if i > 0:
             print('bootstrap sample {}'.format(i))
@@ -1173,6 +1175,7 @@ def infer(args):
 
         if bootstrap:
             df.loc[i-1] = parsimony_forest.params
+            mles.append(parsimony_forest.forest[0])
 
         # get likelihoods and sort by them
         ls = [tree.l(parsimony_forest.params)[0] for tree in parsimony_forest.forest]
@@ -1236,9 +1239,15 @@ def infer(args):
         sns.set_style("ticks")
         plt.figure()
         np.seterr(all='ignore')
-        g = sns.jointplot('$\hat{p}$', '$\hat{q}$', data=df, kind='kde',
+        g = sns.jointplot('$\hat{p}$', '$\hat{q}$', data=df, joint_kws={'alpha':.1, 's':.1},
                           space=0, color='k', stat_func=None, xlim=(0, 1), ylim=(0, 1), size=3)
         plt.savefig(args.outbase+'.bootstrap.pdf')
+
+        ### TODO: get consensus tree and branch support from the trees in mles
+        # for node in mles[0].tree.traverse():
+        #     if node.frequency > 0:
+        #         print(node.name)
+
 
 
 def find_A_total(carry_cap, B_total, f_full, mature_affy, U):
