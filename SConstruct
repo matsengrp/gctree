@@ -204,8 +204,9 @@ elif inference:
               help='Converter to convert input fasta format e.g. the Victora lab GC fasta format')
     converter = GetOption('converter')
     AddOption('--bootstrap',
-              action='store_true',
-              help='boostrap resampling, and inference on each')
+              type='int',
+              default=0,
+              help='boostrap resampling, and inference on each (default no bootstrap)')
     bootstrap = GetOption('bootstrap')
 
 # First call after all arguments have been parsed

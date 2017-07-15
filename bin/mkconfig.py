@@ -54,18 +54,20 @@ def main():
     parser.add_argument('phylip', help='PHYLIP input', type=str)
     parser.add_argument('treeprog', help='dnaml or dnapars', type=str)
     parser.add_argument('--quick', action='store_true', help='quicker (less thourough) dnapars')
-    parser.add_argument('--bootstrap', action='store_true', help='input is seqboot output')
+    parser.add_argument('--bootstrap', type=int, default=0, help='input is seqboot output with this many samples')
     args = parser.parse_args()
 
     print(args.phylip)		# phylip input file
     if args.treeprog == 'seqboot':
+        print('R')
+        print(args.bootstrap)
         print('Y')
         print('1') # random seed for bootstrap
         return
     if args.bootstrap:
         print('M')
         print('D')
-        print('100')
+        print(args.bootstrap)
         print('13')
         print('10')
     if args.treeprog == 'dnapars':

@@ -53,9 +53,10 @@ if gctree or igphyml or dnaml:
                           '--naive '+naiveID+' > ${TARGETS[0]}')
 
     if bootstrap:
+        bootstrap_arg = ' --bootstrap {} '.format(bootstrap)
         seqboot_config = env.Command(os.path.join(outdir, 'seqboot/config.cfg'),
                                      phylip[0],
-                                     'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} seqboot > $TARGET')
+                                     'stdbuf -oL python bin/mkconfig.py ' + bootstrap_arg + ' ../../${SOURCE} seqboot > $TARGET')
 
         seqboot = CommandRunner(map(lambda x: os.path.join(outdir, x), ['seqboot/outfile', 'seqboot/log.log']),
                            seqboot_config,
@@ -64,7 +65,6 @@ if gctree or igphyml or dnaml:
         # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
         env.Depends(seqboot, phylip)
 
-        bootstrap_arg = ' --bootstrap '
         seq_input = seqboot
     else:
         bootstrap_arg = ''

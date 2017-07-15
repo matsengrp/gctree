@@ -189,8 +189,10 @@ class CollapsedTree(LeavesAndClades):
         if tree is not None:
             self.tree = tree.copy()
             # iterate over the tree below root and collapse edges of zero length
+            # do not collapse if the node is a leaf and it's parent has nonzero frequency
+            # this acommodates bootstrap samples that result in repeated genotypes
             for node in self.tree.get_descendants():
-                if node.dist == 0:
+                if node.dist == 0 and not (node.up.frequency > 0 and node.is_leaf()):
                     node.up.frequency += node.frequency
                     # if node.name and not node.up.name:
                     if node.up != self.tree:
@@ -1122,96 +1124,121 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame) for tree in phylip_parse.parse_outfile(args.phylipfile, args.countfile, args.naive)]
-    phylip_collapsed_unique = []
-    for tree in phylip_collapsed:
-        if sum(tree.compare(tree2, method='identity') for tree2 in phylip_collapsed_unique) == 0:
-            phylip_collapsed_unique.append(tree)
+    outfile_content = phylip_parse.parse_outfile(args.phylipfile, args.countfile, args.naive)
+    bootstrap = not isinstance(outfile_content[0], TreeNode)
+    if bootstrap:
+        # store bootstrap parameter data
+        df = pd.DataFrame(columns=('$\hat{p}$', '$\hat{q}$'))
+    for i, content in enumerate(outfile_content, 1) if bootstrap else [(0, outfile_content)]:
+        if i > 0:
+            print('bootstrap sample {}'.format(i))
+            print('----------------------')
+            outbase = args.outbase + '.{}'.format(i)
+        else:
+            outbase = args.outbase
+        phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame, allow_repeats=bootstrap) for tree in content]
+        phylip_collapsed_unique = []
+        for tree in phylip_collapsed:
+            if sum(tree.compare(tree2, method='identity') for tree2 in phylip_collapsed_unique) == 0:
+                phylip_collapsed_unique.append(tree)
 
-    parsimony_forest = CollapsedForest(forest=phylip_collapsed_unique)
+        parsimony_forest = CollapsedForest(forest=phylip_collapsed_unique)
 
-    if parsimony_forest.n_trees == 1:
-        warnings.warn('only one parsimony tree reported from dnapars')
+        if parsimony_forest.n_trees == 1:
+            warnings.warn('only one parsimony tree reported from dnapars')
 
-    print('number of trees with integer branch lengths:', parsimony_forest.n_trees)
+        print('number of trees with integer branch lengths:', parsimony_forest.n_trees)
 
-    # check for unifurcations at root
-    unifurcations = sum(tree.tree.frequency == 0 and len(tree.tree.children) == 1 for tree in parsimony_forest.forest)
-    if unifurcations:
-        print('WARNING: {} trees exhibit unobserved unifurcation from root, which is not possible under current model. Adding psuedocounts to these nodes'.format(unifurcations))
+        # check for unifurcations at root
+        unifurcations = sum(tree.tree.frequency == 0 and len(tree.tree.children) == 1 for tree in parsimony_forest.forest)
+        if unifurcations:
+            print('WARNING: {} trees exhibit unobserved unifurcation from root, which is not possible under current model. Adding psuedocounts to these nodes'.format(unifurcations))
 
-    # fit p and q using all trees
-    # if we get floating point errors, try a few more times (starting params are random)
-    max_tries = 10
-    for tries in range(max_tries):
-        try:
-            parsimony_forest.mle(Vlad_sum=True)
-            break
-        except FloatingPointError as e:
-            if tries + 1 < max_tries:
-                print('floating point error in MLE: {}. Attempt {} of {}. Rerunning with new random start.'.format(e, tries+1, max_tries))
+        # fit p and q using all trees
+        # if we get floating point errors, try a few more times (starting params are random)
+        max_tries = 10
+        for tries in range(max_tries):
+            try:
+                parsimony_forest.mle(Vlad_sum=True)
+                break
+            except FloatingPointError as e:
+                if tries + 1 < max_tries:
+                    print('floating point error in MLE: {}. Attempt {} of {}. Rerunning with new random start.'.format(e, tries+1, max_tries))
+                else:
+                    raise
             else:
                 raise
+
+        print('params = {}'.format(parsimony_forest.params))
+
+        if bootstrap:
+            df.loc[i-1] = parsimony_forest.params
+
+        # get likelihoods and sort by them
+        ls = [tree.l(parsimony_forest.params)[0] for tree in parsimony_forest.forest]
+        ls, parsimony_forest.forest = zip(*sorted(zip(ls, parsimony_forest.forest), reverse=True))
+
+        with open(outbase+'.inference.parsimony_forest.p', 'wb') as f:
+            pickle.dump(parsimony_forest, f)
+
+        if args.colormapfile is not None:
+            with open(args.colormapfile, 'r') as f:
+                colormap = {}
+                for line in f:
+                    seqid, color = line.rstrip().split('\t')
+                    if ',' in color:
+                        colors = {x.split(':')[0]:int(x.split(':')[1]) for x in color.split(',')}
+                        colormap[seqid] = colors
+                    else:
+                        colormap[seqid] = color
         else:
-            raise
+            colormap = None
 
-    print('params = {}'.format(parsimony_forest.params))
+        print('tree\talleles\tlogLikelihood')
+        for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
+            alleles = sum(1 for _ in collapsed_tree.tree.traverse())
+            print('{}\t{}\t{}'.format(i, alleles, l))
+            collapsed_tree.render(outbase+'.inference.{}.svg'.format(i), colormap, args.leftright_split)
 
-    # get likelihoods and sort by them
-    ls = [tree.l(parsimony_forest.params)[0] for tree in parsimony_forest.forest]
-    ls, parsimony_forest.forest = zip(*sorted(zip(ls, parsimony_forest.forest), reverse=True))
+        # rank plot of likelihoods
+        plt.figure(figsize=(6.5,2))
+        try:
+            plt.plot(scipy.exp(ls), 'ko', clip_on=False, markersize=4)
+            plt.ylabel('GCtree likelihood')
+            plt.yscale('log')
+            plt.ylim([None, 1.1*max(scipy.exp(ls))])
+        except FloatingPointError:
+            plt.plot(ls, 'ko', clip_on=False, markersize=4)
+            plt.ylabel('GCtree log-likelihood')
+            plt.ylim([None, 1.1*max(ls)])
+        plt.xlabel('parsimony tree')
+        plt.xlim([-1, len(ls)])
+        plt.tick_params(axis='y', direction='out', which='both')
+        plt.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        labelbottom='off') # labels along the bottom edge are off
+        plt.savefig(outbase + '.inference.likelihood_rank.pdf')
 
-    with open(args.outbase+'.inference.parsimony_forest.p', 'wb') as f:
-        pickle.dump(parsimony_forest, f)
+        # rank plot of observed allele frequencies
+        y = sorted((node.frequency for node in parsimony_forest.forest[0].tree.traverse() if node.frequency != 0), reverse=True)
+        plt.figure()
+        plt.bar(range(1, len(y) + 1), y, color='black')
+        plt.xlabel('genotype')
+        plt.ylabel('abundance')
+        plt.savefig(outbase + '.inference.abundance_rank.pdf')
 
-    if args.colormapfile is not None:
-        with open(args.colormapfile, 'r') as f:
-            colormap = {}
-            for line in f:
-                seqid, color = line.rstrip().split('\t')
-                if ',' in color:
-                    colors = {x.split(':')[0]:int(x.split(':')[1]) for x in color.split(',')}
-                    colormap[seqid] = colors
-                else:
-                    colormap[seqid] = color
-    else:
-        colormap = None
-
-    print('tree\talleles\tlogLikelihood')
-    for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
-        alleles = sum(1 for _ in collapsed_tree.tree.traverse())
-        print('{}\t{}\t{}'.format(i, alleles, l))
-        collapsed_tree.render(args.outbase+'.inference.{}.svg'.format(i), colormap, args.leftright_split)
-
-    # rank plot of likelihoods
-    plt.figure(figsize=(6.5,2))
-    try:
-        plt.plot(scipy.exp(ls), 'ko', clip_on=False, markersize=4)
-        plt.ylabel('GCtree likelihood')
-        plt.yscale('log')
-        plt.ylim([None, 1.1*max(scipy.exp(ls))])
-    except FloatingPointError:
-        plt.plot(ls, 'ko', clip_on=False, markersize=4)
-        plt.ylabel('GCtree log-likelihood')
-        plt.ylim([None, 1.1*max(ls)])
-    plt.xlabel('parsimony tree')
-    plt.xlim([-1, len(ls)])
-    plt.tick_params(axis='y', direction='out', which='both')
-    plt.tick_params(
-    axis='x',          # changes apply to the x-axis
-    which='both',      # both major and minor ticks are affected
-    bottom='off',      # ticks along the bottom edge are off
-    top='off',         # ticks along the top edge are off
-    labelbottom='off') # labels along the bottom edge are off
-    plt.savefig(args.outbase + '.inference.likelihood_rank.pdf')
-
-    # rank plot of observed allele frequencies
-    y = sorted((node.frequency for node in parsimony_forest.forest[0].tree.traverse() if node.frequency != 0), reverse=True)
-    plt.figure()
-    plt.bar(range(1, len(y) + 1), y, color='black')
-    plt.xlabel('genotype')
-    plt.ylabel('abundance')
-    plt.savefig(args.outbase + '.inference.abundance_rank.pdf')
+    if bootstrap:
+        print(df)
+        import seaborn as sns; sns.set(style="white", color_codes=True)
+        sns.set_style("ticks")
+        plt.figure()
+        np.seterr(all='ignore')
+        g = sns.jointplot('$\hat{p}$', '$\hat{q}$', data=df, kind='kde',
+                          space=0, color='k', stat_func=None, xlim=(0, 1), ylim=(0, 1), size=3)
+        plt.savefig(args.outbase+'.bootstrap.pdf')
 
 
 def find_A_total(carry_cap, B_total, f_full, mature_affy, U):
