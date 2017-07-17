@@ -15,7 +15,7 @@ except:
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad, fsolve
 from itertools import cycle
-import random
+import random, collections
 import numpy as np
 import matplotlib
 matplotlib.use('agg')
@@ -281,12 +281,11 @@ class CollapsedTree(LeavesAndClades):
 
         return self
 
-
     def __str__(self):
         '''return a string representation for printing'''
         return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
-    def render(self, outfile, colormap=None, leftright_split=None):
+    def render(self, outfile, colormap=None, show_support=False, leftright_split=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
             #if node.frequency > 0:
@@ -357,6 +356,7 @@ class CollapsedTree(LeavesAndClades):
         ts.allow_face_overlap = True
         ts.layout_fn = my_layout
         ts.show_scale = False
+        ts.show_branch_support = show_support
         #self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
 
@@ -407,6 +407,26 @@ class CollapsedTree(LeavesAndClades):
                 return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True, allow_dup=True)[0]
         else:
             raise ValueError('invalid distance method: '+method)
+
+    def support(self, bootstrap_trees_list):
+        '''compute support from a list of bootstrap GCtrees'''
+        # get the frequency of splits over the bootstrap trees
+        splits = collections.Counter()
+        for tree in bootstrap_trees_list:
+            for split1, split2 in tree.tree.iter_edges():
+                taxa1 = tuple(sorted([node.name for node in split1 if node.frequency > 0]))
+                taxa2 = tuple(sorted([node.name for node in split2 if node.frequency > 0]))
+                splits[tuple(sorted([taxa1, taxa2]))] += 1
+
+        # NOTE: this zip assumes .iter_edges and .iter_descendants visit in same order!
+        for (split1, split2), child in zip(self.tree.iter_edges(), self.tree.iter_descendants()):
+            taxa1 = tuple(sorted([node.name for node in split1 if node.frequency > 0]))
+            taxa2 = tuple(sorted([node.name for node in split2 if node.frequency > 0]))
+            split = tuple(sorted([taxa1, taxa2]))
+            child.support = splits[split]
+
+        return self
+
 
 
 class CollapsedForest(CollapsedTree):
@@ -1124,21 +1144,23 @@ def test(args):
 
 def infer(args):
     '''inference subprogram'''
-    outfile_content = phylip_parse.parse_outfile(args.phylipfile, args.countfile, args.naive)
-    bootstrap = not isinstance(outfile_content[0], TreeNode)
+    outfiles = [phylip_parse.parse_outfile(args.phylipfile, args.countfile, args.naive)]
+    if args.bootstrap_phylipfile is not None:
+        outfiles.extend(phylip_parse.parse_outfile(args.bootstrap_phylipfile, args.countfile, args.naive))
+    bootstrap = len(outfiles) > 1
     if bootstrap:
         # store bootstrap parameter data
         df = pd.DataFrame(columns=('$\hat{p}$', '$\hat{q}$'))
-        mles = [] # we'll store the mle gctrees here for computing consensus later
+        gctrees = [] # we'll store the mle gctrees here for computing support later
 
-    for i, content in enumerate(outfile_content, 1) if bootstrap else [(0, outfile_content)]:
+    for i, content in enumerate(outfiles):
         if i > 0:
             print('bootstrap sample {}'.format(i))
             print('----------------------')
-            outbase = args.outbase + '.{}'.format(i)
+            outbase = args.outbase + '.bootstrap_{}'.format(i)
         else:
             outbase = args.outbase
-        phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame, allow_repeats=bootstrap) for tree in content]
+        phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame, allow_repeats=(i>0)) for tree in content]
         phylip_collapsed_unique = []
         for tree in phylip_collapsed:
             if sum(tree.compare(tree2, method='identity') for tree2 in phylip_collapsed_unique) == 0:
@@ -1173,9 +1195,11 @@ def infer(args):
 
         print('params = {}'.format(parsimony_forest.params))
 
-        if bootstrap:
+        if i > 0:
             df.loc[i-1] = parsimony_forest.params
-            mles.append(parsimony_forest.forest[0])
+
+        if bootstrap:
+            gctrees.append(parsimony_forest.forest[0])
 
         # get likelihoods and sort by them
         ls = [tree.l(parsimony_forest.params)[0] for tree in parsimony_forest.forest]
@@ -1198,10 +1222,10 @@ def infer(args):
             colormap = None
 
         print('tree\talleles\tlogLikelihood')
-        for i, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
+        for j, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
             alleles = sum(1 for _ in collapsed_tree.tree.traverse())
-            print('{}\t{}\t{}'.format(i, alleles, l))
-            collapsed_tree.render(outbase+'.inference.{}.svg'.format(i), colormap, args.leftright_split)
+            print('{}\t{}\t{}'.format(j, alleles, l))
+            collapsed_tree.render(outbase+'.inference.{}.svg'.format(j), colormap, args.leftright_split)
 
         # rank plot of likelihoods
         plt.figure(figsize=(6.5,2))
@@ -1234,20 +1258,18 @@ def infer(args):
         plt.savefig(outbase + '.inference.abundance_rank.pdf')
 
     if bootstrap:
-        print(df)
         import seaborn as sns; sns.set(style="white", color_codes=True)
         sns.set_style("ticks")
         plt.figure()
         np.seterr(all='ignore')
         g = sns.jointplot('$\hat{p}$', '$\hat{q}$', data=df, joint_kws={'alpha':.1, 's':.1},
                           space=0, color='k', stat_func=None, xlim=(0, 1), ylim=(0, 1), size=3)
-        plt.savefig(args.outbase+'.bootstrap.pdf')
-
-        ### TODO: get consensus tree and branch support from the trees in mles
-        # for node in mles[0].tree.traverse():
-        #     if node.frequency > 0:
-        #         print(node.name)
-
+        plt.savefig(args.outbase+'.inference.bootstrap_theta.pdf')
+        gctrees[0].support(gctrees[1:])
+        gctrees[0].render(args.outbase+'.inference.bootstrap_support.svg',
+                          colormap=colormap,
+                          leftright_split=args.leftright_split,
+                          show_support=True)
 
 
 def find_A_total(carry_cap, B_total, f_full, mature_affy, U):
@@ -1545,6 +1567,7 @@ def main():
     parser_infer.add_argument('--naive', type=str, default=None, help='name of naive sequence (outgroup root)')
     parser_infer.add_argument('phylipfile', type=str, help='dnapars outfile (verbose output with sequences at each site)')
     parser_infer.add_argument('countfile', type=str, help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
+    parser_infer.add_argument('--bootstrap_phylipfile', type=str, help='dnapars outfile from seqboot (multiple data sets)')
     parser_infer.add_argument('--colormapfile', type=str, default=None, help='File containing color map in the format: "SeqID\tcolor"')
     parser_infer.add_argument('--leftright_split', type=int, default=None, help='split between heavy and light for combined seqs')
     parser_infer.set_defaults(func=infer)

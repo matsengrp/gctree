@@ -53,10 +53,14 @@ if gctree or igphyml or dnaml:
                           '--naive '+naiveID+' > ${TARGETS[0]}')
 
     if bootstrap:
+
+        if igphyml or dnaml:
+            raise NotImplementedError('bootstrap not implemented for dnaml or igphyml')
+
         bootstrap_arg = ' --bootstrap {} '.format(bootstrap)
         seqboot_config = env.Command(os.path.join(outdir, 'seqboot/config.cfg'),
                                      phylip[0],
-                                     'stdbuf -oL python bin/mkconfig.py ' + bootstrap_arg + ' ../../${SOURCE} seqboot > $TARGET')
+                                     'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} seqboot '+bootstrap_arg+' > $TARGET'.format(bootstrap))
 
         seqboot = CommandRunner(map(lambda x: os.path.join(outdir, x), ['seqboot/outfile', 'seqboot/log.log']),
                            seqboot_config,
@@ -65,18 +69,13 @@ if gctree or igphyml or dnaml:
         # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
         env.Depends(seqboot, phylip)
 
-        seq_input = seqboot
-    else:
-        bootstrap_arg = ''
-        seq_input = phylip
-
 # Update the naive ID:
 naiveID = naiveID.lower()
 
 if dnaml:
     dnaml_config = env.Command(os.path.join(outdir, 'dnaml/config.cfg'),
-                                 seq_input[0],
-                                 'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnaml ' + bootstrap_arg + ' > $TARGET')
+                                 phylip[0],
+                                 'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnaml > $TARGET')
 
     # run dnaml (from phylip package) to generate maximum likelihood tree
     dnaml = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']),
@@ -92,12 +91,13 @@ if dnaml:
                                 'TMPDIR=/tmp xvfb-run -a python bin/phylip_parse.py ${SOURCES} --outputfile ${TARGETS[0]} --naive '+naiveID+' > ${TARGETS[1]}')
     return_list.append(dnaml_tree)
 
+
 if gctree:
     # make config file for dnapars
-    quick_arg = '--quick' if quick else ''
+    quick_arg = ' --quick ' if quick else ''
     dnapars_config = env.Command(os.path.join(outdir, 'dnapars/config.cfg'),
-                                 seq_input[0],
-                                 'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnapars ' + ' ' + quick_arg + bootstrap_arg + ' > $TARGET')
+                                 phylip[0],
+                                 'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnapars ' + quick_arg + ' > $TARGET')
 
     # run dnapars (from phylip package) to generate parsimony trees
     dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']),
@@ -105,21 +105,34 @@ if gctree:
                        'cd ' + outdir + '/dnapars && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
     # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
     # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
-    env.Depends(dnapars, seq_input)
+    env.Depends(dnapars, phylip)
 
     # ML tree from parsimony trees
     # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
     # NOTE: TMPDIR is needed due to a an xvfb conflict that Ben (scicomp ninja) discovered
+
+    if bootstrap:
+        dnapars_config_bootstrap = env.Command(os.path.join(outdir, 'dnapars_bootstrap/config.cfg'),
+                                     seqboot[0],
+                                     'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
+        dnapars_bootstrap = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars_bootstrap/outtree', 'dnapars_bootstrap/outfile', 'dnapars_bootstrap/log.log']),
+                           dnapars_config,
+                           'cd ' + outdir + '/dnapars_bootstrap && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
+        env.Depends(dnapars_bootstrap, seqboot)
+
     gctree_outbase = os.path.join(outdir, 'gctree')
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     gctree_infer = CommandRunner([gctree_outbase+'.inference.parsimony_forest.p',
                                 gctree_outbase+'.inference.log'],
-                                [dnapars[1], phylip[1]],
+                                [dnapars[1], phylip[1], dnapars_bootstrap[1]] if bootstrap else [dnapars[1], phylip[1]],
                                 'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive '+naiveID+
                                 ' --outbase '+gctree_outbase+
                                 frame_arg+
+                                (' --bootstrap_phylipfile ${SOURCES[2]}' if bootstrap else '')+
                                 ' > ${TARGETS[1]}')
     return_list.append(gctree_infer)
+
+
 
 
 if igphyml:
