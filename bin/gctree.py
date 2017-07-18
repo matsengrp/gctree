@@ -191,8 +191,10 @@ class CollapsedTree(LeavesAndClades):
             # iterate over the tree below root and collapse edges of zero length
             # do not collapse if the node is a leaf and it's parent has nonzero frequency
             # this acommodates bootstrap samples that result in repeated genotypes
-            for node in self.tree.get_descendants():
+            for node in scipy.random.permutation(self.tree.get_descendants(strategy='postorder')):
                 if node.dist == 0 and not (node.up.frequency > 0 and node.is_leaf()):
+            # for node in self.tree.get_descendants(strategy='postorder'):
+            #     if node.dist == 0 and sum(sister.dist==0 for sister in node.get_sisters()) == 0:
                     node.up.frequency += node.frequency
                     # if node.name and not node.up.name:
                     if node.up != self.tree:
@@ -406,24 +408,29 @@ class CollapsedTree(LeavesAndClades):
             except:
                 return tree1_copy.robinson_foulds(tree2_copy, attr_t1='sequence', attr_t2='sequence', unrooted_trees=True, allow_dup=True)[0]
         else:
-            raise ValueError('invalid distance method: '+method)
+            raise ValueError('invalid distance method: ' + method)
+
+    def get_split(self, node):
+        '''return the bipartition resulting from clipping this node's edge above'''
+        if node.get_tree_root() != self.tree:
+            raise ValueError('node not found')
+        parent = node.up
+        taxa1 = tuple(sorted([node2.name for node2 in node.traverse() if node2.frequency > 0 or node2 == node]))
+        node.detach()
+        taxa2 = tuple(sorted([node2.name for node2 in self.tree.traverse() if node2.frequency > 0 or node2 == self.tree]))
+        parent.add_child(node)
+        return tuple(sorted([taxa1, taxa2]))
 
     def support(self, bootstrap_trees_list):
         '''compute support from a list of bootstrap GCtrees'''
         # get the frequency of splits over the bootstrap trees
         splits = collections.Counter()
         for tree in bootstrap_trees_list:
-            for split1, split2 in tree.tree.iter_edges():
-                taxa1 = tuple(sorted([node.name for node in split1 if node.frequency > 0]))
-                taxa2 = tuple(sorted([node.name for node in split2 if node.frequency > 0]))
-                splits[tuple(sorted([taxa1, taxa2]))] += 1
+            for node in tree.tree.get_descendants():
+                splits[tree.get_split(node)] += 1
 
-        # NOTE: this zip assumes .iter_edges and .iter_descendants visit in same order!
-        for (split1, split2), child in zip(self.tree.iter_edges(), self.tree.iter_descendants()):
-            taxa1 = tuple(sorted([node.name for node in split1 if node.frequency > 0]))
-            taxa2 = tuple(sorted([node.name for node in split2 if node.frequency > 0]))
-            split = tuple(sorted([taxa1, taxa2]))
-            child.support = splits[split]
+        for node in self.tree.get_descendants():
+            node.support = splits[self.get_split(node)]
 
         return self
 

@@ -42,8 +42,7 @@ Setting for this run:
 ____________
 
 """
-import re
-import os
+import re, os, random
 import argparse
 from warnings import warn
 
@@ -62,14 +61,15 @@ def main():
         print('R')
         print(args.bootstrap)
         print('Y')
-        print('1') # random seed for bootstrap
+        print(str(1+2*random.randint(0, 1000000))) # random seed for bootstrap (odd integer)
         return
+    print('J')
+    print(str(1+2*random.randint(0, 1000000)))
+    print('10')
     if args.bootstrap:
         print('M')
         print('D')
         print(args.bootstrap)
-        print('13')
-        print('10')
     if args.treeprog == 'dnapars':
         print("O")						# Outgroup root
         print(1)		# arbitrary root on first
