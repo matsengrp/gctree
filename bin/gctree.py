@@ -189,16 +189,17 @@ class CollapsedTree(LeavesAndClades):
         if tree is not None:
             self.tree = tree.copy()
             # iterate over the tree below root and collapse edges of zero length
-            # do not collapse if the node is a leaf and it's parent has nonzero frequency
+            # if the node is a leaf and it's parent has nonzero frequency we combine taxa names to a tuple
             # this acommodates bootstrap samples that result in repeated genotypes
-            for node in scipy.random.permutation(self.tree.get_descendants(strategy='postorder')):
-                if node.dist == 0 and not (node.up.frequency > 0 and node.is_leaf()):
-            # for node in self.tree.get_descendants(strategy='postorder'):
-            #     if node.dist == 0 and sum(sister.dist==0 for sister in node.get_sisters()) == 0:
+            oberved_genotypes = set((leaf.name for leaf in self.tree))
+            for node in self.tree.get_descendants(strategy='postorder'):
+                if node.dist == 0:
                     node.up.frequency += node.frequency
-                    # if node.name and not node.up.name:
                     if node.up != self.tree:
-                        node.up.name = node.name
+                        if node.up.name in oberved_genotypes:
+                            node.up.name = (node.up.name, node.name)
+                        else:
+                            node.up.name = node.name
                     node.delete(prevent_nondicotomic=False)
 
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
@@ -415,22 +416,51 @@ class CollapsedTree(LeavesAndClades):
         if node.get_tree_root() != self.tree:
             raise ValueError('node not found')
         parent = node.up
-        taxa1 = tuple(sorted([node2.name for node2 in node.traverse() if node2.frequency > 0 or node2 == node]))
+        taxa1 = []
+        for node2 in node.traverse():
+            if node2.frequency > 0:
+                if isinstance(node2.name, str):
+                    taxa1.append(node2.name)
+                else:
+                    taxa1.extend(node2.name)
+        taxa1 = set(taxa1)
         node.detach()
-        taxa2 = tuple(sorted([node2.name for node2 in self.tree.traverse() if node2.frequency > 0 or node2 == self.tree]))
+        taxa2 = []
+        for node2 in self.tree.traverse():
+            if node2.frequency > 0:
+                if isinstance(node2.name, str):
+                    taxa2.append(node2.name)
+                else:
+                    taxa2.extend(node2.name)
+        taxa2 = set(taxa2)
         parent.add_child(node)
-        return tuple(sorted([taxa1, taxa2]))
+        assert taxa1.isdisjoint(taxa2)
+        assert taxa1.union(taxa2) == set((name for node in self.tree.traverse() if node.frequency > 0 for name in ((node.name,) if isinstance(node.name, str) else node.name)))
+        return (taxa1, taxa2)
+
+    @staticmethod
+    def split_compatibility(split1, split2):
+        for partition1 in split1:
+            for partition2 in split2:
+                if partition1.isdisjoint(partition2):
+                    return True
+        return False
 
     def support(self, bootstrap_trees_list):
         '''compute support from a list of bootstrap GCtrees'''
-        # get the frequency of splits over the bootstrap trees
-        splits = collections.Counter()
-        for tree in bootstrap_trees_list:
-            for node in tree.tree.get_descendants():
-                splits[tree.get_split(node)] += 1
-
         for node in self.tree.get_descendants():
-            node.support = splits[self.get_split(node)]
+            split = self.get_split(node)
+            support = 0
+            for tree in bootstrap_trees_list:
+                compatible = True
+                for boot_node in tree.tree.get_descendants():
+                    boot_split = tree.get_split(boot_node)
+                    if not self.split_compatibility(split, boot_split):
+                        compatible = False
+                        break
+                if compatible:
+                    support += 1
+            node.support = support
 
         return self
 
