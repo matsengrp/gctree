@@ -418,7 +418,7 @@ class CollapsedTree(LeavesAndClades):
         parent = node.up
         taxa1 = []
         for node2 in node.traverse():
-            if node2.frequency > 0:
+            if node2.frequency > 0 or node2 == self.tree:
                 if isinstance(node2.name, str):
                     taxa1.append(node2.name)
                 else:
@@ -427,7 +427,7 @@ class CollapsedTree(LeavesAndClades):
         node.detach()
         taxa2 = []
         for node2 in self.tree.traverse():
-            if node2.frequency > 0:
+            if node2.frequency > 0 or node2 == self.tree:
                 if isinstance(node2.name, str):
                     taxa2.append(node2.name)
                 else:
@@ -435,7 +435,7 @@ class CollapsedTree(LeavesAndClades):
         taxa2 = set(taxa2)
         parent.add_child(node)
         assert taxa1.isdisjoint(taxa2)
-        assert taxa1.union(taxa2) == set((name for node in self.tree.traverse() if node.frequency > 0 for name in ((node.name,) if isinstance(node.name, str) else node.name)))
+        assert taxa1.union(taxa2) == set((name for node in self.tree.traverse() if node.frequency > 0 or node == self.tree for name in ((node.name,) if isinstance(node.name, str) else node.name)))
         return (taxa1, taxa2)
 
     @staticmethod
@@ -446,20 +446,28 @@ class CollapsedTree(LeavesAndClades):
                     return True
         return False
 
-    def support(self, bootstrap_trees_list):
-        '''compute support from a list of bootstrap GCtrees'''
+    def support(self, bootstrap_trees_list, weights=None):
+        '''
+        compute support from a list of bootstrap GCtrees
+        weights (optional) is needed for weighting parsimony degenerate trees
+        '''
         for node in self.tree.get_descendants():
             split = self.get_split(node)
             support = 0
-            for tree in bootstrap_trees_list:
+            compatibility = 0
+            for i, tree in enumerate(bootstrap_trees_list):
                 compatible = True
+                supported = False
                 for boot_node in tree.tree.get_descendants():
                     boot_split = tree.get_split(boot_node)
-                    if not self.split_compatibility(split, boot_split):
+                    if compatible and not self.split_compatibility(split, boot_split):
                         compatible = False
-                        break
+                    if not supported and sorted(boot_split) == sorted(split):
+                        supported = True
+                if supported:
+                    support += weights[i] if weights is not None else 1
                 if compatible:
-                    support += 1
+                    compatibility += weights[i] if weights is not None else 1
             node.support = support
 
         return self
@@ -1235,12 +1243,12 @@ def infer(args):
         if i > 0:
             df.loc[i-1] = parsimony_forest.params
 
-        if bootstrap:
-            gctrees.append(parsimony_forest.forest[0])
-
         # get likelihoods and sort by them
         ls = [tree.l(parsimony_forest.params)[0] for tree in parsimony_forest.forest]
         ls, parsimony_forest.forest = zip(*sorted(zip(ls, parsimony_forest.forest), reverse=True))
+
+        if bootstrap:
+            gctrees.append(parsimony_forest.forest[0])
 
         with open(outbase+'.inference.parsimony_forest.p', 'wb') as f:
             pickle.dump(parsimony_forest, f)
