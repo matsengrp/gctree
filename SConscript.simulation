@@ -104,7 +104,7 @@ def simstat_aggregate(outdir, c):
     tgt = env.Command([os.path.join(outdir, 'gctree.simulation.stats.log')],
                       c['simstat_agg'],
                       'stdbuf -oL python bin/simstatagg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.stats')+
-                      ' --experimental Tas_data/150228_Clone_3-8.fasta > ${TARGETS[0]}')
+                      ' --experimental Victora_data/150228_Clone_3-8.fasta > ${TARGETS[0]}')
     env.AlwaysBuild(tgt)
     return tgt
 
