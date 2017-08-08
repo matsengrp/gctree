@@ -189,20 +189,31 @@ class CollapsedTree(LeavesAndClades):
         if tree is not None:
             self.tree = tree.copy()
             # iterate over the tree below root and collapse edges of zero length
-            # if the node is a leaf and it's parent has nonzero frequency we combine taxa names to a tuple
+            # if the node is a leaf and it's parent has nonzero frequency we combine taxa names to a set
             # this acommodates bootstrap samples that result in repeated genotypes
-            oberved_genotypes = set((leaf.name for leaf in self.tree))
+            observed_genotypes = set((leaf.name for leaf in self.tree))
+            observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy='postorder'):
                 if node.dist == 0:
                     node.up.frequency += node.frequency
-                    if node.up != self.tree:
-                        if node.up.name in oberved_genotypes:
-                            node.up.name = (node.up.name, node.name)
-                        else:
-                            node.up.name = node.name
+                    node_set = set([node.name]) if isinstance(node.name, str) else node.name
+                    node_up_set = set([node.up.name]) if isinstance(node.up.name, str) else node.up.name
+                    if node_up_set < observed_genotypes:
+                        if node_set < observed_genotypes:
+                            node.up.name = node_set | node_up_set
+                            if len(node.up.name) == 1:
+                                node.up.name = node.up.name.pop()
+                    elif node_set < observed_genotypes:
+                        node.up.name = node_set
+                        if len(node.up.name) == 1:
+                            node.up.name = node.up.name.pop()
                     node.delete(prevent_nondicotomic=False)
 
+            final_observed_genotypes = set([name for node in self.tree.traverse() if node.frequency > 0 or node == self.tree for name in ((node.name,) if isinstance(node.name, str) else node.name)])
+            if final_observed_genotypes != observed_genotypes:
+                raise RuntimeError('observed genotypes don\'t match after collapse\n\tbefore: {}\n\tafter: {}\n\tsymmetric diff: {}'.format(observed_genotypes, final_observed_genotypes, observed_genotypes ^ final_observed_genotypes))
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
+
             rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
             if not allow_repeats and rep_seq:
                 raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
@@ -415,6 +426,8 @@ class CollapsedTree(LeavesAndClades):
         '''return the bipartition resulting from clipping this node's edge above'''
         if node.get_tree_root() != self.tree:
             raise ValueError('node not found')
+        if node == self.tree:
+            raise ValueError('this node is the root (no split above)')
         parent = node.up
         taxa1 = []
         for node2 in node.traverse():
@@ -436,39 +449,43 @@ class CollapsedTree(LeavesAndClades):
         parent.add_child(node)
         assert taxa1.isdisjoint(taxa2)
         assert taxa1.union(taxa2) == set((name for node in self.tree.traverse() if node.frequency > 0 or node == self.tree for name in ((node.name,) if isinstance(node.name, str) else node.name)))
-        return (taxa1, taxa2)
+        return tuple(sorted([taxa1, taxa2]))
 
     @staticmethod
     def split_compatibility(split1, split2):
+        diff = split1[0].union(split1[1]) ^ split2[0].union(split2[1])
+        if diff:
+            raise ValueError('splits do not cover the same taxa\n\ttaxa not in both: {}'.format(diff))
         for partition1 in split1:
             for partition2 in split2:
                 if partition1.isdisjoint(partition2):
                     return True
         return False
 
-    def support(self, bootstrap_trees_list, weights=None):
+    def support(self, bootstrap_trees_list, weights=None, compatibility=False):
         '''
         compute support from a list of bootstrap GCtrees
         weights (optional) is needed for weighting parsimony degenerate trees
+        compatibility mode counts trees that don't disconfirm the split
         '''
         for node in self.tree.get_descendants():
             split = self.get_split(node)
             support = 0
-            compatibility = 0
+            compatibility_ = 0
             for i, tree in enumerate(bootstrap_trees_list):
                 compatible = True
                 supported = False
                 for boot_node in tree.tree.get_descendants():
                     boot_split = tree.get_split(boot_node)
-                    if compatible and not self.split_compatibility(split, boot_split):
+                    if compatibility and compatible and not self.split_compatibility(split, boot_split):
                         compatible = False
-                    if not supported and sorted(boot_split) == sorted(split):
+                    if not compatibility and not supported and boot_split == split:
                         supported = True
                 if supported:
                     support += weights[i] if weights is not None else 1
                 if compatible:
-                    compatibility += weights[i] if weights is not None else 1
-            node.support = support
+                    compatibility_ += weights[i] if weights is not None else 1
+            node.support = compatibility_ if compatibility else support
 
         return self
 
@@ -1315,7 +1332,11 @@ def infer(args):
                           colormap=colormap,
                           leftright_split=args.leftright_split,
                           show_support=True)
-
+        gctrees[0].support(gctrees[1:], compatibility=True)
+        gctrees[0].render(args.outbase+'.inference.bootstrap_compatibility.svg',
+                          colormap=colormap,
+                          leftright_split=args.leftright_split,
+                          show_support=True)
 
 def find_A_total(carry_cap, B_total, f_full, mature_affy, U):
     def A_total_fun(A, B_total, Kd_n): return(A + np.sum(B_total/(1+Kd_n/A)))

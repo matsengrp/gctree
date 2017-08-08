@@ -40,6 +40,8 @@ def main():
 
     consensus_gctree.support(bootstrap_gctrees, weights=weights)
     consensus_gctree.render(args.outbase+'.bootstrap_support.svg', show_support=True)
+    consensus_gctree.support(bootstrap_gctrees, weights=weights, compatibility=True)
+    consensus_gctree.render(args.outbase+'.bootstrap_compatibility.svg', show_support=True)
 
 if __name__ == "__main__":
     main()

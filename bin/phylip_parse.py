@@ -154,6 +154,10 @@ def build_tree(sequences, parents, counts=None, naive='naive'):
         naive_parent = nodes[naive_id].up
         naive_parent.remove_child(nodes[naive_id])
         nodes[naive_id].add_child(naive_parent)
+        # remove possible unecessary unifurcation after rerooting
+        if len(naive_parent.children) == 1:
+            naive_parent.delete(prevent_nondicotomic=False)
+            naive_parent.children[0].dist = gctree.hamming_distance(naive_parent.children[0].sequence, nodes[naive_id].sequence)
         tree = nodes[naive_id]
 
     # make random choices for ambiguous bases
