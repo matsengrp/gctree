@@ -60,7 +60,7 @@ if gctree or igphyml or dnaml:
         bootstrap_arg = ' --bootstrap {} '.format(bootstrap)
         seqboot_config = env.Command(os.path.join(outdir, 'seqboot/config.cfg'),
                                      phylip[0],
-                                     'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} seqboot '+bootstrap_arg+' > $TARGET'.format(bootstrap))
+                                     'stdbuf -oL python bin/mkconfig.py `readlink -f ${SOURCE}` seqboot '+bootstrap_arg+' > $TARGET'.format(bootstrap))
 
         seqboot = CommandRunner(map(lambda x: os.path.join(outdir, x), ['seqboot/outfile', 'seqboot/log.log']),
                            seqboot_config,
@@ -75,7 +75,7 @@ naiveID = naiveID.lower()
 if dnaml:
     dnaml_config = env.Command(os.path.join(outdir, 'dnaml/config.cfg'),
                                  phylip[0],
-                                 'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnaml > $TARGET')
+                                 'stdbuf -oL python bin/mkconfig.py `readlink -f ${SOURCE}` dnaml > $TARGET')
 
     # run dnaml (from phylip package) to generate maximum likelihood tree
     dnaml = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']),
@@ -97,7 +97,7 @@ if gctree:
     quick_arg = ' --quick ' if quick else ''
     dnapars_config = env.Command(os.path.join(outdir, 'dnapars/config.cfg'),
                                  phylip[0],
-                                 'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnapars ' + quick_arg + ' > $TARGET')
+                                 'stdbuf -oL python bin/mkconfig.py `readlink -f ${SOURCE}` dnapars ' + quick_arg + ' > $TARGET')
 
     # run dnapars (from phylip package) to generate parsimony trees
     dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']),
@@ -114,7 +114,7 @@ if gctree:
     if bootstrap:
         dnapars_config_bootstrap = env.Command(os.path.join(outdir, 'dnapars_bootstrap/config.cfg'),
                                      seqboot[0],
-                                     'stdbuf -oL python bin/mkconfig.py ../../${SOURCE} dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
+                                     'stdbuf -oL python bin/mkconfig.py `readlink -f ${SOURCE}` dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
         dnapars_bootstrap = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars_bootstrap/outtree', 'dnapars_bootstrap/outfile', 'dnapars_bootstrap/log.log']),
                            dnapars_config,
                            'cd ' + outdir + '/dnapars_bootstrap && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
