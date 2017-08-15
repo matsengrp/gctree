@@ -98,17 +98,18 @@ def main():
     plt.tight_layout()
     plt.savefig(args.outbase+'.2.pdf')
 
-    plt.figure(figsize=(3.5, 3.5))
+    plt.figure(figsize=(4, 2.5))
     # sns.barplot(x=scipy.argsort(-dat['RF']), y='RF', hue='mle', data=dat, palette=('red', 'orange', 'yellow', 'gray'))
     plt.hist((dat['RF'][dat['mle']=='both'], dat['RF'][dat['mle']=='heavy'], dat['RF'][dat['mle']=='light'], dat['RF'][dat['mle']=='neither']),
              bins=scipy.arange(-.5, max(dat['RF'])+1.5, 1.),
              histtype='barstacked',
              label=('IgH and IgL MLE', 'IgH MLE', 'IgL MLE'),
-             color=('red', 'orange', 'yellow', 'gray'))
-    plt.legend(loc='upper left')
-    plt.xlim([min(dat['RF'])-1.5, max(dat['RF'])+1.5])
+             color=('red', 'indianred', 'rosybrown', 'gray'),
+             edgecolor='black')
+    plt.legend(loc=(0,.68))
+    plt.xlim([min(dat['RF'])-.5, max(dat['RF'])+.5])
     plt.xlabel('RF distance between IgH tree and IgL tree\nlabelled by cell identity')
-    plt.ylabel('IgH/IgL parsimony tree pairs (n={})'.format(len(dat)))
+    plt.ylabel('IgH/IgL parsimony tree pairs\n(n={})'.format(len(dat)))
     plt.gca().spines['right'].set_color('none')
     plt.gca().spines['top'].set_color('none')
     plt.tight_layout()
