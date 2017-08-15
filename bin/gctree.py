@@ -7,47 +7,26 @@ in which the tree is collapsed to nodes that count the number of clonal leaves o
 '''
 
 from __future__ import division, print_function
-import scipy, warnings, random
+
+import phylip_parse, scipy, warnings, random, collections, pandas as pd
+from scipy.misc import logsumexp
+from scipy.optimize import minimize, check_grad, fsolve
+from itertools import cycle
+from scipy.stats import poisson
+from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, SVG_COLORS
+from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna
+import matplotlib; matplotlib.use('agg')
+from matplotlib import pyplot as plt, ticker
 try:
     import cPickle as pickle
 except:
     import pickle
-from scipy.misc import logsumexp
-from scipy.optimize import minimize, check_grad, fsolve
-from itertools import cycle
-import random, collections
-import numpy as np
-import matplotlib
-matplotlib.use('agg')
-from matplotlib import pyplot as plt
-from matplotlib import rc, ticker
-import pandas as pd
-#import seaborn as sns; sns.set(style="white", color_codes=True)
-from scipy.stats import poisson
-from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, AttrFace, SVG_COLORS
-from Bio.Seq import Seq
-from Bio.Alphabet import generic_dna
-# from Bio.Data.IUPACData import ambiguous_dna_values
-from utils import SVG2HEX
-import phylip_parse
-try:
-    # Last time I checked this module was the fastest kid on the block,
-    # 5-10x faster than pure python, however 2x slower than a simple Cython function
-    import jellyfish
-    def hamming_distance(s1, s2):
-        if s1 == s2:
-            return 0
-        else:
-            return jellyfish.hamming_distance(unicode(s1), unicode(s2))
-except:
-    def hamming_distance(seq1, seq2):
-        '''Hamming distance between two sequences of equal length'''
-        return sum(x != y for x, y in zip(seq1, seq2))
-    print('Couldn\'t find the python module "jellyfish" which is used for fast string comparison. Falling back to pure python function.')
 
+from utils import hamming_distance
+import selection_utils
 
 scipy.seterr(all='raise')
-
 
 class LeavesAndClades():
     '''
@@ -82,7 +61,7 @@ class LeavesAndClades():
         if self.params is None:
             raise ValueError('params must be defined for simulation\n')
 
-        # let's track the tree in breadth first order, listing number clone and mutant descendants of each node
+        # let's track the tree in breadth first order, listing number of clonal and mutant descendants of each node
         # mutant clades terminate in this view
         cumsum_clones = 0
         len_tree = 0
@@ -196,17 +175,17 @@ class CollapsedTree(LeavesAndClades):
             for node in self.tree.get_descendants(strategy='postorder'):
                 if node.dist == 0:
                     node.up.frequency += node.frequency
-                    node_set = set([node.name]) if isinstance(node.name, str) else node.name
-                    node_up_set = set([node.up.name]) if isinstance(node.up.name, str) else node.up.name
+                    node_set = set([node.name]) if isinstance(node.name, str) else set(node.name)
+                    node_up_set = set([node.up.name]) if isinstance(node.up.name, str) else set(node.up.name)
                     if node_up_set < observed_genotypes:
                         if node_set < observed_genotypes:
-                            node.up.name = node_set | node_up_set
+                            node.up.name = tuple(node_set | node_up_set)
                             if len(node.up.name) == 1:
-                                node.up.name = node.up.name.pop()
+                                node.up.name = node.up.name[0]
                     elif node_set < observed_genotypes:
-                        node.up.name = node_set
+                        node.up.name = tuple(node_set)
                         if len(node.up.name) == 1:
-                            node.up.name = node.up.name.pop()
+                            node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
 
             final_observed_genotypes = set([name for node in self.tree.traverse() if node.frequency > 0 or node == self.tree for name in ((node.name,) if isinstance(node.name, str) else node.name)])
@@ -220,7 +199,7 @@ class CollapsedTree(LeavesAndClades):
             elif allow_repeats and rep_seq:
                 rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
                 print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
-            # now we do a custom ladderize accounting for abundance and sequence to break ties in abundance
+            # a custom ladderize accounting for abundance and sequence to break ties in abundance
             for node in self.tree.traverse(strategy='postorder'):
                 # add a partition feature and compute it recursively up the tree
                 node.add_feature('partition', node.frequency + sum(node2.partition for node2 in node.children))
@@ -258,7 +237,6 @@ class CollapsedTree(LeavesAndClades):
         '''
         # random initalization
         x_0 = (random.random(), random.random())
-        #x_0 = (.5, .5)
         bounds = ((.01, .99), (.001, .999))
         kwargs['sign'] = -1
         grad_check = check_grad(lambda x: self.l(x, **kwargs)[0], lambda x: self.l(x, **kwargs)[1], (.4, .5))
@@ -299,46 +277,36 @@ class CollapsedTree(LeavesAndClades):
         '''return a string representation for printing'''
         return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
-    def render(self, outfile, colormap=None, show_support=False, leftright_split=None):
+    def render(self, outfile, colormap=None, show_support=False, chain_split=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
-            #if node.frequency > 0:
-                circle_color = 'lightgray' if colormap is None or node.name not in colormap else colormap[node.name]
-                text_color = 'black'
-                if isinstance(circle_color, str):
-                    C = CircleFace(radius=max(3, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color} if node.frequency > 0 else None)
-                    C.rotation = -90
-                    C.hz_align = 1
-                    faces.add_face_to_node(C, node, 0)
-                else:
-                    #for color in circle_color:
-                    #    C = CircleFace(radius=max(.1, 10*scipy.sqrt(circle_color[color])), color=color, label={'text':str(circle_color[color]), 'color':text_color})
-                    #    C.rotation = -90
-                    #    faces.add_face_to_node(C, node, 0, position='float')
-                    P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=list(circle_color.keys()), line_color=None)
-                    T = TextFace(' '.join([str(x) for x in list(circle_color.values())]))
-                    T.hz_align = 1
-                    T.vt_align = 1
-                    T.rotation = -90
-                    faces.add_face_to_node(P, node, 0, position='float')#0)
-                    faces.add_face_to_node(T, node, 0, position='float')#0)
+            circle_color = 'lightgray' if colormap is None or node.name not in colormap else colormap[node.name]
+            print(node.name, circle_color)
+            text_color = 'black'
+            if isinstance(circle_color, str):
+                C = CircleFace(radius=max(3, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color} if node.frequency > 0 else None)
+                C.rotation = -90
+                C.hz_align = 1
+                faces.add_face_to_node(C, node, 0)
+            else:
+                P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=list(circle_color.keys()), line_color=None)
+                T = TextFace(' '.join([str(x) for x in list(circle_color.values())]))
+                T.hz_align = 1
+                T.vt_align = 1
+                T.rotation = -90
+                faces.add_face_to_node(P, node, 0, position='float')
+                faces.add_face_to_node(T, node, 0, position='float')
         for node in self.tree.traverse():
             nstyle = NodeStyle()
-            #if node.frequency == 0:
-            #    nstyle['size'] = 5
-            #    nstyle['fgcolor'] = 'grey'
-            #else:
             nstyle['size'] = 0
-            #     nstyle['size'] = 3*2*scipy.sqrt(scipy.pi*node.frequency)
-            #     nstyle['fgcolor'] = 'black'
             if node.up is not None:
                 if set(node.sequence.upper()) == set('ACGT'):
-                    if leftright_split is not None:
+                    if chain_split is not None:
                         assert self.frame is None
                         if node.frequency > 0:
-                            print(node.sequence[:leftright_split], node.sequence[leftright_split:])
-                        leftseq_mutated = hamming_distance(node.sequence[:leftright_split], node.up.sequence[:leftright_split]) > 0
-                        rightseq_mutated = hamming_distance(node.sequence[leftright_split:], node.up.sequence[leftright_split:]) > 0
+                            print(node.sequence[:chain_split], node.sequence[chain_split:])
+                        leftseq_mutated = hamming_distance(node.sequence[:chain_split], node.up.sequence[:chain_split]) > 0
+                        rightseq_mutated = hamming_distance(node.sequence[chain_split:], node.up.sequence[chain_split:]) > 0
                         if leftseq_mutated and rightseq_mutated:
                             nstyle['hz_line_color'] = 'purple'
                             nstyle['hz_line_width'] = 3
@@ -388,7 +356,7 @@ class CollapsedTree(LeavesAndClades):
             list2 = sorted((node.sequence, node.frequency, node.up.sequence if node.up is not None else None) for node in tree2.tree.traverse())
             return list1 == list2
         elif method == 'MRCA':
-            # here's Erick's idea of matrix of hamming distance of common ancestors of taxa
+            # matrix of hamming distance of common ancestors of taxa
             # takes a true and inferred tree as CollapsedTree objects
             taxa = [node.sequence for node in self.tree.traverse() if node.frequency]
             n_taxa = len(taxa)
@@ -410,7 +378,6 @@ class CollapsedTree(LeavesAndClades):
             tree2_copy = tree2.tree.copy(method='deepcopy')
             for treex in (tree1_copy, tree2_copy):
                 for node in list(treex.traverse()):
-                    # for _ in range(node.frequency):
                     if node.frequency > 0:
                         child = TreeNode()
                         child.add_feature('sequence', node.sequence)
@@ -531,11 +498,11 @@ class CollapsedForest(CollapsedTree):
         self.forest = [CollapsedTree(self.params).simulate() for x in range(self.n_trees)]
         return self
 
-    def l(self, params, sign=1, Vlad_sum=False):
+    def l(self, params, sign=1, empirical_bayes_sum=False):
         '''
         likelihood of params, given forest, and it's gradient wrt params
         optional parameter sign must be 1 or -1, with the latter useful for MLE by minimization
-        if optional parameter Vlad_sum is true, we're doing the Vlad sum for estimating params for
+        if optional parameter empirical_bayes_sum is true, we're doing the Vlad sum for estimating params for
         as set of parsimony trees
         '''
         if self.forest is None:
@@ -546,7 +513,7 @@ class CollapsedForest(CollapsedTree):
         terms = [tree.l(params) for tree in self.forest]
         ls = scipy.array([term[0] for term in terms])
         grad_ls = scipy.array([term[1] for term in terms])
-        if Vlad_sum:
+        if empirical_bayes_sum:
             # we need to find the smallest derivative component for each
             # coordinate, then subtract off to get positive things to logsumexp
             grad_l = []
@@ -560,28 +527,12 @@ class CollapsedForest(CollapsedTree):
         else:
             return sign*ls.sum(), sign*grad_ls.sum(axis=0)
 
-
     # NOTE: we get mle() method for free by inheritance/polymorphism magic
-
 
     def __str__(self):
         '''return a string representation for printing'''
         return 'params = {}, n_trees = {}\n'.format(self.params, self.n_trees) + \
                 '\n'.join([str(tree) for tree in self.forest])
-
-
-def disambiguate(tree):
-    '''make random choices for ambiguous bases, respecting tree inheritance'''
-    sequence_length = len(tree.sequence)
-    for node in tree.traverse():
-        for site in range(sequence_length):
-            base = node.sequence[site]
-            if base not in 'ACGT':
-                new_base = random.choice(ambiguous_dna_values[base])
-                for node2 in node.traverse(is_leaf_fn=lambda n: False if base in [n2.sequence[site] for n2 in n.children] else True):
-                    if node2.sequence[site] == base:
-                        node2.sequence = node2.sequence[:site] + new_base + node2.sequence[(site+1):]
-    return tree
 
 
 class MutationModel():
@@ -674,10 +625,9 @@ class MutationModel():
 
         mutabilities = self.mutabilities(sequence)
         sequence_mutability = sum(mutability[0] for mutability in mutabilities)/sequence_length
-        # baseline Poisson
         # poisson rate for this sequence (given its relative mutability)
         lambda_sequence = sequence_mutability*lambda0
-        # number of mutations
+        # number of mutations m
         trials = 20
         for trial in range(1, trials+1):
             m = scipy.random.poisson(lambda_sequence)
@@ -687,7 +637,7 @@ class MutationModel():
                 raise RuntimeError('mutations saturating, consider reducing lambda0')
 
         # mutate the sites with mutations
-        # if contains stop codon, try again, up to 10 times
+        # if frame is not None and sequence contains stop codon, try again, up to 10 times
         unmutated_positions = range(sequence_length)
         for i in range(m):
             sequence_list = list(sequence) # make string a list so we can modify it
@@ -716,7 +666,6 @@ class MutationModel():
 
         return sequence
 
-
     def one_mutant(self, sequence, Nmuts, frame=1, lambda0=0.1):
         '''
         Make a single mutant with a distance, in amino acid sequence, of Nmuts away from the starting point.
@@ -737,7 +686,6 @@ class MutationModel():
                 trial -= 1
         raise RuntimeError('100 consecutive attempts for creating a target sequence failed.')
 
-
     def simulate(self, sequence, seq_bounds=None, progeny=poisson(.9), lambda0=[1], frame=None,
                  N=None, T=None, n=None, verbose=False, selection_params=None):
         '''
@@ -752,9 +700,6 @@ class MutationModel():
             raise ValueError('Simulation with selection was chosen. A time, T, must be specified.')
         elif N is None and T is None:
             raise ValueError('Either N or T must be specified.')
-            # expected_progeny = progeny.mean()
-            # if expected_progeny >= 1:
-            #     raise ValueError('E[progeny] = {} is not subcritical, tree termination not gauranteed!'.format(expected_progeny))
         if N is not None and n > N:
             raise ValueError('n ({}) must not larger than N ({})'.format(n, N))
         if selection_params is not None and frame is None:
@@ -767,12 +712,6 @@ class MutationModel():
         tree.add_feature('terminated', False)
         tree.add_feature('frequency', 0)
         tree.add_feature('time', 0)
-
-        # <---- Selection:
-        def calc_Kd(seqAA, targetAAseqs, hd2affy):
-            '''Find the closest target sequence to and apply the "hamming distance to affinity" transformation function.'''
-            hd = min([hamming_distance(seqAA, t) for t in targetAAseqs])
-            return(hd2affy(hd))
 
         if selection_params is not None:
             hd_generation = list()  # Collect an array of the counts of each hamming distance at each time step
@@ -788,62 +727,8 @@ class MutationModel():
                 def hd2affy(hd): return(mature_affy)
             # We store both the amino acid sequence and the affinity as tree features:
             tree.add_feature('AAseq', str(aa))
-            tree.add_feature('Kd', calc_Kd(tree.AAseq, targetAAseqs, hd2affy))
+            tree.add_feature('Kd', selection_utils.calc_Kd(tree.AAseq, targetAAseqs, hd2affy))
             tree.add_feature('target_dist', min([hamming_distance(tree.AAseq, taa) for taa in targetAAseqs]))
-
-        def lambda_selection(node, tree, targetAAseqs, hd2affy, A_total, B_total, Lp):
-            '''
-            Given a node and its tree and a "hamming distance to affinity" transformation function
-            reutrn the poisson lambda parameter for the progeny distribution.
-            '''
-            def calc_BnA(Kd_n, A, B_total):
-                '''
-                This calculated the fraction B:A (B bound to A), at equilibrium also referred to as "binding time",
-                of all the different Bs in the population given the number of free As in solution.
-                '''
-                BnA = B_total/(1+Kd_n/A)
-                return(BnA)
-
-            def return_objective_A(Kd_n, A_total, B_total):
-                '''
-                The objective function that solves the set of differential equations setup to find the number of free As,
-                at equilibrium, given a number of Bs with some affinity listed in Kd_n.
-                '''
-                def obj(A): return((A_total - (A + np.sum(B_total/(1+Kd_n/A))))**2)
-                return(obj)
-
-            def calc_binding_time(Kd_n, A_total, B_total):
-                '''
-                Solves the objective function to find the number of free As and then uses this,
-                to calculate the fraction B:A (B bound to A) for all the different Bs.
-                '''
-                obj = return_objective_A(Kd_n, A_total, B_total)
-                # Different minimizers have been tested and 'L-BFGS-B' was significant faster than anything else:
-                obj_min = minimize(obj, A_total, bounds=[[1e-10, A_total]], method='L-BFGS-B', tol=1e-20)
-                BnA = calc_BnA(Kd_n, obj_min.x[0], B_total)
-                # Terminate if the precision is not good enough:
-                assert(BnA.sum()+obj_min.x[0]-A_total < A_total/100)
-                return(BnA)
-
-            def trans_BA(BA, Lp):
-                '''Transform the fraction B:A (B bound to A) to a poisson lambda between 0 and 2.'''
-                # We keep alpha to enable the possibility that there is a minimum lambda_:
-                alpha, beta, Q = Lp
-                lambda_ = alpha + (2 - alpha) / (1 + Q*np.exp(-beta*BA))
-                return(lambda_)
-
-            # Update the list of affinities for all the live nodes:
-            Kd_n = np.array([n.Kd for n in tree.iter_leaves() if not n.terminated])
-            BnA = calc_binding_time(Kd_n, A_total, B_total)
-            lambdas = trans_BA(BnA, Lp)
-            i = 0
-            for n in tree.iter_leaves():
-                if n.terminated:
-                    continue
-                n.add_feature('lambda_', lambdas[i])
-                i += 1
-            return(tree)
-        # ----/> Selection
 
         t = 0  # <-- time
         leaves_unterminated = 1
@@ -859,11 +744,10 @@ class MutationModel():
             random.shuffle(list_of_leaves)
             for leaf in list_of_leaves:
                 if not leaf.terminated:
-                    # <---- Selection:
                     if selection_params is not None:
                         if skip_lambda_n == 0:
                             skip_lambda_n = skip_update + 1  # Add one so skip_update=0 is no skip
-                            tree = lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
+                            tree = selection_utils.lambda_selection(leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp)
                         # Small lambdas are causing problems so make a minimum:
                         lambda_min = 10e-10
                         if leaf.lambda_ > lambda_min:
@@ -871,7 +755,6 @@ class MutationModel():
                         else:
                             progeny = poisson(lambda_min)
                         skip_lambda_n -= 1
-                    # ----/> Selection
                     n_children = progeny.rvs()
                     leaves_unterminated += n_children - 1 # <-- this kills the parent if we drew a zero
                     if not n_children:
@@ -887,38 +770,32 @@ class MutationModel():
                         child = TreeNode()
                         child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
                         child.add_feature('sequence', mutated_sequence)
-                        # <---- Selection:
                         if selection_params is not None:
                             aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))], generic_dna).translate()
                             child.add_feature('AAseq', str(aa))
-                            child.add_feature('Kd', calc_Kd(child.AAseq, targetAAseqs, hd2affy))
+                            child.add_feature('Kd', selection_utils.calc_Kd(child.AAseq, targetAAseqs, hd2affy))
                             child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))
-                        # ----/> Selection
                         child.add_feature('frequency', 0)
                         child.add_feature('terminated' ,False)
                         child.add_feature('time', t)
                         leaf.add_child(child)
-            # <---- Selection:
             if selection_params is not None:
                 hd_distrib = [min([hamming_distance(tn.AAseq, ta) for ta in targetAAseqs]) for tn in tree.iter_leaves() if not tn.terminated]
                 if target_dist > 0:
-                    hist = np.histogram(hd_distrib, bins=list(range(target_dist*10)))
+                    hist = scipy.histogram(hd_distrib, bins=list(range(target_dist*10)))
                 else:  # Just make a minimum of 10 bins
-                    hist = np.histogram(hd_distrib, bins=list(range(10)))
+                    hist = scipy.histogram(hd_distrib, bins=list(range(10)))
                 hd_generation.append(hist)
                 if verbose and hd_distrib:
                     print('Total cell population:', sum(hist[0]))
-                    print('Majority hamming distance:', np.argmax(hist[0]))
+                    print('Majority hamming distance:', scipy.argmax(hist[0]))
                     print('Affinity of latest sampled leaf:', leaf.Kd)
                     print('Progeny distribution lambda for the latest sampled leaf:', leaf.lambda_)
-            # ----/> Selection
 
-        # <---- Selection:
         if selection_params is not None:
             # Keep a histogram of the hamming distances at each generation:
             with open(outbase + 'selection_sim.runstats.p', 'wb') as f:
                 pickle.dump(hd_generation, f)
-        # ----/> Selection
 
 
         if leaves_unterminated < N:
@@ -967,9 +844,9 @@ class MutationModel():
 
         # assign unique names to each node
         for i, node in enumerate(tree.traverse(), 1):
-            node.name = 'simcell_gctreeinternal_{}'.format(i)
+            node.name = 'simcell_{}'.format(i)
 
-        # return the fine (uncollapsed) tree
+        # return the uncollapsed tree
         return tree
 
 
@@ -1017,14 +894,11 @@ def test(args):
                    fit_reg=False, scatter_kws={'alpha':.3}, size=1.5, legend=False,
                    row_order=reversed(qs))
     g.set(xscale='log', yscale='log', xlim=limx, ylim=limy)
-    # g.ax.legend(title='parameters', loc='lower right', frameon=True, bbox_to_anchor=(1.1, 0))
     for i in range(len(ps)):
         for j in range(len(qs)):
             g.axes[i, j].plot(limx, limy, ls='--', c='black', lw=.5, zorder=0, markeredgewidth=.1)
             g.axes[i, j].set_title('p={}, q={}'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.8, size='x-small', ha='left')
     g.set_axis_labels('', '')
-    # g.axes[-1, len(ps)//2].set_xlabel('GCtree likelihood')
-    # g.axes[len(qs)//2, 0].set_ylabel('frequency among {} simulations'.format(n))
     g.fig.text(0.45, .02, s='GCtree likelihood', multialignment='center')
     g.fig.text(.02, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
     plt.savefig(args.outbase+'.pdf')
@@ -1051,157 +925,9 @@ def test(args):
     for i in range(len(ps)):
         for j in range(len(qs)):
             plt.scatter([ps[i]], [qs[j]], c='black', marker='+')
-    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    # plt.tight_layout()
     plt.savefig(args.outbase+'.2.pdf')
 
     return
-
-
-    p = args.p
-    q = args.q
-    n = args.n
-    plot_file = args.outbase
-
-    if plot_file[-4:] != '.pdf':
-        plot_file += '.pdf'
-
-    print('Let''s check our likelihood against a by-hand calculation for the following simple tree')
-    # ete tree
-    parent = TreeNode(format=1)
-    parent.add_feature('frequency', 2)
-    parent.name = parent.frequency
-    child = TreeNode()
-    child.add_feature('frequency', 1)
-    child.dist = 1
-    child.name = child.frequency
-    parent.add_child(child)
-    tree = CollapsedTree(tree=parent)
-    f = 6*p**2*(1-p)**3*q*(1-q)**3
-    dfdp = 6*(1 - p)**2*p*(-2 + 5*p)*(-1 + q)**3*q #6*q*(1-q)**3*(2*p*(1-p)**3-3*p**2*(1-p)**2)
-    dfdq = 6*(-1 + p)**3*p**2*(1 - q)**2*(-1 + 4*q) #6*p**2*(1-p)**3*((1-q)**3-3*q*(1-q)**2)
-    print( '    T =', tree.tree.get_ascii(show_internal=True))
-    print( '    Summing the probabilities of the two possible fine structures, we have')
-    print( '    logP =', scipy.log(f))
-    print(u'    \u2207logP = ', (dfdp/f, dfdq/f))
-    print( '    Now, our dynamic programming algorithm gives')
-    print(u'    logP , \u2207logP =', tree.l((p, q)))
-    print('')
-
-    # total leaf counts
-    total_data = sorted([sum(node.frequency for node in tree.tree.traverse()) for tree in forest.forest])
-    max_total = max(total_data)
-    len_total = len(total_data)
-
-    totals = []
-    freq = []
-    log_prob = []
-    for x in range(1, max_total+1):
-        totals.append(x)
-        freq.append(total_data.count(x))
-        tmp_tree = TreeNode(format=1)
-        tmp_tree.add_feature('frequency', x)
-        log_prob.append(CollapsedTree(tree=tmp_tree).l((p, 0))[0])
-    theoretical_cdf = scipy.cumsum(scipy.exp(log_prob))
-    empirical_cdf = scipy.cumsum(freq)/len_total
-
-    #sns.reset_orig() # <-- don't use seaborn
-    fig = plt.figure()
-    fig.set_tight_layout(True)
-    plt.rc('text', usetex=True)
-
-    # plot the empirical and theoretical distribution of total leaf counts
-
-    ax = fig.add_subplot(2,2,1)
-    ax.plot(totals, scipy.exp(log_prob), 'ko', markerfacecolor='none', alpha=.5, label='theoretical PMF')
-    ax.plot(totals, scipy.array(freq)/len_total, 'k.', label='empirical PMF')
-    ax.legend(numpoints=1, loc=1, fontsize='small')
-    ax.set_xlabel('total leaves')
-    ax.set_ylabel('$\Pr($total leaves$)$')
-    ax.set_ylim([0, 1.1])
-    #ax.set_xscale('log')
-    #ax.set_yscale('symlog')
-
-# uncomment this if you want the CDF
-#    ax = fig.add_subplot(2,2,2)
-#    ax.plot(totals, theoretical_cdf, 'ko', markerfacecolor='none', alpha=.5, label='theoretical CDF')
-#    ax.plot(totals, empirical_cdf, 'k.', label='empirical CDF')
-#    ax.legend(numpoints=1, loc=4, fontsize='small')
-#    ax.set_xlabel('number of leaves')
-#    ax.set_ylim([0, 1.1])
-
-
-    empirical_quantiles = []
-    theoretical_quantiles = []
-    for x in total_data:
-        empirical_quantiles.append(sum(y <= x for y in total_data)/len_total)
-        to_add = 0.
-        for y in range(1, x+1):
-            tmp_tree = TreeNode(format=1)
-            tmp_tree.add_feature('frequency', y)
-            to_add += scipy.exp(CollapsedTree(tree=tmp_tree).l((p, 0))[0])
-        theoretical_quantiles.append(to_add)
-
-    ax = fig.add_subplot(2,2,2)
-    ax.plot(theoretical_quantiles, empirical_quantiles, 'ko', alpha=.1)
-    ax.plot([0, 1], [0, 1], 'k')
-    ax.set_title('total leaves')
-    ax.set_xlabel('theoretical quantiles')
-    ax.set_ylabel('empirical quantiles')
-    ax.set_xlim([0, 1])
-    ax.set_ylim([0, 1])
-    ax.set_aspect('equal')
-
-    mle = forest.mle()
-
-    #for tree in forest.forest:
-    #    print(tree)
-    print('    MLE parameters:  p = {}, q = {}'.format(*mle.x.tolist()))
-
-    # plot the 2-norm of the difference between the gradient and its finite difference approximation
-    print('computing plot data...')
-    X, Y = scipy.mgrid[slice(.05, 1, .05),
-                       slice(.05, 1, .05)]
-    Z = scipy.zeros((X.shape[0], X.shape[1]))
-    for i in range(Z.shape[0]):
-        for j in range(Z.shape[1]):
-            Z[i, j] = check_grad(lambda x: forest.l(x)[0], lambda x: forest.l(x)[1], (X[i, j], Y[i, j]))
-
-    print('done')
-    ax = fig.add_subplot(2,2,3)
-    ax.set_title(r'$||\nabla \ell(p, q) - \Delta \ell(p, q)||_2$')
-    im = ax.contourf(X, Y, Z, locator=ticker.LogLocator(), cmap='Greys')
-    ax.set_xlabel(r'$p$')
-    ax.set_ylabel(r'$q$')
-    ax.set_aspect('equal')
-    fig.colorbar(im, ax=ax)
-
-
-    # plot likelihood surface, with true and MLE parameters shown
-    X, Y = scipy.mgrid[slice(.02, 1, .02),
-                       slice(.02, 1, .02)]
-    Z = scipy.zeros((X.shape[0], X.shape[1]))
-    for i in range(Z.shape[0]):
-        for j in range(Z.shape[1]):
-            l, grad_l = forest.l((X[i, j], Y[i, j]))
-            z = l
-            Z[i, j] = z
-    ax = fig.add_subplot(2,2,4)
-    ax.set_title(r'$\ell(p, q)$')
-    contour = ax.contour(X, Y, Z, 10, colors='k', label='likelihood contours')
-    for c in contour.collections:
-        c.set_linestyle('solid')
-
-    ax.clabel(contour, fontsize=8, inline=1)
-    ax.plot([p], [q], 'k+', label='true parameters')
-    ax.plot(mle.x[0], mle.x[1], 'ko', markerfacecolor='none', label='MLE parameters')
-    ax.set_xlabel(r'$p$')
-    ax.set_ylabel(r'$q$')
-    ax.set_aspect('equal')
-    ax.legend(numpoints = 1, fontsize='small')
-
-    plt.savefig(plot_file)
-    print('plot saved to', plot_file)
 
 
 def infer(args):
@@ -1245,7 +971,7 @@ def infer(args):
         max_tries = 10
         for tries in range(max_tries):
             try:
-                parsimony_forest.mle(Vlad_sum=True)
+                parsimony_forest.mle(empirical_bayes_sum=True)
                 break
             except FloatingPointError as e:
                 if tries + 1 < max_tries:
@@ -1287,7 +1013,7 @@ def infer(args):
         for j, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
             alleles = sum(1 for _ in collapsed_tree.tree.traverse())
             print('{}\t{}\t{}'.format(j, alleles, l))
-            collapsed_tree.render(outbase+'.inference.{}.svg'.format(j), colormap, args.leftright_split)
+            collapsed_tree.render(outbase+'.inference.{}.svg'.format(j), colormap, args.chain_split)
 
         # rank plot of likelihoods
         plt.figure(figsize=(6.5,2))
@@ -1323,80 +1049,20 @@ def infer(args):
         import seaborn as sns; sns.set(style="white", color_codes=True)
         sns.set_style("ticks")
         plt.figure()
-        np.seterr(all='ignore')
+        scipy.seterr(all='ignore')
         g = sns.jointplot('$\hat{p}$', '$\hat{q}$', data=df, joint_kws={'alpha':.1, 's':.1},
                           space=0, color='k', stat_func=None, xlim=(0, 1), ylim=(0, 1), size=3)
         plt.savefig(args.outbase+'.inference.bootstrap_theta.pdf')
         gctrees[0].support(gctrees[1:])
         gctrees[0].render(args.outbase+'.inference.bootstrap_support.svg',
                           colormap=colormap,
-                          leftright_split=args.leftright_split,
+                          chain_split=args.chain_split,
                           show_support=True)
         gctrees[0].support(gctrees[1:], compatibility=True)
         gctrees[0].render(args.outbase+'.inference.bootstrap_compatibility.svg',
                           colormap=colormap,
-                          leftright_split=args.leftright_split,
+                          chain_split=args.chain_split,
                           show_support=True)
-
-def find_A_total(carry_cap, B_total, f_full, mature_affy, U):
-    def A_total_fun(A, B_total, Kd_n): return(A + np.sum(B_total/(1+Kd_n/A)))
-
-    def C_A(A, A_total, f_full, U): return(U * (A_total - A) / f_full)
-
-    def A_obj(carry_cap, B_total, f_full, Kd_n, U):
-        def obj(A): return((carry_cap - C_A(A, A_total_fun(A, B_total, Kd_n), f_full, U))**2)
-        return(obj)
-
-    Kd_n = np.array([mature_affy] * carry_cap)
-    obj = A_obj(carry_cap, B_total, f_full, Kd_n, U)
-    # Some funny "zero encountered in true_divide" errors are not affecting results so ignore them:
-    old_settings = np.seterr(all='ignore')  # Keep old settings
-    np.seterr(divide='ignore')
-    obj_min = minimize(obj, 1e-20, bounds=[[1e-20, carry_cap]], method='L-BFGS-B', tol=1e-20)
-    np.seterr(**old_settings)  # Reset to default
-    A = obj_min.x[0]
-    A_total = A_total_fun(A, B_total, Kd_n)
-    assert(C_A(A, A_total, f_full, U) > carry_cap * 99/100)
-    return(A_total)
-
-
-def find_Lp(f_full, U):
-    assert(U > 1)
-    def T_BA(BA, p):
-        # We keep alpha to enable the possibility
-        # that there is a minimum lambda_
-        alpha, beta, Q = p
-        lambda_ = alpha + (2 - alpha) / (1 + Q*np.exp(-beta*BA))
-        return(lambda_)
-
-    def solve_T_BA(p, f_full, U):
-        epsilon = 1/1000
-        C1 = (T_BA(0, p) - 0)**2
-        C2 = (T_BA(f_full/U, p) - 1)**2
-        C3 = (T_BA(1*f_full, p) - (2 - 2*epsilon))**2
-        return(C1, C2, C3)
-
-    def solve_T_BA_low_epsilon(p, f_full, U):
-        epsilon = 1/1000
-        C1 = (T_BA(0, p) - 0)**2
-        C2 = (T_BA(f_full/U, p) - 1)**2
-        C3 = (T_BA(1*f_full, p) - (2 - 2*epsilon))**2 * ((2 - T_BA(1*f_full, p)) < 2*epsilon)
-        return(C1, C2, C3)
-
-    # Some funny "FloatingPointError" errors are not affecting results so ignore them:
-    old_settings = np.seterr(all='ignore')  # Keep old settings
-    np.seterr(over='ignore')
-    try:
-        def obj_T_A(p): return(solve_T_BA(p, f_full, U))
-        p = fsolve(obj_T_A, (0, 10e-5, 1), xtol=1e-20, maxfev=1000)
-        assert(sum(solve_T_BA(p, f_full, U)) < f_full * 1/1000)
-    except:
-        print('The U parameter is large and therefore the epsilon parameter has to be adjusted to find a valid solution.')
-        def obj_T_A(p): return(solve_T_BA_low_epsilon(p, f_full, U))
-        p = fsolve(obj_T_A, (0, 10e-5, 1), xtol=1e-20, maxfev=1000)
-        assert(sum(solve_T_BA(p, f_full, U)) < f_full * 1/1000)
-    np.seterr(**old_settings)  # Reset to default
-    return(p)
 
 
 def simulate(args):
@@ -1427,7 +1093,6 @@ def simulate(args):
         args.sequence += args.sequence2.upper()
     else:
         seq_bounds = None
-    # <---- Selection:
     if args.selection:
         if args.frame is None:
             raise Exception('Frame must be defined when simulating with selection.')
@@ -1436,13 +1101,12 @@ def simulate(args):
         targetAAseqs = [mutation_model.one_mutant(args.sequence, args.target_dist, frame=args.frame) for i in range(args.target_count)]
         # Find the total amount of A necessary for sustaining the inputted carrying capacity:
         print((args.carry_cap, args.B_total, args.f_full, args.mature_affy))
-        A_total = find_A_total(args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U)
+        A_total = selection_utils.find_A_total(args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U)
         # Calculate the parameters for the logistic function:
-        Lp = find_Lp(args.f_full, args.U)
+        Lp = selection_utils.find_Lp(args.f_full, args.U)
         selection_params = [args.stop_dist, args.mature_affy, args.naive_affy, args.target_dist, args.skip_update, targetAAseqs, A_total, args.B_total, Lp, args.k, args.outbase]
     else:
         selection_params = None
-    # ----/> Selection
 
     trials = 1000
     # this loop makes us resimulate if size too small, or backmutation
@@ -1482,26 +1146,20 @@ def simulate(args):
         fh1.write(args.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
         fh2.write('>naive\n')
         fh2.write(args.sequence[seq_bounds[1][0]:seq_bounds[1][1]]+'\n')
-        i = 0
         for leaf in tree.iter_leaves():
             if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
-                i += 1
-                fh1.write('>simcell{}\n'.format(i))
+                fh1.write('>' + leaf.name + '\n')
                 fh1.write(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
-                fh2.write('>simcell{}\n'.format(i))
+                fh2.write('>' + leaf.name + '\n')
                 fh2.write(leaf.sequence[seq_bounds[1][0]:seq_bounds[1][1]]+'\n')
-                leaf.name = 'simcell{}'.format(i)
     else:
         with open(args.outbase+'.simulation.fasta', 'w') as f:
             f.write('>naive\n')
             f.write(args.sequence+'\n')
-            i = 0
             for leaf in tree.iter_leaves():
                 if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
-                    i += 1
-                    f.write('>simcell{}\n'.format(i))
-                    f.write(leaf.sequence+'\n')
-                    leaf.name = 'simcell{}'.format(i)
+                    f.write('>' + leaf.name + '\n')
+                    f.write(leaf.sequence + '\n')
 
     # some observable simulation stats to write
     frequency, distance_from_naive, degree = zip(*[(node.frequency,
@@ -1549,6 +1207,7 @@ def simulate(args):
 
     # render collapsed tree
     # create an id-wise colormap
+    # NOTE: node.name can be a set
     if args.plotAA and args.selection:
         colormap = {node.name:colors[node.AAseq] for node in collapsed_tree.tree.traverse()}
     else:
@@ -1558,7 +1217,7 @@ def simulate(args):
     # print colormap to file
     with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
         for name, color in colormap.items():
-            f.write(name + '\t' + color + '\n')
+            f.write((name if isinstance(name, str) else ','.join(name)) + '\t' + color + '\n')
 
 
     if args.selection:
@@ -1573,46 +1232,7 @@ def simulate(args):
         # Write a file with the selection run stats. These are also plotted:
         with open(args.outbase + 'selection_sim.runstats.p', 'rb') as fh:
             runstats = pickle.load(fh)
-            plot_runstats(runstats, args.outbase, colors)
-
-
-def plot_runstats(runstats, outbase, colors):
-    def make_bounds(runstats):
-        all_counts = runstats[0][0].copy()
-        for l in runstats:
-            all_counts += l[0]
-        i = None
-        ii = None
-        for j, c in enumerate(all_counts):
-            if i is None and c > 0:
-                i = j
-            elif c > 0:
-                ii = j
-        return(i, ii)
-    # Total population size:
-    pop_size = np.array([sum(r[0]) for r in runstats])
-    # min:max of the hamming distances to plot:
-    bounds = make_bounds(runstats)
-
-    fig = plt.figure()
-    ax = plt.subplot(111)
-    t = np.array(list(range(len(pop_size))))  # The x-axis are generations
-    ax.plot(t, pop_size, lw=2, label='All cells')  # Total population size is plotted
-    # Then plot the counts for each hamming distance as a function on generation:
-    for k in list(range(*bounds)):
-        color = SVG2HEX[colors[k]]
-        ax.plot(t, np.array([r[0][k] for r in runstats]), lw=2, color=color, label='Dist {}'.format(k))
-
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
-
-    # Shrink current axis by 20% to make the legend fit:
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-
-    plt.ylabel('Count')
-    plt.xlabel('GC generation')
-    plt.title('Cell count as function of GC generation')
-    fig.savefig(outbase + '.selection_sim.runstats.pdf')
+            selection_utils.plot_runstats(runstats, args.outbase, colors)
 
 
 def main():
@@ -1635,7 +1255,7 @@ def main():
     parser_infer.add_argument('countfile', type=str, help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"')
     parser_infer.add_argument('--bootstrap_phylipfile', type=str, help='dnapars outfile from seqboot (multiple data sets)')
     parser_infer.add_argument('--colormapfile', type=str, default=None, help='File containing color map in the format: "SeqID\tcolor"')
-    parser_infer.add_argument('--leftright_split', type=int, default=None, help='split between heavy and light for combined seqs')
+    parser_infer.add_argument('--chain_split', type=int, default=None, help='split between heavy and light for combined seqs')
     parser_infer.set_defaults(func=infer)
 
     # parser for simulation subprogram

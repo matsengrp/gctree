@@ -94,7 +94,7 @@ plf(x=var, y="value", hue="method", data=plot_data, legend_out=True, **kwargs)
 #colors = {'gctree':'red', 'igphyml':'blue'}
 #plot_data.plot(kind='scatter', x=var, y='value', c=plot_data['method'].apply(lambda x: colors[x]))
 ax.set(ylabel='RF distance')
-sns.plt.title('Plot for tree size: {}. For RF.'.format(var))
+plt.title('Plot for tree size: {}. For RF.'.format(var))
 #fig.tight_layout()
 plt.savefig(args.outbase+'1.pdf')
 
@@ -102,7 +102,7 @@ plt.savefig(args.outbase+'1.pdf')
 plot_data = df.ix[df.ix[:,'metric'] == 'logMRCA', :]
 plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
 ax.set(ylabel='MRCA distance')
-sns.plt.title('Plot for tree size: {}. For MRCA.'.format(var))
+plt.title('Plot for tree size: {}. For MRCA.'.format(var))
 #fig.tight_layout()
 plt.savefig(args.outbase+'2.pdf')
 

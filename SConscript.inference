@@ -83,7 +83,7 @@ if dnaml:
                        'cd ' + outdir + '/dnaml && rm -f outfile outtree && dnaml < ${SOURCE.file} > ${TARGETS[2].file}')
     # Manually depend on phylip so that we rerun dnaml if the input sequences change (without this, dnaml will
     # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
-    env.Depends(dnaml, seq_input)
+    env.Depends(dnaml, phylip)
 
     dnaml_tree = env.Command([os.path.join(outdir, 'dnaml.inferred_tree.p'),
                                  os.path.join(outdir, 'dnaml.inferred_tree.log')],

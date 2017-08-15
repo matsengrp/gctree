@@ -26,7 +26,7 @@ scons --inference
 
 **Simulation/validation pipeline:**
 ```
-scons --simulate 
+scons --simulate
   --gctree/--igphyml[inferrence using either gctree, igphyml or both]
   --frame=[DNA reading frame or None, if None stop codons are allowed]
   --outdir=[path to output] --naive=[DNA seq of naive sequence from which to start simulating, used default if omitted]
@@ -39,7 +39,7 @@ scons --simulate
   --n=[number of simulation of each set of parameter combination, default 10]
   --srun[optional for SLURM batch job submission]
 ```
- 
+
 ## `gctree.py`
 library for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree.py --help`. There are three subprograms, each of which has usage info:
 * `gctree.py inference --help`: takes an `outfile` file made by phylip's `dnapars` as a command line argument, converts each tree therein to a collapsed tree, and ranks by likelihood under our model.

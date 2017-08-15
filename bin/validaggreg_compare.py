@@ -7,7 +7,7 @@ aggregation plots of validation output from several simulation/validation runs
 
 from __future__ import division, print_function
 import scipy, matplotlib
-matplotlib.use('PDF')
+matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd

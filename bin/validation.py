@@ -6,7 +6,9 @@ comparison of inference and simulated trees
 '''
 
 from __future__ import division, print_function
-from gctree import CollapsedTree, CollapsedForest, hamming_distance
+from gctree import CollapsedTree, CollapsedForest
+import gctree
+from utils import hamming_distance
 from random import randint
 try:
     import cPickle as pickle
@@ -15,7 +17,6 @@ except:
 import pandas as pd
 import scipy
 import matplotlib
-matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set(style='white', color_codes=True)
@@ -220,7 +221,7 @@ def lineage_dist(true_tree, inferred_tree, freq_weigthing=False, known_root=True
 
 def validate(true_tree, inferences, true_tree_colormap, outbase):
     '''
-    inferences is a dict mapping infernce name, like "gctree" to pickle files of
+    inferences is a dict mapping inference name, like "gctree" to pickle files of
     CollapsedForest
     '''
 
@@ -272,7 +273,13 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
         plt.savefig(outbase+'_pairplot.pdf')
 
         for i, tree in enumerate(inferences['gctree'].forest, 1):
-            colormap = dict((node.name, true_tree_colormap[node.sequence]) if node.sequence in true_tree_colormap else (node.name, 'lightgray') for node in tree.tree.traverse())
+            colormap = {}
+            for node in tree.tree.traverse():
+                if node.sequence in true_tree_colormap:
+                    colormap[node.name] = true_tree_colormap[node.sequence]
+                else:
+                    assert node.frequency == 0
+                    colormap[node.name] = 'lightgray'
             tree.render(outbase+'.gctree.colored_tree.{}.svg'.format(i), colormap=colormap)
 
 
@@ -321,7 +328,12 @@ def main():
     with open(args.true_tree_colormap, 'r') as f:
         for line in f:
             name, color = line.rstrip().split('\t')
-            true_tree_colormap[true_tree.tree.search_nodes(name=name)[0].sequence] = color
+            if ',' not in name:
+                true_tree_colormap[true_tree.tree.search_nodes(name=name)[0].sequence] = color
+            else:
+                search = true_tree.tree.search_nodes(name=tuple(name.split(',')))
+                if search:
+                    true_tree_colormap[search[0].sequence] = color
 
     validate(true_tree, inferences, true_tree_colormap, args.outbase)
     print('Done')  # Print something to the log to make the wait_func run smooth
