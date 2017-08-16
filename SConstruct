@@ -61,6 +61,10 @@ AddOption('--quick',
            action='store_true',
            help='less thourough dnapars tree search (faster)')
 quick = GetOption('quick')
+AddOption('--idlabel',
+           action='store_true',
+           help='label sequence ids on tree')
+idlabel = GetOption('idlabel')
 
 class InputError(Exception):
     """Exception raised for errors in the input."""
@@ -215,8 +219,8 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml dnaml quick outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param')
+               exports='env gctree igphyml dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')
+    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')

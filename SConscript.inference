@@ -15,7 +15,7 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')
+Import('env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')
 
 def delete_on_failure():
     from SCons.Script import GetBuildFailures

@@ -5,7 +5,7 @@ import os
 from nestly import Nest
 from nestly.scons import SConsWrap
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml dnaml quick outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param')
+Import('env gctree igphyml dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param')
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
@@ -65,7 +65,7 @@ def infer(outdir, c):
     naiveID = 'naive' # this is what the simulation routine names the naive
     converter = None  # No problem with weird fasta formating from the simulated data
     bootstrap = 0
-    return SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')
+    return SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')
 
 @w.add_target()
 def validate(outdir, c):

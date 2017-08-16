@@ -346,11 +346,12 @@ class CollapsedTree(LeavesAndClades):
         ts.show_scale = False
         ts.show_branch_support = show_support
         self.tree.render(outfile, tree_style=ts)
-        # let's also write the alignment out so we have the sequences (including of internal nodes)
-        aln = MultipleSeqAlignment([])
-        for node in self.tree.traverse():
-            aln.append(SeqRecord(Seq(str(node.sequence), generic_dna), id=node.name, description='abundance={}'.format(node.frequency)))
-        AlignIO.write(aln, open(os.path.splitext(outfile)[0] + '.fasta', 'w'), 'fasta')
+        # if we labelled seqs, let's also write the alignment out so we have the sequences (including of internal nodes)
+        if idlabel:
+            aln = MultipleSeqAlignment([])
+            for node in self.tree.traverse():
+                aln.append(SeqRecord(Seq(str(node.sequence), generic_dna), id=node.name, description='abundance={}'.format(node.frequency)))
+            AlignIO.write(aln, open(os.path.splitext(outfile)[0] + '.fasta', 'w'), 'fasta')
 
     def write(self, file_name):
         '''serialize tree to file'''
