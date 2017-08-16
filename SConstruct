@@ -63,7 +63,7 @@ AddOption('--quick',
 quick = GetOption('quick')
 AddOption('--idlabel',
            action='store_true',
-           help='label sequence ids on tree')
+           help='label sequence ids on tree, and write associated alignment')
 idlabel = GetOption('idlabel')
 
 class InputError(Exception):

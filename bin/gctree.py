@@ -1323,7 +1323,7 @@ def main():
     # common parameters for the inference and simulation subprograms
     for subparser in [parser_infer, parser_sim]:
         subparser.add_argument('--frame', type=int, default=None, choices=(1, 2, 3), help='codon frame')
-        subparser.add_argument('--idlabel', action='store_true', help='flag for labeling the sequence ids of the nodes in the output tree images')
+        subparser.add_argument('--idlabel', action='store_true', help='flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if True')
 
     args = parser.parse_args()
     args.func(args)
