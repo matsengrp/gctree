@@ -8,14 +8,17 @@ in which the tree is collapsed to nodes that count the number of clonal leaves o
 
 from __future__ import division, print_function
 
-import phylip_parse, scipy, warnings, random, collections, pandas as pd
+import phylip_parse, scipy, warnings, random, collections, pandas as pd, os
 from scipy.misc import logsumexp
 from scipy.optimize import minimize, check_grad, fsolve
 from itertools import cycle
 from scipy.stats import poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, SVG_COLORS
 from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
+from Bio import AlignIO
+from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 import matplotlib; matplotlib.use('agg')
 from matplotlib import pyplot as plt, ticker
 try:
@@ -277,17 +280,21 @@ class CollapsedTree(LeavesAndClades):
         '''return a string representation for printing'''
         return 'params = ' + str(self.params)+ '\ntree:\n' + str(self.tree)
 
-    def render(self, outfile, colormap=None, show_support=False, chain_split=None):
+    def render(self, outfile, idlabel=False, colormap=None, show_support=False, chain_split=None):
         '''render to image file, filetype inferred from suffix, svg for color images'''
         def my_layout(node):
             circle_color = 'lightgray' if colormap is None or node.name not in colormap else colormap[node.name]
-            print(node.name, circle_color)
             text_color = 'black'
             if isinstance(circle_color, str):
                 C = CircleFace(radius=max(3, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color} if node.frequency > 0 else None)
                 C.rotation = -90
                 C.hz_align = 1
                 faces.add_face_to_node(C, node, 0)
+                if idlabel:
+                    T = TextFace(node.name, tight_text=True, fsize=6)
+                    T.rotation = -90
+                    T.hz_align = 1
+                    faces.add_face_to_node(T, node, 1, position='branch-right')
             else:
                 P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=list(circle_color.keys()), line_color=None)
                 T = TextFace(' '.join([str(x) for x in list(circle_color.values())]))
@@ -302,9 +309,8 @@ class CollapsedTree(LeavesAndClades):
             if node.up is not None:
                 if set(node.sequence.upper()) == set('ACGT'):
                     if chain_split is not None:
-                        assert self.frame is None
-                        if node.frequency > 0:
-                            print(node.sequence[:chain_split], node.sequence[chain_split:])
+                        if self.frame is not None:
+                            raise NotImplementedError('frame not implemented with chain_split')
                         leftseq_mutated = hamming_distance(node.sequence[:chain_split], node.up.sequence[:chain_split]) > 0
                         rightseq_mutated = hamming_distance(node.sequence[chain_split:], node.up.sequence[chain_split:]) > 0
                         if leftseq_mutated and rightseq_mutated:
@@ -339,8 +345,12 @@ class CollapsedTree(LeavesAndClades):
         ts.layout_fn = my_layout
         ts.show_scale = False
         ts.show_branch_support = show_support
-        #self.tree.ladderize()
         self.tree.render(outfile, tree_style=ts)
+        # let's also write the alignment out so we have the sequences (including of internal nodes)
+        aln = MultipleSeqAlignment([])
+        for node in self.tree.traverse():
+            aln.append(SeqRecord(Seq(str(node.sequence), generic_dna), id=node.name, description='abundance={}'.format(node.frequency)))
+        AlignIO.write(aln, open(os.path.splitext(outfile)[0] + '.fasta', 'w'), 'fasta')
 
     def write(self, file_name):
         '''serialize tree to file'''
@@ -1013,7 +1023,10 @@ def infer(args):
         for j, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
             alleles = sum(1 for _ in collapsed_tree.tree.traverse())
             print('{}\t{}\t{}'.format(j, alleles, l))
-            collapsed_tree.render(outbase+'.inference.{}.svg'.format(j), colormap, args.chain_split)
+            collapsed_tree.render(outbase+'.inference.{}.svg'.format(j),
+                                  idlabel=args.idlabel,
+                                  colormap=colormap,
+                                  chain_split=args.chain_split)
 
         # rank plot of likelihoods
         plt.figure(figsize=(6.5,2))
@@ -1056,11 +1069,13 @@ def infer(args):
         gctrees[0].support(gctrees[1:])
         gctrees[0].render(args.outbase+'.inference.bootstrap_support.svg',
                           colormap=colormap,
+                          idlabel=args.idlabel,
                           chain_split=args.chain_split,
                           show_support=True)
         gctrees[0].support(gctrees[1:], compatibility=True)
         gctrees[0].render(args.outbase+'.inference.bootstrap_compatibility.svg',
                           colormap=colormap,
+                          idlabel=args.idlabel,
                           chain_split=args.chain_split,
                           show_support=True)
 
@@ -1213,7 +1228,9 @@ def simulate(args):
     else:
         colormap = {node.name:colors[node.sequence] for node in collapsed_tree.tree.traverse()}
     collapsed_tree.write( args.outbase+'.simulation.collapsed_tree.p')
-    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg', colormap=colormap)
+    collapsed_tree.render(args.outbase+'.simulation.collapsed_tree.svg',
+                          idlabel=args.idlabel,
+                          colormap=colormap)
     # print colormap to file
     with open(args.outbase+'.simulation.collapsed_tree.colormap.tsv', 'w') as f:
         for name, color in colormap.items():
@@ -1228,7 +1245,9 @@ def simulate(args):
         # The minimum distance to the target is colored:
         colormap = {node.name:colors[node.target_dist] for node in collapsed_tree.tree.traverse()}
         collapsed_tree.write( args.outbase+'.simulation.collapsed_runstat_color_tree.p')
-        collapsed_tree.render(args.outbase+'.simulation.collapsed_runstat_color_tree.svg', colormap=colormap)
+        collapsed_tree.render(args.outbase+'.simulation.collapsed_runstat_color_tree.svg',
+                              idlabel=args.idlabel,
+                              colormap=colormap)
         # Write a file with the selection run stats. These are also plotted:
         with open(args.outbase + 'selection_sim.runstats.p', 'rb') as fh:
             runstats = pickle.load(fh)
@@ -1300,9 +1319,10 @@ def main():
     for subparser in [parser_test, parser_infer, parser_sim]:
         subparser.add_argument('--outbase', type=str, default='gctree.out', help='output file base name')
 
-    # a common parameter for the inference and simulation subprograms
+    # common parameters for the inference and simulation subprograms
     for subparser in [parser_infer, parser_sim]:
         subparser.add_argument('--frame', type=int, default=None, choices=(1, 2, 3), help='codon frame')
+        subparser.add_argument('--idlabel', action='store_true', help='flag for labeling the sequence ids of the nodes in the output tree images')
 
     args = parser.parse_args()
     args.func(args)
