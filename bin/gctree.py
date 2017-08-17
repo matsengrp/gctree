@@ -290,19 +290,18 @@ class CollapsedTree(LeavesAndClades):
                 C.rotation = -90
                 C.hz_align = 1
                 faces.add_face_to_node(C, node, 0)
-                if idlabel:
-                    T = TextFace(node.name, tight_text=True, fsize=6)
-                    T.rotation = -90
-                    T.hz_align = 1
-                    faces.add_face_to_node(T, node, 1, position='branch-right')
             else:
                 P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=list(circle_color.keys()), line_color=None)
-                T = TextFace(' '.join([str(x) for x in list(circle_color.values())]))
+                T = TextFace(' '.join([str(x) for x in list(circle_color.values())]), tight_text=True)
                 T.hz_align = 1
-                T.vt_align = 1
                 T.rotation = -90
-                faces.add_face_to_node(P, node, 0, position='float')
-                faces.add_face_to_node(T, node, 0, position='float')
+                faces.add_face_to_node(P, node, 0, position='branch-right')
+                faces.add_face_to_node(T, node, 1, position='branch-right')
+            if idlabel:
+                T = TextFace(node.name, tight_text=True, fsize=6)
+                T.rotation = -90
+                T.hz_align = 1
+                faces.add_face_to_node(T, node, 1 if isinstance(circle_color, str) else 2, position='branch-right')
         for node in self.tree.traverse():
             nstyle = NodeStyle()
             nstyle['size'] = 0
@@ -871,7 +870,6 @@ def test(args):
     import seaborn as sns
     sns.set(style='white', color_codes=True)
     sns.set_style('ticks')
-    plt.rc('text', usetex=True)
 
     # compare likelihood to empirical likelihood (might need large n)
     n = 10000
@@ -908,7 +906,7 @@ def test(args):
     for i in range(len(ps)):
         for j in range(len(qs)):
             g.axes[i, j].plot(limx, limy, ls='--', c='black', lw=.5, zorder=0, markeredgewidth=.1)
-            g.axes[i, j].set_title('p={}, q={}'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.8, size='x-small', ha='left')
+            g.axes[i, j].set_title('p={}\nq={}'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.7, size='x-small', ha='left')
     g.set_axis_labels('', '')
     g.fig.text(0.45, .02, s='GCtree likelihood', multialignment='center')
     g.fig.text(.02, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')

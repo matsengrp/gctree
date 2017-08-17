@@ -122,12 +122,14 @@ if gctree:
 
     gctree_outbase = os.path.join(outdir, 'gctree')
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
+    idlabel_arg = ' --idlabel' if idlabel else ''
     gctree_infer = CommandRunner([gctree_outbase+'.inference.parsimony_forest.p',
                                 gctree_outbase+'.inference.log'],
                                 [dnapars[1], phylip[1], dnapars_bootstrap[1]] if bootstrap else [dnapars[1], phylip[1]],
                                 'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive '+naiveID+
                                 ' --outbase '+gctree_outbase+
                                 frame_arg+
+                                idlabel_arg+
                                 (' --bootstrap_phylipfile ${SOURCES[2]}' if bootstrap else '')+
                                 ' > ${TARGETS[1]}')
     return_list.append(gctree_infer)

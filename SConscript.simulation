@@ -33,6 +33,7 @@ def gctree_sim(outdir, c):
     NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
     '''
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
+    idlabel_arg = ' --idlabel' if idlabel else ''
     T_arg = ' --T {} '.format(' '.join(map(str, T))) if T else ''
     N_arg = ' --N {} '.format(N) if N is not None else ''
     n_arg = ' --n {} '.format(n) if n is not None else ''
@@ -48,6 +49,7 @@ def gctree_sim(outdir, c):
                         ' --outbase '+os.path.join(outdir, 'gctree')+
                         ' --lambda {0[lambda]} --lambda0 {0[lambda0]}'.format(c)+
                         frame_arg+
+                        idlabel_arg+
                         T_arg+
                         N_arg+
                         n_arg+
