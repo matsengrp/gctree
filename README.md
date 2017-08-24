@@ -1,6 +1,6 @@
 # GCtree
 
-Implements phylogenetic inference for data with repeated sequences, as described in [link GCtree paper citation](???)
+Implements phylogenetic inference for data with repeated sequences, as described in [[link GCtree paper citation](???)]
 
 ## scons pipelines
 
@@ -8,37 +8,41 @@ Two programs are implemented:
 - an inference program for experimental data, initiated with `scons --inference`
 - a simulation/inference/validation program, initiated with `scons --simulation`
 
-**options for both inference and simulation programs**
+**required arguments for both inference and simulation programs**
 ```
-  --srun                      should cluster jobs be submitted with srun?
-  --frame=[int]               codon reaading frame (optional)
-  --gctree                    flag for performing gctree inference
-  --igphyml                   flag for performing igphyml inference
-  --dnaml                     flag for performing dnaml inference
-  --outdir=[path]             directory for output (created if does not exist)
-  --quick                     less thourough dnapars tree search (faster, but smaller parsimony forest)
-  --idlabel                   label sequence IDs on tree, and write FASTA alignment distinct sequences
-  ```
-NOTE: at least one of `--gctree`, `--igphyml`, and `--dnaml` must be set
+      --outdir=[path]     directory for output (created if does not exist)
+```
 
-**Inference program:**
+**required arguments for inference program:**
 ```
       --fasta=[path]      path to FASTA input alignment
+```
+
+**optional arguments for inference program:**
+```
       --naiveID=[string]  ID of naive sequence in FASTA file, default 'naive'
 ```
 
-**Simulation/validation program:**
+**optional arguments for simulation program:**
 ```   
       --naive=[string]            DNA sequence of naive sequence from which to begin simulating, a default is used if omitted
       --mutability=[path]         path to S5F mutability file, default 'S5F/mutability'
       --substitution=[path]       path to S5F substitution file, default 'S5F/substitution'
       --lambda=[float]            poisson branching parameter for simulation
       --lambda0=[float]           baseline mutation rate
-      --N=[int]     populaton size to simulate
-      --T=[int]     time steps to simulate (alternatve to --N
-      --nsim=[int]  number of simulation of each set of parameter combination, default 10
-      --n=[int]     number of cells to sample from final population
+      --N=[int]                   populaton size to simulate
+      --T=[int]                   time steps to simulate (alternatve to --N
+      --nsim=[int]                number of simulation of each set of parameter combination, default 10
+      --n=[int]                   number of cells to sample from final population
 ```
+
+**optional arguments for both inference and simulation programs**
+```
+  --srun                      should cluster jobs be submitted with srun?
+  --frame=[int]               codon reaading frame
+  --quick                     less thourough dnapars tree search (faster, but smaller parsimony forest)
+  --idlabel                   label sequence IDs on tree, and write FASTA alignment distinct sequences
+  ```
 
 ## `gctree.py`
 library for simulating, and compute likelihoods, for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree.py --help`. There are three subprograms, each of which has usage info:
