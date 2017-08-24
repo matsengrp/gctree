@@ -1,43 +1,43 @@
-# gctree
+# GCtree
 
-The project is to come up with (relatively simple) models of B cell diversification within germinal centers that can be used as part of inference. When we say relatively simple, we mean analogous to the coalescent rather than something like
-
-[Meyer-Hermann, M., Mohr, E., Pelletier, N., Zhang, Y., Victora, G. D., & Toellner, K.-M. (2012). A theory of germinal center B cell selection, division, and exit. Cell Reports, 2(1), 162–174.] (http://doi.org/10.1016/j.celrep.2012.05.010)
-
-The "bright line" dividing the class of models of interest to us are those for which we can compute likelihoods efficiently.
-
-[Paperpile share] (https://paperpile.com/shared/CF07th)  
-[Overleaf document] (https://www.overleaf.com/5906733ngwstr)
-
-There's going to be some simulation, validation, etc, with this project. For that we use [nestly] (http://nestly.readthedocs.io/en/latest/).
-
+Implements phylogenetic inference for data with repeated sequences, as described in [link GCtree paper citation](???)
 
 ## scons pipelines
 
-**Inference pipeline:**
+Two programs are implemented:
+- an inference program for experimental data, initiated with `scons --inference`
+- a simulation/inference/validation program, initiated with `scons --simulation`
+
+**options for both inference and simulation programs**
 ```
-scons --inference
-  --gctree/--igphyml[inferrence using either gctree, igphyml or both]
-  --frame=[DNA reading frame or None, if None stop codons are allowed]
-  --outdir=[path to output] --fasta=[path to Tas et al. style fasta]
-  --naiveID=[ID of naive sequence in fasta file, default 'naive']
-  --srun[optional for SLURM batch job submission]
+  --srun                      should cluster jobs be submitted with srun?
+  --frame=[int]               codon reaading frame (optional)
+  --gctree                    flag for performing gctree inference
+  --igphyml                   flag for performing igphyml inference
+  --dnaml                     flag for performing dnaml inference
+  --outdir=[path]             directory for output (created if does not exist)
+  --quick                     less thourough dnapars tree search (faster, but smaller parsimony forest)
+  --idlabel                   label sequence IDs on tree, and write FASTA alignment distinct sequences
+  ```
+NOTE: at least one of `--gctree`, `--igphyml`, and `--dnaml` must be set
+
+**Inference program:**
+```
+      --fasta=[path]      path to FASTA input alignment
+      --naiveID=[string]  ID of naive sequence in FASTA file, default 'naive'
 ```
 
-**Simulation/validation pipeline:**
-```
-scons --simulate
-  --gctree/--igphyml[inferrence using either gctree, igphyml or both]
-  --frame=[DNA reading frame or None, if None stop codons are allowed]
-  --outdir=[path to output] --naive=[DNA seq of naive sequence from which to start simulating, used default if omitted]
-  --mutability=[path to S5F mutability file, default 'S5F/mutability']
-  --substitution=[path to S5F substitution file, default 'S5F/substitution']
-  --lambda=[poisson branching probability for simulation]
-  --lambda0=[baseline mutation rate] --r=[sampling probability]
-  --N=[simulation tree size, default None]
-  --T=[max generations, default None]
-  --n=[number of simulation of each set of parameter combination, default 10]
-  --srun[optional for SLURM batch job submission]
+**Simulation/validation program:**
+```   
+      --naive=[string]            DNA sequence of naive sequence from which to begin simulating, a default is used if omitted
+      --mutability=[path]         path to S5F mutability file, default 'S5F/mutability'
+      --substitution=[path]       path to S5F substitution file, default 'S5F/substitution'
+      --lambda=[float]            poisson branching parameter for simulation
+      --lambda0=[float]           baseline mutation rate
+      --N=[int]     populaton size to simulate
+      --T=[int]     time steps to simulate (alternatve to --N
+      --nsim=[int]  number of simulation of each set of parameter combination, default 10
+      --n=[int]     number of cells to sample from final population
 ```
 
 ## `gctree.py`
