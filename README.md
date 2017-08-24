@@ -64,6 +64,7 @@ Underlying both pipelines is the `gctree.py` Python library for simulating and c
   * seaborn
   * pandas
   * biopython
+  * nestly
 * xvfb-run or X11
   * Used for rendering phylogenetic trees using ete3  
 * PHYLIP (http://evolution.genetics.washington.edu/phylip/getme-new.html)
@@ -81,7 +82,7 @@ Underlying both pipelines is the `gctree.py` Python library for simulating and c
 ### Getting python and perl dependencies
 ```
 sudo apt-get install python-pip scons
-pip install --user ete3 seaborn numpy scipy matplotlib pandas biopython argparse
+pip install --user ete3 seaborn numpy scipy matplotlib pandas biopython nestly
 cpan
 > install PDL
 > install PDL::LinearAlgebra::Trans
