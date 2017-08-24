@@ -41,10 +41,10 @@ AddOption('--frame',
           default=None,
           help='codon frame')
 frame = GetOption('frame')
-AddOption('--gctree',
+AddOption('--nogctree',
            action='store_true',
-           help='use gctree inference')
-gctree = GetOption('gctree')
+           help='don't use gctree inference')
+gctree = GetOption('nogctree') == False
 AddOption('--igphyml',
            action='store_true',
            help='use igphyml inference')
@@ -141,13 +141,13 @@ if simulate:
     AddOption('--experimental',
               type='string',
               action='append',
-              default=[],
-              help='experimental fastas for comparing summary stats (CFT)')
+              default='Victora_data/150228_Clone_3-8.fasta',
+              help='experimental fastas for comparing summary stats')
     experimental_list = GetOption('experimental')
     AddOption('--naiveIDexp',
               type='string',
               default='naive0',
-              help='id of naive seq in the experimental data (CFT)')
+              help='id of naive seq in the experimental data')
     naiveIDexp = GetOption('naiveIDexp')
     AddOption('--selection',
               action='store_true',
