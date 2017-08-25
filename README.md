@@ -24,7 +24,7 @@ Two programs are implemented:
 
 All commands should be issued from within the gctree repo directory.
 
-**required arguments for both inference and simulation programs**
+## required arguments for both inference and simulation programs
 
 `--outdir=[path]` directory for output (created if does not exist)
 
