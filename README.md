@@ -10,11 +10,11 @@ Implements phylogenetic inference for data with repeated sequences, as described
   * seaborn
   * pandas
   * biopython
-  * [ete3](http://etetoolkit.org/download/)  
+  * [ete3](http://etetoolkit.org/download/)
   * [nestly](https://pypi.python.org/pypi/nestly/0.6)
 * [PHYLIP](http://evolution.genetics.washington.edu/phylip/getme-new.html)
   * PHYLIP's `dnapars` program is used for generating parsimony trees
-* X11 or xvfb-run (for rendering phylogenetic trees using ete3)  
+* X11 or xvfb-run (for rendering phylogenetic trees using ete3)
 
 ## scons pipelines
 
@@ -52,18 +52,18 @@ All commands should be issued from within the gctree repo directory.
 `--N=[int]` populaton size to simulate
 
 ### optional arguments for simulation program
-   
+
 `--naive=[string]             ` DNA sequence of naive sequence from which to begin simulating, a default is used if omitted
 
 `--mutability=[path]          ` path to S5F mutability file, default 'S5F/mutability'
 
 `--substitution=[path]        ` path to S5F substitution file, default 'S5F/substitution'
 
-`--lambda=[float, float, ...] ` values for poisson branching parameter for simulation, default 2.0
+`--lambda=[float, float, ...] ` values for Poisson branching parameter for simulation, default 2.0
 
 `--lambda0=[float, float, ...]` values for baseline mutation rate, default 0.25
 
-`--T=[int]                    ` time steps to simulate (alternatve to `--N`)
+`--T=[int]                    ` time steps to simulate (alternative to `--N`)
 
 `--nsim=[int]                 ` number of simulation of each set of parameter combination, default 10
 
@@ -71,11 +71,11 @@ All commands should be issued from within the gctree repo directory.
 
 ## optional arguments for both inference and simulation programs
 
-`--srun        ` should cluster jobs be submitted with srun?
+`--srun        ` should cluster jobs be submitted with Slurm's srun?
 
-`--frame=[int] ` codon reaading frame, default None
+`--frame=[int] ` codon reading frame, default `None`
 
-`--quick       ` less thourough parsimony tree search (faster, but smaller parsimony forest)
+`--quick       ` less thorough parsimony tree search (faster, but smaller parsimony forest)
 
 `--idlabel     ` label sequence IDs on tree, and write FASTA alignment distinct sequences
 
@@ -90,7 +90,7 @@ Underlying both pipelines is the `gctree.py` Python library for simulating and c
 
 ## arguments for both inference and simulation programs
 
-`--igphyml`  include results for tree inferencey with the IgPhyML package
+`--igphyml`  include results for tree inference with the IgPhyML package
 
 `--dnaml`    include results for maximum likelihood tree inference using `dnaml` from the PHYLIP package
 
