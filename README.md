@@ -63,7 +63,7 @@ All commands should be issued from within the gctree repo directory.
 
 `--lambda0=[float, float, ...]` values for baseline mutation rate, default 0.25
 
-`--T=[int]                    ` time steps to simulate (alternatve to --N)
+`--T=[int]                    ` time steps to simulate (alternatve to `--N`)
 
 `--nsim=[int]                 ` number of simulation of each set of parameter combination, default 10
 
