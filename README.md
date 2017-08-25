@@ -5,17 +5,16 @@ Implements phylogenetic inference for data with repeated sequences, as described
 ## Dependencies
 * scons
 * Python 2, with modules:
-  * ete3
   * scipy
   * matplotlib
   * seaborn
   * pandas
   * biopython
-  * nestly
-* X11 or xvfb-run (for rendering phylogenetic trees using ete3)
-* PHYLIP (http://evolution.genetics.washington.edu/phylip/getme-new.html)
+  * [ete3](http://etetoolkit.org/download/)  
+  * [nestly](https://pypi.python.org/pypi/nestly/0.6)
+* [PHYLIP](http://evolution.genetics.washington.edu/phylip/getme-new.html)
   * PHYLIP's `dnapars` program is used for generating parsimony trees
-  * Needs to be in $PATH
+* X11 or xvfb-run (for rendering phylogenetic trees using ete3)  
 
 ## scons pipelines
 
@@ -40,7 +39,7 @@ All commands should be issued from within the gctree repo directory.
 
 ### optional arguments
 
-`--naiveID=[string]` ID of naive sequence in FASTA file, default 'naive'
+`--naiveID=[string]` ID of naive sequence in FASTA file used for outgroup rooting, default 'naive'
 
 `--bootstrap=[int]` boostrap resampling, and inference on each, default no bootstrap
 
