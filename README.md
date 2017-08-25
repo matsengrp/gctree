@@ -81,7 +81,7 @@ All commands should be issued from within the gctree repo directory.
 
 
 ## `gctree.py`
-Underlying both pipelines is the `gctree.py` Python library for simulating and compute likelihoods for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree.py --help`. There are three subprograms, each of which has usage info:
+Underlying both pipelines is the `gctree.py` Python library (located in the `bin/` subdirectory) for simulating and compute likelihoods for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree.py --help`. There are three subprograms, each of which has usage info:
 * `gctree.py infer --help`: takes an `outfile` file made by phylip's `dnapars` as a command line argument, converts each tree therein to a collapsed tree, and ranks by GCtree likelihood.
 * `gctree.py simulate --help`: simulate data
 * `gctree.py test --help`: performs tests of the likelihood and outputs validation plots.
