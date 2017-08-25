@@ -2,7 +2,7 @@
 
 Implements phylogenetic inference for data with repeated sequences, as described in [[link GCtree paper citation](???)]
 
-## Dependencies
+## dependencies
 * scons
 * Python 2, with modules:
   * scipy
@@ -110,15 +110,14 @@ Underlying both pipelines is the `gctree.py` Python library for simulating and c
 
 `--skip_update`  skip update step
 
-**For running IgPhyML inference:**
+## additional depencies for development functionality
 * IgPhyML (https://github.com/kbhoehn/IgPhyML)
   * Needs to be in $PATH
 * perl5, with modules:
   * PDL
   * PDL::LinearAlgebra::Trans
 
-
-### Getting python and perl dependencies
+* installing python and perl dependencies *
 ```
 sudo apt-get install python-pip scons
 pip install --user ete3 seaborn numpy scipy matplotlib pandas biopython nestly
