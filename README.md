@@ -97,7 +97,7 @@ Underlying both pipelines is the `gctree.py` Python library for simulating and c
 
 `--nogctree` do not perform gctree inference
 
-## arguments for non-nuetral simulation
+## arguments for non-neutral simulation
 
 `--selection`    simulation with affinity selection
 
