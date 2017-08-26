@@ -44,7 +44,7 @@ All commands should be issued from within the gctree repo directory.
 
 `--bootstrap=[int]` boostrap resampling, and inference on each, default no bootstrap
 
-`--converter=[string]` if set to "tas", parse FASTA input IDs that are integers as indicating sequence abundance
+`--converter=[string]` if set to "tas", parse FASTA input IDs that are integers as indicating sequence abundance. Otherwise each line in the FASTA is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the included FASTA file `Victora_data/150228_Clone_3-8.fasta` requires this option.
 
 ## **SIMULATION**
 
