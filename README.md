@@ -2,7 +2,7 @@
 
 Implements phylogenetic inference for data with repeated sequences, as described in [[link GCtree paper citation](???)]
 
-## dependencies
+## DEPENDENCIES
 * scons
 * Python 2, with modules:
   * scipy
@@ -16,7 +16,7 @@ Implements phylogenetic inference for data with repeated sequences, as described
   * PHYLIP's `dnapars` program is used for generating parsimony trees, so the command-line program `dnapars` should be on your path
 * X11 or xvfb-run (for rendering phylogenetic trees using ete3)
 
-## scons pipelines
+## SCONS PIPELINES
 
 Two programs are implemented:
 - an inference program for experimental data
@@ -24,18 +24,19 @@ Two programs are implemented:
 
 All commands should be issued from within the gctree repo directory.
 
-## required arguments for both inference and simulation programs
+## QUICK START
 
-`--outdir=[path]` directory for output (created if does not exist)
+* **inference:**  `scons --inference --outdir=<output directory path> --fasta=<input fasta file>`
+* **simulation:** `scons --simulation --outdir=<output directory path> --N=<integer population size to simulate>`
 
-
-## inference
+## **INFERENCE**
 
 `scons --inference ...`
 
 ### required arguments
 
 `--fasta=[path]` path to FASTA input alignment
+`--outdir=[path]` directory for output (created if does not exist)
 
 ### optional arguments
 
@@ -43,15 +44,18 @@ All commands should be issued from within the gctree repo directory.
 
 `--bootstrap=[int]` boostrap resampling, and inference on each, default no bootstrap
 
-## simulation
+`--converter=[string]` if set to "tas", parse FASTA input IDs that are integers as indicating sequence abundance
+
+## **SIMULATION**
 
 `scons --simulation ...`
 
-### required arguments for simulation program
+### required arguments
 
 `--N=[int]` populaton size to simulate
+`--outdir=[path]` directory for output (created if does not exist)
 
-### optional arguments for simulation program
+### optional arguments
 
 `--naive=[string]             ` DNA sequence of naive sequence from which to begin simulating, a default is used if omitted
 
@@ -69,7 +73,7 @@ All commands should be issued from within the gctree repo directory.
 
 `--n=[int]                    ` number of cells to sample from final population, default all
 
-## optional arguments for both inference and simulation programs
+## OPTIONAL ARGUMENTS FOR BOTH INFERENCE AND SIMULATION PROGRAMS
 
 `--srun        ` should cluster jobs be submitted with Slurm's srun?
 
