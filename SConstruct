@@ -43,8 +43,8 @@ AddOption('--frame',
 frame = GetOption('frame')
 AddOption('--nogctree',
            action='store_true',
-           help='don't use gctree inference')
-gctree = GetOption('nogctree') == False
+           help='don''t use gctree inference')
+gctree = (GetOption('nogctree') != True)
 AddOption('--igphyml',
            action='store_true',
            help='use igphyml inference')
@@ -65,6 +65,14 @@ AddOption('--idlabel',
            action='store_true',
            help='label sequence ids on tree, and write associated alignment')
 idlabel = GetOption('idlabel')
+AddOption('--xvfb',
+          action='store_true',
+          help='use virtual X, for rendering ETE trees on a remote server')
+xarg = 'TMPDIR=/tmp xvfb-run -a ' if GetOption('xvfb') else ''
+AddOption('--nobuff',
+          action='store_true',
+          help='use stdbuf to prevent line buffering on linux')
+buffarg = 'stdbuf -oL ' if GetOption('nobuff') else ''
 
 class InputError(Exception):
     """Exception raised for errors in the input."""
@@ -141,7 +149,7 @@ if simulate:
     AddOption('--experimental',
               type='string',
               action='append',
-              default='Victora_data/150228_Clone_3-8.fasta',
+              default=[],
               help='experimental fastas for comparing summary stats')
     experimental_list = GetOption('experimental')
     AddOption('--naiveIDexp',
@@ -219,8 +227,8 @@ if simulate and not GetOption('help'):
     if outdir is None:
         raise InputError('outdir must be specified')
     SConscript('SConscript.simulation',
-               exports='env gctree igphyml dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param')
+               exports='env gctree igphyml dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg')
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')
+    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg')

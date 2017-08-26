@@ -15,7 +15,7 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap')
+Import('env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg')
 
 def delete_on_failure():
     from SCons.Script import GetBuildFailures
@@ -49,7 +49,7 @@ if gctree or igphyml or dnaml:
                           os.path.join(outdir, basename)+'.counts',
                           os.path.join(outdir, basename)+'.idmap'],
                           fasta,
-                          'stdbuf -oL python bin/fasta2phylip.py $SOURCES --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
+                          buffarg + 'python bin/fasta2phylip.py $SOURCES --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
                           '--naive '+naiveID+' > ${TARGETS[0]}')
 
     if bootstrap:
@@ -60,7 +60,7 @@ if gctree or igphyml or dnaml:
         bootstrap_arg = ' --bootstrap {} '.format(bootstrap)
         seqboot_config = env.Command(os.path.join(outdir, 'seqboot/config.cfg'),
                                      phylip[0],
-                                     'stdbuf -oL python bin/mkconfig.py `readlink -f ${SOURCE}` seqboot '+bootstrap_arg+' > $TARGET'.format(bootstrap))
+                                     buffarg + 'python bin/mkconfig.py ${SOURCE} seqboot '+bootstrap_arg+' > $TARGET'.format(bootstrap))
 
         seqboot = CommandRunner(map(lambda x: os.path.join(outdir, x), ['seqboot/outfile', 'seqboot/log.log']),
                            seqboot_config,
@@ -75,7 +75,7 @@ naiveID = naiveID.lower()
 if dnaml:
     dnaml_config = env.Command(os.path.join(outdir, 'dnaml/config.cfg'),
                                  phylip[0],
-                                 'stdbuf -oL python bin/mkconfig.py `readlink -f ${SOURCE}` dnaml > $TARGET')
+                                 buffarg + 'python bin/mkconfig.py ${SOURCE} dnaml > $TARGET')
 
     # run dnaml (from phylip package) to generate maximum likelihood tree
     dnaml = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']),
@@ -88,7 +88,7 @@ if dnaml:
     dnaml_tree = env.Command([os.path.join(outdir, 'dnaml.inferred_tree.p'),
                                  os.path.join(outdir, 'dnaml.inferred_tree.log')],
                                 [dnaml[1], phylip[1]],
-                                'TMPDIR=/tmp xvfb-run -a python bin/phylip_parse.py ${SOURCES} --outputfile ${TARGETS[0]} --naive '+naiveID+' > ${TARGETS[1]}')
+                                xarg + 'python bin/phylip_parse.py ${SOURCES} --outputfile ${TARGETS[0]} --naive '+naiveID+' > ${TARGETS[1]}')
     return_list.append(dnaml_tree)
 
 
@@ -97,7 +97,7 @@ if gctree:
     quick_arg = ' --quick ' if quick else ''
     dnapars_config = env.Command(os.path.join(outdir, 'dnapars/config.cfg'),
                                  phylip[0],
-                                 'stdbuf -oL python bin/mkconfig.py `readlink -f ${SOURCE}` dnapars ' + quick_arg + ' > $TARGET')
+                                 buffarg + 'python bin/mkconfig.py ${SOURCE} dnapars ' + quick_arg + ' > $TARGET')
 
     # run dnapars (from phylip package) to generate parsimony trees
     dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']),
@@ -109,12 +109,12 @@ if gctree:
 
     # ML tree from parsimony trees
     # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
-    # NOTE: TMPDIR is needed due to a an xvfb conflict that Ben (scicomp ninja) discovered
+    # NOTE: TMPDIR is needed due for xvfb
 
     if bootstrap:
         dnapars_config_bootstrap = env.Command(os.path.join(outdir, 'dnapars_bootstrap/config.cfg'),
                                      seqboot[0],
-                                     'stdbuf -oL python bin/mkconfig.py `readlink -f ${SOURCE}` dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
+                                     buffarg + 'python bin/mkconfig.py ${SOURCE} dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
         dnapars_bootstrap = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars_bootstrap/outtree', 'dnapars_bootstrap/outfile', 'dnapars_bootstrap/log.log']),
                            dnapars_config,
                            'cd ' + outdir + '/dnapars_bootstrap && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
@@ -126,7 +126,7 @@ if gctree:
     gctree_infer = CommandRunner([gctree_outbase+'.inference.parsimony_forest.p',
                                 gctree_outbase+'.inference.log'],
                                 [dnapars[1], phylip[1], dnapars_bootstrap[1]] if bootstrap else [dnapars[1], phylip[1]],
-                                'TMPDIR=/tmp xvfb-run -a stdbuf -oL python bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive '+naiveID+
+                                xarg + buffarg + 'python bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive '+naiveID+
                                 ' --outbase '+gctree_outbase+
                                 frame_arg+
                                 idlabel_arg+
@@ -174,13 +174,13 @@ if igphyml:
     run_ASR = CommandRunner([os.path.join(outdir, basename+'.MLcodons.fa'),
                         os.path.join(outdir, basename+'.igphyml_hlp16.MLcodons.log')],
                        [igphyml_hlp16[1], naive_outgroup[0], dedup_fasta[0]],
-                       'stdbuf -oL perl igphyml_files/ancReconstructHLP16.pl PLACEHOLDER_CONFIG_FILE -rooted 1 -length D -stats ${SOURCES[0]} -tree ${SOURCES[1]} -seqfile ${SOURCES[2]} -outdir '+outdir+' -stem '+basename+' -rootid '+naiveID+' -igphyml '+igphyml_dir+'> ${TARGETS[1]}')
+                       buffarg + 'perl igphyml_files/ancReconstructHLP16.pl PLACEHOLDER_CONFIG_FILE -rooted 1 -length D -stats ${SOURCES[0]} -tree ${SOURCES[1]} -seqfile ${SOURCES[2]} -outdir '+outdir+' -stem '+basename+' -rootid '+naiveID+' -igphyml '+igphyml_dir+'> ${TARGETS[1]}')
 
     # Convert the ASR output to an collapsed forest with an ete3 tree and pickle it:
     igphyml_infer = env.Command([os.path.join(outdir, 'igphyml.inferred_tree.p'),
                                  os.path.join(outdir, 'igphyml.inferred_tree.log')],
                                 [naive_outgroup[0], phylip[1], run_ASR],
-                                'TMPDIR=/tmp xvfb-run -a python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --counts ${SOURCES[1]} --asr_seq ${SOURCES[2]} --outbase '+os.path.join(outdir, 'igphyml.inferred_tree')+ ' --naive '+naiveID+' > ${TARGETS[1]}')
+                                xarg + 'python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --counts ${SOURCES[1]} --asr_seq ${SOURCES[2]} --outbase '+os.path.join(outdir, 'igphyml.inferred_tree')+ ' --naive '+naiveID+' > ${TARGETS[1]}')
     return_list.append(igphyml_infer)
 
 Return('return_list')

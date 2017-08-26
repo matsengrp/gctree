@@ -56,7 +56,7 @@ def main():
     parser.add_argument('--bootstrap', type=int, default=0, help='input is seqboot output with this many samples')
     args = parser.parse_args()
 
-    print(args.phylip)		# phylip input file
+    print(os.path.realpath(args.phylip))		# phylip input file
     if args.treeprog == 'seqboot':
         print('R')
         print(args.bootstrap)

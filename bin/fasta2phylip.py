@@ -36,6 +36,7 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
 
     seqs_unique_counts = defaultdict(list)
     id_set = set()
+    naive_seq = None
     for seq in aln:
         # seq.id = seq.id.lower()
         # if id is just an integer, assume it represents count of that sequence
@@ -56,6 +57,8 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
         else:
             seqs_unique_counts[seqstr].append(seq.id)
 
+    if naive_seq is None:
+        raise ValueError('naive seq id {} not found'.format(naive))
 
     new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
     counts = {naive.lower(): len(seqs_unique_counts[naive_seq])}  # Add the count for the naive sequence
