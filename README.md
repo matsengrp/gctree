@@ -90,9 +90,9 @@ Underlying both pipelines is the `gctree.py` Python library (located in the `bin
 * `gctree.py simulate --help`: simulate data
 * `gctree.py test --help`: performs tests of the likelihood and outputs validation plots.
 
-# functionality under development
+## FUNCTIONALITY UNDER DEVELOPMENT
 
-## arguments for both inference and simulation programs
+### arguments for both inference and simulation programs
 
 `--igphyml`  include results for tree inference with the IgPhyML package
 
@@ -100,7 +100,7 @@ Underlying both pipelines is the `gctree.py` Python library (located in the `bin
 
 `--nogctree` do not perform gctree inference
 
-## arguments for non-neutral simulation
+### arguments for non-neutral simulation
 
 `--selection`    simulation with affinity selection
 
@@ -114,7 +114,7 @@ Underlying both pipelines is the `gctree.py` Python library (located in the `bin
 
 `--skip_update`  skip update step
 
-## additional depencies for development functionality
+### additional depencies for development functionality
 * IgPhyML (https://github.com/kbhoehn/IgPhyML)
   * Needs to be in $PATH
 * perl5, with modules:
