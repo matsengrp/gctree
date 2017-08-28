@@ -29,6 +29,12 @@ All commands should be issued from within the gctree repo directory.
 * **inference:**  `scons --inference --outdir=<output directory path> --fasta=<input fasta file>`
 * **simulation:** `scons --simulation --outdir=<output directory path> --N=<integer population size to simulate>`
 
+### **example:** to run GCtree inference on the included FASTA file on a remote machine
+```
+scons --inference --fasta=Victora_data/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --xvfb
+```
+Results are saved in directory `test/`. The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The flag `--xvfb` allows X rendering of ETE trees on remote machines.
+
 ## **INFERENCE**
 
 `scons --inference ...`
@@ -83,6 +89,9 @@ All commands should be issued from within the gctree repo directory.
 
 `--idlabel     ` label sequence IDs on tree, and write FASTA alignment distinct sequences
 
+`--xvfb        ` needed for X rendering in on remote machines
+
+   * Try setting the above option if you get the error:`ETE: cannot connect to X server`
 
 ## `gctree.py`
 Underlying both pipelines is the `gctree.py` Python library (located in the `bin/` subdirectory) for simulating and compute likelihoods for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree.py --help`. There are three subprograms, each of which has usage info:
