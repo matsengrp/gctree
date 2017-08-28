@@ -19,7 +19,7 @@ Implements phylogenetic inference for data with repeated sequences, as described
 **NOTE:** for installing scons, ete, and other python dependencies, conda is recommended:
 ```bash
 conda install -c etetoolkit ete3 ete3_external_apps
-conda install pandas scipy matplotlib biopython seaborn nestly
+conda install biopython matplotlib nestly pandas scipy scons seaborn
 ```
 Alternatively, an example linux environment spec file is included (`spec-file.txt`), which may be used to create a conda environment.
 For example, to create an environment called `gctree`, execute `conda create --name gctree --file spec-file.txt`, then activate the environment with `source activate gctree`.
