@@ -16,6 +16,12 @@ Implements phylogenetic inference for data with repeated sequences, as described
   * PHYLIP's `dnapars` program is used for generating parsimony trees, so the command-line program `dnapars` should be on your path
 * X11 or xvfb-run (for rendering phylogenetic trees using ete3)
 
+**NOTE:** for installing python dependencies, `conda` is recommended:
+```bash
+conda install -c etetoolkit ete3 ete3_external_apps
+conda install pandas scipy matplotlib biopython seaborn nestly
+```
+
 ## SCONS PIPELINES
 
 Two programs are implemented:
