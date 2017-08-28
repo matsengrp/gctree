@@ -33,7 +33,7 @@ All commands should be issued from within the gctree repo directory.
 ## QUICK START
 
 * **inference:**  `scons --inference --outdir=<output directory path> --fasta=<input fasta file>`
-* **simulation:** `scons --simulation --outdir=<output directory path> --N=<integer population size to simulate>`
+* **simulation:** `scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>`
 
 ### **example:** to run GCtree inference on the included FASTA file on a remote machine
 ```
