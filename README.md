@@ -18,7 +18,7 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
   * PHYLIP's `dnapars` program is used for generating parsimony trees, so the command-line program `dnapars` should be on your path
 * X11 or xvfb-run (for rendering phylogenetic trees using ete3)
 
-**NOTE:** for installing scons, ete, and other python dependencies, conda is recommended:
+**NOTE:** for installing scons, ete, and other python dependencies, [conda](https://conda.io/docs/) is recommended:
 ```bash
 conda install -c etetoolkit ete3 ete3_external_apps
 conda install biopython matplotlib nestly pandas scipy scons seaborn
