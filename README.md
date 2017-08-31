@@ -1,6 +1,8 @@
 # GCtree
 
-Implements phylogenetic inference for data with repeated sequences, as described in [[link GCtree paper citation](???)]
+Implements phylogenetic inference for data with repeated sequences, as described in:
+
+DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve phylogenetic inference*, [arXiv:1708.08944](https://arxiv.org/abs/1708.08944).
 
 ## DEPENDENCIES
 * scons
