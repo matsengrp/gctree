@@ -109,6 +109,8 @@ Underlying both pipelines is the `gctree.py` Python library (located in the `bin
 * `gctree.py simulate --help`: simulate data
 * `gctree.py test --help`: performs tests of the likelihood and outputs validation plots.
 
+The under-the-hood functionality of the `gctree.py` library might be useful for some users trying to go beyond the scons pipelines. For example mapping colors to tree image nodes can be achieved with the `--colormap` argument. Colors can be useful for visualizing other cell/genotype properties on the tree.
+
 ## FUNCTIONALITY UNDER DEVELOPMENT
 
 ### arguments for both inference and simulation programs
