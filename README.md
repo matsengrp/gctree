@@ -1,6 +1,8 @@
 # GCtree
 
-Implements phylogenetic inference for data with repeated sequences, as described in [[link GCtree paper citation](???)]
+Implements phylogenetic inference for data with repeated sequences, as described in:
+
+DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve phylogenetic inference*, [arXiv:1708.08944](https://arxiv.org/abs/1708.08944).
 
 ## DEPENDENCIES
 * scons
@@ -16,10 +18,10 @@ Implements phylogenetic inference for data with repeated sequences, as described
   * PHYLIP's `dnapars` program is used for generating parsimony trees, so the command-line program `dnapars` should be on your path
 * X11 or xvfb-run (for rendering phylogenetic trees using ete3)
 
-**NOTE:** for installing scons, ete, and other python dependencies, conda is recommended:
+**NOTE:** for installing scons, ete, and other python dependencies, [conda](https://conda.io/docs/) is recommended:
 ```bash
 conda install -c etetoolkit ete3 ete3_external_apps
-conda install pandas scipy matplotlib biopython seaborn nestly
+conda install biopython matplotlib nestly pandas scipy scons seaborn
 ```
 Alternatively, an example linux environment spec file is included (`spec-file.txt`), which may be used to create a conda environment.
 For example, to create an environment called `gctree`, execute `conda create --name gctree --file spec-file.txt`, then activate the environment with `source activate gctree`.
@@ -108,6 +110,8 @@ Underlying both pipelines is the `gctree.py` Python library (located in the `bin
 * `gctree.py infer --help`: takes an `outfile` file made by phylip's `dnapars` as a command line argument, converts each tree therein to a collapsed tree, and ranks by GCtree likelihood.
 * `gctree.py simulate --help`: simulate data
 * `gctree.py test --help`: performs tests of the likelihood and outputs validation plots.
+
+The under-the-hood functionality of the `gctree.py` library might be useful for some users trying to go beyond the scons pipelines. For example mapping colors to tree image nodes can be achieved with the `--colormap` argument. Colors can be useful for visualizing other cell/genotype properties on the tree.
 
 ## FUNCTIONALITY UNDER DEVELOPMENT
 
