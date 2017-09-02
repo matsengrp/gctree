@@ -39,9 +39,9 @@ All commands should be issued from within the gctree repo directory.
 
 ### **example:** to run GCtree inference on the included FASTA file on a remote machine
 ```
-scons --inference --fasta=Victora_data/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --xvfb
+scons --inference --fasta=Victora_data/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --xvfb --jobs=10
 ```
-Results are saved in directory `test/`. The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The flag `--xvfb` allows X rendering of ETE trees on remote machines.
+Results are saved in directory `test/`. The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The flag `--xvfb` allows X rendering of ETE trees on remote machines. The argument `--jobs=10` indicates that 10 parallel processes should be used.
 
 ## **INFERENCE**
 
@@ -88,6 +88,8 @@ Results are saved in directory `test/`. The `--converter=tas` argument means tha
 `--n=[int]                    ` number of cells to sample from final population, default all
 
 ## OPTIONAL ARGUMENTS FOR BOTH INFERENCE AND SIMULATION PROGRAMS
+
+`--jobs=[int]  ` number of parallel processes to use
 
 `--srun        ` should cluster jobs be submitted with Slurm's srun?
 

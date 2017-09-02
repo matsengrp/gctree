@@ -582,41 +582,50 @@ class MutationModel():
         else:
             self.context_model = None
 
+    @staticmethod
+    def disambiguate(sequence):
+        '''generator of all possible nt sequences implied by a sequence containing Ns'''
+        # find the first N nucleotide
+        N_index = sequence.find('N')
+        # if there is no N nucleotide, yield the input sequence
+        if N_index == -1:
+            yield sequence
+        else:
+            for n_replace in 'ACGT':
+                # ooooh, recursion
+                # NOTE: in python3 we could simply use "yield from..." instead of this loop
+                for sequence_recurse in MutationModel.disambiguate(sequence[:N_index] + n_replace + sequence[N_index+1:]):
+                    yield sequence_recurse
+
+
+    def mutability(self, kmer):
+        '''
+        returns the mutability of a central base of kmer, along with nucleotide bias
+        averages over N nucleotide identities
+        '''
+        if self.context_model is None:
+            raise ValueError('kmer mutability only defined for context models')
+        if len(kmer) != self.k:
+            raise ValueError('kmer of length {} inconsistent with context model kmer length {}'.format(len(kmer), self.k))
+        if not all(n in 'ACGTN' for n in kmer):
+            raise ValueError('sequence {} must contain only characters A, C, G, T, or N'.format(kmer))
+
+        mutabilities_to_average, substitutions_to_average = zip(*[self.context_model[x] for x in MutationModel.disambiguate(kmer)])
+
+        average_mutability = scipy.mean(mutabilities_to_average)
+        average_substitution = {b:sum(substitution_dict[b] for substitution_dict in substitutions_to_average)/len(substitutions_to_average) for b in 'ACGT'}
+
+        return average_mutability, average_substitution
 
     def mutabilities(self, sequence):
         '''returns the mutability of a sequence at each site, along with nucleotide biases'''
-        assert all(n in 'ACGT' for n in sequence)
-        sequence_length = len(sequence)
-        if self.context_model is not None:
-            # mutabilities of each nucleotide
-            mutabilities = []
-            assert sequence_length >= 5
-            # ambiguous left end motifs
-            for i in range(self.k//2):
-                kmer_suffix = sequence[:(i+self.k//2+1)]
-                matches = [value for key, value in self.context_model.iteritems() if key.endswith(kmer_suffix)]
-                len_matches = len(matches)
-                assert len_matches == 4**(self.k - len(kmer_suffix))
-                # use mean over matches
-                mutability = sum(match[0] for match in matches)/len_matches
-                substitution = {n:sum(d[1][n] for d in matches)/len_matches for n in 'ACGT'}
-                mutabilities.append((mutability, substitution))
-            # unambiguous internal kmers
-            for i in range(self.k//2, sequence_length - self.k//2):
-                mutabilities.append(self.context_model[sequence[(i-self.k//2):(i+self.k//2+1)]])
-            # ambiguous right end motifs
-            for i in range(sequence_length - self.k//2, sequence_length):
-                kmer_prefix = sequence[(i-self.k//2):]
-                matches = [value for key, value in self.context_model.iteritems() if key.startswith(kmer_prefix)]
-                len_matches = len(matches)
-                assert len_matches == 4**(self.k - len(kmer_prefix))
-                # use mean over matches
-                mutability = sum(match[0] for match in matches)/len_matches
-                substitution = {n:sum(d[1][n] for d in matches)/len_matches for n in 'ACGT'}
-                mutabilities.append((mutability, substitution))
-            return mutabilities
-        else:
+        if self.context_model is None:
             return [(1, dict((n2, 1/3) if n2 is not n else (n2, 0.) for n2 in 'ACGT')) for n in sequence]
+        else:
+            # pad with Ns to allow averaged edge effects
+            sequence = 'N'*(self.k//2) + sequence + 'N'*(self.k//2)
+            # mutabilities of each nucleotide
+            return [self.mutability(sequence[(i-self.k//2):(i+self.k//2+1)]) for i in range(self.k//2, len(sequence) - self.k//2)]
 
     def mutate(self, sequence, lambda0=1, frame=None):
         """

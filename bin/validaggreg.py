@@ -176,8 +176,9 @@ else:
 
     else:
         for metric in ('RF distance to true tree', 'MRCA distance to true tree', 'COAR distance to true tree', 'COAR_fw distance to true tree'):
-            p = mannwhitneyu(aggdat[metric][aggdat['ismle']==True], aggdat[metric][aggdat['ismle']==False], alternative='less')[1]
-            print('U test significance ({}): {}'.format(metric, p))
+            if len(set(aggdat[metric])) > 1:
+                p = mannwhitneyu(aggdat[metric][aggdat['ismle']==True], aggdat[metric][aggdat['ismle']==False], alternative='less')[1]
+                print('U test significance ({}): {}'.format(metric, p))
 
 
 # sns.regplot(x='parsimony forest size', y='trees with MRCA less than or equal to optimal tree',
