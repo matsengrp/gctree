@@ -58,7 +58,9 @@ Results are saved in directory `test/`. The `--converter=tas` argument means tha
 
 `--naiveID=[string]` ID of naive sequence in FASTA file used for outgroup rooting, default 'naive'
 
-`--bootstrap=[int]` boostrap resampling, and inference on each, default no bootstrap
+`colorfile=[path]  ` path to a file of plotting colors for cells in the input FASTA file. Example, if the FASTA contains a sequence with ID `cell_1`, this cell could be colored red in the tree image by including the line `cell_1,red` in the color file.
+
+`--bootstrap=[int] ` boostrap resampling, and inference on each, default no bootstrap
 
 `--converter=[string]` if set to "tas", parse FASTA input IDs that are integers as indicating sequence abundance. Otherwise each line in the FASTA is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the included FASTA file `Victora_data/150228_Clone_3-8.fasta` requires this option.
 

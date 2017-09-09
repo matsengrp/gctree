@@ -291,7 +291,7 @@ class CollapsedTree(LeavesAndClades):
                 C.hz_align = 1
                 faces.add_face_to_node(C, node, 0)
             else:
-                P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=list(circle_color.keys()), line_color=None)
+                P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=[(color if color != 'None' else 'lightgray') for color in list(circle_color.keys())], line_color=None)
                 T = TextFace(' '.join([str(x) for x in list(circle_color.values())]), tight_text=True)
                 T.hz_align = 1
                 T.rotation = -90

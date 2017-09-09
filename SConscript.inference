@@ -15,7 +15,7 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg')
+Import('env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')
 
 def delete_on_failure():
     from SCons.Script import GetBuildFailures
@@ -47,9 +47,14 @@ if gctree or igphyml or dnaml:
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
     phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if fasta2 is None and isinstance(fasta, str) else os.path.join(outdir, 'gctree.combined.phylip') if fasta2 is not None else os.path.join(outdir, 'gctree.simulation.phylip'),
                           os.path.join(outdir, basename)+'.counts',
-                          os.path.join(outdir, basename)+'.idmap'],
-                          fasta,
-                          buffarg + 'python bin/fasta2phylip.py $SOURCES --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+ frame_arg+converter_arg+
+                          os.path.join(outdir, basename)+'.idmap'] +
+                          ([os.path.join(outdir, basename)+'.colormap'] if colorfile is not None else []),
+                          fasta if colorfile is None else [fasta, colorfile],
+                          buffarg + 'python bin/fasta2phylip.py ${SOURCES[0]} ' +
+                          (' --colorfile ${SOURCES[1]} ' if colorfile is not None else '') +
+                          (' --colormap ${TARGETS[3]} ' if colorfile is not None else '') +
+                          ' --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+
+                          frame_arg+converter_arg +
                           '--naive '+naiveID+' > ${TARGETS[0]}')
 
     if bootstrap:
@@ -125,12 +130,15 @@ if gctree:
     idlabel_arg = ' --idlabel' if idlabel else ''
     gctree_infer = CommandRunner([gctree_outbase+'.inference.parsimony_forest.p',
                                 gctree_outbase+'.inference.log'],
-                                [dnapars[1], phylip[1], dnapars_bootstrap[1]] if bootstrap else [dnapars[1], phylip[1]],
-                                xarg + buffarg + 'python bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive '+naiveID+
-                                ' --outbase '+gctree_outbase+
-                                frame_arg+
-                                idlabel_arg+
-                                (' --bootstrap_phylipfile ${SOURCES[2]}' if bootstrap else '')+
+                                [dnapars[1], phylip[1]] +
+                                ([dnapars_bootstrap[1]] if bootstrap else []) +
+                                ([phylip[3]] if colorfile is not None else []),
+                                xarg + buffarg + 'python bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive ' + naiveID +
+                                ' --outbase ' + gctree_outbase +
+                                frame_arg +
+                                idlabel_arg +
+                                (' --colormap ${SOURCES[-1]} ' if colorfile is not None else '') +
+                                (' --bootstrap_phylipfile ${SOURCES[2]}' if bootstrap else '') +
                                 ' > ${TARGETS[1]}')
     return_list.append(gctree_infer)
 

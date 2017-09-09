@@ -204,6 +204,13 @@ elif inference:
         fasta2 = None
     else:
         fasta, fasta2 = fasta
+    AddOption('--colorfile',
+              dest='colorfile',
+              type='string',
+              default=None,
+              metavar='PATH',
+              help='optional two column csv file with colors to associate with each cell')
+    colorfile = GetOption('colorfile')
     AddOption('--naiveID',
               type='string',
               metavar='seqID',
@@ -231,4 +238,4 @@ if simulate and not GetOption('help'):
 elif inference and not GetOption('help'):
     if None in [fasta, outdir]:
         raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg')
+    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')
