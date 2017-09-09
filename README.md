@@ -101,7 +101,7 @@ Results are saved in directory `test/`. The `--converter=tas` argument means tha
 
 `--quick       ` less thorough parsimony tree search (faster, but smaller parsimony forest)
 
-`--idlabel     ` label sequence IDs on tree, and write FASTA alignment distinct sequences
+`--idlabel     ` label sequence IDs on tree, and write FASTA alignment of distinct sequences. The mapping of the unique names in this FASTA file to the cell names in the original input FASTA file can be found in the output file with suffix `.idmap`
 
 `--xvfb        ` needed for X rendering in on remote machines
 
