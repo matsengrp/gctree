@@ -71,7 +71,8 @@ Results are saved in directory `test/`. The `--converter=tas` argument means tha
 
 ### required arguments
 
-`--N=[int]` populaton size to simulate
+`--N=[int]` populaton size to simulate. Note that `N=1` is satisfied before the first time step, so this choice will return the root with no mutation.  
+
 `--outdir=[path]` directory for output (created if does not exist)
 
 ### optional arguments
