@@ -121,7 +121,7 @@ if gctree:
                                      seqboot[0],
                                      buffarg + 'python bin/mkconfig.py ${SOURCE} dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
         dnapars_bootstrap = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars_bootstrap/outtree', 'dnapars_bootstrap/outfile', 'dnapars_bootstrap/log.log']),
-                           dnapars_config,
+                           dnapars_config_bootstrap,
                            'cd ' + outdir + '/dnapars_bootstrap && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
         env.Depends(dnapars_bootstrap, seqboot)
 
