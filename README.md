@@ -14,7 +14,7 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
   * biopython
   * [ete3](http://etetoolkit.org/download/)
   * [nestly](https://pypi.python.org/pypi/nestly/0.6)
-* [PHYLIP](http://evolution.genetics.washington.edu/phylip/getme-new.html)
+* [PHYLIP](http://evolution.genetics.washington.edu/phylip/getme-new1.html)
   * PHYLIP's `dnapars` program is used for generating parsimony trees, so the command-line program `dnapars` should be on your path
 * X11 or xvfb-run (for rendering phylogenetic trees using ete3)
 * [seqmagick](https://github.com/fhcrc/seqmagick)
