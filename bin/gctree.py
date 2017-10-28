@@ -349,7 +349,7 @@ class CollapsedTree(LeavesAndClades):
         if idlabel:
             aln = MultipleSeqAlignment([])
             for node in self.tree.traverse():
-                aln.append(SeqRecord(Seq(str(node.sequence), generic_dna), id=node.name, description='abundance={}'.format(node.frequency)))
+                aln.append(SeqRecord(Seq(str(node.sequence), generic_dna), id=str(node.name), description='abundance={}'.format(node.frequency)))
             AlignIO.write(aln, open(os.path.splitext(outfile)[0] + '.fasta', 'w'), 'fasta')
 
     def write(self, file_name):
