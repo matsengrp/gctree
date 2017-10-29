@@ -27,11 +27,11 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
     conda create --name gctree
     ```
 2. Activate the environment (note different commands for Linux/MaxOS and Windows):
- - on Linux/MacOS:
+    - on Linux/MacOS:
     ```bash
     source activate gctree
     ```
- - on Windows:
+    - on Windows:
     ```bash
     activate gctree
     ``` 
