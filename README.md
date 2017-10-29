@@ -83,8 +83,10 @@ After the inference pipeline has completed, the output directory will contain th
 
 
 ### **example:** run GCtree inference on the included FASTA file
+Example input data set `example_input/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping. These data were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
+[](gc1.png)
 ```
-scons --inference --fasta=Victora_data/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
+scons --inference --fasta=example_input/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
 ```
 `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist). The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The argument `--jobs=2` indicates that 2 parallel processes should be used. If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
 
@@ -105,7 +107,7 @@ scons --inference --fasta=Victora_data/150228_Clone_3-8.fasta --outdir=test --co
 
 `--bootstrap=[int] ` boostrap resampling, and inference on each, default no bootstrap
 
-`--converter=[string]` if set to "tas", parse FASTA input IDs that are integers as indicating sequence abundance. Otherwise each line in the FASTA is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the included FASTA file `Victora_data/150228_Clone_3-8.fasta` requires this option.
+`--converter=[string]` if set to "tas", parse FASTA input IDs that are integers as indicating sequence abundance. Otherwise each line in the FASTA is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input FASTA file `example_input/150228_Clone_3-8.fasta` requires this option.
 
 ## **SIMULATION**
 
