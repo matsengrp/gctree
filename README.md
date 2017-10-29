@@ -65,7 +65,7 @@ All commands should be issued from within the gctree repo directory.
 ## QUICK START
 
 ### inference
-- *input file*: `FASTA` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all ovserved sequences.
+- *input file*: `FASTA` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all observed sequences (used for outgroup rooting).
 - *run inference*:
     `scons --inference --outdir=<output directory path> --fasta=<input FASTA file> --naiveID=<id of ancestral sequence in FASTA file>`
 - *description of inference output files*: After the inference pipeline has completed, the output directory will contain the following output files:
