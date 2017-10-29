@@ -99,7 +99,9 @@ scons --inference --fasta=example_input/150228_Clone_3-8.fasta --outdir=test --c
 ### required arguments
 
 `--fasta=[path]` path to FASTA input alignment
+
 `--outdir=[path]` directory for output (created if does not exist)
+
 `--naiveID=[string]` ID of naive sequence in FASTA file used for outgroup rooting, default 'naive'. For BCRs, we assume a known naive V(D)J rearrangemnt is an additional sequence in our alignment, regardless of whether it was observed or not. This ancestral sequence must appear as an additional sequence. For applications without a definite root state, an observed sequence can be used to root the tree by duplicating it in the alignment and giving it a new id, which can be passed as this argument.
 
 ### optional arguments
