@@ -20,33 +20,38 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
 
 ### Step-by-step installation instructions
 
-0. for installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
+0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
 
-1. create a conda environment (named gctree in this example):
+1. Create a conda environment (named gctree in this example):
 ```bash
 conda create --name gctree
 ```
-2. activate the environment:
+2. Activate the environment:
+ - on Linux/MacOS:
 ```bash
 source activate gctree
 ```
-3. install ete3:
+ - on Windows:
+```bash
+activate gctree
+``` 
+3. Install ete3:
 ```bash
 conda install -c etetoolkit ete3 ete3_external_apps
 ```
-4. install python packages:
+4. Install python packages:
 ```bash
 conda install biopython matplotlib pandas scipy scons seaborn
 ```
-5. install nestly
+5. Install nestly
 ```bash
 conda install -c conda-forge nestly
 ```
-6. install PHYLIP:
+6. Install PHYLIP:
 ```bash
 conda install -c bioconda phylip
 ```
-7. install seqmagick:
+7. Install seqmagick:
 ```bash
 conda install -c cswarth seqmagick
 ```
