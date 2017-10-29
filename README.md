@@ -26,7 +26,7 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
 ```bash
 conda create --name gctree
 ```
-2. Activate the environment:
+2. Activate the environment (note different commands for Linux/MaxOS and Windows):
  - on Linux/MacOS:
 ```bash
 source activate gctree
@@ -69,11 +69,11 @@ All commands should be issued from within the gctree repo directory.
 * **inference:**  `scons --inference --outdir=<output directory path> --fasta=<input fasta file>`
 * **simulation:** `scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>`
 
-### **example:** to run GCtree inference on the included FASTA file on a remote machine
+### **example:** to run GCtree inference on the included FASTA file
 ```
-scons --inference --fasta=Victora_data/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --xvfb --jobs=10
+scons --inference --fasta=Victora_data/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
 ```
-Results are saved in directory `test/`. The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The flag `--xvfb` allows X rendering of ETE trees on remote machines. The argument `--jobs=10` indicates that 10 parallel processes should be used.
+`--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist). The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The argument `--jobs=2` indicates that 2 parallel processes should be used. If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
 
 ## **INFERENCE**
 
