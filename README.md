@@ -84,7 +84,9 @@ After the inference pipeline has completed, the output directory will contain th
 
 ### **example:** run GCtree inference on the included FASTA file
 Example input data set `example_input/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping. These data were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
-[](gc1.png)
+
+![](gc1.png)
+
 ```
 scons --inference --fasta=example_input/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
 ```
