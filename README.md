@@ -4,6 +4,12 @@ Implements phylogenetic inference for data with repeated sequences, as described
 
 DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve phylogenetic inference*, [arXiv:1708.08944](https://arxiv.org/abs/1708.08944).
 
+Two programs are implemented:
+- an inference program for experimental input data in `FASTA` format (inluding an additional sequence for the ancestral state)
+- a simulation/inference/validation program
+
+All commands should be issued from within the gctree repo directory.
+
 ## DEPENDENCIES
 * scons
 * Python 2.7, with modules:
@@ -18,7 +24,7 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
 * X11 or xvfb-run (for rendering phylogenetic trees using ete3)
 * [seqmagick](https://github.com/fhcrc/seqmagick)
 
-### Step-by-step installation instructions
+## INSTALLATION STEPS
 
 0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
 
@@ -56,20 +62,14 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
     conda install -c cswarth seqmagick
     ```
 
-## SCONS PIPELINES
-
-Two programs are implemented:
-- an inference program for experimental data
-- a simulation/inference/validation program
-
-All commands should be issued from within the gctree repo directory.
-
 ## QUICK START
 
-* **inference:**  `scons --inference --outdir=<output directory path> --fasta=<input fasta file>`
-* **simulation:** `scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>`
+### inference
+`scons --inference --outdir=<output directory path> --fasta=<input FASTA file> --naiveID=<id of ancestral sequence in FASTA file>`
+### simulation
+`scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>`
 
-### inference output
+### description of inference output files
 After the inference pipeline has completed, the output directory will contain the following output files:
 - `<input fasta file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
 - `<input fasta file>.counts`: text file mapping collapsed sequenced ids to their abundances
@@ -81,18 +81,23 @@ After the inference pipeline has completed, the output directory will contain th
 - `gctree.inference.log`: log file containing parameter fits, numerical likelihood results, and any other program messages
 - `gctree.inference.parsimony_forest.p`: a python pickle file containing the parsimony trees
 
+## EXAMPLE
 
-### **example:** run GCtree inference on the included FASTA file
-Example input data set `example_input/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping. These data were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
+### run GCtree inference on the included FASTA file
 
-![](gc1.png)
+* **Example input data set**
+    `example_input/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping. These data were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
 
-```
-scons --inference --fasta=example_input/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
-```
-`--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist). The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The argument `--naiveID=GL` indicates that the root naive sequence has id "GL". This sequence is the germline sequence of the V gene used in the V(D)J rearrangment that define this clonal family. The argument `--jobs=2` indicates that 2 parallel processes should be used. If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
+    ![](gc1.png)
 
-## **INFERENCE**
+* **Run inference**
+    ```
+    scons --inference --fasta=example_input/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
+    ```
+* **Explanation of arguments**    
+    `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist). The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The argument `--naiveID=GL` indicates that the root naive sequence has id "GL". This sequence is the germline sequence of the V gene used in the V(D)J rearrangment that define this clonal family. The argument `--jobs=2` indicates that 2 parallel processes should be used. If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
+
+## INFERENCE
 
 `scons --inference ...`
 
