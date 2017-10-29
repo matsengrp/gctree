@@ -6,7 +6,7 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
 
 ## DEPENDENCIES
 * scons
-* Python 2, with modules:
+* Python 2.7, with modules:
   * scipy
   * matplotlib
   * seaborn
@@ -22,7 +22,8 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
 **NOTE:** for installing scons, ete, and other python dependencies, [conda](https://conda.io/docs/) is recommended:
 ```bash
 conda install -c etetoolkit ete3 ete3_external_apps
-conda install biopython matplotlib nestly pandas scipy scons seaborn
+conda install biopython matplotlib pandas scipy scons seaborn
+conda install -c conda-forge nestly
 ```
 Alternatively, an example linux environment spec file is included (`spec-file.txt`), which may be used to create a conda environment.
 For example, to create an environment called `gctree`, execute `conda create --name gctree --file spec-file.txt`, then activate the environment with `source activate gctree`.
