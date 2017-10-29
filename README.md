@@ -23,38 +23,38 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
 0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
 
 1. Create a conda environment (named gctree in this example):
-```bash
-conda create --name gctree
-```
+    ```bash
+    conda create --name gctree
+    ```
 2. Activate the environment (note different commands for Linux/MaxOS and Windows):
  - on Linux/MacOS:
-```bash
-source activate gctree
-```
+    ```bash
+    source activate gctree
+    ```
  - on Windows:
-```bash
-activate gctree
-``` 
+    ```bash
+    activate gctree
+    ``` 
 3. Install ete3:
-```bash
-conda install -c etetoolkit ete3 ete3_external_apps
-```
+    ```bash
+    conda install -c etetoolkit ete3 ete3_external_apps
+    ```
 4. Install python packages:
-```bash
-conda install biopython matplotlib pandas scipy scons seaborn
-```
+    ```bash
+    conda install biopython matplotlib pandas scipy scons seaborn
+    ```
 5. Install nestly
-```bash
-conda install -c conda-forge nestly
-```
+    ```bash
+    conda install -c conda-forge nestly
+    ```
 6. Install PHYLIP:
-```bash
-conda install -c bioconda phylip
-```
+    ```bash
+    conda install -c bioconda phylip
+    ```
 7. Install seqmagick:
-```bash
-conda install -c cswarth seqmagick
-```
+    ```bash
+    conda install -c cswarth seqmagick
+    ```
 
 ## SCONS PIPELINES
 
