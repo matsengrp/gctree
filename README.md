@@ -12,21 +12,44 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
   * seaborn
   * pandas
   * biopython
-  * [ete3](http://etetoolkit.org/download/)
-  * [nestly](https://pypi.python.org/pypi/nestly/0.6)
-* [PHYLIP](http://evolution.genetics.washington.edu/phylip/getme-new1.html)
-  * PHYLIP's `dnapars` program is used for generating parsimony trees, so the command-line program `dnapars` should be on your path
+  * [ete3](http://etetoolkit.org)
+  * [nestly](https://pypi.python.org/pypi/nestly)
+* [PHYLIP](http://evolution.genetics.washington.edu/phylip)
 * X11 or xvfb-run (for rendering phylogenetic trees using ete3)
 * [seqmagick](https://github.com/fhcrc/seqmagick)
 
-**NOTE:** for installing scons, ete, and other python dependencies, [conda](https://conda.io/docs/) is recommended:
+### Step-by-step installation instructions
+
+0. for installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
+
+1. create a conda environment (named gctree in this example):
+```bash
+conda create --name gctree
+```
+2. activate the environment:
+```bash
+source activate gctree
+```
+3. install ete3:
 ```bash
 conda install -c etetoolkit ete3 ete3_external_apps
+```
+4. install python packages:
+```bash
 conda install biopython matplotlib pandas scipy scons seaborn
+```
+5. install nestly
+```bash
 conda install -c conda-forge nestly
 ```
-Alternatively, an example linux environment spec file is included (`spec-file.txt`), which may be used to create a conda environment.
-For example, to create an environment called `gctree`, execute `conda create --name gctree --file spec-file.txt`, then activate the environment with `source activate gctree`.
+6. install PHYLIP:
+```bash
+conda install -c bioconda phylip
+```
+7. install seqmagick:
+```bash
+conda install -c cswarth seqmagick
+```
 
 ## SCONS PIPELINES
 
