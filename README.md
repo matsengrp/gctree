@@ -65,21 +65,23 @@ All commands should be issued from within the gctree repo directory.
 ## QUICK START
 
 ### inference
-`scons --inference --outdir=<output directory path> --fasta=<input FASTA file> --naiveID=<id of ancestral sequence in FASTA file>`
+- *input file*: `FASTA` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all ovserved sequences.
+- *run inference*:
+    `scons --inference --outdir=<output directory path> --fasta=<input FASTA file> --naiveID=<id of ancestral sequence in FASTA file>`
+- *description of inference output files*: After the inference pipeline has completed, the output directory will contain the following output files:
+    - `<input fasta file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
+    - `<input fasta file>.counts`: text file mapping collapsed sequenced ids to their abundances
+    - `<input fasta file>.phylip`: phylip alignment file of collapsed sequences for computing parsimony trees
+    - `dnapars/`: directory of parsimony tree output from PHYLIP's dnapars
+    - `gctree.inference.*.svg`: rendered tree images for each of the parsimony trees
+    - `gctree.inference.abundance_rank.pdf`: histogram of genotype abundances
+    - `gctree.inference.likelihood_rank.pdf`: rank plot of GCtree likelihoods for the parsimony trees
+    - `gctree.inference.log`: log file containing parameter fits, numerical likelihood results, and any other program messages
+    - `gctree.inference.parsimony_forest.p`: a python pickle file containing the parsimony trees as `CollapsedTree` objects
+
+
 ### simulation
 `scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>`
-
-### description of inference output files
-After the inference pipeline has completed, the output directory will contain the following output files:
-- `<input fasta file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
-- `<input fasta file>.counts`: text file mapping collapsed sequenced ids to their abundances
-- `<input fasta file>.phylip`: phylip alignment file of collapsed sequences for computing parsimony trees
-- `dnapars/`: directory of parsimony tree output from PHYLIP's dnapars
-- `gctree.inference.*.svg`: rendered tree images for each of the parsimony trees
-- `gctree.inference.abundance_rank.pdf`: histogram of genotype abundances
-- `gctree.inference.likelihood_rank.pdf`: rank plot of GCtree likelihoods for the parsimony trees
-- `gctree.inference.log`: log file containing parameter fits, numerical likelihood results, and any other program messages
-- `gctree.inference.parsimony_forest.p`: a python pickle file containing the parsimony trees
 
 ## EXAMPLE
 
