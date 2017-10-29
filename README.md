@@ -69,7 +69,20 @@ All commands should be issued from within the gctree repo directory.
 * **inference:**  `scons --inference --outdir=<output directory path> --fasta=<input fasta file>`
 * **simulation:** `scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>`
 
-### **example:** to run GCtree inference on the included FASTA file
+### inference output
+After the inference pipeline has completed, the output directory will contain the following output files:
+- `<input fasta file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
+- `<input fasta file>.counts`: text file mapping collapsed sequenced ids to their abundances
+- `<input fasta file>.phylip`: phylip alignment file of collapsed sequences for computing parsimony trees
+- `dnapars/`: directory of parsimony tree output from PHYLIP's dnapars
+- `gctree.inference.*.svg`: rendered tree images for each of the parsimony trees
+- `gctree.inference.abundance_rank.pdf`: histogram of genotype abundances
+- `gctree.inference.likelihood_rank.pdf`: rank plot of GCtree likelihoods for the parsimony trees
+- `gctree.inference.log`: log file containing parameter fits, numerical likelihood results, and any other program messages
+- `gctree.inference.parsimony_forest.p`: a python pickle file containing the parsimony trees
+
+
+### **example:** run GCtree inference on the included FASTA file
 ```
 scons --inference --fasta=Victora_data/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
 ```
