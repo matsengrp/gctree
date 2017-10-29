@@ -170,7 +170,7 @@ The under-the-hood functionality of the `gctree.py` library might be useful for 
 
 `--skip_update`  skip update step
 
-### additional depencies for development functionality
+### additional dependencies for development functionality
 * IgPhyML (https://github.com/kbhoehn/IgPhyML)
   * Needs to be in $PATH
 * perl5, with modules:
