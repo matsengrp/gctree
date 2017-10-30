@@ -93,7 +93,16 @@ All commands should be issued from within the gctree repo directory.
     scons --inference --fasta=example_input/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
     ```
 * **Explanation of arguments**    
-    `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist). The `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances. The argument `--naiveID=GL` indicates that the root naive sequence has id "GL". This sequence is the germline sequence of the V gene used in the V(D)J rearrangment that define this clonal family. The argument `--jobs=2` indicates that 2 parallel processes should be used. If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
+
+    `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist) 
+    
+    `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances
+    
+    `--naiveID=GL` indicates that the root naive sequence has id "GL". This sequence is the germline sequence of the V gene used in the V(D)J rearrangment that define this clonal family.
+    
+    `--jobs=2` indicates that 2 parallel processes should be used
+    
+    If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
 
 ## INFERENCE
 
