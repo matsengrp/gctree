@@ -26,21 +26,17 @@ All commands should be issued from within the gctree repo directory.
 
 ## INSTALLATION STEPS
 
-0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
+### Linux/MacOS
 
+0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
 1. Create a conda environment (named gctree in this example):
     ```bash
     conda create --name gctree
     ```
-2. Activate the environment (note different commands for Linux/MaxOS and Windows):
-    - on Linux/MacOS:
+2. Activate the environment:
     ```bash
     source activate gctree
     ```
-    - on Windows:
-    ```bash
-    activate gctree
-    ``` 
 3. Install ete3:
     ```bash
     conda install -c etetoolkit ete3 ete3_external_apps
