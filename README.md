@@ -5,7 +5,7 @@ Implements phylogenetic inference for data with repeated sequences, as described
 DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve phylogenetic inference*, [arXiv:1708.08944](https://arxiv.org/abs/1708.08944).
 
 Two programs are implemented:
-- an inference program for experimental input data in `FASTA` format (inluding an additional sequence for the ancestral state)
+- an inference program for experimental input data in `FASTA` or `PHYLIP` format (including an additional sequence for the ancestral state)
 - a simulation/inference/validation program
 
 All commands should be issued from within the gctree repo directory.
@@ -61,13 +61,13 @@ All commands should be issued from within the gctree repo directory.
 ## QUICK START
 
 ### inference
-- *input file*: `FASTA` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all observed sequences (used for outgroup rooting).
+- *input file*: `FASTA` or `PHYLIP` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all observed sequences (used for outgroup rooting).
 - *run inference*:
-    `scons --inference --outdir=<output directory path> --fasta=<input FASTA file> --naiveID=<id of ancestral sequence in FASTA file>`
+    `scons --inference --outdir=<output directory path> --input=<input FASTA or PHYLIP file> --naiveID=<id of ancestral sequence in input file>`
 - *description of inference output files*: After the inference pipeline has completed, the output directory will contain the following output files:
-    - `<input fasta file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
-    - `<input fasta file>.counts`: text file mapping collapsed sequenced ids to their abundances
-    - `<input fasta file>.phylip`: phylip alignment file of collapsed sequences for computing parsimony trees
+    - `<input file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
+    - `<input file>.counts`: text file mapping collapsed sequenced ids to their abundances
+    - `<input file>.phylip`: phylip alignment file of collapsed sequences for computing parsimony trees
     - `dnapars/`: directory of parsimony tree output from PHYLIP's dnapars
     - `gctree.inference.*.svg`: rendered tree images for each of the parsimony trees
     - `gctree.inference.abundance_rank.pdf`: histogram of genotype abundances
@@ -81,7 +81,7 @@ All commands should be issued from within the gctree repo directory.
 
 ## EXAMPLE
 
-### run GCtree inference on the included FASTA file
+### run GCtree inference on the included `FASTA` file
 
 * **Example input data set**
     `example_input/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping. These data were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
@@ -90,18 +90,18 @@ All commands should be issued from within the gctree repo directory.
 
 * **Run inference**
     ```
-    scons --inference --fasta=example_input/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
+    scons --inference --input=example_input/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
     ```
 * **Explanation of arguments**    
 
-    `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist) 
-    
-    `--converter=tas` argument means that integer sequence IDs in the FASTA file are interpreted as abundances
-    
+    `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist)
+
+    `--converter=tas` argument means that integer sequence IDs in the input file are interpreted as abundances
+
     `--naiveID=GL` indicates that the root naive sequence has id "GL". This sequence is the germline sequence of the V gene used in the V(D)J rearrangment that define this clonal family.
-    
+
     `--jobs=2` indicates that 2 parallel processes should be used
-    
+
     If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
 
 ## INFERENCE
@@ -110,19 +110,19 @@ All commands should be issued from within the gctree repo directory.
 
 ### required arguments
 
-`--fasta=[path]` path to FASTA input alignment
+`--input=[path]` path to `FASTA` or `PHYLIP` input alignment
 
 `--outdir=[path]` directory for output (created if does not exist)
 
-`--naiveID=[string]` ID of naive sequence in FASTA file used for outgroup rooting, default 'naive'. For BCRs, we assume a known naive V(D)J rearrangemnt is an additional sequence in our alignment, regardless of whether it was observed or not. This ancestral sequence must appear as an additional sequence. For applications without a definite root state, an observed sequence can be used to root the tree by duplicating it in the alignment and giving it a new id, which can be passed as this argument.
+`--naiveID=[string]` ID of naive sequence in input file used for outgroup rooting, default 'naive'. For BCRs, we assume a known naive V(D)J rearrangemnt is an additional sequence in our alignment, regardless of whether it was observed or not. This ancestral sequence must appear as an additional sequence. For applications without a definite root state, an observed sequence can be used to root the tree by duplicating it in the alignment and giving it a new id, which can be passed as this argument.
 
 ### optional arguments
 
-`colorfile=[path]  ` path to a file of plotting colors for cells in the input FASTA file. Example, if the FASTA contains a sequence with ID `cell_1`, this cell could be colored red in the tree image by including the line `cell_1,red` in the color file.
+`colorfile=[path]  ` path to a file of plotting colors for cells in the input file. Example, if the input file contains a sequence with ID `cell_1`, this cell could be colored red in the tree image by including the line `cell_1,red` in the color file.
 
 `--bootstrap=[int] ` boostrap resampling, and inference on each, default no bootstrap
 
-`--converter=[string]` if set to "tas", parse FASTA input IDs that are integers as indicating sequence abundance. Otherwise each line in the FASTA is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input FASTA file `example_input/150228_Clone_3-8.fasta` requires this option.
+`--converter=[string]` if set to "tas", parse input IDs that are integers as indicating sequence abundance. Otherwise each line in the input is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input `FASTA` file `example_input/150228_Clone_3-8.fasta` requires this option.
 
 ## **SIMULATION**
 
@@ -162,7 +162,7 @@ All commands should be issued from within the gctree repo directory.
 
 `--quick       ` less thorough parsimony tree search (faster, but smaller parsimony forest)
 
-`--idlabel     ` label sequence IDs on tree, and write FASTA alignment of distinct sequences. The mapping of the unique names in this FASTA file to the cell names in the original input FASTA file can be found in the output file with suffix `.idmap`
+`--idlabel     ` label sequence IDs on tree, and write `FASTA` alignment of distinct sequences. The mapping of the unique names in this `FASTA` file to the cell names in the original input file can be found in the output file with suffix `.idmap`
 
 `--xvfb        ` needed for X rendering in on remote machines
 

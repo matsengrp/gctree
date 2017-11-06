@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from matplotlib import rc, ticker
 import pandas as pd
 import argparse
-from fasta2phylip import fasta_parse
+from deduplicate import fasta_parse
 # from gctree import hamming_distance
 import seaborn as sns
 sns.set(style="white", color_codes=True)

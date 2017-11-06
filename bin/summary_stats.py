@@ -7,7 +7,7 @@ for CFT
 '''
 
 from __future__ import division, print_function
-from fasta2phylip import fasta_parse
+from deduplicate import fasta_parse
 from Bio import AlignIO
 import scipy, matplotlib
 matplotlib.use('agg')

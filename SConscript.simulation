@@ -62,13 +62,13 @@ def gctree_sim(outdir, c):
 @w.add_target()
 def infer(outdir, c):
     '''now do inference on the simulation results'''
-    fasta = c['gctree_sim'][0]
-    fasta2 = None
+    input_file = c['gctree_sim'][0]
+    input_file2 = None
     naiveID = 'naive' # this is what the simulation routine names the naive
     converter = None  # No problem with weird fasta formating from the simulated data
     bootstrap = 0
     colorfile = None
-    return SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')
+    return SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')
 
 @w.add_target()
 def validate(outdir, c):

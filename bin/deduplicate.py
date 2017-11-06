@@ -13,11 +13,23 @@ from collections import defaultdict, Counter
 
 def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
     # naive = naive.lower()
-    aln = AlignIO.read(aln_file, 'fasta')
+    if aln_file.endswith('fasta') or aln_file.endswith('fa'):
+        aln_format = 'fasta'
+    elif aln_file.endswith('phylip') or aln_file.endswith('phy'):
+        aln_format = 'phylip'
+    else:
+        raise ValueError('unrecognized alignment file type: ' + aln_file)
+    aln = AlignIO.read(aln_file, aln_format)
     if aln_file2 is not None:
         assert frame is None
         aln_combined = MultipleSeqAlignment([])
-        aln2 = AlignIO.read(aln_file2, 'fasta')
+        if aln_file2.endswith('fasta') or aln_file2.endswith('fa'):
+            aln_format2 = 'fasta'
+        elif aln_file2.endswith('phylip') or aln_file2.endswith('phy'):
+            aln_format2 = 'phylip'
+        else:
+            raise ValueError('unrecognized alignment file type: ' + aln_file2)
+        aln2 = AlignIO.read(aln_file2, aln_format2)
         for seq in aln:
             cell = (seq.id[:-1] if seq.id != naive else naive)
             for seq2 in aln2:
@@ -93,7 +105,7 @@ def main():
                                                  'or equal to 10 ASCII characters. A special option for converting a Victora lab '
                                                  'GC fasta file to phylip is also included. All headers are converted to lower case.')
     parser.add_argument('infile', type=str, nargs='+', help='Fasta file with less than or equal to 10 characters unique header ID. '
-                                                 'For Vitora data any integer ids indicats frequency.'
+                                                 'For Victora data any integer ids indicates frequency.'
                                                  'Because dnapars will name internal nodes by intergers a node name must include'
                                                  'at least one non number character.')
     parser.add_argument('--countfile', type=str, default=None, help='filename for the output file containing the counts.')

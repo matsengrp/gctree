@@ -15,7 +15,7 @@ def which(executable):
     return None
 
 # the following must be exported by parent SConstruct/SConscript
-Import('env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')
+Import('env gctree igphyml dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')
 
 def delete_on_failure():
     from SCons.Script import GetBuildFailures
@@ -35,22 +35,20 @@ return_list = []
 
 
 if gctree or igphyml or dnaml:
-    # fasta_str = str(fasta)
-    if fasta2 is not None: #isinstance(fasta, list):
+    if input_file2 is not None:
 	basename = 'combined'
-    elif isinstance(fasta, str):
-        basename = '.'.join(os.path.basename(fasta).split('.')[:-1])
+    elif isinstance(input_file, str):
+        basename = '.'.join(os.path.basename(input_file).split('.')[:-1])
     else:
         basename = 'gctree.simulation'
-    # parse fasta file to phylip, interpreting integer names as frequencies
     frame_arg = ' --frame {} '.format(frame) if frame is not None else ''
     converter_arg = ' --converter {} '.format(converter) if converter is not None else ''
-    phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(fasta))[0] + '.phylip') if fasta2 is None and isinstance(fasta, str) else os.path.join(outdir, 'gctree.combined.phylip') if fasta2 is not None else os.path.join(outdir, 'gctree.simulation.phylip'),
+    phylip = env.Command([os.path.join(outdir, os.path.splitext(os.path.basename(input_file))[0] + '.phylip') if input_file2 is None and isinstance(input_file, str) else os.path.join(outdir, 'gctree.combined.phylip') if input_file2 is not None else os.path.join(outdir, 'gctree.simulation.phylip'),
                           os.path.join(outdir, basename)+'.counts',
                           os.path.join(outdir, basename)+'.idmap'] +
                           ([os.path.join(outdir, basename)+'.colormap'] if colorfile is not None else []),
-                          fasta if colorfile is None else [fasta, colorfile],
-                          buffarg + 'python bin/fasta2phylip.py ${SOURCES[0]} ' +
+                          input_file if colorfile is None else [input_file, colorfile],
+                          buffarg + 'python bin/deduplicate.py ${SOURCES[0]} ' +
                           (' --colorfile ${SOURCES[1]} ' if colorfile is not None else '') +
                           (' --colormap ${TARGETS[3]} ' if colorfile is not None else '') +
                           ' --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+

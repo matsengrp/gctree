@@ -191,19 +191,19 @@ if simulate:
         selection_param = None
 
 elif inference:
-    AddOption('--fasta',
-              dest='fasta',
+    AddOption('--input',
+              dest='input',
               type='string',
               action='append',
               default=[],
               metavar='PATH',
-              help='path to input fasta')
-    fasta = GetOption('fasta')
-    if len(fasta) == 1:
-        fasta = fasta[0]
-        fasta2 = None
+              help='path to input fasta or phylip')
+    input_file = GetOption('input')
+    if len(input_file) == 1:
+        input_file = input_file[0]
+        input_file2 = None
     else:
-        fasta, fasta2 = fasta
+        input_file, input_file2 = input_file
     AddOption('--colorfile',
               dest='colorfile',
               type='string',
@@ -220,7 +220,7 @@ elif inference:
     AddOption('--converter',
               type='string',
               default=None,
-              help='Converter to convert input fasta format e.g. the Victora lab GC fasta format')
+              help='Converter to convert input format e.g. the Victora lab GC fasta format')
     converter = GetOption('converter')
     AddOption('--bootstrap',
               type='int',
@@ -236,6 +236,6 @@ if simulate and not GetOption('help'):
     SConscript('SConscript.simulation',
                exports='env gctree igphyml dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg')
 elif inference and not GetOption('help'):
-    if None in [fasta, outdir]:
-        raise InputError('input fasta and outdir must be specified')
-    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame fasta fasta2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')
+    if None in [input_file, outdir]:
+        raise InputError('input fasta orp phylip and outdir must be specified')
+    SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')
