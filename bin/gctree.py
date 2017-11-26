@@ -170,6 +170,13 @@ class CollapsedTree(LeavesAndClades):
 
         if tree is not None:
             self.tree = tree.copy()
+            # remove unobserved internal unifurcations
+            for node in self.tree.iter_descendants():
+                parent = node.up
+                if node.frequency == 0 and len(node.children) == 1:
+                    node.delete(prevent_nondicotomic=False)
+                    node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)
+
             # iterate over the tree below root and collapse edges of zero length
             # if the node is a leaf and it's parent has nonzero frequency we combine taxa names to a set
             # this acommodates bootstrap samples that result in repeated genotypes
@@ -754,7 +761,6 @@ class MutationModel():
         # Small lambdas are causing problems so make a minimum:
         lambda_min = 10e-10
         while leaves_unterminated > 0 and (leaves_unterminated < N if N is not None else True) and (t < max(T) if T is not None else True) and (stop_dist >= min(hd_distrib) if stop_dist is not None and t > 0 else True):
-            t += 1
             if verbose:
                 print('At time:', t)
             skip_lambda_n = 0  # At every new round reset the all the lambdas
@@ -854,12 +860,12 @@ class MutationModel():
             if sum(node2.frequency for node2 in node.traverse()) == 0:
                 node.detach()
 
-        # remove unobserved unifurcations
-        for node in tree.iter_descendants():
-            parent = node.up
-            if node.frequency == 0 and len(node.children) == 1:
-                node.delete(prevent_nondicotomic=False)
-                node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)
+        # # remove unobserved unifurcations
+        # for node in tree.iter_descendants():
+        #     parent = node.up
+        #     if node.frequency == 0 and len(node.children) == 1:
+        #         node.delete(prevent_nondicotomic=False)
+        #         node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)
 
         # assign unique names to each node
         for i, node in enumerate(tree.traverse(), 1):
@@ -1096,6 +1102,7 @@ def simulate(args):
     is variable accordring to the hamming distance to a list of target sequences. The closer a sequence gets to one of the targets
     the higher fitness and the closer lambda will approach 2, vice versa when the sequence is far away lambda approaches 0.
     '''
+    random.seed(a=args.seed)
     mutation_model = MutationModel(args.mutability, args.substitution)
     if args.lambda0 is None:
         args.lambda0 = [max([1, int(.01*len(args.sequence))])]
@@ -1226,6 +1233,9 @@ def simulate(args):
             nstyle['fgcolor'] = colors[n.sequence]
         n.set_style(nstyle)
 
+    # this makes the rendered branch lenths correspond to time
+    for node in tree.iter_descendants():
+        node.dist = node.time - node.up.time
     tree.render(args.outbase+'.simulation.lineage_tree.svg', tree_style=ts)
 
     # render collapsed tree
@@ -1300,6 +1310,7 @@ def main():
     parser_sim.add_argument('--n', type=int, default=None, help='cells downsampled')
     parser_sim.add_argument('--N', type=int, default=None, help='target simulation size')
     parser_sim.add_argument('--T', type=int, nargs='+', default=None, help='observation time, if None we run until termination and take all leaves')
+    parser_sim.add_argument('--seed', type=int, default=None, help='integer random seed')
     parser_sim.add_argument('--selection', type=bool, default=False, help='Simulation with selection? true/false. When doing simulation with selection an observation time cut must be set.')
     parser_sim.add_argument('--stop_dist', type=int, default=None, help='Stop when this distance has been reached in the selection model.')
     parser_sim.add_argument('--carry_cap', type=int, default=1000, help='The carrying capacity of the simulation with selection. This number affects the fixation time of a new mutation.'
