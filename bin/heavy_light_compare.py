@@ -132,7 +132,8 @@ def main():
     # for x in light_log:
     #     plt.axhline(x, ls='--', color='black', lw=.1, zorder=0)
     plt.subplot(2,2,3)
-    sns.heatmap(dat, annot=True, fmt='d', cmap='Reds', cbar=False)
+    ax = sns.heatmap(dat, annot=True, fmt='d', cmap='Reds', cbar=False)
+    ax.invert_yaxis()
     plt.subplot(2,2,4)
     sns.barplot(y=range(len(heavy_log)), x=scipy.exp(heavy_log), color='gray', orient='h')
     plt.xlabel('GCtree likelihood')
