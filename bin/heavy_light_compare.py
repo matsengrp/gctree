@@ -115,7 +115,7 @@ def main():
     plt.tight_layout()
     plt.savefig(args.outbase+'.pdf')
 
-    return
+    # return
 
     # dat = pd.DataFrame(columns=('l_heavy', 'l_light', 'RF'))
     dat = scipy.zeros((len(heavy_forest.forest), len(light_forest.forest)), dtype=int)
@@ -140,7 +140,7 @@ def main():
     sns.barplot(x=range(len(light_log)), y=scipy.exp(light_log), color='gray')
     plt.ylabel('GCtree likelihood')
     plt.tight_layout()
-    plt.savefig(args.outbase+'.pdf')
+    plt.savefig(args.outbase+'.3.pdf')
 
 if __name__ == '__main__':
     main()
