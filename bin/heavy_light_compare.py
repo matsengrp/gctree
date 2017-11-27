@@ -118,31 +118,30 @@ def main():
     # return
 
     # dat = pd.DataFrame(columns=('l_heavy', 'l_light', 'RF'))
-    dat = scipy.zeros((len(heavy_forest.forest), len(light_forest.forest)), dtype=int)
-    for i, heavy_tree in enumerate(heavy_forest.forest):
-        for j, light_tree in enumerate(light_forest.forest):
+    dat = scipy.zeros((len(light_forest.forest), len(heavy_forest.forest)), dtype=int)
+    for j, heavy_tree in enumerate(heavy_forest.forest):
+        for i, light_tree in enumerate(light_forest.forest):
             dat[i, j] = heavy_tree.tree.robinson_foulds(light_tree.tree, attr_t1='name', attr_t2='name', unrooted_trees=True)[0]
             # dat.loc[-1] = [heavy_log[i], light_log[j], heavy_tree.tree.robinson_foulds(light_tree.tree, attr_t1='name', attr_t2='name', unrooted_trees=True)[0]]
             # dat.index += 1
 
-    plt.figure(figsize=(6, 6))
+    plt.figure(figsize=(.3*len(heavy_forest.forest), .3*len(light_forest.forest)))
     # sns.lmplot(x='l_heavy', y='l_light', hue='RF', data=dat, fit_reg=False, scatter_kws={'alpha':.5}, legend_out=False)
     # for x in heavy_log:
     #     plt.axvline(x, ls='--', color='black', lw=.1, zorder=0)
     # for x in light_log:
     #     plt.axhline(x, ls='--', color='black', lw=.1, zorder=0)
-    plt.subplot(2,2,3)
-    ax = sns.heatmap(dat, annot=True, fmt='d', cmap='Reds', cbar=False)
+    # plt.subplot(2,2,3)
+    ax = sns.heatmap(dat, annot=True, fmt='d', cmap='Reds', cbar=False, linewidths=1)
     ax.invert_yaxis()
-    plt.subplot(2,2,4)
-    sns.plot(y=list(reversed(range(len(heavy_log)))), x=heavy_log, color='gray', orient='h')
-    sns.despine()
-    plt.xlabel('GCtree log likelihood')
-    plt.subplot(2,2,1)
-    sns.plot(x=range(len(light_log)), y=light_log, color='gray')
-    sns.despine()
-    plt.ylabel('GCtree log likelihood')
+    # plt.subplot(2,2,4)
+    # plt.plot(list(reversed(heavy_log)), list(reversed(range(len(heavy_log)))), ls='none', marker='o', clip_on=False, c='k')
+    # plt.xlabel('GCtree log likelihood')
+    # plt.subplot(2,2,1)
+    # plt.plot(range(len(light_log)), light_log, ls='none', marker='o', clip_on=False, c='k')
+    # plt.ylabel('GCtree log likelihood')
     plt.tight_layout()
+    sns.despine()
     plt.savefig(args.outbase+'.3.pdf')
 
 if __name__ == '__main__':
