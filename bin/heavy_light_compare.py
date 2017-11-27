@@ -135,7 +135,7 @@ def main():
     ax = sns.heatmap(dat, annot=True, fmt='d', cmap='Reds', cbar=False)
     ax.invert_yaxis()
     plt.subplot(2,2,4)
-    sns.barplot(y=reversed(range(len(heavy_log))), x=scipy.exp(heavy_log), color='gray', orient='h')
+    sns.barplot(y=list(reversed(range(len(heavy_log)))), x=scipy.exp(heavy_log), color='gray', orient='h')
     plt.xlabel('GCtree likelihood')
     plt.subplot(2,2,1)
     sns.barplot(x=range(len(light_log)), y=scipy.exp(light_log), color='gray')
