@@ -665,7 +665,7 @@ def infer(args):
         # check for unifurcations at root
         unifurcations = sum(tree.tree.frequency == 0 and len(tree.tree.children) == 1 for tree in parsimony_forest.forest)
         if unifurcations:
-            print('WARNING: {} trees exhibit unobserved unifurcation from root, which is not possible under current model. Adding psuedocounts to these nodes'.format(unifurcations))
+            print('{} trees exhibit unobserved unifurcation from root. Adding psuedocounts to these roots'.format(unifurcations))
 
         # fit p and q using all trees
         # if we get floating point errors, try a few more times (starting params are random)
