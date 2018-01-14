@@ -29,9 +29,9 @@ All commands should be issued from within the gctree repo directory.
 ### Linux/MacOS
 
 0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
-1. Create a conda environment (named gctree in this example):
+1. Create a python2.7 conda environment (named gctree in this example):
     ```bash
-    conda create --name gctree
+    conda create --name gctree python=2.7
     ```
 2. Activate the environment:
     ```bash
@@ -57,13 +57,19 @@ All commands should be issued from within the gctree repo directory.
     ```bash
     conda install -c cswarth seqmagick
     ```
+8. Install jellyfish for faster string comparison (optional)
+    ```bash
+    conda install -c conda-forge jellyfish
+    ```
 
 ## QUICK START
 
 ### inference
 - *input file*: `FASTA` or `PHYLIP` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all observed sequences (used for outgroup rooting).
 - *run inference*:
-    `scons --inference --outdir=<output directory path> --input=<input FASTA or PHYLIP file> --naiveID=<id of ancestral sequence in input file>`
+    ```
+    scons --inference --outdir=<output directory path> --input=<input FASTA or PHYLIP file> --naiveID=<id of ancestral sequence in input file>
+    ```
 - *description of inference output files*: After the inference pipeline has completed, the output directory will contain the following output files:
     - `<input file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
     - `<input file>.counts`: text file mapping collapsed sequenced ids to their abundances
@@ -77,28 +83,112 @@ All commands should be issued from within the gctree repo directory.
 
 
 ### simulation
-`scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>`
+```
+scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>
+```
 
 ## EXAMPLE
 
 ### run GCtree inference on the included `FASTA` file
 
 * **Example input data set**
-    `example_input/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping. These data were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
-
-    ![](gc1.png)
-
-* **Run inference**
+    `example/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping.
     ```
-    scons --inference --input=example_input/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
+  $ head example/150228_Clone_3-8.fasta
+  >VIBM1S4A05IgG
+  ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
+  tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
+  atggggtacataagcttcagtggtggtacttactacaatccatctctcaaaagtcgaatc
+  tccatcactcgagacacatccaagaaccagtaccacctgcagttgaattctgtgactact
+  gaggacacagccacatattactgt
+  >VIBM1S4A06IgG
+  ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
+  tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
+  atggggtacataagcttcagtggtagcacttactacaatccatctctcaaaagtcgaatc
     ```
+    These data were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
+
+    ![](example/gc1.png)
+
+* **Run inference**  
+
+    From within the `gctree` repository directory:
+    ```
+  scons --inference --input=example/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
+    ```
+    This command will produce output in subdirectory `test/`.
+    This includes a log file with some messages about results (including the number of trees and the fitted branching process parameters), and then lists each parsimony tree by decreasing likelihood (with tree 1 corresponding to the GCtree MLE).
+    ```bash
+  $ head test/gctree.inference.log
+  number of trees with integer branch lengths: 58
+  58 trees exhibit unobserved unifurcation from root. Adding psuedocounts to these roots
+  params = [0.4961832081885355, 0.36484189590092164]
+  tree	alleles	logLikelihood
+  1	48	-79.016217483
+  2	48	-79.016217483
+  3	48	-80.0883965146
+  4	48	-80.1148297716
+  5	49	-80.3507858934
+  6	49	-80.3507858934
+    ```
+    For each tree, the directory will include an SVG file rendering of the tree. E.g. the MLE `test/gctree.inference.1.svg`:
+    ![](example/gctree.inference.1.svg)
+    There is also a rank plot of genotype abundance `test/gctree.inference.abundance_rank.png`:
+    ![](example/gctree.inference.abundance_rank.png)
+    and of GCtree likelihood over the trees `test/gctree.inference.likelihood_rank.png`:
+    ![](example/gctree.inference.likelihood_rank.png)
+
+    Finally, there are text files indicating abundance of each unique sequence,
+    ```
+  $ head test/150228_Clone_3-8.counts
+  seq22,3
+  seq23,1
+  seq20,1
+  seq21,1
+  seq26,1
+  seq27,1
+  seq24,1
+  seq25,1
+  seq28,1
+  seq29,1    
+    ```
+    the mapping of unique sequence ids to the sequence ids in the input `FASTA`,
+    ```
+  $ head test/150228_Clone_3-8.idmap
+  seq22,VIBM1S4B10IgG:VIBM1S4C09IgG:VIBM1S4H12IgG
+  seq23,VIBM1S4E03IgG
+  seq20,VIBM1S4D02IgG
+  seq21,VIBM1S4A05IgG
+  seq26,VIBM1S4F11IgG
+  seq27,VIBM1S4E12IgG
+  seq24,VIBM1S4B03IgG
+  seq25,VIBM1S4D05IgG
+  seq28,VIBM1S4G04IgG
+  seq29,VIBM1S4E09IgG
+    ```
+    and the `PHYLIP` alignment of the unique sequences,
+    ```
+  $ head test/150228_Clone_3-8.phylip
+   43 264
+  gl         ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+  seq1       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+  seq2       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+  seq3       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+  seq4       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+  seq5       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+  seq6       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+  seq7       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+  seq8       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
+    ```
+    When using the optional `--idlabel` flag, which shows labels `seq1, seq2, ...` in the tree rendering (see documentation below), these id/sequence files can be used to associate DNA sequences or cell labels with specific tree nodes.
+
 * **Explanation of arguments**    
 
     `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist)
 
-    `--converter=tas` argument means that integer sequence IDs in the input file are interpreted as abundances
+    `--converter=tas` argument means that integer sequence IDs in the input file are interpreted as abundances. The example input `FASTA` includes a sequence with id "17".
 
-    `--naiveID=GL` indicates that the root naive sequence has id "GL". This sequence is the germline sequence of the V gene used in the V(D)J rearrangment that define this clonal family.
+    `--naiveID=GL` indicates that the root naive sequence has id "GL" in the input `FASTA`. This sequence is the germline sequence of the V gene used in the V(D)J rearrangement that defines this clonal family.
 
     `--jobs=2` indicates that 2 parallel processes should be used
 
@@ -122,7 +212,7 @@ All commands should be issued from within the gctree repo directory.
 
 `--bootstrap=[int] ` boostrap resampling, and inference on each, default no bootstrap
 
-`--converter=[string]` if set to "tas", parse input IDs that are integers as indicating sequence abundance. Otherwise each line in the input is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input `FASTA` file `example_input/150228_Clone_3-8.fasta` requires this option.
+`--converter=[string]` if set to "tas", parse input IDs that are integers as indicating sequence abundance. Otherwise each line in the input is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input `FASTA` file `example/150228_Clone_3-8.fasta` requires this option.
 
 ## **SIMULATION**
 
