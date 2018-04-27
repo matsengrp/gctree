@@ -208,7 +208,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 ### optional arguments
 
-`colorfile=[path]  ` path to a file of plotting colors for cells in the input file. Example, if the input file contains a sequence with ID `cell_1`, this cell could be colored red in the tree image by including the line `cell_1,red` in the color file.
+`--colorfile=[path]  ` path to a file of plotting colors for cells in the input file. Example, if the input file contains a sequence with ID `cell_1`, this cell could be colored red in the tree image by including the line `cell_1 red` (where the whitespace is a tab) in the color file.
 
 `--bootstrap=[int] ` boostrap resampling, and inference on each, default no bootstrap
 
