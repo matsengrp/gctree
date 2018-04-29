@@ -365,6 +365,10 @@ class CollapsedTree(LeavesAndClades):
         with open(file_name, 'wb') as f:
             pickle.dump(self, f)
 
+    def newick(self, file_name):
+        '''write to newick file'''
+        self.tree.write(format=1, outfile=file_name)
+
     def compare(self, tree2, method='identity'):
         '''compare this tree to the other tree'''
         if method == 'identity':
@@ -718,6 +722,7 @@ def infer(args):
                                   idlabel=args.idlabel,
                                   colormap=colormap,
                                   chain_split=args.chain_split)
+            collapsed_tree.newick(outbase+'.inference.{}.nk'.format(j))
 
         # rank plot of likelihoods
         plt.figure(figsize=(6.5,2))
