@@ -13,15 +13,11 @@ from matplotlib import rc, ticker
 import pandas as pd
 import argparse
 from deduplicate import fasta_parse
-# from gctree import hamming_distance
+from utils import hamming_distance
 import seaborn as sns
 sns.set(style="white", color_codes=True)
 from matplotlib.backends.backend_pdf import PdfPages
 
-# something in numpy/seaborn breaks if I import this from gctree
-def hamming_distance(seq1, seq2):
-    '''Hamming distance between two sequences of equal length'''
-    return sum(x != y for x, y in zip(seq1, seq2))
 
 parser = argparse.ArgumentParser(description='aggregate validation of repeated runs with same parameters')
 parser.add_argument('input', type=str, nargs='+', help='gctree.simulation.stats.tsv files')
