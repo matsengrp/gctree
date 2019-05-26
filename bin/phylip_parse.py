@@ -58,7 +58,7 @@ def parse_seqdict(fh, mode='dnaml'):
     if mode == 'dnaml':
         patterns = re.compile("^\s*(?P<id>[a-zA-Z0-9>_.-]*)\s+(?P<seq>[a-zA-Z \-]+)")
     elif mode == 'dnapars':
-        patterns = re.compile("^\s*\S+\s+(?P<id>[a-zA-Z0-9>_.-]*)\s+(yes\s+|no\s+|maybe\s+)?(?P<seq>[a-zA-Z \-]+)")
+        patterns = re.compile("^\s*\S+\s+(?P<id>[a-zA-Z0-9>_.-]*)\s+(yes\s+|no\s+|maybe\s+)?(?P<seq>[a-zA-Z \-\?]+)")
     else:
         raise ValueError('invalid mode '+mode)
     fh.next()
@@ -115,11 +115,12 @@ def parse_outfile(outfile, countfile=None, naive='naive'):
 
 def disambiguate(tree):
     '''make random choices for ambiguous bases, respecting tree inheritance'''
+    ambiguous_dna_values['?'] = 'GATC-'
     sequence_length = len(tree.sequence)
     for node in tree.traverse():
         for site in range(sequence_length):
             base = node.sequence[site]
-            if base not in 'ACGT':
+            if base not in 'ACGT-':
                 new_base = random.choice(ambiguous_dna_values[base])
                 for node2 in node.traverse(is_leaf_fn=lambda n: False if base in [n2.sequence[site] for n2 in n.children] else True):
                     if node2.sequence[site] == base:
