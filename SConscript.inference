@@ -131,13 +131,13 @@ if gctree:
                                 [dnapars[1], phylip[1]] +
                                 ([dnapars_bootstrap[1]] if bootstrap else []) +
                                 ([phylip[3]] if colorfile is not None else []),
-                                xarg + buffarg + 'python bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive ' + naiveID +
+                                xarg + buffarg + 'python -u bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive ' + naiveID +
                                 ' --outbase ' + gctree_outbase +
                                 frame_arg +
                                 idlabel_arg +
                                 (' --colormap ${SOURCES[-1]} ' if colorfile is not None else '') +
                                 (' --bootstrap_phylipfile ${SOURCES[2]}' if bootstrap else '') +
-                                ' > ${TARGETS[1]}')
+                                ' | tee ${TARGETS[1]}')
     return_list.append(gctree_infer)
 
 

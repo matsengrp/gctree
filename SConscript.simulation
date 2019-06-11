@@ -54,7 +54,7 @@ def gctree_sim(outdir, c):
                         N_arg+
                         n_arg+
                         sele_arg+
-                        ' > ${TARGETS[4]}')
+                        ' | tee ${TARGETS[4]}')
     c['simstat_agg'].append(tgt[1])
     c['summary_stats'].append(tgt[0])
     return tgt
