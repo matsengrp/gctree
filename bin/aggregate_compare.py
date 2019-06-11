@@ -5,8 +5,7 @@
 aggregation plots of across parameters
 '''
 
-from __future__ import division, print_function
-import scipy, matplotlib
+import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -35,8 +34,8 @@ columns = aggdat.columns.values.tolist()
 # columns.remove('lambda0')
 
 df = pd.melt(aggdat, id_vars=['method', 'N_taxa', 'lambda', 'lambda0'], value_vars=['RF','MRCA'], var_name='metric')
-df.ix[df.ix[:,'metric'] == 'MRCA', 'value'] = np.log(1 + df.ix[df.ix[:,'metric'] == 'MRCA', 'value'])
-df.ix[df.ix[:,'metric'] == 'MRCA', 'metric'] = 'logMRCA'
+df.loc[df.loc[:,'metric'] == 'MRCA', 'value'] = np.log(1 + df.loc[df.loc[:,'metric'] == 'MRCA', 'value'])
+df.loc[df.loc[:,'metric'] == 'MRCA', 'metric'] = 'logMRCA'
 
 
 plot2var = [sns.swarmplot, sns.swarmplot, sns.lmplot]
@@ -64,13 +63,13 @@ for var in variables:
     plf = plot_func[var]
     kwargs = plot_options[var]
     ax = plt.subplot(gs[i, 0])
-    plot_data = df.ix[df.ix[:,'metric'] == 'RF', :]
+    plot_data = df.loc[df.loc[:,'metric'] == 'RF', :]
     sns.boxplot(x=var, y="value", hue="method", data=plot_data, showfliers=False)
     plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
     ax.set(ylabel='RF distance')
 
     ax = plt.subplot(gs[i, 1])
-    plot_data = df.ix[df.ix[:,'metric'] == 'logMRCA', :]
+    plot_data = df.loc[df.loc[:,'metric'] == 'logMRCA', :]
     sns.boxplot(x=var, y="value", hue="method", data=plot_data, showfliers=False)
     plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
     ax.set(ylabel='MRCA distance')
@@ -89,7 +88,7 @@ fig = plt.figure(figsize=(8, 8))
 plf = plot_func[var]
 kwargs = plot_options[var]
 
-plot_data = df.ix[df.ix[:,'metric'] == 'RF', :]
+plot_data = df.loc[df.loc[:,'metric'] == 'RF', :]
 plf(x=var, y="value", hue="method", data=plot_data, legend_out=True, **kwargs)
 #colors = {'gctree':'red', 'igphyml':'blue'}
 #plot_data.plot(kind='scatter', x=var, y='value', c=plot_data['method'].apply(lambda x: colors[x]))
@@ -99,7 +98,7 @@ plt.title('Plot for tree size: {}. For RF.'.format(var))
 plt.savefig(args.outbase+'1.pdf')
 
 
-plot_data = df.ix[df.ix[:,'metric'] == 'logMRCA', :]
+plot_data = df.loc[df.loc[:,'metric'] == 'logMRCA', :]
 plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
 ax.set(ylabel='MRCA distance')
 plt.title('Plot for tree size: {}. For MRCA.'.format(var))

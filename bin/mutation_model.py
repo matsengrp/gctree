@@ -3,7 +3,6 @@ from scipy.stats import poisson
 import random
 import scipy
 from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
 from utils import hamming_distance
 
@@ -181,7 +180,7 @@ class MutationModel():
             raise ValueError('Simulation with selection was chosen. A time, T, must be specified.')
         elif N is None and T is None:
             raise ValueError('Either N or T must be specified.')
-        if N is not None and n > N:
+        if N is not None and n is not None and n > N:
             raise ValueError('n ({}) must not larger than N ({})'.format(n, N))
         if selection_params is not None and frame is None:
             raise ValueError('Simulation with selection was chosen. A frame must must be specified.')

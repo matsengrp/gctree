@@ -4,14 +4,11 @@
 Given an outputfile from one of the PHYLIP tools - `dnaml` or `dnapars` - produce an alignment (including
 ancestral sequences), a newick tree (with matching internal node lables), and an svg rendering of said tree.
 """
-from __future__ import print_function
 from ete3 import Tree
-import re, random
+import re
+import random
 from collections import defaultdict
 
-from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 from Bio.Data.IUPACData import ambiguous_dna_values
 import gctree
 
@@ -36,7 +33,7 @@ def iter_edges(fh):
     #  152          >naive2           0.01208     (     zero,     0.02525) **
     pat = re.compile("\s*(?P<parent>\w+)\s+(?P<child>[\w>_.-]+)\s+(?P<distance>\d+\.\d+)")
     # drop the header underline
-    fh.next()
+    fh.readline()
     matches = 0
     for line in fh:
         m = pat.match(line)
@@ -61,7 +58,7 @@ def parse_seqdict(fh, mode='dnaml'):
         patterns = re.compile("^\s*\S+\s+(?P<id>[a-zA-Z0-9>_.-]*)\s+(yes\s+|no\s+|maybe\s+)?(?P<seq>[a-zA-Z \-\?]+)")
     else:
         raise ValueError('invalid mode '+mode)
-    fh.next()
+    fh.readline()
     for line in fh:
         m = patterns.match(line)
         if m and m.group("id") is not '':

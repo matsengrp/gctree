@@ -7,7 +7,7 @@ try:
         if s1 == s2:
             return 0
         else:
-            return jellyfish.hamming_distance(unicode(s1), unicode(s2))
+            return jellyfish.hamming_distance(s1, s2)
 except:
     def hamming_distance(seq1, seq2):
         '''Hamming distance between two sequences of equal length'''

@@ -5,8 +5,7 @@
 aggregation plots of across parameters
 '''
 
-from __future__ import division, print_function
-import scipy, matplotlib
+import matplotlib
 matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec

@@ -36,7 +36,7 @@ return_list = []
 
 if gctree or igphyml or dnaml:
     if input_file2 is not None:
-	basename = 'combined'
+        basename = 'combined'
     elif isinstance(input_file, str):
         basename = '.'.join(os.path.basename(input_file).split('.')[:-1])
     else:
@@ -65,8 +65,8 @@ if gctree or igphyml or dnaml:
                                      phylip[0],
                                      buffarg + 'python bin/mkconfig.py ${SOURCE} seqboot '+bootstrap_arg+' > $TARGET'.format(bootstrap))
 
-        seqboot = CommandRunner(map(lambda x: os.path.join(outdir, x), ['seqboot/outfile', 'seqboot/log.log']),
-                           seqboot_config,
+        seqboot = CommandRunner([os.path.join(outdir, x) for x in ['seqboot/outfile', 'seqboot/log.log']],
+                                seqboot_config,
                            'cd ' + outdir + '/seqboot && rm -f outfile && seqboot < ${SOURCE.file} > ${TARGETS[1].file}')
         # Manually depend on phylip so that we rerun seqboot if the input sequences change (without this, dnaml will
         # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
@@ -81,7 +81,7 @@ if dnaml:
                                  buffarg + 'python bin/mkconfig.py ${SOURCE} dnaml > $TARGET')
 
     # run dnaml (from phylip package) to generate maximum likelihood tree
-    dnaml = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']),
+    dnaml = CommandRunner([os.path.join(outdir, x) for x in ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']],
                        dnaml_config,
                        'cd ' + outdir + '/dnaml && rm -f outfile outtree && dnaml < ${SOURCE.file} > ${TARGETS[2].file}')
     # Manually depend on phylip so that we rerun dnaml if the input sequences change (without this, dnaml will
@@ -103,7 +103,7 @@ if gctree:
                                  buffarg + 'python bin/mkconfig.py ${SOURCE} dnapars ' + quick_arg + ' > $TARGET')
 
     # run dnapars (from phylip package) to generate parsimony trees
-    dnapars = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']),
+    dnapars = CommandRunner([os.path.join(outdir, x) for x in ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']],
                        dnapars_config,
                        'cd ' + outdir + '/dnapars && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
     # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
@@ -118,7 +118,7 @@ if gctree:
         dnapars_config_bootstrap = env.Command(os.path.join(outdir, 'dnapars_bootstrap/config.cfg'),
                                      seqboot[0],
                                      buffarg + 'python bin/mkconfig.py ${SOURCE} dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
-        dnapars_bootstrap = CommandRunner(map(lambda x: os.path.join(outdir, x), ['dnapars_bootstrap/outtree', 'dnapars_bootstrap/outfile', 'dnapars_bootstrap/log.log']),
+        dnapars_bootstrap = CommandRunner([os.path.join(outdir, x) for x in ['dnapars_bootstrap/outtree', 'dnapars_bootstrap/outfile', 'dnapars_bootstrap/log.log']],
                            dnapars_config_bootstrap,
                            'cd ' + outdir + '/dnapars_bootstrap && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
         env.Depends(dnapars_bootstrap, seqboot)

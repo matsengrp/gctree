@@ -5,11 +5,9 @@
 aggregation plots of validation output from several simulation/validation runs
 '''
 
-from __future__ import division, print_function
-import scipy, matplotlib
+import matplotlib
 matplotlib.use('agg')
 from matplotlib import pyplot as plt
-from matplotlib import rc, ticker
 import pandas as pd
 import argparse
 import seaborn as sns
@@ -28,17 +26,17 @@ for i, fname in enumerate(args.input):
 aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
 
 plt.figure()
-df1 = pd.melt(aggdat.ix[:, aggdat.columns != 'N_taxa'], id_vars=['method'], var_name='metric')
-sns.factorplot(x="method", y="value", col="metric", col_wrap=2,
-                   data=df1, kind="swarm", size=3, aspect=.8, sharey=False)
+df1 = pd.melt(aggdat.loc[:, aggdat.columns != 'N_taxa'], id_vars=['method'], var_name='metric')
+sns.catplot(x="method", y="value", col="metric", col_wrap=2,
+                   data=df1, kind="swarm", height=3, aspect=.8, sharey=False)
 plt.savefig(args.outbase+'.pdf')
 
-sns.factorplot(x="method", y="value", col="metric", col_wrap=2,
-                   data=df1, kind="box", size=3, aspect=.8, sharey=False)
+sns.catplot(x="method", y="value", col="metric", col_wrap=2,
+                   data=df1, kind="box", height=3, aspect=.8, sharey=False)
 plt.savefig(args.outbase+'_box.pdf')
 
-sns.factorplot(x="method", y="value", col="metric", col_wrap=2,
-                   data=df1, kind="violin", size=3, aspect=.8, sharey=False)
+sns.catplot(x="method", y="value", col="metric", col_wrap=2,
+                   data=df1, kind="violin", height=3, aspect=.8, sharey=False)
 plt.savefig(args.outbase+'_violin.pdf')
 
 plt.figure()

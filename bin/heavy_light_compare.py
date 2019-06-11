@@ -5,19 +5,12 @@
 comparison of heavy and light trees
 '''
 
-from __future__ import division, print_function
-from gctree import CollapsedTree, CollapsedForest
 import pandas as pd
 import scipy
-#import matplotlib
-#matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set(style='white', color_codes=True)
 import pickle
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from collections import defaultdict
 

@@ -10,54 +10,20 @@ Two programs are implemented:
 
 All commands should be issued from within the gctree repo directory.
 
-## DEPENDENCIES
-* scons
-* Python 2.7, with modules:
-  * scipy
-  * matplotlib
-  * seaborn
-  * pandas
-  * biopython
-  * [ete3](http://etetoolkit.org)
-  * [nestly](https://pypi.python.org/pypi/nestly)
-* [PHYLIP](http://evolution.genetics.washington.edu/phylip)
-* X11 or xvfb-run (for rendering phylogenetic trees using ete3)
-* [seqmagick](https://github.com/fhcrc/seqmagick)
-
 ## INSTALLATION STEPS
 
 ### Linux/MacOS
 
 0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
-1. Create a python2.7 conda environment (named gctree in this example):
+1. Create a python 3.7 conda environment (named gctree in this example):
     ```bash
-    conda create --name gctree python=2.7
+    conda create --name gctree python=3.7 -c bioconda -c etetoolkit -c conda-forge -c cswarth python=3.7 ete3 biopython matplotlib pandas scipy scons seaborn nestly phylip seqmagick
     ```
 2. Activate the environment:
     ```bash
-    source activate gctree
+    conda activate gctree
     ```
-3. Install ete3:
-    ```bash
-    conda install -c etetoolkit ete3 ete3_external_apps
-    ```
-4. Install python packages:
-    ```bash
-    conda install biopython matplotlib pandas scipy scons seaborn
-    ```
-5. Install nestly
-    ```bash
-    conda install -c conda-forge nestly
-    ```
-6. Install PHYLIP:
-    ```bash
-    conda install -c bioconda phylip
-    ```
-7. Install seqmagick:
-    ```bash
-    conda install -c cswarth seqmagick
-    ```
-8. Install jellyfish for faster string comparison (optional)
+3. Install jellyfish for faster string comparison (optional)
     ```bash
     conda install -c conda-forge jellyfish
     ```

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from ete3 import Tree, TreeNode, NodeStyle, TreeStyle, faces, TextFace, add_face_to_node, CircleFace, AttrFace, CircleFace, PieChartFace
+from ete3 import NodeStyle, TreeStyle, faces, TextFace
 
 
 def try_cast(k):
@@ -140,21 +140,21 @@ def read_plot_config(fnam):
     '''
     ### File format is JSON ###
     {
-        "frequency": "LNobs", 
+        "frequency": "LNobs",
         "node_color": [
             [
-                "hit_affinities", 
+                "hit_affinities",
                 "firebrick"
-            ], 
+            ],
             [
-                "node_color", 
+                "node_color",
                 "common_links"
             ]
-        ], 
-        "node_label": "hit_affinities", 
+        ],
+        "node_label": "hit_affinities",
         "node_shape": [
             [
-                "hit_affinities", 
+                "hit_affinities",
                 "square"
             ]
         ]

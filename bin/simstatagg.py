@@ -5,18 +5,15 @@
 aggregation plots of metrics from several simulation runs with same parameters
 '''
 
-from __future__ import division, print_function
-import scipy, matplotlib
+import matplotlib
 matplotlib.use('agg')
 from matplotlib import pyplot as plt
-from matplotlib import rc, ticker
 import pandas as pd
 import argparse
 from deduplicate import fasta_parse
 from utils import hamming_distance
 import seaborn as sns
 sns.set(style="white", color_codes=True)
-from matplotlib.backends.backend_pdf import PdfPages
 
 
 parser = argparse.ArgumentParser(description='aggregate validation of repeated runs with same parameters')
@@ -32,12 +29,6 @@ for i, fname in enumerate(args.input):
         aggdat = df
     else:
         aggdat = aggdat.append(df, ignore_index=True)
-
-# aggdat.to_csv(args.outbase+'.tsv', sep='\t', index=False)
-
-# fields = list(aggdat.columns)
-# fields.remove('simulation')
-# nfields = len(fields)
 
 sims = set(aggdat['simulation'])
 nsims = len(sims)
@@ -70,8 +61,6 @@ plt.ylabel('observed genotypes')
 plt.tight_layout()
 
 plt.subplot(1, 2, 2)
-# g = sns.JointGrid('genotype abundance', 'Hamming neighbor genotypes', aggdat, space=0)
-# levels = scipy.logspace(-2, 2, 10)
 xbins = range(max(aggdat['genotype abundance'].max(), exp_stats['genotype abundance'].max() if args.experimental is not None else 0) + 2)
 ybins = range(max(aggdat['Hamming neighbor genotypes'].max(), exp_stats['Hamming neighbor genotypes'].max() if args.experimental is not None else 0) + 2)
 for simulation, simulation_aggdat in aggdat.groupby('simulation'):
@@ -86,29 +75,3 @@ plt.xlim([.9, None])
 plt.ylim([-.1, None])
 plt.tight_layout()
 plt.savefig(args.outbase+'.pdf')
-
-# for sim in sims:
-#     sns.jointplot(aggdat[aggdat['simulation']==sim][fields[0]],aggdat[aggdat['simulation']==sim][fields[1]], kind='kde', space=0, kwargs=dict(bw=.5, shaded=False))
-
-# # g = sns.pairplot(aggdat, diag_kind='kde', hue='simulation', vars=fields)
-# g = sns.PairGrid(aggdat, hue='simulation', vars=fields)
-# g = g.map_diag(sns.kdeplot, bw=.4, alpha=20/nsims, lw=1)
-# g = g.map_upper(sns.kdeplot, levels=scipy.linspace(0, 1, .1))
-# g = g.map_lower(plt.scatter)
-# # g = g.map_lower(sns.kdeplot)
-# g.set(xscale='symlog', yscale='symlog', xlim=[0, None], ylim=[0, None])
-# # plt.xscale('symlog')
-# # ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
-
-
-# for i, field in enumerate(fields, 1):
-#     ax = fig.add_subplot(1, nfields, i)
-#     for simulation in sims:
-#         sns.kdeplot(aggdat[aggdat['simulation']==simulation][field], legend=False, alpha=20/nsims, cumulative=True, lw=1)
-#         plt.xlabel(field)
-#         plt.xlim([min(aggdat[field]), max(aggdat[field])])
-#         plt.ylim([0, 1])
-#         plt.xscale('symlog')
-#         ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
-
-# plt.savefig(args.outbase+'.pdf')

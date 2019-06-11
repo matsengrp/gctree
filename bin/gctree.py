@@ -2,15 +2,19 @@
 # -*- coding: utf-8 -*-
 
 '''
-This module contains classes for simulation and inference for a binary branching process with mutation
-in which the tree is collapsed to nodes that count the number of clonal leaves of each type
-'''
+This module contains classes for simulation and inference for a binary
+branching process with mutation in which the tree is collapsed to nodes that
+count the number of clonal leaves of each type'''
 
-from __future__ import division, print_function
-
-import phylip_parse, scipy, warnings, random, collections, pandas as pd, os
-from scipy.misc import logsumexp
-from scipy.optimize import minimize, check_grad, fsolve
+import phylip_parse
+import numpy as np
+import warnings
+import random
+import pandas as pd
+import os
+from scipy.special import logsumexp
+from scipy.special import softmax
+from scipy.optimize import minimize, check_grad
 from itertools import cycle
 from scipy.stats import poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, SVG_COLORS
@@ -19,24 +23,88 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
-import matplotlib; matplotlib.use('agg')
-from matplotlib import pyplot as plt, ticker
-try:
-    import cPickle as pickle
-except:
-    import pickle
+import matplotlib
+matplotlib.use('agg')
+from matplotlib import pyplot as plt
 
+import pickle
+from functools import lru_cache
 from utils import hamming_distance
 import selection_utils
 from mutation_model import MutationModel
 
-scipy.seterr(all='raise')
+np.seterr(all='raise')
+
+@lru_cache(maxsize=None)
+def logf(c, m, *params):
+    '''
+    Log-probability of getting c leaves that are clones of the root and m mutant
+    clades off the root lineage, given branching probability p and mutation
+    probability q. Also returns gradient wrt params (p, q). Computed by dynamic
+    programming. This would more naturally live as a LeavesAndClades method,
+    but we want the cache to be shared by all instances'''
+    p, q = params
+    if c==m==0 or (c==0 and m==1):
+        logf_result = -np.inf
+        dlogfdp_result = 0
+        dlogfdq_result = 0
+    elif c==1 and m==0:
+        logf_result = np.log(1 - p)
+        dlogfdp_result = -1 / (1 - p)
+        dlogfdq_result = 0
+    elif c==0 and m==2:
+        logf_result = np.log(p) + 2 * np.log(q)
+        dlogfdp_result = 1 / p
+        dlogfdq_result = 2 / q
+    else:
+        if m >= 1:
+            neighbor_logf, (neighbor_dlogfdp, neighbor_dlogfdq) = logf(c,
+                                                                       m - 1,
+                                                                       *params)
+            logf_result = (np.log(2) + np.log(p) + np.log(q) + np.log(1-q)
+                           + neighbor_logf)
+            dlogfdp_result = 1 / p + neighbor_dlogfdp
+            dlogfdq_result = 1 / q - 1 / (1 - q) + neighbor_dlogfdq
+        else:
+            logf_result = -np.inf
+            dlogfdp_result = 0.
+            dlogfdq_result = 0.
+        logg_array = [logf_result]
+        dloggdp_array = [dlogfdp_result]
+        dloggdq_array = [dlogfdq_result]
+        for cx in range(c+1):
+            for mx in range(m+1):
+                if (not (cx==0 and mx==0)) and (not (cx==c and mx==m)):
+                    (neighbor1_logf,
+                     (neighbor1_dlogfdp,
+                      neighbor1_dlogfdq)) = logf(cx, mx, *params)
+                    (neighbor2_logf,
+                     (neighbor2_dlogfdp,
+                      neighbor2_dlogfdq)) = logf(c - cx, m - mx, *params)
+                    logg = (np.log(p) + 2 * np.log(1 - q) + neighbor1_logf +
+                            + neighbor2_logf)
+                    dloggdp = 1 / p + neighbor1_dlogfdp + neighbor2_dlogfdp
+                    dloggdq = (- 2 / (1 - q)
+                               + neighbor1_dlogfdq + neighbor2_dlogfdq)
+                    logg_array.append(logg)
+                    dloggdp_array.append(dloggdp)
+                    dloggdq_array.append(dloggdq)
+        logf_result = logsumexp(logg_array)
+        softmax_logg_array = softmax(logg_array)
+        dlogfdp_result = np.multiply(softmax_logg_array, dloggdp_array).sum()
+        dlogfdq_result = np.multiply(softmax_logg_array, dloggdq_array).sum()
+
+    return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
+
+
+
+
 
 class LeavesAndClades():
-    '''
-    This is a base class for simulating, and computing likelihood for, an infinite type branching
-    process with branching probability p, mutation probability q, and we collapse mutant clades off the
-    root type and consider just the number of clone leaves, c, and mutant clades, m.
+    '''This is a base class for simulating, and computing likelihood for, an
+    infinite type branching process with branching probability p, mutation
+    probability q, and we collapse mutant clades off the root type and consider
+    just the number of clone leaves, c, and mutant clades, m.
 
       /\
      /\ ^          (3)
@@ -45,28 +113,34 @@ class LeavesAndClades():
         ^
     '''
     def __init__(self, params=None, c=None, m=None):
-        '''initialize with branching probability p and mutation probability q, both in the unit interval'''
+        '''initialize with branching probability p and mutation probability q,
+        both in the unit interval'''
         if params is not None:
             p, q = params
             if not (0 <= p <= 1 and 0 <= q <= 1):
-                raise ValueError('p and q must be in the unit interval')
-        self._nparams = 2#len(params)
+                raise ValueError('p and q must be in the unit interval: '
+                                 f'p = {p}, q = {q}')
         self.params = params
         if c is not None or m is not None:
             if not (c >= 0) and (m >= 0) and (c+m > 0):
-                raise ValueError('c and m must be nonnegative integers summing greater than zero')
+                raise ValueError('c and m must be nonnegative integers '
+                                 'summing greater than zero: '
+                                 f'c = {c}, m = {m}')
             self.c = c
             self.m = m
 
     def simulate(self):
-        '''simulate the number of clone leaves and mutant clades off a root node'''
-        if self.params[0]>=.5:
-            warnings.warn('p >= .5 is not subcritical, tree simulations not garanteed to terminate')
+        '''simulate the number of clone leaves and mutant clades off a root
+        node'''
+        if self.params[0] >= .5:
+            warnings.warn(f'p = {self.p} is not subcritical, tree simulations'
+                          ' not garanteed to terminate')
         if self.params is None:
             raise ValueError('params must be defined for simulation\n')
 
-        # let's track the tree in breadth first order, listing number of clonal and mutant descendants of each node
-        # mutant clades terminate in this view
+        # let's track the tree in breadth first order, listing number of clonal
+        # and mutant descendants of each node mutant clades terminate in this
+        # view
         cumsum_clones = 0
         len_tree = 0
         self.c = 0
@@ -74,7 +148,8 @@ class LeavesAndClades():
         # while termination condition not met
         while cumsum_clones > len_tree - 1:
             if random.random() < self.params[0]:
-                mutants = sum(random.random() < self.params[1] for child in range(2))
+                mutants = sum(random.random() < self.params[1]
+                              for child in range(2))
                 clones = 2 - mutants
                 self.m += mutants
             else:
@@ -85,74 +160,27 @@ class LeavesAndClades():
             len_tree += 1
         assert cumsum_clones == len_tree - 1
 
-    f_hash = {} # <--- class variable for hashing calls to the following function
-    def f(self, params):
-        '''
-        Probability of getting c leaves that are clones of the root and m mutant clades off
-        the root lineage, given branching probability p and mutation probability q
-        Also returns gradient wrt (p, q)
-        Computed by dynamic programming
-        '''
-        p, q = params
-        c, m = self.c, self.m
-        if (p, q, c, m) not in LeavesAndClades.f_hash:
-            if c==m==0 or (c==0 and m==1):
-                f_result = 0
-                dfdp_result = 0
-                dfdq_result = 0
-            elif c==1 and m==0:
-                f_result = 1-p
-                dfdp_result = -1
-                dfdq_result = 0
-            elif c==0 and m==2:
-                f_result = p*q**2
-                dfdp_result = q**2
-                dfdq_result = 2*p*q
-            else:
-                if m >= 1:
-                    neighbor = LeavesAndClades(params=params, c=c, m=m-1)
-                    neighbor_f, (neighbor_dfdp, neighbor_dfdq) = neighbor.f(params)
-                    f_result = 2*p*q*(1-q)*neighbor_f
-                    dfdp_result =   2*q*(1-q) * neighbor_f + \
-                                  2*p*q*(1-q) * neighbor_dfdp
-                    dfdq_result = (2*p - 4*p*q) * neighbor_f + \
-                                   2*p*q*(1-q)  * neighbor_dfdq
-                else:
-                    f_result = 0.
-                    dfdp_result = 0.
-                    dfdq_result = 0.
-                for cx in range(c+1):
-                    for mx in range(m+1):
-                        if (not (cx==0 and mx==0)) and (not (cx==c and mx==m)):
-                            neighbor1 = LeavesAndClades(params=params, c=cx, m=mx)
-                            neighbor2 = LeavesAndClades(params=params, c=c-cx, m=m-mx)
-                            neighbor1_f, (neighbor1_dfdp, neighbor1_dfdq) = neighbor1.f(params)
-                            neighbor2_f, (neighbor2_dfdp, neighbor2_dfdq) = neighbor2.f(params)
-                            f_result += p*(1-q)**2*neighbor1_f*neighbor2_f
-                            dfdp_result +=   (1-q)**2 * neighbor1_f    * neighbor2_f + \
-                                           p*(1-q)**2 * neighbor1_dfdp * neighbor2_f + \
-                                           p*(1-q)**2 * neighbor1_f    * neighbor2_dfdp
-                            dfdq_result += -2*p*(1-q) * neighbor1_f    * neighbor2_f + \
-                                           p*(1-q)**2 * neighbor1_dfdq * neighbor2_f + \
-                                           p*(1-q)**2 * neighbor1_f    * neighbor2_dfdq
-            LeavesAndClades.f_hash[(p, q, c, m)] = (f_result, scipy.array([dfdp_result, dfdq_result]))
-        return LeavesAndClades.f_hash[(p, q, c, m)]
+    def logf(self, params):
+        return logf(self.c, self.m, *params)
 
 
 class CollapsedTree(LeavesAndClades):
     '''
-    Here's a derived class for a collapsed tree, where we recurse into the mutant clades
+    Here's a derived class for a collapsed tree, where we recurse into the
+    mutant clades
           (4)
          / | \\
        (3)(1)(2)
            |   \\
           (2)  (1)
     '''
-    def __init__(self, params=None, tree=None, frame=None, collapse_syn=False, allow_repeats=False):
+    def __init__(self, params=None, tree=None, frame=None, collapse_syn=False,
+                 allow_repeats=False):
         '''
         For intialization, either params or tree (or both) must be provided
         params: offspring distribution parameters
-        tree: ete tree with frequency node feature. If uncollapsed, it will be collapsed
+        tree: ete tree with frequency node feature. If uncollapsed, it will be
+        collapsed
         frame: tranlation frame, with default None, no tranlation attempted
         '''
         LeavesAndClades.__init__(self, params=params)
@@ -201,15 +229,15 @@ class CollapsedTree(LeavesAndClades):
 
             final_observed_genotypes = set([name for node in self.tree.traverse() if node.frequency > 0 or node == self.tree for name in ((node.name,) if isinstance(node.name, str) else node.name)])
             if final_observed_genotypes != observed_genotypes:
-                raise RuntimeError('observed genotypes don\'t match after collapse\n\tbefore: {}\n\tafter: {}\n\tsymmetric diff: {}'.format(observed_genotypes, final_observed_genotypes, observed_genotypes ^ final_observed_genotypes))
+                raise RuntimeError(f'observed genotypes don\'t match after collapse\n\tbefore: {observed_genotypes}\n\tafter: {final_observed_genotypes}\n\tsymmetric diff: {observed_genotypes ^ final_observed_genotypes}')
             assert sum(node.frequency for node in tree.traverse()) == sum(node.frequency for node in self.tree.traverse())
 
             rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
             if not allow_repeats and rep_seq:
-                raise RuntimeError('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+                raise RuntimeError(f'Repeated observed sequences in collapsed tree. {rep_seq} sequences were found repeated.')
             elif allow_repeats and rep_seq:
                 rep_seq = sum(node.frequency > 0 for node in self.tree.traverse()) - len(set([node.sequence for node in self.tree.traverse() if node.frequency > 0]))
-                print('Repeated observed sequences in collapsed tree. {} sequences were found repeated.'.format(rep_seq))
+                print(f'Repeated observed sequences in collapsed tree. {rep_seq} sequences were found repeated.')
             # a custom ladderize accounting for abundance and sequence to break ties in abundance
             for node in self.tree.traverse(strategy='postorder'):
                 # add a partition feature and compute it recursively up the tree
@@ -219,7 +247,7 @@ class CollapsedTree(LeavesAndClades):
         else:
             self.tree = tree
 
-    def l(self, params, sign=1):
+    def l(self, params, sign=1, build_cache=True):
         '''
         log likelihood of params, conditioned on collapsed tree, and its gradient wrt params
         optional parameter sign must be 1 or -1, with the latter useful for MLE by minimization
@@ -228,16 +256,23 @@ class CollapsedTree(LeavesAndClades):
             raise ValueError('tree data must be defined to compute likelihood')
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
+        if build_cache:
+            # build up the lru_cache from the bottom to avoid recursion depth issues
+            logf.cache_clear()
+            c_max = max(node.frequency for node in self.tree.traverse())
+            m_max = max(len(node.children) for node in self.tree.traverse())
+            print(f'building likelihood cache for parameters {params}')
+            for c in range(c_max + 1):
+                for m in range(m_max + 1):
+                    logf(c, m, *params)
         leaves_and_clades_list = [LeavesAndClades(c=node.frequency, m=len(node.children)) for node in self.tree.traverse()]
-        if leaves_and_clades_list[0].c == 0 and leaves_and_clades_list[0].m == 1 and leaves_and_clades_list[0].f(params)[0] == 0:
+        if leaves_and_clades_list[0].c == 0 and leaves_and_clades_list[0].m == 1 and leaves_and_clades_list[0].logf(params)[0] == -np.inf:
             # if unifurcation not possible under current model, add a psuedocount for the naive
             leaves_and_clades_list[0].c = 1
         # extract vector of function values and gradient components
-        f_data = [leaves_and_clades.f(params) for leaves_and_clades in leaves_and_clades_list]
-        fs = scipy.array([[x[0]] for x in f_data])
-        logf = scipy.log(fs).sum()
-        grad_fs = scipy.array([x[1] for x in f_data])
-        grad_logf = (grad_fs/fs).sum(axis=0)
+        logf_data = [leaves_and_clades.logf(params) for leaves_and_clades in leaves_and_clades_list]
+        logf = np.array([[x[0]] for x in logf_data]).sum()
+        grad_logf = np.array([x[1] for x in logf_data]).sum(axis=0)
         return sign*logf, sign*grad_logf
 
     def mle(self, **kwargs):
@@ -248,12 +283,16 @@ class CollapsedTree(LeavesAndClades):
         '''
         # random initalization
         x_0 = (random.random(), random.random())
-        bounds = ((.01, .99), (.001, .999))
+        bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
         kwargs['sign'] = -1
-        grad_check = check_grad(lambda x: self.l(x, **kwargs)[0], lambda x: self.l(x, **kwargs)[1], (.4, .5))
+        grad_check = check_grad(lambda x: self.l(x, **kwargs)[0],
+                                lambda x: self.l(x, **kwargs)[1],
+                                x_0)
         if grad_check > 1e-3:
-            warnings.warn('gradient mismatches finite difference approximation by {}'.format(grad_check), RuntimeWarning)
-        result = minimize(lambda x: self.l(x, **kwargs), x0=x_0, jac=True, method='L-BFGS-B', options={'ftol':1e-10}, bounds=bounds)
+            warnings.warn(f'gradient mismatches finite difference approximation by {grad_check}', RuntimeWarning)
+        result = minimize(lambda x: self.l(x, **kwargs), jac=True, x0=x_0,
+                          method='L-BFGS-B', options={'ftol':1e-10},
+                          bounds=bounds)
         # update params if None and optimization successful
         if not result.success:
             warnings.warn('optimization not sucessful, '+result.message, RuntimeWarning)
@@ -294,12 +333,12 @@ class CollapsedTree(LeavesAndClades):
             circle_color = 'lightgray' if colormap is None or node.name not in colormap else colormap[node.name]
             text_color = 'black'
             if isinstance(circle_color, str):
-                C = CircleFace(radius=max(3, 10*scipy.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color} if node.frequency > 0 else None)
+                C = CircleFace(radius=max(3, 10*np.sqrt(node.frequency)), color=circle_color, label={'text':str(node.frequency), 'color':text_color} if node.frequency > 0 else None)
                 C.rotation = -90
                 C.hz_align = 1
                 faces.add_face_to_node(C, node, 0)
             else:
-                P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*scipy.sqrt(node.frequency), 2*10*scipy.sqrt(node.frequency), colors=[(color if color != 'None' else 'lightgray') for color in list(circle_color.keys())], line_color=None)
+                P = PieChartFace([100*x/node.frequency for x in circle_color.values()], 2*10*np.sqrt(node.frequency), 2*10*np.sqrt(node.frequency), colors=[(color if color != 'None' else 'lightgray') for color in list(circle_color.keys())], line_color=None)
                 T = TextFace(' '.join([str(x) for x in list(circle_color.values())]), tight_text=True)
                 T.hz_align = 1
                 T.rotation = -90
@@ -357,7 +396,7 @@ class CollapsedTree(LeavesAndClades):
         if idlabel:
             aln = MultipleSeqAlignment([])
             for node in self.tree.traverse():
-                aln.append(SeqRecord(Seq(str(node.sequence), generic_dna), id=str(node.name), description='abundance={}'.format(node.frequency)))
+                aln.append(SeqRecord(Seq(str(node.sequence), generic_dna), id=str(node.name), description=f'abundance={node.frequency}'))
             AlignIO.write(aln, open(os.path.splitext(outfile)[0] + '.fasta', 'w'), 'fasta')
 
     def write(self, file_name):
@@ -382,14 +421,14 @@ class CollapsedTree(LeavesAndClades):
             # takes a true and inferred tree as CollapsedTree objects
             taxa = [node.sequence for node in self.tree.traverse() if node.frequency]
             n_taxa = len(taxa)
-            d = scipy.zeros(shape=(n_taxa, n_taxa))
-            sum_sites = scipy.zeros(shape=(n_taxa, n_taxa))
+            d = np.zeros(shape=(n_taxa, n_taxa))
+            sum_sites = np.zeros(shape=(n_taxa, n_taxa))
             for i in range(n_taxa):
-                nodei_true = self.tree.iter_search_nodes(sequence=taxa[i]).next()
-                nodei      =      tree2.tree.iter_search_nodes(sequence=taxa[i]).next()
+                nodei_true = self.tree.iter_search_nodes(sequence=taxa[i]).__next__()
+                nodei      =      tree2.tree.iter_search_nodes(sequence=taxa[i]).__next__()
                 for j in range(i + 1, n_taxa):
-                    nodej_true = self.tree.iter_search_nodes(sequence=taxa[j]).next()
-                    nodej      =      tree2.tree.iter_search_nodes(sequence=taxa[j]).next()
+                    nodej_true = self.tree.iter_search_nodes(sequence=taxa[j]).__next__()
+                    nodej      =      tree2.tree.iter_search_nodes(sequence=taxa[j]).__next__()
                     MRCA_true = self.tree.get_common_ancestor((nodei_true, nodej_true)).sequence
                     MRCA =           tree2.tree.get_common_ancestor((nodei, nodej)).sequence
                     d[i, j] = hamming_distance(MRCA_true, MRCA)
@@ -444,7 +483,7 @@ class CollapsedTree(LeavesAndClades):
     def split_compatibility(split1, split2):
         diff = split1[0].union(split1[1]) ^ split2[0].union(split2[1])
         if diff:
-            raise ValueError('splits do not cover the same taxa\n\ttaxa not in both: {}'.format(diff))
+            raise ValueError(f'splits do not cover the same taxa\n\ttaxa not in both: {diff}')
         for partition1 in split1:
             for partition2 in split2:
                 if partition1.isdisjoint(partition2):
@@ -520,21 +559,30 @@ class CollapsedForest(CollapsedTree):
         self.forest = [CollapsedTree(self.params).simulate() for x in range(self.n_trees)]
         return self
 
-    def l(self, params, sign=1, empirical_bayes_sum=False):
+    def l(self, params, sign=1, empirical_bayes_sum=False, build_cache=True):
         '''
         likelihood of params, given forest, and it's gradient wrt params
         optional parameter sign must be 1 or -1, with the latter useful for MLE by minimization
-        if optional parameter empirical_bayes_sum is true, we're doing the Vlad sum for estimating params for
-        as set of parsimony trees
+        if optional parameter empirical_bayes_sum is true, we're estimating params for
+        a set of parsimony trees
         '''
         if self.forest is None:
             raise ValueError('forest data must be defined to compute likelihood')
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
-        # since the l method on the CollapsedTree class returns l and grad_l...
-        terms = [tree.l(params) for tree in self.forest]
-        ls = scipy.array([term[0] for term in terms])
-        grad_ls = scipy.array([term[1] for term in terms])
+        if build_cache:
+            # build up the lru_cache from the bottom to avoid recursion depth issues
+            logf.cache_clear()
+            c_max = max(node.frequency for tree in self.forest for node in tree.tree.traverse())
+            m_max = max(len(node.children) for tree in self.forest for node in tree.tree.traverse())
+            print(f'building likelihood cache for parameters {params}')
+            for c in range(c_max + 1):
+                for m in range(m_max + 1):
+                    logf(c, m, *params)
+        # we don't want to build the cache again in each tree
+        terms = [tree.l(params, build_cache=False) for tree in self.forest]
+        ls = np.array([term[0] for term in terms])
+        grad_ls = np.array([term[1] for term in terms])
         if empirical_bayes_sum:
             # we need to find the smallest derivative component for each
             # coordinate, then subtract off to get positive things to logsumexp
@@ -542,10 +590,10 @@ class CollapsedForest(CollapsedTree):
             for j in range(len(params)):
                 i_prime = grad_ls[:,j].argmin()
                 grad_l.append(grad_ls[i_prime,j] +
-                              scipy.exp(logsumexp(ls - ls[i_prime],
+                              np.exp(logsumexp(ls - ls[i_prime],
                                                   b=grad_ls[:,j]-grad_ls[i_prime,j]) -
                                         logsumexp(ls - ls[i_prime])))
-            return sign*(-scipy.log(len(ls)) + logsumexp(ls)), sign*scipy.array(grad_l)
+            return sign*(-np.log(len(ls)) + logsumexp(ls)), sign*np.array(grad_l)
         else:
             return sign*ls.sum(), sign*grad_ls.sum(axis=0)
 
@@ -553,7 +601,7 @@ class CollapsedForest(CollapsedTree):
 
     def __str__(self):
         '''return a string representation for printing'''
-        return 'params = {}, n_trees = {}\n'.format(self.params, self.n_trees) + \
+        return f'params = {self.params}, n_trees = {self.n_trees}\n' + \
                 '\n'.join([str(tree) for tree in self.forest])
 
 def test(args):
@@ -573,11 +621,11 @@ def test(args):
     ct = 0
     ps = (.1, .2, .3, .4)
     qs = (.2, .4, .6, .8)
-    scipy.seterr(all='ignore')
+    np.seterr(all='ignore')
     for p in ps:
         for q in qs:
             forest = CollapsedForest((p, q), n)
-            print('parameters: p = {}, q = {}'.format(p, q))
+            print(f'parameters: p = {p}, q = {q}')
             forest.simulate()
             tree_dict = {}
             for tree in forest.forest:
@@ -586,9 +634,9 @@ def test(args):
                     tree_dict[tree_hash] = [tree, tree.l((p, q))[0], 1]
                 else:
                     tree_dict[tree_hash][-1] += 1
-            L_empirical, L_theoretical = zip(*[(tree_dict[tree_hash][2], scipy.exp(tree_dict[tree_hash][1])) for tree_hash in tree_dict if tree_dict[tree_hash][2]])
+            L_empirical, L_theoretical = zip(*[(tree_dict[tree_hash][2], np.exp(tree_dict[tree_hash][1])) for tree_hash in tree_dict if tree_dict[tree_hash][2]])
             for tree_hash in tree_dict:
-                df.loc[ct] = (p, q, 'p={}, q={}'.format(p, q), tree_dict[tree_hash][2], scipy.exp(tree_dict[tree_hash][1]))
+                df.loc[ct] = (p, q, f'p={p}, q={q}', tree_dict[tree_hash][2], np.exp(tree_dict[tree_hash][1]))
                 ct += 1
     print()
 
@@ -596,16 +644,16 @@ def test(args):
     limx = (1/n, 1.1)
     limy = (1, 1.1*n)
     g = sns.lmplot(x='L', y='f', col='p', row='q', hue='parameters', data=df,
-                   fit_reg=False, scatter_kws={'alpha':.3}, size=1.5, legend=False,
+                   fit_reg=False, scatter_kws={'alpha':.3}, height=1.5, legend=False,
                    row_order=reversed(qs))
     g.set(xscale='log', yscale='log', xlim=limx, ylim=limy)
     for i in range(len(ps)):
         for j in range(len(qs)):
             g.axes[i, j].plot(limx, limy, ls='--', c='black', lw=.5, zorder=0, markeredgewidth=.1)
-            g.axes[i, j].set_title('p={}\nq={}'.format(ps[j], list(reversed(qs))[i]), x=.05, y=.7, size='x-small', ha='left')
+            g.axes[i, j].set_title(f'p={ps[j]}\nq={list(reversed(qs))[i]}', x=.05, y=.7, size='x-small', ha='left')
     g.set_axis_labels('', '')
     g.fig.text(0.45, .02, s='GCtree likelihood', multialignment='center')
-    g.fig.text(.02, 0.7, s='frequency among {} simulations'.format(n), rotation=90, multialignment='center')
+    g.fig.text(.02, 0.7, s=f'frequency among {n} simulations', rotation=90, multialignment='center')
     plt.savefig(args.outbase+'.pdf')
 
     # MLE check
@@ -617,16 +665,16 @@ def test(args):
         for q in qs:
             for _ in range(n):
                 forest = CollapsedForest((p, q), n2)
-                print('parameters: p = {}, q = {}'.format(p, q))
+                print(f'parameters: p = {p}, q = {q}')
                 forest.simulate()
                 result = forest.mle()
-                df.loc[ct] = ('p={}, q={}'.format(p, q), result.x[0], result.x[1])
+                df.loc[ct] = (f'p={p}, q={q}', result.x[0], result.x[1])
                 ct += 1
 
     plt.figure()
     g = sns.lmplot(x='$\hat{p}$', y='$\hat{q}$', hue='true parameters', data=df,
-                   fit_reg=False, scatter_kws={'alpha':.2}, size=6, legend=False)
-    g.set(xlim=(0.05, .45), xticks=scipy.arange(0., .6, .1), ylim=(.1, .9), yticks=scipy.arange(0., 1.2, .2))
+                   fit_reg=False, scatter_kws={'alpha':.2}, height=6, legend=False)
+    g.set(xlim=(0.05, .45), xticks=np.arange(0., .6, .1), ylim=(.1, .9), yticks=np.arange(0., 1.2, .2))
     for i in range(len(ps)):
         for j in range(len(qs)):
             plt.scatter([ps[i]], [qs[j]], c='black', marker='+')
@@ -648,9 +696,9 @@ def infer(args):
 
     for i, content in enumerate(outfiles):
         if i > 0:
-            print('bootstrap sample {}'.format(i))
+            print(f'bootstrap sample {i}')
             print('----------------------')
-            outbase = args.outbase + '.bootstrap_{}'.format(i)
+            outbase = args.outbase + f'.bootstrap_{i}'
         else:
             outbase = args.outbase
         phylip_collapsed = [CollapsedTree(tree=tree, frame=args.frame, allow_repeats=(i>0)) for tree in content]
@@ -669,7 +717,7 @@ def infer(args):
         # check for unifurcations at root
         unifurcations = sum(tree.tree.frequency == 0 and len(tree.tree.children) == 1 for tree in parsimony_forest.forest)
         if unifurcations:
-            print('{} trees exhibit unobserved unifurcation from root. Adding psuedocounts to these roots'.format(unifurcations))
+            print(f'{unifurcations} trees exhibit unobserved unifurcation from root. Adding psuedocounts to these roots')
 
         # fit p and q using all trees
         # if we get floating point errors, try a few more times (starting params are random)
@@ -680,20 +728,21 @@ def infer(args):
                 break
             except FloatingPointError as e:
                 if tries + 1 < max_tries:
-                    print('floating point error in MLE: {}. Attempt {} of {}. Rerunning with new random start.'.format(e, tries+1, max_tries))
+                    print(f'floating point error in MLE: {e}. Attempt {tries + 1} of {max_tries}. Rerunning with new random start.')
                 else:
                     raise
             else:
                 raise
 
-        print('params = {}'.format(parsimony_forest.params))
+        print(f'params = {parsimony_forest.params}')
 
         if i > 0:
             df.loc[i-1] = parsimony_forest.params
 
         # get likelihoods and sort by them
-        ls = [tree.l(parsimony_forest.params)[0] for tree in parsimony_forest.forest]
-        ls, parsimony_forest.forest = zip(*sorted(zip(ls, parsimony_forest.forest), reverse=True))
+        ls = [tree.l(parsimony_forest.params, build_cache=False)[0] for tree in parsimony_forest.forest]
+        ls, parsimony_forest.forest = zip(*sorted(zip(ls, parsimony_forest.forest),
+                                                  key = lambda x: x[0], reverse=True))
 
         if bootstrap:
             gctrees.append(parsimony_forest.forest[0])
@@ -717,20 +766,20 @@ def infer(args):
         print('tree\talleles\tlogLikelihood')
         for j, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
             alleles = sum(1 for _ in collapsed_tree.tree.traverse())
-            print('{}\t{}\t{}'.format(j, alleles, l))
-            collapsed_tree.render(outbase+'.inference.{}.svg'.format(j),
+            print(f'{j}\t{alleles}\t{l}')
+            collapsed_tree.render(f'{outbase}.inference.{j}.svg',
                                   idlabel=args.idlabel,
                                   colormap=colormap,
                                   chain_split=args.chain_split)
-            collapsed_tree.newick(outbase+'.inference.{}.nk'.format(j))
+            collapsed_tree.newick(f'{outbase}.inference.{j}.nk')
 
         # rank plot of likelihoods
         plt.figure(figsize=(6.5,2))
         try:
-            plt.plot(scipy.exp(ls), 'ko', clip_on=False, markersize=4)
+            plt.plot(np.exp(ls), 'ko', clip_on=False, markersize=4)
             plt.ylabel('GCtree likelihood')
             plt.yscale('log')
-            plt.ylim([None, 1.1*max(scipy.exp(ls))])
+            plt.ylim([None, 1.1*max(np.exp(ls))])
         except FloatingPointError:
             plt.plot(ls, 'ko', clip_on=False, markersize=4)
             plt.ylabel('GCtree log-likelihood')
@@ -758,9 +807,9 @@ def infer(args):
         import seaborn as sns; sns.set(style="white", color_codes=True)
         sns.set_style("ticks")
         plt.figure()
-        scipy.seterr(all='ignore')
+        np.seterr(all='ignore')
         g = sns.jointplot('$\hat{p}$', '$\hat{q}$', data=df, joint_kws={'alpha':.1, 's':.1},
-                          space=0, color='k', stat_func=None, xlim=(0, 1), ylim=(0, 1), size=3)
+                          space=0, color='k', stat_func=None, xlim=(0, 1), ylim=(0, 1), height=3)
         plt.savefig(args.outbase+'.inference.bootstrap_theta.pdf')
         gctrees[0].support(gctrees[1:])
         gctrees[0].render(args.outbase+'.inference.bootstrap_support.svg',
@@ -841,14 +890,14 @@ def simulate(args):
             tree.ladderize()
             uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:
-                raise RuntimeError('collapsed tree contains {} sampled sequences'.format(uniques))
+                raise RuntimeError(f'collapsed tree contains {uniques} sampled sequences')
             break
         except RuntimeError as e:
-            print('{}, trying again'.format(e))
+            print(f'{e}, trying again')
         else:
             raise
     if trial == trials - 1:
-        raise RuntimeError('{} attempts exceeded'.format(trials))
+        raise RuntimeError(f'{trials} attempts exceeded')
 
     # In the case of a sequence pair print them to separate files:
     if args.sequence2 is not None:
@@ -883,7 +932,7 @@ def simulate(args):
                           'Hamming neighbor genotypes':degree})
     stats.to_csv(args.outbase+'.simulation.stats.tsv', sep='\t', index=False)
 
-    print('{} simulated observed sequences'.format(sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())))
+    print(f'{sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())} simulated observed sequences')
 
     # render the full lineage tree
     ts = TreeStyle()

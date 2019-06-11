@@ -6,22 +6,16 @@ summary stats of the seq data going into tree inference
 for CFT
 '''
 
-from __future__ import division, print_function
 from deduplicate import fasta_parse
-from Bio import AlignIO
-import scipy, matplotlib
+import matplotlib
 matplotlib.use('agg')
 from matplotlib import pyplot as plt
-from matplotlib import rc, ticker
 import pandas as pd
 import argparse
 import seaborn as sns
 sns.set(style="white", color_codes=True)
-from matplotlib.backends.backend_pdf import PdfPages
+from utils import hamming_distance
 
-def hamming_distance(seq1, seq2):
-    '''Hamming distance between two sequences of equal length'''
-    return sum(x != y for x, y in zip(seq1, seq2))
 
 def main():
     parser = argparse.ArgumentParser(description='summary statistics of pre-tree data')

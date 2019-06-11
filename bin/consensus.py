@@ -3,7 +3,6 @@
 
 '''compute GCtree for a phylip consensus tree'''
 
-from __future__ import division, print_function
 from gctree import *
 import argparse
 

@@ -237,5 +237,5 @@ if simulate and not GetOption('help'):
                exports='env gctree igphyml dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg')
 elif inference and not GetOption('help'):
     if None in [input_file, outdir]:
-        raise InputError('input fasta orp phylip and outdir must be specified')
+        raise InputError('input fasta or phylip and outdir must be specified')
     SConscript('SConscript.inference', exports='env gctree igphyml dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile')

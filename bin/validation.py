@@ -5,7 +5,6 @@
 comparison of inference and simulated trees
 '''
 
-from __future__ import division, print_function
 from gctree import CollapsedTree, CollapsedForest
 import gctree
 from utils import hamming_distance
@@ -22,16 +21,6 @@ import seaborn as sns
 sns.set(style='white', color_codes=True)
 import os, sys
 import numpy as np
-try:
-    import jellyfish  # Last time I checked this module was the fastest kid on the block, however 2x slower than a simple Cython function
-    def fast_hamming_dist(s1, s2):
-        if s1 == s2:
-            return 0
-        else:
-            return jellyfish.hamming_distance(unicode(s1), unicode(s2))
-except:
-    print('Couldn\'t find the python module "jellyfish" which is used for fast string comparison. Falling back to pure python function.')
-    fast_hamming_dist = hamming_distance
 
 
 def reconstruct_lineage(tree, node):
@@ -110,8 +99,8 @@ def align_lineages(seq, tree_t, tree_i, gap_penalty_pct=0, known_root=True, allo
     for i in range(kt):
         for j in range(ki):
             # Notice the score is defined by number of mismatches:
-            #sc_mat[i, j] = len(lt[i]) - fast_hamming_dist(lt[i], li[j])
-            sc_mat[i, j] = -1 * fast_hamming_dist(lt[i], li[j])
+            #sc_mat[i, j] = len(lt[i]) - hamming_distance(lt[i], li[j])
+            sc_mat[i, j] = -1 * hamming_distance(lt[i], li[j])
 
 ###    print(sc_mat)
     # Calculate the alignment scores:
@@ -238,7 +227,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
                                         tree.l(inferences['gctree'].params)[0]) for tree in inferences['gctree'].forest])
         MRCAs = [true_tree.compare(tree, method='MRCA') for tree in inferences['gctree'].forest]
         lineage_distances = [all_lineage_dist(true_tree, tree) for tree in inferences['gctree'].forest]
-        lineage_distances = zip(*lineage_distances)  # Unzip the forest tuple to get lineage_distances[ld0-3][tree_n]
+        lineage_distances = list(zip(*lineage_distances))  # Unzip the forest tuple to get lineage_distances[ld0-3][tree_n]
         mean_frequencies = [scipy.mean([node.frequency for node in tree.tree.traverse()]) for tree in inferences['gctree'].forest]
         mean_branch_lengths = [scipy.mean([node.dist for node in tree.tree.iter_descendants()]) for tree in inferences['gctree'].forest]
         df = pd.DataFrame({'log-likelihood':likelihoods,
@@ -294,7 +283,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
            true_tree.compare(inferences[method].forest[0], method='RF'),
            true_tree.compare(inferences[method].forest[0], method='MRCA'),
            all_lineage_dist(true_tree, inferences[method].forest[0])) for method in inferences])
-    lineage_distances = zip(*lineage_distances)  # Unzip the methods tuple to get lineage_distances[ld0-3][method]
+    lineage_distances = list(zip(*lineage_distances))  # Unzip the methods tuple to get lineage_distances[ld0-3][method]
     df = pd.DataFrame({'method':methods, 'N_taxa':n_taxa, 'RF':distances, 'MRCA':MRCAs, 'COAR':lineage_distances[0], 'COAR_fw':lineage_distances[1]},
                       columns=('method', 'N_taxa', 'RF', 'MRCA', 'COAR', 'COAR_fw'))
     df.to_csv(outbase+'.tsv', sep='\t', index=False)
