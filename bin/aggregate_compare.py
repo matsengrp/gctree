@@ -5,8 +5,6 @@
 aggregation plots of across parameters
 '''
 
-import matplotlib
-matplotlib.use('PDF')
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 import pandas as pd
@@ -40,11 +38,8 @@ df.loc[df.loc[:,'metric'] == 'MRCA', 'metric'] = 'logMRCA'
 
 plot2var = [sns.swarmplot, sns.swarmplot, sns.lmplot]
 variables = ['lambda', 'lambda0', 'N_taxa']
-options = [dict(split=True, size=3), dict(split=True, size=3), dict(size=6)]
-#options = [dict(size=3), dict(size=3), dict(size=3), dict(size=12)]
+options = [dict(split=True, height=3), dict(split=True, height=3), dict(height=6)]
 
-
-#options = [dict(split=True, size=3), dict(split=True, size=3), dict(split=True, size=3), dict()]
 numb_variables = sum(len(set(df[var])) > 1 for var in variables) - 1  ### NOTICE -1 because of N_taxa cannot be plotted on same page because of "tight layout"
 
 plot_func = {v:f for v, f in zip(variables, plot2var)}
@@ -77,7 +72,7 @@ for var in variables:
     i += 1
 
 
-# fig.tight_layout()
+plt.tight_layout()
 plt.savefig(args.outbase+'.pdf')
 
 
@@ -94,7 +89,7 @@ plf(x=var, y="value", hue="method", data=plot_data, legend_out=True, **kwargs)
 #plot_data.plot(kind='scatter', x=var, y='value', c=plot_data['method'].apply(lambda x: colors[x]))
 ax.set(ylabel='RF distance')
 plt.title('Plot for tree size: {}. For RF.'.format(var))
-#fig.tight_layout()
+plt.tight_layout()
 plt.savefig(args.outbase+'1.pdf')
 
 
@@ -102,7 +97,7 @@ plot_data = df.loc[df.loc[:,'metric'] == 'logMRCA', :]
 plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
 ax.set(ylabel='MRCA distance')
 plt.title('Plot for tree size: {}. For MRCA.'.format(var))
-#fig.tight_layout()
+plt.tight_layout()
 plt.savefig(args.outbase+'2.pdf')
 
 

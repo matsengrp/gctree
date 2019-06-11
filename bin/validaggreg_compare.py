@@ -5,8 +5,6 @@
 aggregation plots of validation output from several simulation/validation runs
 '''
 
-import matplotlib
-matplotlib.use('agg')
 from matplotlib import pyplot as plt
 import pandas as pd
 import argparse

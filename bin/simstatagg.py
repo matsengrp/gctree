@@ -5,8 +5,6 @@
 aggregation plots of metrics from several simulation runs with same parameters
 '''
 
-import matplotlib
-matplotlib.use('agg')
 from matplotlib import pyplot as plt
 import pandas as pd
 import argparse

@@ -7,8 +7,6 @@ for CFT
 '''
 
 from deduplicate import fasta_parse
-import matplotlib
-matplotlib.use('agg')
 from matplotlib import pyplot as plt
 import pandas as pd
 import argparse

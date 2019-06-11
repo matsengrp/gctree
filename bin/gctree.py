@@ -23,8 +23,6 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
-import matplotlib
-matplotlib.use('agg')
 from matplotlib import pyplot as plt
 
 import pickle
@@ -34,70 +32,6 @@ import selection_utils
 from mutation_model import MutationModel
 
 np.seterr(all='raise')
-
-@lru_cache(maxsize=None)
-def logf(c, m, *params):
-    '''
-    Log-probability of getting c leaves that are clones of the root and m mutant
-    clades off the root lineage, given branching probability p and mutation
-    probability q. Also returns gradient wrt params (p, q). Computed by dynamic
-    programming. This would more naturally live as a LeavesAndClades method,
-    but we want the cache to be shared by all instances'''
-    p, q = params
-    if c==m==0 or (c==0 and m==1):
-        logf_result = -np.inf
-        dlogfdp_result = 0
-        dlogfdq_result = 0
-    elif c==1 and m==0:
-        logf_result = np.log(1 - p)
-        dlogfdp_result = -1 / (1 - p)
-        dlogfdq_result = 0
-    elif c==0 and m==2:
-        logf_result = np.log(p) + 2 * np.log(q)
-        dlogfdp_result = 1 / p
-        dlogfdq_result = 2 / q
-    else:
-        if m >= 1:
-            neighbor_logf, (neighbor_dlogfdp, neighbor_dlogfdq) = logf(c,
-                                                                       m - 1,
-                                                                       *params)
-            logf_result = (np.log(2) + np.log(p) + np.log(q) + np.log(1-q)
-                           + neighbor_logf)
-            dlogfdp_result = 1 / p + neighbor_dlogfdp
-            dlogfdq_result = 1 / q - 1 / (1 - q) + neighbor_dlogfdq
-        else:
-            logf_result = -np.inf
-            dlogfdp_result = 0.
-            dlogfdq_result = 0.
-        logg_array = [logf_result]
-        dloggdp_array = [dlogfdp_result]
-        dloggdq_array = [dlogfdq_result]
-        for cx in range(c+1):
-            for mx in range(m+1):
-                if (not (cx==0 and mx==0)) and (not (cx==c and mx==m)):
-                    (neighbor1_logf,
-                     (neighbor1_dlogfdp,
-                      neighbor1_dlogfdq)) = logf(cx, mx, *params)
-                    (neighbor2_logf,
-                     (neighbor2_dlogfdp,
-                      neighbor2_dlogfdq)) = logf(c - cx, m - mx, *params)
-                    logg = (np.log(p) + 2 * np.log(1 - q) + neighbor1_logf +
-                            + neighbor2_logf)
-                    dloggdp = 1 / p + neighbor1_dlogfdp + neighbor2_dlogfdp
-                    dloggdq = (- 2 / (1 - q)
-                               + neighbor1_dlogfdq + neighbor2_dlogfdq)
-                    logg_array.append(logg)
-                    dloggdp_array.append(dloggdp)
-                    dloggdq_array.append(dloggdq)
-        logf_result = logsumexp(logg_array)
-        softmax_logg_array = softmax(logg_array)
-        dlogfdp_result = np.multiply(softmax_logg_array, dloggdp_array).sum()
-        dlogfdq_result = np.multiply(softmax_logg_array, dloggdq_array).sum()
-
-    return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
-
-
-
 
 
 class LeavesAndClades():
@@ -160,8 +94,77 @@ class LeavesAndClades():
             len_tree += 1
         assert cumsum_clones == len_tree - 1
 
-    def logf(self, params):
-        return logf(self.c, self.m, *params)
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def logf(c, m, *params):
+        '''
+        Log-probability of getting c leaves that are clones of the root and m mutant
+        clades off the root lineage, given branching probability p and mutation
+        probability q. AKA the spaceship distribution. Also returns gradient wrt
+        params (p, q). Computed by dynamic programming.'''
+        p, q = params
+        if c==m==0 or (c==0 and m==1):
+            logf_result = -np.inf
+            dlogfdp_result = 0
+            dlogfdq_result = 0
+        elif c==1 and m==0:
+            logf_result = np.log(1 - p)
+            dlogfdp_result = -1 / (1 - p)
+            dlogfdq_result = 0
+        elif c==0 and m==2:
+            logf_result = np.log(p) + 2 * np.log(q)
+            dlogfdp_result = 1 / p
+            dlogfdq_result = 2 / q
+        else:
+            if m >= 1:
+                neighbor_logf, (neighbor_dlogfdp, neighbor_dlogfdq) = LeavesAndClades.logf(c,
+                                                                           m - 1,
+                                                                           *params)
+                logf_result = (np.log(2) + np.log(p) + np.log(q) + np.log(1-q)
+                               + neighbor_logf)
+                dlogfdp_result = 1 / p + neighbor_dlogfdp
+                dlogfdq_result = 1 / q - 1 / (1 - q) + neighbor_dlogfdq
+            else:
+                logf_result = -np.inf
+                dlogfdp_result = 0.
+                dlogfdq_result = 0.
+            logg_array = [logf_result]
+            dloggdp_array = [dlogfdp_result]
+            dloggdq_array = [dlogfdq_result]
+            for cx in range(c+1):
+                for mx in range(m+1):
+                    if (not (cx==0 and mx==0)) and (not (cx==c and mx==m)):
+                        (neighbor1_logf,
+                         (neighbor1_dlogfdp,
+                          neighbor1_dlogfdq)) = LeavesAndClades.logf(cx, mx, *params)
+                        (neighbor2_logf,
+                         (neighbor2_dlogfdp,
+                          neighbor2_dlogfdq)) = LeavesAndClades.logf(c - cx, m - mx, *params)
+                        logg = (np.log(p) + 2 * np.log(1 - q) + neighbor1_logf +
+                                + neighbor2_logf)
+                        dloggdp = 1 / p + neighbor1_dlogfdp + neighbor2_dlogfdp
+                        dloggdq = (- 2 / (1 - q)
+                                   + neighbor1_dlogfdq + neighbor2_dlogfdq)
+                        logg_array.append(logg)
+                        dloggdp_array.append(dloggdp)
+                        dloggdq_array.append(dloggdq)
+            logf_result = logsumexp(logg_array)
+            softmax_logg_array = softmax(logg_array)
+            dlogfdp_result = np.multiply(softmax_logg_array, dloggdp_array).sum()
+            dlogfdq_result = np.multiply(softmax_logg_array, dloggdq_array).sum()
+
+        return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
+
+    @staticmethod
+    def build_logf_cache(c_max, m_max, *params):
+        ''' build up the lru_cache from the bottom to avoid recursion depth
+        issues'''
+        LeavesAndClades.logf.cache_clear()
+        print(f'building likelihood cache for parameters {params}')
+        for c in range(c_max + 1):
+            for m in range(m_max + 1):
+                LeavesAndClades.logf(c, m, *params)
+
 
 
 class CollapsedTree(LeavesAndClades):
@@ -257,20 +260,21 @@ class CollapsedTree(LeavesAndClades):
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
         if build_cache:
-            # build up the lru_cache from the bottom to avoid recursion depth issues
-            logf.cache_clear()
             c_max = max(node.frequency for node in self.tree.traverse())
             m_max = max(len(node.children) for node in self.tree.traverse())
-            print(f'building likelihood cache for parameters {params}')
-            for c in range(c_max + 1):
-                for m in range(m_max + 1):
-                    logf(c, m, *params)
+            LeavesAndClades.build_logf_cache(c_max, m_max, *params)
         leaves_and_clades_list = [LeavesAndClades(c=node.frequency, m=len(node.children)) for node in self.tree.traverse()]
-        if leaves_and_clades_list[0].c == 0 and leaves_and_clades_list[0].m == 1 and leaves_and_clades_list[0].logf(params)[0] == -np.inf:
+        if leaves_and_clades_list[0].c == 0 and \
+           leaves_and_clades_list[0].m == 1 and \
+           leaves_and_clades_list[0].logf(leaves_and_clades_list[0].c,
+                                          leaves_and_clades_list[0].m,
+                                          *params)[0] == -np.inf:
             # if unifurcation not possible under current model, add a psuedocount for the naive
             leaves_and_clades_list[0].c = 1
         # extract vector of function values and gradient components
-        logf_data = [leaves_and_clades.logf(params) for leaves_and_clades in leaves_and_clades_list]
+        logf_data = [leaves_and_clades.logf(leaves_and_clades.c,
+                                            leaves_and_clades.m,
+                                            *params) for leaves_and_clades in leaves_and_clades_list]
         logf = np.array([[x[0]] for x in logf_data]).sum()
         grad_logf = np.array([x[1] for x in logf_data]).sum(axis=0)
         return sign*logf, sign*grad_logf
@@ -571,14 +575,9 @@ class CollapsedForest(CollapsedTree):
         if sign not in (-1, 1):
             raise ValueError('sign must be 1 or -1')
         if build_cache:
-            # build up the lru_cache from the bottom to avoid recursion depth issues
-            logf.cache_clear()
             c_max = max(node.frequency for tree in self.forest for node in tree.tree.traverse())
             m_max = max(len(node.children) for tree in self.forest for node in tree.tree.traverse())
-            print(f'building likelihood cache for parameters {params}')
-            for c in range(c_max + 1):
-                for m in range(m_max + 1):
-                    logf(c, m, *params)
+            LeavesAndClades.build_logf_cache(c_max, m_max, *params)
         # we don't want to build the cache again in each tree
         terms = [tree.l(params, build_cache=False) for tree in self.forest]
         ls = np.array([term[0] for term in terms])

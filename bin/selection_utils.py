@@ -7,8 +7,6 @@ utility functions for selection simulation
 
 import scipy
 from scipy.optimize import minimize, fsolve
-import matplotlib
-matplotlib.use('agg')
 from matplotlib import pyplot as plt
 from utils import hamming_distance
 
