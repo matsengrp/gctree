@@ -139,7 +139,7 @@ def main():
             cell_colors = dict(line.rstrip().split(',') for line in f)
         with open(args.colormap, 'w') as f:
             for seq_id, cell_ids in id_map.items():
-                colors_counts = Counter(cell_colors[cell_id] if cell_id in cell_colors else None for cell_id in cell_ids).items()
+                colors_counts = list(Counter(cell_colors[cell_id] if cell_id in cell_colors else None for cell_id in cell_ids).items())
                 if len(colors_counts) == 1 and colors_counts[0][0] != None and colors_counts != []:
                     colors_str = colors_counts[0][0]
                     print('{}\t{}'.format(seq_id, colors_str), file=f)
