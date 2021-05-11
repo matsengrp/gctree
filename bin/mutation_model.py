@@ -3,7 +3,6 @@ from scipy.stats import poisson
 import random
 import scipy
 from Bio.Seq import Seq
-from Bio.Alphabet import generic_dna
 from utils import hamming_distance
 
 class MutationModel():
@@ -100,7 +99,7 @@ class MutationModel():
         if frame is not None:
             codon_start = frame-1
             codon_end = codon_start + 3*((sequence_length - codon_start)//3)
-            if '*' in Seq(sequence[codon_start:codon_end], generic_dna).translate():
+            if '*' in Seq(sequence[codon_start:codon_end]).translate():
                 raise RuntimeError('sequence contains stop codon!')
 
         mutabilities = self.mutabilities(sequence)
@@ -132,7 +131,7 @@ class MutationModel():
                 original_base = sequence_list[mut_pos]
                 sequence_list[mut_pos] = 'ACGT'[chosen_target]
                 sequence = ''.join(sequence_list) # reconstruct our sequence
-                if frame is None or '*' not in Seq(sequence[codon_start:codon_end], generic_dna).translate():
+                if frame is None or '*' not in Seq(sequence[codon_start:codon_end]).translate():
                     if self.mutation_order:
                         # if mutation order matters, the mutabilities of the sequence need to be updated
                         mutabilities = self.mutabilities(sequence)
@@ -153,12 +152,12 @@ class MutationModel():
         trial = 100  # Allow 100 trials before quitting
         while trial > 0:
             mut_seq = sequence[:]
-            aa = str(Seq(sequence[(frame-1):(frame-1+(3*(((len(sequence)-(frame-1))//3))))], generic_dna).translate())
-            aa_mut = Seq(mut_seq[(frame-1):(frame-1+(3*(((len(mut_seq)-(frame-1))//3))))], generic_dna).translate()
+            aa = str(Seq(sequence[(frame-1):(frame-1+(3*(((len(sequence)-(frame-1))//3))))]).translate())
+            aa_mut = Seq(mut_seq[(frame-1):(frame-1+(3*(((len(mut_seq)-(frame-1))//3))))]).translate()
             dist = hamming_distance(aa, aa_mut)
             while dist < Nmuts:
                 mut_seq = self.mutate(mut_seq, lambda0=lambda0, frame=frame)
-                aa_mut = str(Seq(mut_seq[(frame-1):(frame-1+(3*(((len(mut_seq)-(frame-1))//3))))], generic_dna).translate())
+                aa_mut = str(Seq(mut_seq[(frame-1):(frame-1+(3*(((len(mut_seq)-(frame-1))//3))))]).translate())
                 dist = hamming_distance(aa, aa_mut)
             if dist == Nmuts:
                 return aa_mut
@@ -197,7 +196,7 @@ class MutationModel():
             hd_generation = list()  # Collect an array of the counts of each hamming distance at each time step
             stop_dist, mature_affy, naive_affy, target_dist, skip_update, targetAAseqs, A_total, B_total, Lp, k, outbase = selection_params
             # Assert that the target sequences are comparable to the naive sequence:
-            aa = Seq(tree.sequence[(frame-1):(frame-1+(3*(((len(tree.sequence)-(frame-1))//3))))], generic_dna).translate()
+            aa = Seq(tree.sequence[(frame-1):(frame-1+(3*(((len(tree.sequence)-(frame-1))//3))))]).translate()
             assert(sum([1 for t in targetAAseqs if len(t) != len(aa)]) == 0)  # All targets are same length
             assert(sum([1 for t in targetAAseqs if hamming_distance(aa, t) == target_dist]))  # All target are "target_dist" away from the naive sequence
             # Affinity is an exponential function of hamming distance:
@@ -250,7 +249,7 @@ class MutationModel():
                         child.dist = sum(x!=y for x,y in zip(mutated_sequence, leaf.sequence))
                         child.add_feature('sequence', mutated_sequence)
                         if selection_params is not None:
-                            aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))], generic_dna).translate()
+                            aa = Seq(child.sequence[(frame-1):(frame-1+(3*(((len(child.sequence)-(frame-1))//3))))]).translate()
                             child.add_feature('AAseq', str(aa))
                             child.add_feature('Kd', selection_utils.calc_Kd(child.AAseq, targetAAseqs, hd2affy))
                             child.add_feature('target_dist', min([hamming_distance(child.AAseq, taa) for taa in targetAAseqs]))

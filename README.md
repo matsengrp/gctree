@@ -17,7 +17,7 @@ All commands should be issued from within the gctree repo directory.
 0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
 1. Create a python 3.7 conda environment (named gctree in this example):
     ```bash
-    conda create --name gctree python=3.7 -c bioconda -c etetoolkit -c conda-forge -c cswarth python=3.7 ete3 biopython matplotlib pandas scipy scons seaborn nestly phylip seqmagick
+    conda create --name gctree -c bioconda -c etetoolkit -c conda-forge -c cswarth python=3.7 ete3 biopython matplotlib pandas scipy scons seaborn nestly phylip seqmagick
     ```
 2. Activate the environment:
     ```bash
