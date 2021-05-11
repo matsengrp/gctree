@@ -142,7 +142,6 @@ def which(executable):
 def dedup_fasta(args):
     from Bio.Seq import Seq
     from Bio.SeqRecord import SeqRecord
-    from Bio.Alphabet import generic_dna
     from Bio import AlignIO
     from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 
@@ -165,7 +164,7 @@ def dedup_fasta(args):
         print('>' + args.naive, file=fh_out)
         print(naive_seq, file=fh_out)
         for i, seq in enumerate(seqs_unique_counts):
-            record = SeqRecord(Seq(seq, generic_dna), id=str(i+1)+'_'+str(seqs_unique_counts[seq]))
+            record = SeqRecord(Seq(seq), id=str(i+1)+'_'+str(seqs_unique_counts[seq]))
             print('>' + str(record.id), file=fh_out)
             print(str(record.seq), file=fh_out)
 

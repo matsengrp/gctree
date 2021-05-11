@@ -4,7 +4,6 @@
 import argparse
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 from collections import defaultdict, Counter
@@ -33,7 +32,7 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
             for seq2 in aln2:
                 cell2 = (seq2.id[:-1] if seq2.id != naive else naive)
                 if cell2 == cell:
-                    aln_combined.append(SeqRecord(Seq(str(seq.seq) + str(seq2.seq), generic_dna), id=cell))
+                    aln_combined.append(SeqRecord(Seq(str(seq.seq) + str(seq2.seq)), id=cell))
         aln = aln_combined
 
     sequence_length = aln.get_alignment_length()
@@ -70,13 +69,13 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
     if naive_seq is None:
         raise ValueError('naive seq id {} not found'.format(naive))
 
-    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq, generic_dna), id=naive.lower())])
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq), id=naive.lower())])
     counts = {naive.lower(): len(seqs_unique_counts[naive_seq])}  # Add the count for the naive sequence
     id_map = {naive.lower(): [x for x in seqs_unique_counts[naive_seq] if x != naive]}
     del seqs_unique_counts[naive_seq]  # Now delete the naive so it does not appear twice
     for i, seq in enumerate(seqs_unique_counts, 1):
         new_id = 'seq'+str(i)
-        new_aln.append(SeqRecord(Seq(seq, generic_dna), id=new_id))
+        new_aln.append(SeqRecord(Seq(seq), id=new_id))
         counts[new_id] = len(seqs_unique_counts[seq])
         id_map[new_id] = seqs_unique_counts[seq]
 

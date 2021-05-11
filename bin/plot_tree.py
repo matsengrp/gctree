@@ -211,7 +211,6 @@ def tree_render_default(tree, frame=None):
     '''Set the default settings on a ete3 tree for rendering a GCtree.'''
     import sys
     from Bio.Seq import Seq
-    from Bio.Alphabet import generic_dna
     import scipy
     # Set the minimum requirements:
     tree, ts = tree_render_minimum(tree)
@@ -231,10 +230,10 @@ def tree_render_default(tree, frame=None):
         if node.up is not None:
             if set(node.sequence.upper()) == set('ACGT'):
                 if frame is not None:
-                    aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
-                             generic_dna).translate()
-                    aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
-                                    generic_dna).translate()
+                    aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))]
+                             ).translate()
+                    aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))]
+                                    ).translate()
                     nonsyn = hamming_distance(aa, aa_parent)
                     if '*' in aa:
                         nstyle['bgcolor'] = 'red'
@@ -254,7 +253,6 @@ def tree_render_user(tree, frame=None, tree_features=None, namecolor=None):
     The function can plot tree is default mode and/or take user input.
     '''
     from Bio.Seq import Seq
-    from Bio.Alphabet import generic_dna
     import scipy
 
     if tree_features is None:  # No user defined tree features
@@ -306,10 +304,10 @@ def tree_render_user(tree, frame=None, tree_features=None, namecolor=None):
         if node.up is not None:
             if set(node.sequence.upper()) == set('ACGT'):
                 if frame is not None:
-                    aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
-                             generic_dna).translate()
-                    aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
-                                    generic_dna).translate()
+                    aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))]
+                             ).translate()
+                    aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))]
+                                    ).translate()
                     nonsyn = hamming_distance(aa, aa_parent)
                     if '*' in aa:
                         nstyle['bgcolor'] = 'red'
@@ -398,13 +396,12 @@ def collapse_syn(tree, frame=None, tree_features=None):
     then just keep the parent feature.
     '''
     from Bio.Seq import Seq
-    from Bio.Alphabet import generic_dna
     tree.dist = 0  # no branch above root
     for node in tree.iter_descendants():
-        aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
-                 generic_dna).translate()
-        aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
-                        generic_dna).translate()
+        aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))]
+                 ).translate()
+        aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))]
+                        ).translate()
         node.dist = hamming_distance(aa, aa_parent)
 
     for node in tree.get_descendants():

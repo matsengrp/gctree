@@ -20,7 +20,6 @@ from scipy.stats import poisson
 from ete3 import TreeNode, NodeStyle, TreeStyle, TextFace, add_face_to_node, CircleFace, PieChartFace, faces, SVG_COLORS
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import generic_dna
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 from matplotlib import pyplot as plt
@@ -194,10 +193,10 @@ class CollapsedTree(LeavesAndClades):
         if collapse_syn is True:
             tree.dist = 0  # no branch above root
             for node in tree.iter_descendants():
-                aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
-                         generic_dna).translate()
-                aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))],
-                                generic_dna).translate()
+                aa = Seq(node.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))]
+                         ).translate()
+                aa_parent = Seq(node.up.sequence[(frame-1):(frame-1+(3*(((len(node.sequence)-(frame-1))//3))))]
+                                ).translate()
                 node.dist = hamming_distance(aa, aa_parent)
 
         if tree is not None:
@@ -373,10 +372,10 @@ class CollapsedTree(LeavesAndClades):
                             nstyle['hz_line_color'] = 'blue'
                             nstyle['hz_line_width'] = 2
                     if self.frame is not None:
-                        aa = Seq(node.sequence[(self.frame-1):(self.frame-1+(3*(((len(node.sequence)-(self.frame-1))//3))))],
-                                 generic_dna).translate()
-                        aa_parent = Seq(node.up.sequence[(self.frame-1):(self.frame-1+(3*(((len(node.sequence)-(self.frame-1))//3))))],
-                                        generic_dna).translate()
+                        aa = Seq(node.sequence[(self.frame-1):(self.frame-1+(3*(((len(node.sequence)-(self.frame-1))//3))))]
+                                 ).translate()
+                        aa_parent = Seq(node.up.sequence[(self.frame-1):(self.frame-1+(3*(((len(node.sequence)-(self.frame-1))//3))))]
+                                        ).translate()
                         nonsyn = hamming_distance(aa, aa_parent)
                         if '*' in aa:
                             nstyle['bgcolor'] = 'red'
@@ -400,7 +399,7 @@ class CollapsedTree(LeavesAndClades):
         if idlabel:
             aln = MultipleSeqAlignment([])
             for node in self.tree.traverse():
-                aln.append(SeqRecord(Seq(str(node.sequence), generic_dna), id=str(node.name), description=f'abundance={node.frequency}'))
+                aln.append(SeqRecord(Seq(str(node.sequence)), id=str(node.name), description=f'abundance={node.frequency}'))
             AlignIO.write(aln, open(os.path.splitext(outfile)[0] + '.fasta', 'w'), 'fasta')
 
     def write(self, file_name):
@@ -907,7 +906,7 @@ def simulate(args):
         fh2.write('>naive\n')
         fh2.write(args.sequence[seq_bounds[1][0]:seq_bounds[1][1]]+'\n')
         for leaf in tree.iter_leaves():
-            if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
+            if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence).translate():
                 fh1.write('>' + leaf.name + '\n')
                 fh1.write(leaf.sequence[seq_bounds[0][0]:seq_bounds[0][1]]+'\n')
                 fh2.write('>' + leaf.name + '\n')
@@ -917,7 +916,7 @@ def simulate(args):
             f.write('>naive\n')
             f.write(args.sequence+'\n')
             for leaf in tree.iter_leaves():
-                if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence, generic_dna).translate():
+                if leaf.frequency != 0:# and '*' not in Seq(leaf.sequence).translate():
                     f.write('>' + leaf.name + '\n')
                     f.write(leaf.sequence + '\n')
 
