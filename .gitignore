@@ -5,3 +5,6 @@
 .ipynb_checkpoints
 *.pyc
 ._*
+
+# example output dir
+test
