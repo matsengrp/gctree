@@ -124,7 +124,7 @@ def main():
                                           frame=args.frame,
                                           aln_file2=args.infile[1] if len(args.infile) == 2 else None,
                                           converter=args.converter)
-    print(new_aln.format('phylip'))
+    print(format(new_aln, 'phylip'))
     if args.countfile is not None:
         with open(args.countfile, 'w') as f:
             for seqID, count in counts.items():
