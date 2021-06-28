@@ -1,0 +1,17 @@
+name: gctree
+channels:
+  - conda-forge
+  - defaults
+  - bioconda
+  - etetoolkit
+dependencies:
+  - scons
+  - nestly
+  - phylip
+  - seqmagick
+  - black
+  - flake8
+  - pytest
+  - pip
+  - pip:
+    - -e . # installs gctree package from current directory "." in editable mode
