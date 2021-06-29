@@ -135,7 +135,7 @@ def main():
     parser.add_argument(
         "--id_abundances",
         action="store_true",
-        help="flag to interpret integer ids in input as abundances"
+        help="flag to interpret integer ids in input as abundances",
     )
     parser.add_argument("--naive", type=str, default="naive", help="naive sequence id")
     parser.add_argument(

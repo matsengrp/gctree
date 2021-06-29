@@ -191,7 +191,6 @@ def build_tree(sequences, parents, counts=None, naive="naive"):
     return tree
 
 
-
 def main():
 
     import pickle, argparse, os
