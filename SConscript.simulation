@@ -7,25 +7,23 @@ from nestly.scons import SConsWrap
 
 # the following must be exported by parent SConstruct/SConscript
 Import(
-    "env gctree dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg"
+    "env dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg"
 )
 
 nest = Nest()
 w = SConsWrap(nest, outdir, alias_environment=env)
 
-if gctree:
-    w.add_aggregate(
-        "gctree_outeragg", list
-    )  # <-- aggregating results across parameters
+w.add_aggregate(
+    "gctree_outeragg", list
+)  # <-- aggregating results across parameters
 w.add_aggregate("outeragg", list)  # <-- aggregating results across parameters
 
 # Initialize our first nest level,
 w.add("lambda", lambda_list)
 w.add("lambda0", lambda0_list)
-if gctree:
-    w.add_aggregate(
-        "gctree_agg", list
-    )  # <-- for aggregating repeated simulations with the same parameters
+w.add_aggregate(
+    "gctree_agg", list
+)  # <-- for aggregating repeated simulations with the same parameters
 w.add_aggregate(
     "agg", list
 )  # <-- for aggregating inference result from repeated simulations with the same parameters
@@ -97,7 +95,7 @@ def infer(outdir, c):
     colorfile = None
     return SConscript(
         "SConscript.inference",
-        exports="env gctree dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile",
+        exports="env dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile",
     )
 
 
@@ -110,10 +108,9 @@ def validate(outdir, c):
         ),  # <-- this one compares different methods
         os.path.join(outdir, "validation.log"),
     ]
-    if gctree:
-        outputs.append(
-            os.path.join(outdir, "validation.gctree.tsv")
-        )  # <-- special gctree output evaluating parsimony tree ranking
+    outputs.append(
+        os.path.join(outdir, "validation.gctree.tsv")
+    )  # <-- special gctree output evaluating parsimony tree ranking
     tgt = CommandRunner(
         outputs,
         [c["gctree_sim"][2:4]] + [x[0] for x in c["infer"]],
@@ -123,36 +120,32 @@ def validate(outdir, c):
         + os.path.join(outdir, "validation")
         + " > ${TARGETS[1]}",
     )
-    if gctree:
-        c["gctree_agg"].append(tgt[2])
+    c["gctree_agg"].append(tgt[2])
     c["agg"].append(tgt[0])
     return tgt
 
 
 w.pop("runs")
 
-
-if gctree:
-
-    @w.add_target()
-    def gctree_aggregate(outdir, c):
-        """aggregate validation results"""
-        allmetrics_arg = " --allmetrics" if dnaml else ""
-        tgt = env.Command(
-            [
-                os.path.join(outdir, "gctree.validaggreg.tsv"),
-                os.path.join(outdir, "gctree.validaggreg.log"),
-            ],
-            c["gctree_agg"],
-            buffarg
-            + "python scripts/validaggreg.py $SOURCES --outbase "
-            + os.path.join(outdir, "gctree.validaggreg")
-            + allmetrics_arg
-            + " > ${TARGETS[1]}",
-        )
-        env.AlwaysBuild(tgt)
-        c["gctree_outeragg"].append(tgt[0])
-        return tgt
+@w.add_target()
+def gctree_aggregate(outdir, c):
+    """aggregate validation results"""
+    allmetrics_arg = " --allmetrics" if dnaml else ""
+    tgt = env.Command(
+        [
+            os.path.join(outdir, "gctree.validaggreg.tsv"),
+            os.path.join(outdir, "gctree.validaggreg.log"),
+        ],
+        c["gctree_agg"],
+        buffarg
+        + "python scripts/validaggreg.py $SOURCES --outbase "
+        + os.path.join(outdir, "gctree.validaggreg")
+        + allmetrics_arg
+        + " > ${TARGETS[1]}",
+    )
+    env.AlwaysBuild(tgt)
+    c["gctree_outeragg"].append(tgt[0])
+    return tgt
 
 
 @w.add_target()

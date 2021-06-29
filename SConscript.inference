@@ -18,7 +18,7 @@ def which(executable):
 
 # the following must be exported by parent SConstruct/SConscript
 Import(
-    "env gctree dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile"
+    "env dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile"
 )
 
 
@@ -45,72 +45,71 @@ def delete_on_failure():
 return_list = []
 
 
-if gctree or dnaml:
-    if input_file2 is not None:
-        basename = "combined"
-    elif isinstance(input_file, str):
-        basename = ".".join(os.path.basename(input_file).split(".")[:-1])
-    else:
-        basename = "gctree.simulation"
-    frame_arg = " --frame {} ".format(frame) if frame is not None else ""
-    converter_arg = (
-        " --converter {} ".format(converter) if converter is not None else ""
-    )
-    phylip = env.Command(
-        [
-            os.path.join(
-                outdir, os.path.splitext(os.path.basename(input_file))[0] + ".phylip"
-            )
-            if input_file2 is None and isinstance(input_file, str)
-            else os.path.join(outdir, "gctree.combined.phylip")
-            if input_file2 is not None
-            else os.path.join(outdir, "gctree.simulation.phylip"),
-            os.path.join(outdir, basename) + ".counts",
-            os.path.join(outdir, basename) + ".idmap",
-        ]
-        + (
-            [os.path.join(outdir, basename) + ".colormap"]
-            if colorfile is not None
-            else []
-        ),
-        input_file if colorfile is None else [input_file, colorfile],
+if input_file2 is not None:
+    basename = "combined"
+elif isinstance(input_file, str):
+    basename = ".".join(os.path.basename(input_file).split(".")[:-1])
+else:
+    basename = "gctree.simulation"
+frame_arg = " --frame {} ".format(frame) if frame is not None else ""
+converter_arg = (
+    " --converter {} ".format(converter) if converter is not None else ""
+)
+phylip = env.Command(
+    [
+        os.path.join(
+            outdir, os.path.splitext(os.path.basename(input_file))[0] + ".phylip"
+        )
+        if input_file2 is None and isinstance(input_file, str)
+        else os.path.join(outdir, "gctree.combined.phylip")
+        if input_file2 is not None
+        else os.path.join(outdir, "gctree.simulation.phylip"),
+        os.path.join(outdir, basename) + ".counts",
+        os.path.join(outdir, basename) + ".idmap",
+    ]
+    + (
+        [os.path.join(outdir, basename) + ".colormap"]
+        if colorfile is not None
+        else []
+    ),
+    input_file if colorfile is None else [input_file, colorfile],
+    buffarg
+    + "python scripts/deduplicate.py ${SOURCES[0]} "
+    + (" --colorfile ${SOURCES[1]} " if colorfile is not None else "")
+    + (" --colormap ${TARGETS[3]} " if colorfile is not None else "")
+    + " --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} "
+    + frame_arg
+    + converter_arg
+    + "--naive "
+    + naiveID
+    + " > ${TARGETS[0]}",
+)
+
+if bootstrap:
+
+    if dnaml:
+        raise NotImplementedError("bootstrap not implemented for dnaml")
+
+    bootstrap_arg = " --bootstrap {} ".format(bootstrap)
+    seqboot_config = env.Command(
+        os.path.join(outdir, "seqboot/config.cfg"),
+        phylip[0],
         buffarg
-        + "python scripts/deduplicate.py ${SOURCES[0]} "
-        + (" --colorfile ${SOURCES[1]} " if colorfile is not None else "")
-        + (" --colormap ${TARGETS[3]} " if colorfile is not None else "")
-        + " --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} "
-        + frame_arg
-        + converter_arg
-        + "--naive "
-        + naiveID
-        + " > ${TARGETS[0]}",
+        + "python scripts/mkconfig.py ${SOURCE} seqboot "
+        + bootstrap_arg
+        + " > $TARGET".format(bootstrap),
     )
 
-    if bootstrap:
-
-        if dnaml:
-            raise NotImplementedError("bootstrap not implemented for dnaml")
-
-        bootstrap_arg = " --bootstrap {} ".format(bootstrap)
-        seqboot_config = env.Command(
-            os.path.join(outdir, "seqboot/config.cfg"),
-            phylip[0],
-            buffarg
-            + "python scripts/mkconfig.py ${SOURCE} seqboot "
-            + bootstrap_arg
-            + " > $TARGET".format(bootstrap),
-        )
-
-        seqboot = CommandRunner(
-            [os.path.join(outdir, x) for x in ["seqboot/outfile", "seqboot/log.log"]],
-            seqboot_config,
-            "cd "
-            + outdir
-            + "/seqboot && rm -f outfile && seqboot < ${SOURCE.file} > ${TARGETS[1].file}",
-        )
-        # Manually depend on phylip so that we rerun seqboot if the input sequences change (without this, dnaml will
-        # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
-        env.Depends(seqboot, phylip)
+    seqboot = CommandRunner(
+        [os.path.join(outdir, x) for x in ["seqboot/outfile", "seqboot/log.log"]],
+        seqboot_config,
+        "cd "
+        + outdir
+        + "/seqboot && rm -f outfile && seqboot < ${SOURCE.file} > ${TARGETS[1].file}",
+    )
+    # Manually depend on phylip so that we rerun seqboot if the input sequences change (without this, dnaml will
+    # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
+    env.Depends(seqboot, phylip)
 
 # Update the naive ID:
 naiveID = naiveID.lower()
@@ -151,86 +150,85 @@ if dnaml:
     return_list.append(dnaml_tree)
 
 
-if gctree:
-    # make config file for dnapars
-    quick_arg = " --quick " if quick else ""
-    dnapars_config = env.Command(
-        os.path.join(outdir, "dnapars/config.cfg"),
-        phylip[0],
+# make config file for dnapars
+quick_arg = " --quick " if quick else ""
+dnapars_config = env.Command(
+    os.path.join(outdir, "dnapars/config.cfg"),
+    phylip[0],
+    buffarg
+    + "python scripts/mkconfig.py ${SOURCE} dnapars "
+    + quick_arg
+    + " > $TARGET",
+)
+
+# run dnapars (from phylip package) to generate parsimony trees
+dnapars = CommandRunner(
+    [
+        os.path.join(outdir, x)
+        for x in ["dnapars/outtree", "dnapars/outfile", "dnapars/log.log"]
+    ],
+    dnapars_config,
+    "cd "
+    + outdir
+    + "/dnapars && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}",
+)
+# Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
+# only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
+env.Depends(dnapars, phylip)
+
+# ML tree from parsimony trees
+# NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
+# NOTE: TMPDIR is needed due for xvfb
+
+if bootstrap:
+    dnapars_config_bootstrap = env.Command(
+        os.path.join(outdir, "dnapars_bootstrap/config.cfg"),
+        seqboot[0],
         buffarg
         + "python scripts/mkconfig.py ${SOURCE} dnapars "
         + quick_arg
+        + bootstrap_arg
         + " > $TARGET",
     )
-
-    # run dnapars (from phylip package) to generate parsimony trees
-    dnapars = CommandRunner(
+    dnapars_bootstrap = CommandRunner(
         [
             os.path.join(outdir, x)
-            for x in ["dnapars/outtree", "dnapars/outfile", "dnapars/log.log"]
+            for x in [
+                "dnapars_bootstrap/outtree",
+                "dnapars_bootstrap/outfile",
+                "dnapars_bootstrap/log.log",
+            ]
         ],
-        dnapars_config,
+        dnapars_config_bootstrap,
         "cd "
         + outdir
-        + "/dnapars && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}",
+        + "/dnapars_bootstrap && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}",
     )
-    # Manually depend on phylip so that we rerun dnapars if the input sequences change (without this, dnapars will
-    # only get rerun if one of the targets are removed or if the input dnapars_config file is changed).
-    env.Depends(dnapars, phylip)
+    env.Depends(dnapars_bootstrap, seqboot)
 
-    # ML tree from parsimony trees
-    # NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
-    # NOTE: TMPDIR is needed due for xvfb
-
-    if bootstrap:
-        dnapars_config_bootstrap = env.Command(
-            os.path.join(outdir, "dnapars_bootstrap/config.cfg"),
-            seqboot[0],
-            buffarg
-            + "python scripts/mkconfig.py ${SOURCE} dnapars "
-            + quick_arg
-            + bootstrap_arg
-            + " > $TARGET",
-        )
-        dnapars_bootstrap = CommandRunner(
-            [
-                os.path.join(outdir, x)
-                for x in [
-                    "dnapars_bootstrap/outtree",
-                    "dnapars_bootstrap/outfile",
-                    "dnapars_bootstrap/log.log",
-                ]
-            ],
-            dnapars_config_bootstrap,
-            "cd "
-            + outdir
-            + "/dnapars_bootstrap && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}",
-        )
-        env.Depends(dnapars_bootstrap, seqboot)
-
-    gctree_outbase = os.path.join(outdir, "gctree")
-    frame_arg = " --frame {} ".format(frame) if frame is not None else ""
-    idlabel_arg = " --idlabel" if idlabel else ""
-    gctree_infer = CommandRunner(
-        [
-            gctree_outbase + ".inference.parsimony_forest.p",
-            gctree_outbase + ".inference.log",
-        ],
-        [dnapars[1], phylip[1]]
-        + ([dnapars_bootstrap[1]] if bootstrap else [])
-        + ([phylip[3]] if colorfile is not None else []),
-        xarg
-        + buffarg
-        + "gctree infer ${SOURCES[0]} ${SOURCES[1]} --naive "
-        + naiveID
-        + " --outbase "
-        + gctree_outbase
-        + frame_arg
-        + idlabel_arg
-        + (" --colormap ${SOURCES[-1]} " if colorfile is not None else "")
-        + (" --bootstrap_phylipfile ${SOURCES[2]}" if bootstrap else "")
-        + " | tee ${TARGETS[1]}",
-    )
-    return_list.append(gctree_infer)
+gctree_outbase = os.path.join(outdir, "gctree")
+frame_arg = " --frame {} ".format(frame) if frame is not None else ""
+idlabel_arg = " --idlabel" if idlabel else ""
+gctree_infer = CommandRunner(
+    [
+        gctree_outbase + ".inference.parsimony_forest.p",
+        gctree_outbase + ".inference.log",
+    ],
+    [dnapars[1], phylip[1]]
+    + ([dnapars_bootstrap[1]] if bootstrap else [])
+    + ([phylip[3]] if colorfile is not None else []),
+    xarg
+    + buffarg
+    + "gctree infer ${SOURCES[0]} ${SOURCES[1]} --naive "
+    + naiveID
+    + " --outbase "
+    + gctree_outbase
+    + frame_arg
+    + idlabel_arg
+    + (" --colormap ${SOURCES[-1]} " if colorfile is not None else "")
+    + (" --bootstrap_phylipfile ${SOURCES[2]}" if bootstrap else "")
+    + " | tee ${TARGETS[1]}",
+)
+return_list.append(gctree_infer)
 
 Return("return_list")

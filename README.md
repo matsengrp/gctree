@@ -221,9 +221,10 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 `--idlabel     ` label sequence IDs on tree, and write `FASTA` alignment of distinct sequences. The mapping of the unique names in this `FASTA` file to the cell names in the original input file can be found in the output file with suffix `.idmap`
 
-`--xvfb        ` needed for X rendering in on remote machines
+`--xvfb        ` needed for X rendering in on remote machines. Try setting this option if you get the error:`ETE: cannot connect to X server`
 
-   * Try setting the above option if you get the error:`ETE: cannot connect to X server`
+ `--dnaml`    include results for maximum likelihood tree inference using `dnaml` from the PHYLIP package
+
 
 ## `gctree`
 Underlying both pipelines is the `gctree` Python package for simulating and compute likelihoods for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree --help`. There are three subprograms, each of which has usage info:
@@ -234,12 +235,6 @@ Underlying both pipelines is the `gctree` Python package for simulating and comp
 The under-the-hood functionality of the `gctree` package might be useful for some users trying to go beyond the scons pipelines. For example mapping colors to tree image nodes can be achieved with the `--colormap` argument. Colors can be useful for visualizing other cell/genotype properties on the tree.
 
 ## FUNCTIONALITY UNDER DEVELOPMENT
-
-### arguments for both inference and simulation programs
-
-`--dnaml`    include results for maximum likelihood tree inference using `dnaml` from the PHYLIP package
-
-`--nogctree` do not perform gctree inference
 
 ### arguments for non-neutral simulation
 
