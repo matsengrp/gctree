@@ -44,7 +44,7 @@ def gctree_sim(outdir, c):
                          os.path.join(outdir, 'gctree.simulation.collapsed_tree.colormap.tsv'),
                          os.path.join(outdir, 'gctree.simulation.log')],
                         [mutability, substitution],
-                        xarg + buffarg + 'python bin/gctree.py simulate '+naive+
+                        xarg + buffarg + 'gctree simulate '+naive+
                         ' ${SOURCES[0]} ${SOURCES[1]}'+
                         ' --outbase '+os.path.join(outdir, 'gctree')+
                         ' --lambda {0[lambda]} --lambda0 {0[lambda0]}'.format(c)+
@@ -79,7 +79,7 @@ def validate(outdir, c):
         outputs.append(os.path.join(outdir, 'validation.gctree.tsv')) # <-- special gctree output evaluating parsimony tree ranking
     tgt = CommandRunner(outputs,
                    [c['gctree_sim'][2:4]] + [x[0] for x in c['infer']],
-                    xarg + buffarg + 'python bin/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
+                    xarg + buffarg + 'python scripts/validation.py $SOURCES --outbase '+os.path.join(outdir, 'validation')+' > ${TARGETS[1]}')
     if gctree:
         c['gctree_agg'].append(tgt[2])
     c['agg'].append(tgt[0])
@@ -96,7 +96,7 @@ if gctree:
         tgt = env.Command([os.path.join(outdir, 'gctree.validaggreg.tsv'),
                            os.path.join(outdir, 'gctree.validaggreg.log')],
                           c['gctree_agg'],
-                          buffarg + 'python bin/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.validaggreg') + allmetrics_arg + ' > ${TARGETS[1]}')
+                          buffarg + 'python scripts/validaggreg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.validaggreg') + allmetrics_arg + ' > ${TARGETS[1]}')
         env.AlwaysBuild(tgt)
         c['gctree_outeragg'].append(tgt[0])
         return tgt
@@ -106,7 +106,7 @@ def simstat_aggregate(outdir, c):
     '''aggregate simulation stats'''
     tgt = env.Command([os.path.join(outdir, 'gctree.simulation.stats.log')],
                       c['simstat_agg'],
-                      buffarg + 'python bin/simstatagg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.stats')+
+                      buffarg + 'python scripts/simstatagg.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.stats')+
                       ' --experimental example/150228_Clone_3-8.fasta > ${TARGETS[0]}')
     env.AlwaysBuild(tgt)
     return tgt
@@ -117,7 +117,7 @@ def summary_stats(outdir, c):
     exp_arg = ' --experimental ' + ' '.join(experimental_list) if len(experimental_list) > 0 else ''
     tgt = env.Command([os.path.join(outdir, 'gctree.simulation.summary_stats.log')],
                       c['summary_stats'],
-                      buffarg + 'python bin/summary_stats.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.summary_stats')+
+                      buffarg + 'python scripts/summary_stats.py $SOURCES --outbase '+os.path.join(outdir, 'gctree.simulation.summary_stats')+
                       exp_arg +
                       ' --naiveIDexp ' + naiveIDexp + ' > ${TARGETS[0]}')
     env.AlwaysBuild(tgt)
@@ -129,7 +129,7 @@ def inner_aggregate(outdir, c):
     tgt = env.Command([os.path.join(outdir, 'validaggreg.tsv'),
                        os.path.join(outdir, 'validaggreg.log')],
                       c['agg'],
-                      buffarg + 'python bin/validaggreg_compare.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
+                      buffarg + 'python scripts/validaggreg_compare.py $SOURCES --outbase '+os.path.join(outdir, 'validaggreg')+' > ${TARGETS[1]}')
     env.AlwaysBuild(tgt)
     c['outeragg'].append(tgt[0])
     return tgt
@@ -142,6 +142,6 @@ def outer_aggregate(outdir, c):
     tgt = env.Command([os.path.join(outdir, 'aggregation.tsv'),
                        os.path.join(outdir, 'aggregation.log')],
                       c['outeragg'],
-                      buffarg + 'python bin/aggregate_compare.py $SOURCES --outbase '+os.path.join(outdir, 'aggregation')+' > ${TARGETS[1]}')
+                      buffarg + 'python scripts/aggregate_compare.py $SOURCES --outbase '+os.path.join(outdir, 'aggregation')+' > ${TARGETS[1]}')
     env.AlwaysBuild(tgt)
     return tgt

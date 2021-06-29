@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Given an outputfile from one of the PHYLIP tools - `dnaml` or `dnapars` - produce an alignment (including
+
+"""Given an outputfile from one of the PHYLIP tools - `dnaml` or `dnapars` - produce an alignment (including
 ancestral sequences), a newick tree (with matching internal node lables), and an svg rendering of said tree.
 """
+
+from gctree.utils import hamming_distance
+
 from ete3 import Tree
 import re
 import random
 from collections import defaultdict
-
 from Bio.Data.IUPACData import ambiguous_dna_values
-import gctree
-
 
 # iterate over recognized sections in the phylip output file.
 def sections(fh):
@@ -155,7 +155,7 @@ def build_tree(sequences, parents, counts=None, naive='naive'):
         # remove possible unecessary unifurcation after rerooting
         if len(naive_parent.children) == 1:
             naive_parent.delete(prevent_nondicotomic=False)
-            naive_parent.children[0].dist = gctree.hamming_distance(naive_parent.children[0].sequence, nodes[naive_id].sequence)
+            naive_parent.children[0].dist = hamming_distance(naive_parent.children[0].sequence, nodes[naive_id].sequence)
         tree = nodes[naive_id]
 
     # make random choices for ambiguous bases
@@ -164,44 +164,6 @@ def build_tree(sequences, parents, counts=None, naive='naive'):
     # compute branch lengths
     tree.dist = 0 # no branch above root
     for node in tree.iter_descendants():
-        node.dist = gctree.hamming_distance(node.sequence, node.up.sequence)
+        node.dist = hamming_distance(node.sequence, node.up.sequence)
 
     return tree
-
-def main():
-
-    import pickle, argparse, os
-
-    def existing_file(fname):
-        """
-        Argparse type for an existing file
-        """
-        if not os.path.isfile(fname):
-            raise ValueError("Invalid file: " + str(fname))
-        return fname
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        'phylip_outfile', type=existing_file, help='dnaml outfile (verbose output with inferred ancestral sequences, option 5).')
-    parser.add_argument(
-        'countfile', type=existing_file, help="count file")
-    parser.add_argument(
-        '--outputfile', default=None, help="output file.")
-    parser.add_argument(
-        '--naive', default='naive', help="naive sequence id")
-
-    args = parser.parse_args()
-
-    if args.outputfile is None:
-        args.outputfile = args.phylip_outfile + '.collapsed_forest.p'
-    trees = parse_outfile(args.phylip_outfile, args.countfile, args.naive)
-    if isinstance(trees[0], list):
-        print(trees[0][0])
-        print(gctree.CollapsedTree(tree=trees[0][0]))
-        bootstraps = [[gctree.CollapsedTree(tree=tree) for tree in bootstrap] for bootstrap in trees]
-        pickle.dump([gctree.CollapsedForest(forest=trees) for trees in bootstraps], open(args.outputfile, 'w'))
-    else:
-        trees = [gctree.CollapsedTree(tree=tree) for tree in trees]
-        pickle.dump(gctree.CollapsedForest(forest=trees), open(args.outputfile, 'w'))
-
-if __name__ == "__main__":
-    main()

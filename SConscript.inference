@@ -48,7 +48,7 @@ if gctree or igphyml or dnaml:
                           os.path.join(outdir, basename)+'.idmap'] +
                           ([os.path.join(outdir, basename)+'.colormap'] if colorfile is not None else []),
                           input_file if colorfile is None else [input_file, colorfile],
-                          buffarg + 'python bin/deduplicate.py ${SOURCES[0]} ' +
+                          buffarg + 'python scripts/deduplicate.py ${SOURCES[0]} ' +
                           (' --colorfile ${SOURCES[1]} ' if colorfile is not None else '') +
                           (' --colormap ${TARGETS[3]} ' if colorfile is not None else '') +
                           ' --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} '+
@@ -63,7 +63,7 @@ if gctree or igphyml or dnaml:
         bootstrap_arg = ' --bootstrap {} '.format(bootstrap)
         seqboot_config = env.Command(os.path.join(outdir, 'seqboot/config.cfg'),
                                      phylip[0],
-                                     buffarg + 'python bin/mkconfig.py ${SOURCE} seqboot '+bootstrap_arg+' > $TARGET'.format(bootstrap))
+                                     buffarg + 'python scripts/mkconfig.py ${SOURCE} seqboot '+bootstrap_arg+' > $TARGET'.format(bootstrap))
 
         seqboot = CommandRunner([os.path.join(outdir, x) for x in ['seqboot/outfile', 'seqboot/log.log']],
                                 seqboot_config,
@@ -78,7 +78,7 @@ naiveID = naiveID.lower()
 if dnaml:
     dnaml_config = env.Command(os.path.join(outdir, 'dnaml/config.cfg'),
                                  phylip[0],
-                                 buffarg + 'python bin/mkconfig.py ${SOURCE} dnaml > $TARGET')
+                                 buffarg + 'python scripts/mkconfig.py ${SOURCE} dnaml > $TARGET')
 
     # run dnaml (from phylip package) to generate maximum likelihood tree
     dnaml = CommandRunner([os.path.join(outdir, x) for x in ['dnaml/outtree', 'dnaml/outfile', 'dnaml/log.log']],
@@ -91,7 +91,7 @@ if dnaml:
     dnaml_tree = env.Command([os.path.join(outdir, 'dnaml.inferred_tree.p'),
                                  os.path.join(outdir, 'dnaml.inferred_tree.log')],
                                 [dnaml[1], phylip[1]],
-                                xarg + 'python bin/phylip_parse.py ${SOURCES} --outputfile ${TARGETS[0]} --naive '+naiveID+' > ${TARGETS[1]}')
+                                xarg + 'python scripts/phylip_parse.py ${SOURCES} --outputfile ${TARGETS[0]} --naive '+naiveID+' > ${TARGETS[1]}')
     return_list.append(dnaml_tree)
 
 
@@ -100,7 +100,7 @@ if gctree:
     quick_arg = ' --quick ' if quick else ''
     dnapars_config = env.Command(os.path.join(outdir, 'dnapars/config.cfg'),
                                  phylip[0],
-                                 buffarg + 'python bin/mkconfig.py ${SOURCE} dnapars ' + quick_arg + ' > $TARGET')
+                                 buffarg + 'python scripts/mkconfig.py ${SOURCE} dnapars ' + quick_arg + ' > $TARGET')
 
     # run dnapars (from phylip package) to generate parsimony trees
     dnapars = CommandRunner([os.path.join(outdir, x) for x in ['dnapars/outtree', 'dnapars/outfile', 'dnapars/log.log']],
@@ -117,7 +117,7 @@ if gctree:
     if bootstrap:
         dnapars_config_bootstrap = env.Command(os.path.join(outdir, 'dnapars_bootstrap/config.cfg'),
                                      seqboot[0],
-                                     buffarg + 'python bin/mkconfig.py ${SOURCE} dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
+                                     buffarg + 'python scripts/mkconfig.py ${SOURCE} dnapars ' + quick_arg + bootstrap_arg + ' > $TARGET')
         dnapars_bootstrap = CommandRunner([os.path.join(outdir, x) for x in ['dnapars_bootstrap/outtree', 'dnapars_bootstrap/outfile', 'dnapars_bootstrap/log.log']],
                            dnapars_config_bootstrap,
                            'cd ' + outdir + '/dnapars_bootstrap && rm -f outfile outtree && dnapars < ${SOURCE.file} > ${TARGETS[2].file}')
@@ -131,7 +131,7 @@ if gctree:
                                 [dnapars[1], phylip[1]] +
                                 ([dnapars_bootstrap[1]] if bootstrap else []) +
                                 ([phylip[3]] if colorfile is not None else []),
-                                xarg + buffarg + 'python -u bin/gctree.py infer ${SOURCES[0]} ${SOURCES[1]} --naive ' + naiveID +
+                                xarg + buffarg + 'gctree infer ${SOURCES[0]} ${SOURCES[1]} --naive ' + naiveID +
                                 ' --outbase ' + gctree_outbase +
                                 frame_arg +
                                 idlabel_arg +

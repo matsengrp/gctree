@@ -1,9 +1,14 @@
+#! /usr/bin/env python
+
+"""Mutation models"""
+
+from gctree.utils import hamming_distance
+
 from ete3 import TreeNode
 from scipy.stats import poisson
 import random
 import scipy
 from Bio.Seq import Seq
-from utils import hamming_distance
 
 class MutationModel():
     '''a class for a mutation model, and functions to mutate sequences'''

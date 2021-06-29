@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import argparse
 from deduplicate import fasta_parse
-from utils import hamming_distance
+from gctree.utils import hamming_distance
 import seaborn as sns
 sns.set(style="white", color_codes=True)
 

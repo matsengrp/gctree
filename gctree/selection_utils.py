@@ -5,10 +5,11 @@
 utility functions for selection simulation
 '''
 
+from gctree.utils import hamming_distance
+
 import scipy
 from scipy.optimize import minimize, fsolve
 from matplotlib import pyplot as plt
-from utils import hamming_distance
 
 def calc_Kd(seqAA, targetAAseqs, hd2affy):
     '''Find the closest target sequence to and apply the "hamming distance to affinity" transformation function.'''

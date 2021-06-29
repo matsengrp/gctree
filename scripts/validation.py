@@ -5,8 +5,7 @@
 comparison of inference and simulated trees
 '''
 
-from gctree import CollapsedTree, CollapsedForest
-from utils import hamming_distance
+from gctree.utils import hamming_distance
 from random import randint
 try:
     import cPickle as pickle
@@ -14,11 +13,10 @@ except:
     import pickle
 import pandas as pd
 import scipy
-import matplotlib
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set(style='white', color_codes=True)
-import os, sys
+import os
 import numpy as np
 
 
@@ -223,12 +221,12 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
         # note: the unrooted_trees flag is needed because, for some reason, the RF
         #       function sometimes thinks the collapsed trees are unrooted and barfs
         distances, likelihoods = zip(*[(true_tree.compare(tree, method='RF'),
-                                        tree.l(inferences['gctree'].params)[0]) for tree in inferences['gctree'].forest])
+                                        tree.ll(inferences['gctree'].params)[0]) for tree in inferences['gctree'].forest])
         MRCAs = [true_tree.compare(tree, method='MRCA') for tree in inferences['gctree'].forest]
         lineage_distances = [all_lineage_dist(true_tree, tree) for tree in inferences['gctree'].forest]
         lineage_distances = list(zip(*lineage_distances))  # Unzip the forest tuple to get lineage_distances[ld0-3][tree_n]
-        mean_frequencies = [scipy.mean([node.frequency for node in tree.tree.traverse()]) for tree in inferences['gctree'].forest]
-        mean_branch_lengths = [scipy.mean([node.dist for node in tree.tree.iter_descendants()]) for tree in inferences['gctree'].forest]
+        mean_frequencies = [np.mean([node.frequency for node in tree.tree.traverse()]) for tree in inferences['gctree'].forest]
+        mean_branch_lengths = [np.mean([node.dist for node in tree.tree.iter_descendants()]) for tree in inferences['gctree'].forest]
         df = pd.DataFrame({'log-likelihood':likelihoods,
                            'RF':distances,
                            'MRCA':MRCAs,

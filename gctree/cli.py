@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 
-import gctree
-import phylip_parse as pp
-import mutation_model as mm
-import selection_utils as su
-import utils
+import gctree.branching_processes as bp
+import gctree.phylip_parse as pp
+import gctree.mutation_model as mm
+import gctree.selection_utils as su
+import gctree.utils as utils
 
 import argparse
 import pandas as pd
@@ -14,7 +14,7 @@ import warnings
 import pickle
 import random
 import scipy.stats
-import ete
+import ete3
 import itertools
 
 
@@ -38,7 +38,7 @@ def test(args):
     np.seterr(all='ignore')
     for p in ps:
         for q in qs:
-            forest = gctree.CollapsedForest((p, q), n)
+            forest = bp.CollapsedForest((p, q), n)
             print(f'parameters: p = {p}, q = {q}')
             forest.simulate()
             tree_dict = {}
@@ -46,7 +46,7 @@ def test(args):
                 tree_hash = tuple((node.frequency, len(node.children))
                                   for node in tree.tree.traverse())
                 if tree_hash not in tree_dict:
-                    tree_dict[tree_hash] = [tree, tree.l((p, q))[0], 1]
+                    tree_dict[tree_hash] = [tree, tree.ll((p, q))[0], 1]
                 else:
                     tree_dict[tree_hash][-1] += 1
             L_empirical, L_theoretical = zip(
@@ -87,7 +87,7 @@ def test(args):
     for p in ps:
         for q in qs:
             for _ in range(n):
-                forest = gctree.CollapsedForest((p, q), n2)
+                forest = bp.CollapsedForest((p, q), n2)
                 print(f'parameters: p = {p}, q = {q}')
                 forest.simulate()
                 result = forest.mle()
@@ -128,8 +128,8 @@ def infer(args):
             outbase = args.outbase + f'.bootstrap_{i}'
         else:
             outbase = args.outbase
-        phylip_collapsed = [gctree.CollapsedTree(tree=tree, frame=args.frame,
-                                                 allow_repeats=(i > 0))
+        phylip_collapsed = [bp.CollapsedTree(tree=tree, frame=args.frame,
+                                             allow_repeats=(i > 0))
                             for tree in content]
         phylip_collapsed_unique = []
         for tree in phylip_collapsed:
@@ -137,7 +137,7 @@ def infer(args):
                    for tree2 in phylip_collapsed_unique) == 0:
                 phylip_collapsed_unique.append(tree)
 
-        parsimony_forest = gctree.CollapsedForest(
+        parsimony_forest = bp.CollapsedForest(
                                         forest=phylip_collapsed_unique)
 
         if parsimony_forest.n_trees == 1:
@@ -178,7 +178,7 @@ def infer(args):
             df.loc[i-1] = parsimony_forest.params
 
         # get likelihoods and sort by them
-        ls = [tree.l(parsimony_forest.params, build_cache=False)[0]
+        ls = [tree.ll(parsimony_forest.params, build_cache=False)[0]
               for tree in parsimony_forest.forest]
         ls, parsimony_forest.forest = zip(
             *sorted(zip(ls, parsimony_forest.forest), key=lambda x: x[0],
@@ -358,14 +358,13 @@ def simulate(args):
                                            verbose=args.verbose,
                                            selection_params=selection_params)
             if args.selection:
-                collapsed_tree = gctree.CollapsedTree(tree=tree,
-                                                      frame=args.frame,
-                                                      collapse_syn=False,
-                                                      allow_repeats=True)
+                collapsed_tree = bp.CollapsedTree(tree=tree,
+                                                  frame=args.frame,
+                                                  collapse_syn=False,
+                                                  allow_repeats=True)
             else:
                 # this will fail if backmutations
-                collapsed_tree = gctree.CollapsedTree(tree=tree,
-                                                      frame=args.frame)
+                collapsed_tree = bp.CollapsedTree(tree=tree, frame=args.frame)
             tree.ladderize()
             uniques = sum(node.frequency > 0
                           for node in collapsed_tree.tree.traverse())
@@ -423,13 +422,13 @@ def simulate(args):
           ' simulated observed sequences')
 
     # render the full lineage tree
-    ts = ete.TreeStyle()
+    ts = ete3.TreeStyle()
     ts.rotation = 90
     ts.show_leaf_name = False
     ts.show_scale = False
 
     colors = {}
-    palette = ete.SVG_COLORS
+    palette = ete3.SVG_COLORS
     palette -= set(['black', 'white', 'gray'])
     palette = itertools.cycle(list(palette))  # <-- circular iterator
 
@@ -440,7 +439,7 @@ def simulate(args):
         colors[tree.sequence] = 'gray'
 
     for n in tree.traverse():
-        nstyle = ete.NodeStyle()
+        nstyle = ete3.NodeStyle()
         nstyle["size"] = 10
         if args.plotAA:
             if n.AAseq not in colors:

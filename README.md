@@ -19,14 +19,15 @@ All commands should be issued from within the gctree repo directory.
     ```bash
     conda env create -f environment.yml
     ```
-2. Install the gctree package locally (with `-e` flag for editable, if developing)
-    ```bash
-    pip install -e .
-    ```
-3. Activate the environment:
+2. Activate the environment:
     ```bash
     conda activate gctree
     ```
+
+Alternatively, if you only want the base gctree python package (without the pipelines and scripts), you can
+```bash
+pip intall .
+```
 
 ## QUICK START
 
@@ -224,13 +225,13 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
    * Try setting the above option if you get the error:`ETE: cannot connect to X server`
 
-## `gctree.py`
-Underlying both pipelines is the `gctree.py` Python library (located in the `bin/` subdirectory) for simulating and compute likelihoods for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree.py --help`. There are three subprograms, each of which has usage info:
-* `gctree.py infer --help`: takes an `outfile` file made by phylip's `dnapars` as a command line argument, converts each tree therein to a collapsed tree, and ranks by GCtree likelihood.
-* `gctree.py simulate --help`: simulate data
-* `gctree.py test --help`: performs tests of the likelihood and outputs validation plots.
+## `gctree`
+Underlying both pipelines is the `gctree` Python package for simulating and compute likelihoods for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree --help`. There are three subprograms, each of which has usage info:
+* `gctree infer --help`: takes an `outfile` file made by phylip's `dnapars` as a command line argument, converts each tree therein to a collapsed tree, and ranks by GCtree likelihood.
+* `gctree simulate --help`: simulate data
+* `gctree test --help`: performs tests of the likelihood and outputs validation plots.
 
-The under-the-hood functionality of the `gctree.py` library might be useful for some users trying to go beyond the scons pipelines. For example mapping colors to tree image nodes can be achieved with the `--colormap` argument. Colors can be useful for visualizing other cell/genotype properties on the tree.
+The under-the-hood functionality of the `gctree` package might be useful for some users trying to go beyond the scons pipelines. For example mapping colors to tree image nodes can be achieved with the `--colormap` argument. Colors can be useful for visualizing other cell/genotype properties on the tree.
 
 ## FUNCTIONALITY UNDER DEVELOPMENT
 

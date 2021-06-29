@@ -12,7 +12,7 @@ import pandas as pd
 import argparse
 import seaborn as sns
 sns.set(style="white", color_codes=True)
-from utils import hamming_distance
+from gctree.utils import hamming_distance
 
 
 def main():

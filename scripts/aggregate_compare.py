@@ -45,35 +45,36 @@ numb_variables = sum(len(set(df[var])) > 1 for var in variables) - 1  ### NOTICE
 plot_func = {v:f for v, f in zip(variables, plot2var)}
 plot_options = {v:o for v, o in zip(variables, options)}
 
+if numb_variables > 0:
 
-gs = gridspec.GridSpec(numb_variables, 2)
-fig = plt.figure(figsize=(8, 4*numb_variables))
-
-
-i = 0
-for var in variables:
-    if not len(set(df[var])) > 1 or var == 'N_taxa':
-        continue
-
-    plf = plot_func[var]
-    kwargs = plot_options[var]
-    ax = plt.subplot(gs[i, 0])
-    plot_data = df.loc[df.loc[:,'metric'] == 'RF', :]
-    sns.boxplot(x=var, y="value", hue="method", data=plot_data, showfliers=False)
-    plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
-    ax.set(ylabel='RF distance')
-
-    ax = plt.subplot(gs[i, 1])
-    plot_data = df.loc[df.loc[:,'metric'] == 'logMRCA', :]
-    sns.boxplot(x=var, y="value", hue="method", data=plot_data, showfliers=False)
-    plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
-    ax.set(ylabel='MRCA distance')
-
-    i += 1
+    gs = gridspec.GridSpec(numb_variables, 2)
+    fig = plt.figure(figsize=(8, 4*numb_variables))
 
 
-plt.tight_layout()
-plt.savefig(args.outbase+'.pdf')
+    i = 0
+    for var in variables:
+        if not len(set(df[var])) > 1 or var == 'N_taxa':
+            continue
+
+        plf = plot_func[var]
+        kwargs = plot_options[var]
+        ax = plt.subplot(gs[i, 0])
+        plot_data = df.loc[df.loc[:,'metric'] == 'RF', :]
+        sns.boxplot(x=var, y="value", hue="method", data=plot_data, showfliers=False)
+        plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
+        ax.set(ylabel='RF distance')
+
+        ax = plt.subplot(gs[i, 1])
+        plot_data = df.loc[df.loc[:,'metric'] == 'logMRCA', :]
+        sns.boxplot(x=var, y="value", hue="method", data=plot_data, showfliers=False)
+        plf(x=var, y="value", hue="method", data=plot_data, **kwargs)
+        ax.set(ylabel='MRCA distance')
+
+        i += 1
+
+
+    plt.tight_layout()
+    plt.savefig(args.outbase+'.pdf')
 
 
 var = 'N_taxa'

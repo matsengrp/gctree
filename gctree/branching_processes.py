@@ -1,9 +1,12 @@
 #! /usr/bin/env python
 
-'''
+"""
 This module contains classes for simulation and inference for a binary
 branching process with mutation in which the tree is collapsed to nodes that
-count the number of clonal leaves of each type'''
+count the number of clonal leaves of each type
+"""
+
+from gctree.utils import hamming_distance
 
 import numpy as np
 import warnings
@@ -17,10 +20,8 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
-
 import pickle
 from functools import lru_cache
-from utils import hamming_distance
 
 np.seterr(all='raise')
 
