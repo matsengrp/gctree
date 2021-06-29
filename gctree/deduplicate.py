@@ -10,7 +10,6 @@ from collections import defaultdict, Counter
 
 
 def fasta_parse(aln_file, naive, frame=None, aln_file2=None, id_abundances=False):
-    # naive = naive.lower()
     if aln_file.endswith("fasta") or aln_file.endswith("fa"):
         aln_format = "fasta"
     elif aln_file.endswith("phylip") or aln_file.endswith("phy"):
@@ -102,7 +101,7 @@ def check_header(header):
         raise Exception(
             "Sequence headers must be distinguishable from an integer. Please add a non number character."
         )
-    except:
+    except ValueError:
         pass
 
 
@@ -184,7 +183,7 @@ def main():
                 )
                 if (
                     len(colors_counts) == 1
-                    and colors_counts[0][0] != None
+                    and colors_counts[0][0] is not None
                     and colors_counts != []
                 ):
                     colors_str = colors_counts[0][0]

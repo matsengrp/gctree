@@ -41,9 +41,9 @@ Setting for this run:
   Y to accept these or type the letter for one to change
 ____________
 """
-import re, os, random
+import os
+import random
 import argparse
-from warnings import warn
 
 
 def main():

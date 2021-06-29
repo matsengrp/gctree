@@ -273,8 +273,6 @@ class MutationModel:
 
         t = 0  # <-- time
         leaves_unterminated = 1
-        # Small lambdas are causing problems so make a minimum:
-        lambda_min = 10e-10
         while (
             leaves_unterminated > 0
             and (leaves_unterminated < N if N is not None else True)
@@ -282,7 +280,6 @@ class MutationModel:
         ):
             if verbose:
                 print("At time:", t)
-            skip_lambda_n = 0  # At every new round reset the all the lambdas
             t += 1
             list_of_leaves = list(tree.iter_leaves())
             random.shuffle(list_of_leaves)

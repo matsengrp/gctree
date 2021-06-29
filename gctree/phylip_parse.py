@@ -7,7 +7,6 @@ ancestral sequences), a newick tree (with matching internal node lables), and an
 
 import gctree.phylip_parse as pp
 import gctree.branching_processes as bp
-
 from gctree.utils import hamming_distance
 
 from ete3 import Tree
@@ -16,13 +15,18 @@ import random
 from collections import defaultdict
 from Bio.Data.IUPACData import ambiguous_dna_values
 
+import pickle
+import argparse
+import os
+
+
 # iterate over recognized sections in the phylip output file.
 def sections(fh):
     patterns = {
-        "parents": "\s+between\s+and\s+length",
-        ("sequences", "dnaml"): "\s*node\s+reconstructed\s+sequence",
-        ("sequences", "dnapars"): "from\s+to\s+any steps",
-        "seqboot_dataset": "Data\s*set",
+        "parents": r"\s+between\s+and\s+length",
+        ("sequences", "dnaml"): r"\s*node\s+reconstructed\s+sequence",
+        ("sequences", "dnapars"): r"from\s+to\s+any steps",
+        "seqboot_dataset": r"Data\s*set",
     }
     patterns = {k: re.compile(v, re.IGNORECASE) for (k, v) in patterns.items()}
     for line in fh:
@@ -36,7 +40,7 @@ def sections(fh):
 def iter_edges(fh):
     #  152          >naive2           0.01208     (     zero,     0.02525) **
     pat = re.compile(
-        "\s*(?P<parent>\w+)\s+(?P<child>[\w>_.-]+)\s+(?P<distance>\d+\.\d+)"
+        r"\s*(?P<parent>\w+)\s+(?P<child>[\w>_.-]+)\s+(?P<distance>\d+\.\d+)"
     )
     # drop the header underline
     fh.readline()
@@ -59,10 +63,10 @@ def parse_seqdict(fh, mode="dnaml"):
     #  152        sssssssssG AGGTGCAGCT GTTGGAGTCT GGGGGAGGCT TGGTACAGCC TGGGGGGTCC
     seqs = defaultdict(str)
     if mode == "dnaml":
-        patterns = re.compile("^\s*(?P<id>[a-zA-Z0-9>_.-]*)\s+(?P<seq>[a-zA-Z \-]+)")
+        patterns = re.compile(r"^\s*(?P<id>[a-zA-Z0-9>_.-]*)\s+(?P<seq>[a-zA-Z \-]+)")
     elif mode == "dnapars":
         patterns = re.compile(
-            "^\s*\S+\s+(?P<id>[a-zA-Z0-9>_.-]*)\s+(yes\s+|no\s+|maybe\s+)?(?P<seq>[a-zA-Z \-\?]+)"
+            r"^\s*\S+\s+(?P<id>[a-zA-Z0-9>_.-]*)\s+(yes\s+|no\s+|maybe\s+)?(?P<seq>[a-zA-Z \-\?]+)"
         )
     else:
         raise ValueError("invalid mode " + mode)
@@ -89,7 +93,9 @@ def parse_seqdict(fh, mode="dnaml"):
 def parse_outfile(outfile, countfile=None, naive="naive"):
     """parse phylip outfile."""
     if countfile is not None:
-        counts = {l.split(",")[0]: int(l.split(",")[1]) for l in open(countfile)}
+        counts = {
+            line.split(",")[0]: int(line.split(",")[1]) for line in open(countfile)
+        }
     # No count, just make an empty count dictionary:
     else:
         counts = None
@@ -192,9 +198,6 @@ def build_tree(sequences, parents, counts=None, naive="naive"):
 
 
 def main():
-
-    import pickle, argparse, os
-
     def existing_file(fname):
         """Argparse type for an existing file."""
         if not os.path.isfile(fname):
