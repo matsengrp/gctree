@@ -7,7 +7,7 @@ from nestly.scons import SConsWrap
 
 # the following must be exported by parent SConstruct/SConscript
 Import(
-    "env dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg"
+    "env dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp xarg buffarg"
 )
 
 nest = Nest()
@@ -47,13 +47,6 @@ def gctree_sim(outdir, c):
     T_arg = " --T {} ".format(" ".join(map(str, T))) if T else ""
     N_arg = " --N {} ".format(N) if N is not None else ""
     n_arg = " --n {} ".format(n) if n is not None else ""
-    sele_arg = (
-        " --selection True --target_dist {} --target_count {} --verbose {} --carry_cap {} --skip_update {}".format(
-            *selection_param
-        )
-        if selection_param is not None
-        else ""
-    )
     tgt = CommandRunner(
         [
             os.path.join(outdir, "gctree.simulation.fasta"),
@@ -76,7 +69,6 @@ def gctree_sim(outdir, c):
         + T_arg
         + N_arg
         + n_arg
-        + sele_arg
         + " | tee ${TARGETS[4]}",
     )
     c["simstat_agg"].append(tgt[1])

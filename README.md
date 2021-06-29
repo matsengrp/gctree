@@ -4,12 +4,6 @@ Implements phylogenetic inference for data with repeated sequences, as described
 
 DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve phylogenetic inference*, [arXiv:1708.08944](https://arxiv.org/abs/1708.08944).
 
-Two programs are implemented:
-- an inference program for experimental input data in `FASTA` or `PHYLIP` format (including an additional sequence for the ancestral state)
-- a simulation/inference/validation program
-
-All commands should be issued from within the gctree repo directory.
-
 ## Installation
 
 ### Linux/MacOS
@@ -49,6 +43,8 @@ Additionally, the following command line utilities will be installed (each with 
     ```
 
 ## Pipeline quick start
+
+All commands should be issued from within the gctree repo directory.
 
 ### inference
 - *input file*: `FASTA` or `PHYLIP` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all observed sequences (used for outgroup rooting).
@@ -243,20 +239,3 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 `--xvfb        ` needed for X rendering in on remote machines. Try setting this option if you get the error:`ETE: cannot connect to X server`
 
  `--dnaml`    include results for maximum likelihood tree inference using `dnaml` from the PHYLIP package
-
-
-## FUNCTIONALITY UNDER DEVELOPMENT
-
-### arguments for non-neutral simulation
-
-`--selection`    simulation with affinity selection
-
-`--target_dist`  distance to selection target
-
-`--target_count` number of targets
-
-`--verbose`      verbose printing
-
-`--carry_cap`    carrying capacity of germinal center
-
-`--skip_update`  skip update step

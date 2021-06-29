@@ -3,7 +3,6 @@
 """Mutation models."""
 
 from gctree.utils import hamming_distance
-import gctree.selection_utils as su
 
 from ete3 import TreeNode
 from scipy.stats import poisson
@@ -252,27 +251,17 @@ class MutationModel:
         T=None,
         n=None,
         verbose=False,
-        selection_params=None,
     ):
         """simulate neutral binary branching process with mutation model
         progeny must be like a scipy.stats distribution, with rvs() and mean()
         methods."""
-        stop_dist = None  # Default stopping criterium for affinity simulation
         # Checking the validity of the input parameters:
         if N is not None and T is not None:
             raise ValueError("Only one of N and T can be used. One must be None.")
-        if selection_params is not None and T is None:
-            raise ValueError(
-                "Simulation with selection was chosen. A time, T, must be specified."
-            )
         elif N is None and T is None:
             raise ValueError("Either N or T must be specified.")
         if N is not None and n is not None and n > N:
             raise ValueError("n ({}) must not larger than N ({})".format(n, N))
-        if selection_params is not None and frame is None:
-            raise ValueError(
-                "Simulation with selection was chosen. A frame must must be specified."
-            )
 
         # Planting the tree:
         tree = TreeNode()
@@ -282,61 +271,6 @@ class MutationModel:
         tree.add_feature("frequency", 0)
         tree.add_feature("time", 0)
 
-        if selection_params is not None:
-            hd_generation = (
-                list()
-            )  # Collect an array of the counts of each hamming distance at each time step
-            (
-                stop_dist,
-                mature_affy,
-                naive_affy,
-                target_dist,
-                skip_update,
-                targetAAseqs,
-                A_total,
-                B_total,
-                Lp,
-                k,
-                outbase,
-            ) = selection_params
-            # Assert that the target sequences are comparable to the naive sequence:
-            aa = Seq(
-                tree.sequence[
-                    (frame - 1) : (
-                        frame - 1 + (3 * (((len(tree.sequence) - (frame - 1)) // 3)))
-                    )
-                ]
-            ).translate()
-            assert (
-                sum([1 for t in targetAAseqs if len(t) != len(aa)]) == 0
-            )  # All targets are same length
-            assert sum(
-                [1 for t in targetAAseqs if hamming_distance(aa, t) == target_dist]
-            )  # All target are "target_dist" away from the naive sequence
-            # Affinity is an exponential function of hamming distance:
-            if target_dist > 0:
-
-                def hd2affy(hd):
-                    return (
-                        mature_affy
-                        + hd ** k * (naive_affy - mature_affy) / target_dist ** k
-                    )
-
-            else:
-
-                def hd2affy(hd):
-                    return mature_affy
-
-            # We store both the amino acid sequence and the affinity as tree features:
-            tree.add_feature("AAseq", str(aa))
-            tree.add_feature(
-                "Kd", su.calc_Kd(tree.AAseq, targetAAseqs, hd2affy)
-            )
-            tree.add_feature(
-                "target_dist",
-                min([hamming_distance(tree.AAseq, taa) for taa in targetAAseqs]),
-            )
-
         t = 0  # <-- time
         leaves_unterminated = 1
         # Small lambdas are causing problems so make a minimum:
@@ -345,11 +279,6 @@ class MutationModel:
             leaves_unterminated > 0
             and (leaves_unterminated < N if N is not None else True)
             and (t < max(T) if T is not None else True)
-            and (
-                stop_dist >= min(hd_distrib)
-                if stop_dist is not None and t > 0
-                else True
-            )
         ):
             if verbose:
                 print("At time:", t)
@@ -359,21 +288,6 @@ class MutationModel:
             random.shuffle(list_of_leaves)
             for leaf in list_of_leaves:
                 if not leaf.terminated:
-                    if selection_params is not None:
-                        if skip_lambda_n == 0:
-                            skip_lambda_n = (
-                                skip_update + 1
-                            )  # Add one so skip_update=0 is no skip
-                            tree = su.lambda_selection(
-                                leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp
-                            )
-                        # Small lambdas are causing problems so make a minimum:
-                        lambda_min = 10e-10
-                        if leaf.lambda_ > lambda_min:
-                            progeny = poisson(leaf.lambda_)
-                        else:
-                            progeny = poisson(lambda_min)
-                        skip_lambda_n -= 1
                     n_children = progeny.rvs()
                     leaves_unterminated += (
                         n_children - 1
@@ -403,70 +317,10 @@ class MutationModel:
                             x != y for x, y in zip(mutated_sequence, leaf.sequence)
                         )
                         child.add_feature("sequence", mutated_sequence)
-                        if selection_params is not None:
-                            aa = Seq(
-                                child.sequence[
-                                    (frame - 1) : (
-                                        frame
-                                        - 1
-                                        + (
-                                            3
-                                            * (
-                                                (
-                                                    (len(child.sequence) - (frame - 1))
-                                                    // 3
-                                                )
-                                            )
-                                        )
-                                    )
-                                ]
-                            ).translate()
-                            child.add_feature("AAseq", str(aa))
-                            child.add_feature(
-                                "Kd",
-                                su.calc_Kd(
-                                    child.AAseq, targetAAseqs, hd2affy
-                                ),
-                            )
-                            child.add_feature(
-                                "target_dist",
-                                min(
-                                    [
-                                        hamming_distance(child.AAseq, taa)
-                                        for taa in targetAAseqs
-                                    ]
-                                ),
-                            )
                         child.add_feature("frequency", 0)
                         child.add_feature("terminated", False)
                         child.add_feature("time", t)
                         leaf.add_child(child)
-            if selection_params is not None:
-                hd_distrib = [
-                    min([hamming_distance(tn.AAseq, ta) for ta in targetAAseqs])
-                    for tn in tree.iter_leaves()
-                    if not tn.terminated
-                ]
-                if target_dist > 0:
-                    hist = scipy.histogram(
-                        hd_distrib, bins=list(range(target_dist * 10))
-                    )
-                else:  # Just make a minimum of 10 bins
-                    hist = scipy.histogram(hd_distrib, bins=list(range(10)))
-                hd_generation.append(hist)
-                if verbose and hd_distrib:
-                    print("Total cell population:", sum(hist[0]))
-                    print("Majority hamming distance:", scipy.argmax(hist[0]))
-                    print("Affinity of latest sampled leaf:", leaf.Kd)
-                    print(
-                        "Progeny distribution lambda for the latest sampled leaf:",
-                        leaf.lambda_,
-                    )
-
-        if selection_params is not None:
-            # Keep a histogram of the hamming distances at each generation:
-            with open(outbase + "selection_sim.runstats.p", "wb") as f:
-                pickle.dump(hd_generation, f)
 
         if leaves_unterminated < N:
             raise RuntimeError(
@@ -497,8 +351,6 @@ class MutationModel:
                     final_leaves
                 ):  # No need to down-sample, this was already done in the simulation loop
                     leaf.frequency = 1
-        if selection_params and max(T) != t:
-            raise RuntimeError("tree terminated with before the requested sample time.")
         # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size

@@ -3,7 +3,6 @@
 import gctree.branching_processes as bp
 import gctree.phylip_parse as pp
 import gctree.mutation_model as mm
-import gctree.selection_utils as su
 import gctree.utils as utils
 
 import argparse
@@ -349,14 +348,9 @@ def infer(args):
 def simulate(args):
     """Simulation subprogram.
 
-    Can simulate in two modes. a) Neutral mode. A Galton–Watson process,
+    Simulates a Galton–Watson process,
     with mutation probabilities according to a user defined motif model
-    e.g. S5F b) Selection mode. Using the same mutation process as in
-    a), but in selection mode the poisson progeny distribution's lambda
-    is variable according to the hamming distance to a list of target
-    sequences. The closer a sequence gets to one of the targets the
-    higher fitness and the closer lambda will approach 2, vice versa
-    when the sequence is far away lambda approaches 0.
+    e.g. S5F
     """
     random.seed(a=args.seed)
     mutation_model = mm.MutationModel(args.mutability, args.substitution)
@@ -401,40 +395,6 @@ def simulate(args):
         args.sequence += args.sequence2.upper()
     else:
         seq_bounds = None
-    if args.selection:
-        if args.frame is None:
-            raise Exception("Frame must be defined when simulating with " "selection.")
-        # the fully activating fraction on BA must be possible to reach within
-        # B_total
-        assert args.B_total >= args.f_full
-        # Make a list of target sequences:
-        targetAAseqs = [
-            mutation_model.one_mutant(args.sequence, args.target_dist, frame=args.frame)
-            for i in range(args.target_count)
-        ]
-        # Find the total amount of A necessary for sustaining the inputted
-        # carrying capacity:
-        print((args.carry_cap, args.B_total, args.f_full, args.mature_affy))
-        A_total = su.find_A_total(
-            args.carry_cap, args.B_total, args.f_full, args.mature_affy, args.U
-        )
-        # Calculate the parameters for the logistic function:
-        Lp = su.find_Lp(args.f_full, args.U)
-        selection_params = [
-            args.stop_dist,
-            args.mature_affy,
-            args.naive_affy,
-            args.target_dist,
-            args.skip_update,
-            targetAAseqs,
-            A_total,
-            args.B_total,
-            Lp,
-            args.k,
-            args.outbase,
-        ]
-    else:
-        selection_params = None
 
     trials = 1000
     # this loop makes us resimulate if size too small, or backmutation
@@ -450,15 +410,9 @@ def simulate(args):
                 T=args.T,
                 frame=args.frame,
                 verbose=args.verbose,
-                selection_params=selection_params,
             )
-            if args.selection:
-                collapsed_tree = bp.CollapsedTree(
-                    tree=tree, frame=args.frame, collapse_syn=False, allow_repeats=True
-                )
-            else:
-                # this will fail if backmutations
-                collapsed_tree = bp.CollapsedTree(tree=tree, frame=args.frame)
+            # this will fail if backmutations
+            collapsed_tree = bp.CollapsedTree(tree=tree, frame=args.frame)
             tree.ladderize()
             uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:
@@ -537,11 +491,7 @@ def simulate(args):
     palette -= set(["black", "white", "gray"])
     palette = itertools.cycle(list(palette))  # <-- circular iterator
 
-    # Either plot by DNA sequence or amino acid sequence:
-    if args.plotAA and args.selection:
-        colors[tree.AAseq] = "gray"
-    else:
-        colors[tree.sequence] = "gray"
+    colors[tree.sequence] = "gray"
 
     for n in tree.traverse():
         nstyle = ete3.NodeStyle()
@@ -564,14 +514,9 @@ def simulate(args):
     # render collapsed tree
     # create an id-wise colormap
     # NOTE: node.name can be a set
-    if args.plotAA and args.selection:
-        colormap = {
-            node.name: colors[node.AAseq] for node in collapsed_tree.tree.traverse()
-        }
-    else:
-        colormap = {
-            node.name: colors[node.sequence] for node in collapsed_tree.tree.traverse()
-        }
+    colormap = {
+        node.name: colors[node.sequence] for node in collapsed_tree.tree.traverse()
+    }
     collapsed_tree.write(args.outbase + ".simulation.collapsed_tree.p")
     collapsed_tree.render(
         args.outbase + ".simulation.collapsed_tree.svg",
@@ -587,49 +532,6 @@ def simulate(args):
                 + color
                 + "\n"
             )
-
-    if args.selection:
-        # Define a list a suitable colors that are easy to distinguish:
-        palette = [
-            "crimson",
-            "purple",
-            "hotpink",
-            "limegreen",
-            "darkorange",
-            "darkkhaki",
-            "brown",
-            "lightsalmon",
-            "darkgreen",
-            "darkseagreen",
-            "darkslateblue",
-            "teal",
-            "olive",
-            "wheat",
-            "magenta",
-            "lightsteelblue",
-            "plum",
-            "gold",
-        ]
-        # circular iterator
-        palette = itertools.cycle(list(palette))
-        colors = {i: next(palette) for i in range(int(len(args.sequence) // 3))}
-        # The minimum distance to the target is colored:
-        colormap = {
-            node.name: colors[node.target_dist]
-            for node in collapsed_tree.tree.traverse()
-        }
-        collapsed_tree.write(
-            args.outbase + ".simulation.collapsed_runstat_color_tree.p"
-        )
-        collapsed_tree.render(
-            args.outbase + ".simulation.collapsed_runstat_color_tree.svg",
-            idlabel=args.idlabel,
-            colormap=colormap,
-        )
-        # Write a file with the selection run stats. These are also plotted:
-        with open(args.outbase + "selection_sim.runstats.p", "rb") as fh:
-            runstats = pickle.load(fh)
-            su.plot_runstats(runstats, args.outbase, colors)
 
 
 def get_parser():
@@ -744,91 +646,11 @@ def get_parser():
         "--seed", type=int, default=None, help="integer random seed"
     )
     parser_sim.add_argument(
-        "--selection",
-        type=bool,
-        default=False,
-        help="Simulation with selection? true/false. When doing simulation "
-        "with selection an observation time cut must be set.",
-    )
-    parser_sim.add_argument(
-        "--stop_dist",
-        type=int,
-        default=None,
-        help="Stop when this distance has been reached in the selection " "model.",
-    )
-    parser_sim.add_argument(
-        "--carry_cap",
-        type=int,
-        default=1000,
-        help="The carrying capacity of the simulation with selection. This "
-        "number affects the fixation time of a new mutation. Fixation "
-        "time is approx. log2(carry_cap), e.g. log2(1000) ~= 10.",
-    )
-    parser_sim.add_argument(
-        "--target_count",
-        type=int,
-        default=10,
-        help="The number of targets to generate.",
-    )
-    parser_sim.add_argument(
         "--target_dist",
         type=int,
         default=10,
         help="The number of non-synonymous mutations the target should be "
         "away from the naive.",
-    )
-    parser_sim.add_argument(
-        "--naive_affy",
-        type=float,
-        default=100,
-        help="Affinity of the naive sequence in nano molar.",
-    )
-    parser_sim.add_argument(
-        "--mature_affy",
-        type=float,
-        default=1,
-        help="Affinity of the mature sequences in nano molar.",
-    )
-    parser_sim.add_argument(
-        "--skip_update",
-        type=int,
-        default=100,
-        help="When iterating through the leafs the B:A fraction is "
-        "recalculated every time. It is possible though to update less "
-        "often and get the same approximate results. This parameter sets "
-        "the number of iterations to skip, before updating the B:A "
-        "results. skip_update < carry_cap/10 recommended.",
-    )
-    parser_sim.add_argument(
-        "--B_total",
-        type=float,
-        default=1,
-        help="Total number of BCRs per B cell normalized to 10e4. So 1 equals "
-        "10e4, 100 equals 10e6 etc. It is recommended to keep this as "
-        "the default.",
-    )
-    parser_sim.add_argument(
-        "--U",
-        type=float,
-        default=5,
-        help="Controls the fraction of BCRs binding antigen necessary to "
-        "only sustain the life of the B cell It is recommended to keep "
-        "this as the default.",
-    )
-    parser_sim.add_argument(
-        "--f_full",
-        type=float,
-        default=1,
-        help="The fraction of antigen bound BCRs on a B cell that is needed "
-        "to elicit close to maximum reponse. Cannot be smaller than "
-        "B_total. It is recommended to keep this as the default.",
-    )
-    parser_sim.add_argument(
-        "--k",
-        type=float,
-        default=2,
-        help="The exponent in the function to map hamming distance to "
-        "affinity. It is recommended to keep this as the default.",
     )
     parser_sim.add_argument(
         "--plotAA",
@@ -840,8 +662,7 @@ def get_parser():
         "--verbose",
         type=bool,
         default=False,
-        help="Print progress during simulation. Mostly useful for simulation "
-        "with selection since this can take a while.",
+        help="Print progress during simulation.",
     )
     parser_sim.set_defaults(func=simulate)
 

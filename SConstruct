@@ -155,29 +155,6 @@ if simulate:
         help="id of naive seq in the experimental data",
     )
     naiveIDexp = GetOption("naiveIDexp")
-    AddOption(
-        "--selection", action="store_true", help="Simulation with affinity selection."
-    )
-    selection = GetOption("selection")
-    if selection:
-        AddOption(
-            "--target_dist",
-            type="int",
-            default=10,
-            help="Distance to selection target.",
-        )
-        target_dist = GetOption("target_dist")
-        AddOption("--target_count", type="int", default=10, help="Number of targets.")
-        target_count = GetOption("target_count")
-        AddOption("--verbose", action="store_true", help="Verbose printing.")
-        verbose = GetOption("verbose")
-        AddOption("--carry_cap", type="int", default=1000, help="Number of targets.")
-        carry_cap = GetOption("carry_cap")
-        AddOption("--skip_update", type="int", default=100, help="Skip update step.")
-        skip_update = GetOption("skip_update")
-        selection_param = (target_dist, target_count, verbose, carry_cap, skip_update)
-    else:
-        selection_param = None
 
 elif inference:
     AddOption(
@@ -233,7 +210,7 @@ if simulate and not GetOption("help"):
         raise InputError("outdir must be specified")
     SConscript(
         "SConscript.simulation",
-        exports="env dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg",
+        exports="env dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp xarg buffarg",
     )
 elif inference and not GetOption("help"):
     if None in [input_file, outdir]:
