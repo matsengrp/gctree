@@ -19,9 +19,11 @@ import itertools
 
 
 def test(args):
-    """Test subprogram. Checks likelihood against a by-hand calculation for a
-    simple tree, simulates a forest, computes MLE parameters, and plots some
-    sanity check figures to plot_file command line arguments are p, q, number
+    """Test subprogram.
+
+    Checks likelihood against a by-hand calculation for a simple tree,
+    simulates a forest, computes MLE parameters, and plots some sanity
+    check figures to plot_file command line arguments are p, q, number
     of trees to simulate, and plot file name
     """
 
@@ -151,7 +153,7 @@ def test(args):
 
 
 def infer(args):
-    """inference subprogram"""
+    """inference subprogram."""
     outfiles = [pp.parse_outfile(args.phylipfile, args.countfile, args.naive)]
     if args.bootstrap_phylipfile is not None:
         outfiles.extend(
@@ -345,15 +347,16 @@ def infer(args):
 
 
 def simulate(args):
-    """Simulation subprogram. Can simulate in two modes.
-    a) Neutral mode. A Galton–Watson process, with mutation probabilities
-    according to a user defined motif model e.g. S5F
-    b) Selection mode. Using the same mutation process as in a), but in
-    selection mode the poisson progeny distribution's lambda is variable
-    according to the hamming distance to a list of target sequences. The closer
-    a sequence gets to one of the targets the higher fitness and the closer
-    lambda will approach 2, vice versa when the sequence is far away lambda
-    approaches 0.
+    """Simulation subprogram.
+
+    Can simulate in two modes. a) Neutral mode. A Galton–Watson process,
+    with mutation probabilities according to a user defined motif model
+    e.g. S5F b) Selection mode. Using the same mutation process as in
+    a), but in selection mode the poisson progeny distribution's lambda
+    is variable according to the hamming distance to a list of target
+    sequences. The closer a sequence gets to one of the targets the
+    higher fitness and the closer lambda will approach 2, vice versa
+    when the sequence is far away lambda approaches 0.
     """
     random.seed(a=args.seed)
     mutation_model = mm.MutationModel(args.mutability, args.substitution)

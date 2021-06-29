@@ -1,10 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-summary stats of the seq data going into tree inference
-for CFT
-"""
+"""summary stats of the seq data going into tree inference for CFT."""
 
 from deduplicate import fasta_parse
 from matplotlib import pyplot as plt

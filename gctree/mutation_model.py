@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-"""Mutation models"""
+"""Mutation models."""
 
 from gctree.utils import hamming_distance
 
@@ -12,7 +12,7 @@ from Bio.Seq import Seq
 
 
 class MutationModel:
-    """a class for a mutation model, and functions to mutate sequences"""
+    """a class for a mutation model, and functions to mutate sequences."""
 
     def __init__(
         self,
@@ -21,8 +21,8 @@ class MutationModel:
         mutation_order=True,
         with_replacement=True,
     ):
-        """
-        initialized with input files of the S5F format
+        """initialized with input files of the S5F format.
+
         @param mutation_order: whether or not to mutate sequences using a context sensitive manner
                                 where mutation order matters
         @param with_replacement: allow the same position to mutate multiple times on a single branch
@@ -60,7 +60,8 @@ class MutationModel:
 
     @staticmethod
     def disambiguate(sequence):
-        """generator of all possible nt sequences implied by a sequence containing Ns"""
+        """generator of all possible nt sequences implied by a sequence
+        containing Ns."""
         # find the first N nucleotide
         N_index = sequence.find("N")
         # if there is no N nucleotide, yield the input sequence
@@ -76,10 +77,8 @@ class MutationModel:
                     yield sequence_recurse
 
     def mutability(self, kmer):
-        """
-        returns the mutability of a central base of kmer, along with nucleotide bias
-        averages over N nucleotide identities
-        """
+        """returns the mutability of a central base of kmer, along with
+        nucleotide bias averages over N nucleotide identities."""
         if self.context_model is None:
             raise ValueError("kmer mutability only defined for context models")
         if len(kmer) != self.k:
@@ -109,7 +108,8 @@ class MutationModel:
         return average_mutability, average_substitution
 
     def mutabilities(self, sequence):
-        """returns the mutability of a sequence at each site, along with nucleotide biases"""
+        """returns the mutability of a sequence at each site, along with
+        nucleotide biases."""
         if self.context_model is None:
             return [
                 (1, dict((n2, 1 / 3) if n2 is not n else (n2, 0.0) for n2 in "ACGT"))
@@ -125,9 +125,9 @@ class MutationModel:
             ]
 
     def mutate(self, sequence, lambda0=1, frame=None):
-        """
-        Mutate a sequence, with lamdba0 the baseline mutability
-        Cannot mutate the same position multiple times
+        """Mutate a sequence, with lamdba0 the baseline mutability Cannot
+        mutate the same position multiple times.
+
         @param sequence: the original sequence to mutate
         @param lambda0: a "baseline" mutation rate
         @param frame: the reading frame index
@@ -198,9 +198,8 @@ class MutationModel:
         return sequence
 
     def one_mutant(self, sequence, Nmuts, frame=1, lambda0=0.1):
-        """
-        Make a single mutant with a distance, in amino acid sequence, of Nmuts away from the starting point.
-        """
+        """Make a single mutant with a distance, in amino acid sequence, of
+        Nmuts away from the starting point."""
         trial = 100  # Allow 100 trials before quitting
         while trial > 0:
             mut_seq = sequence[:]
@@ -254,10 +253,9 @@ class MutationModel:
         verbose=False,
         selection_params=None,
     ):
-        """
-        simulate neutral binary branching process with mutation model
-        progeny must be like a scipy.stats distribution, with rvs() and mean() methods
-        """
+        """simulate neutral binary branching process with mutation model
+        progeny must be like a scipy.stats distribution, with rvs() and mean()
+        methods."""
         stop_dist = None  # Default stopping criterium for affinity simulation
         # Checking the validity of the input parameters:
         if N is not None and T is not None:

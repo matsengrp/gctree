@@ -84,7 +84,7 @@ def parse_seqdict(fh, mode="dnaml"):
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
 def parse_outfile(outfile, countfile=None, naive="naive"):
-    """parse phylip outfile"""
+    """parse phylip outfile."""
     if countfile is not None:
         counts = {l.split(",")[0]: int(l.split(",")[1]) for l in open(countfile)}
     # No count, just make an empty count dictionary:
@@ -120,7 +120,7 @@ def parse_outfile(outfile, countfile=None, naive="naive"):
 
 
 def disambiguate(tree):
-    """make random choices for ambiguous bases, respecting tree inheritance"""
+    """make random choices for ambiguous bases, respecting tree inheritance."""
     ambiguous_dna_values["?"] = "GATC-"
     sequence_length = len(tree.sequence)
     for node in tree.traverse():

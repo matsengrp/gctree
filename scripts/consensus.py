@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""compute GCtree for a phylip consensus tree"""
+"""compute GCtree for a phylip consensus tree."""
 
 from gctree import *
 import argparse

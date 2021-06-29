@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-comparison of heavy and light trees
-"""
+"""comparison of heavy and light trees."""
 
 import pandas as pd
 import scipy

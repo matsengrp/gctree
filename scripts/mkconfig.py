@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Read a PHYLIP-format file and produce an appropriate config file for passing to `dnapars`.
+"""Read a PHYLIP-format file and produce an appropriate config file for passing
+to `dnapars`.
 
 `dnapars` is a rather old program that doesn't play very well in a
 pipeline.  It prompts the user for configuration information and reads
@@ -40,7 +40,6 @@ Setting for this run:
 
   Y to accept these or type the letter for one to change
 ____________
-
 """
 import re, os, random
 import argparse

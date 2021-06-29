@@ -1,10 +1,8 @@
 #! /usr/bin/env python
 
-"""
-This module contains classes for simulation and inference for a binary
+"""This module contains classes for simulation and inference for a binary
 branching process with mutation in which the tree is collapsed to nodes that
-count the number of clonal leaves of each type
-"""
+count the number of clonal leaves of each type."""
 
 from gctree.utils import hamming_distance
 
@@ -41,7 +39,7 @@ class LeavesAndClades:
 
     def __init__(self, params=None, c=None, m=None):
         """initialize with branching probability p and mutation probability q,
-        both in the unit interval"""
+        both in the unit interval."""
         if params is not None:
             p, q = params
             if not (0 <= p <= 1 and 0 <= q <= 1):
@@ -61,7 +59,7 @@ class LeavesAndClades:
 
     def simulate(self):
         """simulate the number of clone leaves and mutant clades off a root
-        node"""
+        node."""
         if self.params[0] >= 0.5:
             warnings.warn(
                 f"p = {self.p} is not subcritical, tree simulations"
@@ -96,8 +94,10 @@ class LeavesAndClades:
     def logf(c, m, *params):
         """Log-probability of getting c leaves that are clones of the root and
         m mutant clades off the root lineage, given branching probability p and
-        mutation probability q. AKA the spaceship distribution. Also returns
-        gradient wrt params (p, q). Computed by dynamic programming.
+        mutation probability q.
+
+        AKA the spaceship distribution. Also returns gradient wrt params
+        (p, q). Computed by dynamic programming.
         """
         p, q = params
         if c == m == 0 or (c == 0 and m == 1):
@@ -162,7 +162,7 @@ class LeavesAndClades:
     @staticmethod
     def build_logf_cache(c_max, m_max, *params):
         """build up the lru_cache from the bottom to avoid recursion depth
-        issues"""
+        issues."""
         LeavesAndClades.logf.cache_clear()
         print(f"building likelihood cache for parameters {params}")
         for c in range(c_max + 1):
@@ -327,8 +327,7 @@ class CollapsedTree(LeavesAndClades):
     def ll(self, params, sign=1, build_cache=True):
         """log likelihood of params, conditioned on collapsed tree, and its
         gradient wrt params optional parameter sign must be 1 or -1, with the
-        latter useful for MLE by minimization
-        """
+        latter useful for MLE by minimization."""
         if self.tree is None:
             raise ValueError("tree data must be defined to compute likelihood")
         if sign not in (-1, 1):
@@ -362,11 +361,8 @@ class CollapsedTree(LeavesAndClades):
         return sign * logf, sign * grad_logf
 
     def mle(self, **kwargs):
-        """
-        Maximum likelihood estimate for params given tree
-        updates params if not None
-        returns optimization result
-        """
+        """Maximum likelihood estimate for params given tree updates params if
+        not None returns optimization result."""
         # random initalization
         x_0 = (random.random(), random.random())
         bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
@@ -398,10 +394,8 @@ class CollapsedTree(LeavesAndClades):
         return result
 
     def simulate(self):
-        """simulate a collapsed tree given params
-        replaces existing tree data member with simulation result, and returns
-        self
-        """
+        """simulate a collapsed tree given params replaces existing tree data
+        member with simulation result, and returns self."""
         if self.params is None:
             raise ValueError("params must be defined for simulation")
 
@@ -421,7 +415,7 @@ class CollapsedTree(LeavesAndClades):
         return self
 
     def __str__(self):
-        """return a string representation for printing"""
+        """return a string representation for printing."""
         return "params = " + str(self.params) + "\ntree:\n" + str(self.tree)
 
     def render(
@@ -433,8 +427,7 @@ class CollapsedTree(LeavesAndClades):
         chain_split=None,
     ):
         """render to image file, filetype inferred from suffix, svg for color
-        images
-        """
+        images."""
 
         def my_layout(node):
             if colormap is None or node.name not in colormap:
@@ -577,16 +570,16 @@ class CollapsedTree(LeavesAndClades):
             )
 
     def write(self, file_name):
-        """serialize tree to file"""
+        """serialize tree to file."""
         with open(file_name, "wb") as f:
             pickle.dump(self, f)
 
     def newick(self, file_name):
-        """write to newick file"""
+        """write to newick file."""
         self.tree.write(format=1, outfile=file_name)
 
     def compare(self, tree2, method="identity"):
-        """compare this tree to the other tree"""
+        """compare this tree to the other tree."""
         if method == "identity":
             # we compare lists of seq, parent, abundance
             # return true if these lists are identical, else false
@@ -658,8 +651,7 @@ class CollapsedTree(LeavesAndClades):
 
     def get_split(self, node):
         """return the bipartition resulting from clipping this node's edge
-        above
-        """
+        above."""
         if node.get_tree_root() != self.tree:
             raise ValueError("node not found")
         if node == self.tree:
@@ -708,11 +700,9 @@ class CollapsedTree(LeavesAndClades):
         return False
 
     def support(self, bootstrap_trees_list, weights=None, compatibility=False):
-        """
-        compute support from a list of bootstrap GCtrees
-        weights (optional) is needed for weighting parsimony degenerate trees
-        compatibility mode counts trees that don't disconfirm the split
-        """
+        """compute support from a list of bootstrap GCtrees weights (optional)
+        is needed for weighting parsimony degenerate trees compatibility mode
+        counts trees that don't disconfirm the split."""
         for node in self.tree.get_descendants():
             split = self.get_split(node)
             support = 0
@@ -749,10 +739,8 @@ class CollapsedForest(CollapsedTree):
     """
 
     def __init__(self, params=None, n_trees=None, forest=None):
-        """in addition to p and q, we need number of trees
-        can also intialize with forest, a list of trees, each an instance of
-        CollapsedTree
-        """
+        """in addition to p and q, we need number of trees can also intialize
+        with forest, a list of trees, each an instance of CollapsedTree."""
         CollapsedTree.__init__(self, params=params)
         if forest is None and params is None:
             raise ValueError("either params or forest (or both) must be " "provided")
@@ -772,8 +760,7 @@ class CollapsedForest(CollapsedTree):
     def simulate(self):
         """simulate a forest of collapsed trees given params and number of
         trees replaces existing forest data member with simulation result, and
-        returns self
-        """
+        returns self."""
         if self.params is None or self.n_trees is None:
             raise ValueError(
                 "params and n_trees parameters must be defined for simulation"
@@ -787,8 +774,7 @@ class CollapsedForest(CollapsedTree):
         """likelihood of params, given forest, and it's gradient wrt params
         optional parameter sign must be 1 or -1, with the latter useful for MLE
         by minimization if optional parameter empirical_bayes_sum is true,
-        we're estimating params for a set of parsimony trees
-        """
+        we're estimating params for a set of parsimony trees."""
         if self.forest is None:
             raise ValueError("forest data must be defined to compute likelihood")
         if sign not in (-1, 1):
@@ -829,7 +815,7 @@ class CollapsedForest(CollapsedTree):
     # NOTE: we get mle() method for free by inheritance/polymorphism magic
 
     def __str__(self):
-        """return a string representation for printing"""
+        """return a string representation for printing."""
         return f"params = {self.params}, n_trees = {self.n_trees}\n" "\n".join(
             [str(tree) for tree in self.forest]
         )

@@ -14,7 +14,7 @@ try:
 except:
 
     def hamming_distance(seq1, seq2):
-        """Hamming distance between two sequences of equal length"""
+        """Hamming distance between two sequences of equal length."""
         return sum(x != y for x, y in zip(seq1, seq2))
 
     print(

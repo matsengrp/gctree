@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-aggregation plots of across parameters
-"""
+"""aggregation plots of across parameters."""
 
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec

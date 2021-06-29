@@ -10,9 +10,7 @@ def main():
     import pickle, argparse, os
 
     def existing_file(fname):
-        """
-        Argparse type for an existing file
-        """
+        """Argparse type for an existing file."""
         if not os.path.isfile(fname):
             raise ValueError("Invalid file: " + str(fname))
         return fname

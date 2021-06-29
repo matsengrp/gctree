@@ -3,11 +3,9 @@
 
 
 def lineage_length_bigger_than(first_node, node, max_linlen):
-    """
-    Search for a lineage decending from a node that is longer
-    than a given threshold, max_linlen. Terminate is such a
-    lineage is found, that is:
-    linlen > max_linlen True
+    """Search for a lineage decending from a node that is longer than a given
+    threshold, max_linlen. Terminate is such a lineage is found, that is:
+    linlen > max_linlen True.
 
                          child
                       -----*

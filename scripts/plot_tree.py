@@ -92,13 +92,11 @@ def has_true_attrlist(node, attrlist):
 
 
 def keep_lineage(first_node, node, fk, cl_except):
-    """
-    Search for a lineage decending from a node that is longer
-    than a given threshold, max_linlen. If node exception is meeet
-    in cl_except e.g. a feature that should never be collapsed
-    the searchis terminated, likewise it is terminated when the
-    threshold of a lineage is found, that is:
-    linlen > max_linlen True
+    """Search for a lineage decending from a node that is longer than a given
+    threshold, max_linlen. If node exception is meeet in cl_except e.g. a
+    feature that should never be collapsed the searchis terminated, likewise it
+    is terminated when the threshold of a lineage is found, that is: linlen >
+    max_linlen True.
 
                          child
                       -----*
@@ -188,10 +186,10 @@ def read_plot_config(fnam):
 
 
 def read_tree_stats(fnam):
-    """
-    Read a comma separated table into a dict of dicts.
-    First line will be interpretted as the header with column names,
-    the following lines will be interpretted as entries with the first
+    """Read a comma separated table into a dict of dicts.
+
+    First line will be interpretted as the header with column names, the
+    following lines will be interpretted as entries with the first
     element being the node name to map back to.
     """
     with open(fnam) as fh:
@@ -208,7 +206,7 @@ def read_tree_stats(fnam):
 
 
 def hamming_distance(seq1, seq2):
-    """Hamming distance between two sequences of equal length"""
+    """Hamming distance between two sequences of equal length."""
     return sum(x != y for x, y in zip(seq1, seq2))
 
 
@@ -278,8 +276,8 @@ def tree_render_default(tree, frame=None):
 
 
 def tree_render_user(tree, frame=None, tree_features=None, namecolor=None):
-    """
-    Base function to add rendering attributes to an ete3 tree.
+    """Base function to add rendering attributes to an ete3 tree.
+
     The function can plot tree is default mode and/or take user input.
     """
     from Bio.Seq import Seq
@@ -405,10 +403,8 @@ def tree_render_user(tree, frame=None, tree_features=None, namecolor=None):
 
 
 def prune_long_branches(tree, cutlength):
-    """
-    Detach the whole decending clade if a branch length
-    is encountered above a given cutlength.
-    """
+    """Detach the whole decending clade if a branch length is encountered above
+    a given cutlength."""
     for node in tree.traverse():
         if node.dist > cutlength:
             node.detach()
@@ -416,10 +412,8 @@ def prune_long_branches(tree, cutlength):
 
 
 def update_after_collapse(node_up, node, tree_features=None):
-    """
-    Update the feature according to its type and specifications
-    in the tree_features dict
-    """
+    """Update the feature according to its type and specifications in the
+    tree_features dict."""
     feature_set = node_up.features.union(node.features)
     feature_set.remove("dist")
     feature_set.remove("name")
@@ -473,11 +467,12 @@ def update_after_collapse(node_up, node, tree_features=None):
 
 
 def collapse_syn(tree, frame=None, tree_features=None):
-    """
-    Recalculate the branch lengths as hamming distance between amino acid sequences.
-    Then collapse all branches with zero length and update the features by either
-    taking the sum of the mean, if the feature is a number, if the feature is a string
-    then just keep the parent feature.
+    """Recalculate the branch lengths as hamming distance between amino acid
+    sequences.
+
+    Then collapse all branches with zero length and update the features
+    by either taking the sum of the mean, if the feature is a number, if
+    the feature is a string then just keep the parent feature.
     """
     from Bio.Seq import Seq
 

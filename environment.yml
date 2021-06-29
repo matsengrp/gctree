@@ -10,7 +10,9 @@ dependencies:
   - phylip
   - seqmagick
   - black
+  - docformatter
   - flake8
+  - pylint
   - pytest
   - pip
   - pip:

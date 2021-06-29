@@ -1,9 +1,8 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-aggregation plots of metrics from several simulation runs with same parameters
-"""
+"""aggregation plots of metrics from several simulation runs with same
+parameters."""
 
 from matplotlib import pyplot as plt
 import pandas as pd

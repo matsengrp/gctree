@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-utility functions for selection simulation
-"""
+"""utility functions for selection simulation."""
 
 from gctree.utils import hamming_distance
 
@@ -13,37 +11,34 @@ from matplotlib import pyplot as plt
 
 
 def calc_Kd(seqAA, targetAAseqs, hd2affy):
-    """Find the closest target sequence to and apply the "hamming distance to affinity" transformation function."""
+    """Find the closest target sequence to and apply the "hamming distance to
+    affinity" transformation function."""
     hd = min([hamming_distance(seqAA, t) for t in targetAAseqs])
     return hd2affy(hd)
 
 
 def lambda_selection(node, tree, targetAAseqs, hd2affy, A_total, B_total, Lp):
-    """
-    Given a node and its tree and a "hamming distance to affinity" transformation function
-    reutrn the poisson lambda parameter for the progeny distribution.
-    """
+    """Given a node and its tree and a "hamming distance to affinity"
+    transformation function reutrn the poisson lambda parameter for the progeny
+    distribution."""
 
     def calc_BnA(Kd_n, A, B_total):
-        """
-        This calculated the fraction B:A (B bound to A), at equilibrium also referred to as "binding time",
-        of all the different Bs in the population given the number of free As in solution.
-        """
+        """This calculated the fraction B:A (B bound to A), at equilibrium also
+        referred to as "binding time", of all the different Bs in the
+        population given the number of free As in solution."""
         BnA = B_total / (1 + Kd_n / A)
         return BnA
 
     def return_objective_A(Kd_n, A_total, B_total):
-        """
-        The objective function that solves the set of differential equations setup to find the number of free As,
-        at equilibrium, given a number of Bs with some affinity listed in Kd_n.
-        """
+        """The objective function that solves the set of differential equations
+        setup to find the number of free As, at equilibrium, given a number of
+        Bs with some affinity listed in Kd_n."""
         return lambda A: (A_total - (A + scipy.sum(B_total / (1 + Kd_n / A)))) ** 2
 
     def calc_binding_time(Kd_n, A_total, B_total):
-        """
-        Solves the objective function to find the number of free As and then uses this,
-        to calculate the fraction B:A (B bound to A) for all the different Bs.
-        """
+        """Solves the objective function to find the number of free As and then
+        uses this, to calculate the fraction B:A (B bound to A) for all the
+        different Bs."""
         obj = return_objective_A(Kd_n, A_total, B_total)
         # Different minimizers have been tested and 'L-BFGS-B' was significant faster than anything else:
         obj_min = minimize(
@@ -55,7 +50,8 @@ def lambda_selection(node, tree, targetAAseqs, hd2affy, A_total, B_total, Lp):
         return BnA
 
     def trans_BA(BA, Lp):
-        """Transform the fraction B:A (B bound to A) to a poisson lambda between 0 and 2."""
+        """Transform the fraction B:A (B bound to A) to a poisson lambda
+        between 0 and 2."""
         # We keep alpha to enable the possibility that there is a minimum lambda_:
         alpha, beta, Q = Lp
         lambda_ = alpha + (2 - alpha) / (1 + Q * scipy.exp(-beta * BA))

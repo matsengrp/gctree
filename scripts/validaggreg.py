@@ -1,9 +1,8 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-aggregation plots of validation output from several simulation/validation runs
-"""
+"""aggregation plots of validation output from several simulation/validation
+runs."""
 
 from matplotlib import pyplot as plt
 import pandas as pd

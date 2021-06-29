@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-comparison of inference and simulated trees
-"""
+"""comparison of inference and simulated trees."""
 
 from gctree.utils import hamming_distance
 from random import randint
@@ -57,14 +55,15 @@ def find_node_by_seq(tree, sequence):
 def align_lineages(
     seq, tree_t, tree_i, gap_penalty_pct=0, known_root=True, allow_double_gap=False
 ):
-    """
-    Standard implementation of a Needleman-Wunsch algorithm as described here:
-    http://telliott99.blogspot.com/2009/08/alignment-needleman-wunsch.html
-    https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
-    And implemented here:
-    https://github.com/alevchuk/pairwise-alignment-in-python/blob/master/alignment.py
+    """Standard implementation of a Needleman-Wunsch algorithm as described
+    here: http://telliott99.blogspot.com/2009/08/alignment-needleman-
+    wunsch.html
+    https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm And
+    implemented here: https://github.com/alevchuk/pairwise-alignment-in-
+    python/blob/master/alignment.py.
 
-    gap_penalty_pct is the gap penalty relative to the sequence length of the sequences on the tree.
+    gap_penalty_pct is the gap penalty relative to the sequence length
+    of the sequences on the tree.
     """
     nt = find_node_by_seq(tree_t, seq)
     lt = reconstruct_lineage(tree_t, nt)
@@ -230,10 +229,8 @@ def lineage_dist(
 
 
 def validate(true_tree, inferences, true_tree_colormap, outbase):
-    """
-    inferences is a dict mapping inference name, like "gctree" to pickle files of
-    CollapsedForest
-    """
+    """inferences is a dict mapping inference name, like "gctree" to pickle
+    files of CollapsedForest."""
 
     # With/without frequency weighting:
     all_lineage_dist = lambda x, y: [
