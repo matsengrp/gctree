@@ -108,9 +108,9 @@ def check_header(header):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert a fasta file to phylip format. Headers must be a unique ID of less than "
+        description="Deduplicate sequences in a fasta file, write to stdout in phylip format, and creates a few other files (see arguments). Headers must be a unique ID of less than "
         "or equal to 10 ASCII characters."
-        "All headers are converted to lower case."
+        " All headers are converted to lower case."
     )
     parser.add_argument(
         "infile",
@@ -135,7 +135,7 @@ def main():
     parser.add_argument(
         "--id_abundances",
         action="store_true",
-        help="interpret integer ids in input as abundances"
+        help="flag to interpret integer ids in input as abundances"
     )
     parser.add_argument("--naive", type=str, default="naive", help="naive sequence id")
     parser.add_argument(

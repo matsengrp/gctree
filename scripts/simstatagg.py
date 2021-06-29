@@ -7,7 +7,7 @@ parameters."""
 from matplotlib import pyplot as plt
 import pandas as pd
 import argparse
-from deduplicate import fasta_parse
+from gctree.deduplicate import fasta_parse
 from gctree.utils import hamming_distance
 import seaborn as sns
 

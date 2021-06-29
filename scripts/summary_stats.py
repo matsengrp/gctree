@@ -3,7 +3,7 @@
 
 """summary stats of the seq data going into tree inference for CFT."""
 
-from deduplicate import fasta_parse
+from gctree.deduplicate import fasta_parse
 from matplotlib import pyplot as plt
 import pandas as pd
 import argparse
