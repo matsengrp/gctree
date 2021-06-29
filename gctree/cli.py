@@ -348,9 +348,8 @@ def infer(args):
 def simulate(args):
     """Simulation subprogram.
 
-    Simulates a Galton–Watson process,
-    with mutation probabilities according to a user defined motif model
-    e.g. S5F
+    Simulates a Galton–Watson process, with mutation probabilities
+    according to a user defined motif model e.g. S5F
     """
     random.seed(a=args.seed)
     mutation_model = mm.MutationModel(args.mutability, args.substitution)
