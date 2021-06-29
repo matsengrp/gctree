@@ -10,11 +10,11 @@ Two programs are implemented:
 
 All commands should be issued from within the gctree repo directory.
 
-## INSTALLATION STEPS
+## Installation
 
 ### Linux/MacOS
 
-### Base package install
+#### Base package install
 
 If you only want the base gctree package (without the pipeline infrastructure, see below), you can simply
 ```bash
@@ -26,18 +26,17 @@ Subcommands are described in help
 gctree -h
 ```
 and each subcommand has its own help, accessed with `-h`.
+The most important subcommand is `gctree infer`.
 
 Additionally, the following command line utilities will be installed (each with help `-h`):
-- `deduplicate`:
-- `makeconfig`:
-- `phylip_parse`:
-
-which are useful for prepping data and processing output from phylip:
+- `deduplicate`: deduplicate fasta data with repeated genotypes
+- `makeconfig`: generate a config file for the phylip program
+- `phylip_parse`: parse output from
 
 
 #### Pipeline install
 
-
+`SCons` pipelines can be used to for end-to-end phylogenetic inference from sequence data.
 
 0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
 1. Create a python 3 conda environment called gctree from the included environment file:
@@ -49,7 +48,7 @@ which are useful for prepping data and processing output from phylip:
     conda activate gctree
     ```
 
-## QUICK START
+## Pipeline quick start
 
 ### inference
 - *input file*: `FASTA` or `PHYLIP` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all observed sequences (used for outgroup rooting).
@@ -74,7 +73,7 @@ which are useful for prepping data and processing output from phylip:
 scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>
 ```
 
-## EXAMPLE
+## Example
 
 ### run GCtree inference on the included `FASTA` file
 
@@ -181,7 +180,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
     If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
 
-## INFERENCE
+## Inference
 
 `scons --inference ...`
 
@@ -201,7 +200,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 `--id_abundances` if this flag is set, parse input IDs that are integers as indicating sequence abundance. Otherwise each line in the input is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input `FASTA` file `example/150228_Clone_3-8.fasta` requires this option.
 
-## **SIMULATION**
+## Simulation
 
 `scons --simulation ...`
 
@@ -229,7 +228,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 `--n=[int]                    ` number of cells to sample from final population, default all
 
-## OPTIONAL ARGUMENTS FOR BOTH INFERENCE AND SIMULATION PROGRAMS
+## Optional arguments for both inference and simulation pipelines
 
 `--jobs=[int]  ` number of parallel processes to use
 
@@ -245,14 +244,6 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
  `--dnaml`    include results for maximum likelihood tree inference using `dnaml` from the PHYLIP package
 
-
-## `gctree`
-Underlying both pipelines is the `gctree` Python package for simulating and compute likelihoods for collapsed trees generated from a binary branching process with mutation and infinite types, as well as forests of such trees. General usage info `gctree --help`. There are three subprograms, each of which has usage info:
-* `gctree infer --help`: takes an `outfile` file made by phylip's `dnapars` as a command line argument, converts each tree therein to a collapsed tree, and ranks by GCtree likelihood.
-* `gctree simulate --help`: simulate data
-* `gctree test --help`: performs tests of the likelihood and outputs validation plots.
-
-The under-the-hood functionality of the `gctree` package might be useful for some users trying to go beyond the scons pipelines. For example mapping colors to tree image nodes can be achieved with the `--colormap` argument. Colors can be useful for visualizing other cell/genotype properties on the tree.
 
 ## FUNCTIONALITY UNDER DEVELOPMENT
 
