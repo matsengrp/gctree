@@ -1,0 +1,5 @@
+black
+docformatter
+flake8
+pylint
+pytest

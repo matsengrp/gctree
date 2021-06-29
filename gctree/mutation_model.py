@@ -3,6 +3,7 @@
 """Mutation models."""
 
 from gctree.utils import hamming_distance
+import gctree.selection_utils as su
 
 from ete3 import TreeNode
 from scipy.stats import poisson
@@ -329,7 +330,7 @@ class MutationModel:
             # We store both the amino acid sequence and the affinity as tree features:
             tree.add_feature("AAseq", str(aa))
             tree.add_feature(
-                "Kd", selection_utils.calc_Kd(tree.AAseq, targetAAseqs, hd2affy)
+                "Kd", su.calc_Kd(tree.AAseq, targetAAseqs, hd2affy)
             )
             tree.add_feature(
                 "target_dist",
@@ -363,7 +364,7 @@ class MutationModel:
                             skip_lambda_n = (
                                 skip_update + 1
                             )  # Add one so skip_update=0 is no skip
-                            tree = selection_utils.lambda_selection(
+                            tree = su.lambda_selection(
                                 leaf, tree, targetAAseqs, hd2affy, A_total, B_total, Lp
                             )
                         # Small lambdas are causing problems so make a minimum:
@@ -423,7 +424,7 @@ class MutationModel:
                             child.add_feature("AAseq", str(aa))
                             child.add_feature(
                                 "Kd",
-                                selection_utils.calc_Kd(
+                                su.calc_Kd(
                                     child.AAseq, targetAAseqs, hd2affy
                                 ),
                             )

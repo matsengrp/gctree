@@ -69,7 +69,7 @@ def parse_seqdict(fh, mode="dnaml"):
     fh.readline()
     for line in fh:
         m = patterns.match(line)
-        if m and m.group("id") is not "":
+        if m and m.group("id") != "":
             last_blank = False
             seqs[m.group("id")] += m.group("seq").replace(" ", "").upper()
         elif line.rstrip() == "":

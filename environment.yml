@@ -3,17 +3,11 @@ channels:
   - conda-forge
   - defaults
   - bioconda
-  - etetoolkit
 dependencies:
   - scons
   - nestly
   - phylip
   - seqmagick
-  - black
-  - docformatter
-  - flake8
-  - pylint
-  - pytest
   - pip
   - pip:
-    - -e . # installs gctree package from current directory "." in editable mode
+    - . # installs gctree package from current directory "."
