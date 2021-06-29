@@ -164,7 +164,6 @@ class LeavesAndClades:
         """build up the lru_cache from the bottom to avoid recursion depth
         issues."""
         LeavesAndClades.logf.cache_clear()
-        print(f"building likelihood cache for parameters {params}")
         for c in range(c_max + 1):
             for m in range(m_max + 1):
                 LeavesAndClades.logf(c, m, *params)
