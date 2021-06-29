@@ -30,7 +30,7 @@ The most important subcommand is `gctree infer`.
 
 Additionally, the following command line utilities will be installed (each with help `-h`):
 - `deduplicate`: deduplicate fasta data with repeated genotypes
-- `makeconfig`: generate a config file for the phylip program
+- `mkconfig`: generate a config file for the phylip program
 - `phylip_parse`: parse output from
 
 
