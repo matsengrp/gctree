@@ -9,7 +9,7 @@ from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 from collections import defaultdict, Counter
 
 
-def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
+def fasta_parse(aln_file, naive, frame=None, aln_file2=None, id_abundances=False):
     # naive = naive.lower()
     if aln_file.endswith("fasta") or aln_file.endswith("fa"):
         aln_format = "fasta"
@@ -63,11 +63,8 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, converter=None):
                 seqs_unique_counts[
                     seqstr
                 ] = []  # no observed naive unless we see it elsewhere
-        elif seq.id.isdigit() and converter is not None:
-            if converter.lower() == "tas":
-                seqs_unique_counts[seqstr] = [seq.id for _ in range(int(seq.id))]
-            else:
-                raise ValueError("invalid converter: " + converter)
+        elif seq.id.isdigit() and id_abundances:
+            seqs_unique_counts[seqstr] = [seq.id for _ in range(int(seq.id))]
         else:
             seqs_unique_counts[seqstr].append(seq.id)
 
@@ -111,18 +108,17 @@ def check_header(header):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert a fasta file to philyp format. Headers must be a unique ID of less than "
-        "or equal to 10 ASCII characters. A special option for converting a Victora lab "
-        "GC fasta file to phylip is also included. All headers are converted to lower case."
+        description="Convert a fasta file to phylip format. Headers must be a unique ID of less than "
+        "or equal to 10 ASCII characters."
+        "All headers are converted to lower case."
     )
     parser.add_argument(
         "infile",
         type=str,
         nargs="+",
         help="Fasta file with less than or equal to 10 characters unique header ID. "
-        "For Victora data any integer ids indicates frequency."
-        "Because dnapars will name internal nodes by intergers a node name must include"
-        "at least one non number character.",
+        "Because dnapars will name internal nodes by integers a node name must include"
+        "at least one non number character (unless using the id_abundances option).",
     )
     parser.add_argument(
         "--countfile",
@@ -137,12 +133,10 @@ def main():
         help="filename for the output file containing the map of new unique ids to original seq ids.",
     )
     parser.add_argument(
-        "--converter",
-        type=str,
-        default=None,
-        help="use a special format convertion scheme e.g. for a Vitora lab GC fasta file. Options: [tas]",
+        "--id_abundances",
+        action="store_true",
+        help="interpret integer ids in input as abundances"
     )
-    specified_coverters = ["tas"]
     parser.add_argument("--naive", type=str, default="naive", help="naive sequence id")
     parser.add_argument(
         "--frame", type=int, default=None, help="codon frame", choices=(1, 2, 3)
@@ -161,16 +155,12 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.converter is not None and args.converter.lower() not in specified_coverters:
-        print("Cannot find the specified converter:", args.converter)
-        print("Allowed converters:", specified_coverters.join(","))
-        raise Exception
     new_aln, counts, id_map = fasta_parse(
         args.infile[0],
         args.naive,
         frame=args.frame,
         aln_file2=args.infile[1] if len(args.infile) == 2 else None,
-        converter=args.converter,
+        id_abundances=args.id_abundances,
     )
     print(format(new_aln, "phylip"))
     if args.countfile is not None:

@@ -41,7 +41,7 @@ sims = set(aggdat["simulation"])
 nsims = len(sims)
 
 if args.experimental is not None:
-    new_aln, counts = fasta_parse(args.experimental, naive="GL", converter="tas")[:2]
+    new_aln, counts = fasta_parse(args.experimental, naive="GL", id_abundances=True)[:2]
     exp_dict = {seq.id: str(seq.seq) for seq in new_aln}
     naive_id = [seq for seq in exp_dict if "gl" in seq][0]
     frequency, distance_from_naive, degree = zip(

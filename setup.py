@@ -16,8 +16,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/matsengrp/gctree",
     entry_points={"console_scripts": ["gctree=gctree.cli:main"]},
-    # packages=setuptools.find_packages(exclude=['tests', 'docs', 'docsrc']),
-    # packages=['gctree'],
+    packages=['gctree'],
+    scripts=['bin/deduplicate', 'bin/mkconfig', 'bin/phylip_parse'
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

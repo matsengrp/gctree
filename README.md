@@ -14,6 +14,31 @@ All commands should be issued from within the gctree repo directory.
 
 ### Linux/MacOS
 
+### Base package install
+
+If you only want the base gctree package (without the pipeline infrastructure, see below), you can simply
+```bash
+pip intall .
+```
+to install the gctree package and its command line interface.
+Subcommands are described in help
+```bash
+gctree -h
+```
+and each subcommand has its own help, accessed with `-h`.
+
+Additionally, the following command line utilities will be installed (each with help `-h`):
+- `deduplicate`:
+- `makeconfig`:
+- `phylip_parse`:
+
+which are useful for prepping data and processing output from phylip:
+
+
+#### Pipeline install
+
+
+
 0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
 1. Create a python 3 conda environment called gctree from the included environment file:
     ```bash
@@ -23,11 +48,6 @@ All commands should be issued from within the gctree repo directory.
     ```bash
     conda activate gctree
     ```
-
-Alternatively, if you only want the base gctree python package (without the pipelines and scripts), you can
-```bash
-pip intall .
-```
 
 ## QUICK START
 
@@ -81,7 +101,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
     From within the `gctree` repository directory:
     ```
-  scons --inference --input=example/150228_Clone_3-8.fasta --outdir=test --converter=tas --naiveID=GL --jobs=2
+  scons --inference --input=example/150228_Clone_3-8.fasta --outdir=test --id_abundances --naiveID=GL --jobs=2
     ```
     This command will produce output in subdirectory `test/`.
     This includes a log file with some messages about results (including the number of trees and the fitted branching process parameters), and then lists each parsimony tree by decreasing likelihood (with tree 1 corresponding to the GCtree MLE).
@@ -153,7 +173,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
     `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist)
 
-    `--converter=tas` argument means that integer sequence IDs in the input file are interpreted as abundances. The example input `FASTA` includes a sequence with id "17".
+    `--id_abundances` flag means that integer sequence IDs in the input file are interpreted as abundances. The example input `FASTA` includes a sequence with id "17".
 
     `--naiveID=GL` indicates that the root naive sequence has id "GL" in the input `FASTA`. This sequence is the germline sequence of the V gene used in the V(D)J rearrangement that defines this clonal family.
 
@@ -179,7 +199,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 `--bootstrap=[int] ` boostrap resampling, and inference on each, default no bootstrap
 
-`--converter=[string]` if set to "tas", parse input IDs that are integers as indicating sequence abundance. Otherwise each line in the input is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input `FASTA` file `example/150228_Clone_3-8.fasta` requires this option.
+`--id_abundances` if this flag is set, parse input IDs that are integers as indicating sequence abundance. Otherwise each line in the input is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input `FASTA` file `example/150228_Clone_3-8.fasta` requires this option.
 
 ## **SIMULATION**
 

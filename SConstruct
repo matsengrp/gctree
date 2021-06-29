@@ -213,12 +213,11 @@ elif inference:
     )
     naiveID = GetOption("naiveID")
     AddOption(
-        "--converter",
-        type="string",
-        default=None,
-        help="Converter to convert input format e.g. the Victora lab GC fasta format",
+        "--id_abundances",
+        action='store_true',
+        help="interpret integer input ids as abundances",
     )
-    converter = GetOption("converter")
+    id_abundances = GetOption("id_abundances")
     AddOption(
         "--bootstrap",
         type="int",
@@ -241,5 +240,5 @@ elif inference and not GetOption("help"):
         raise InputError("input fasta or phylip and outdir must be specified")
     SConscript(
         "SConscript.inference",
-        exports="env dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile",
+        exports="env dnaml quick idlabel frame input_file input_file2 outdir naiveID id_abundances CommandRunner bootstrap xarg buffarg colorfile",
     )
