@@ -237,8 +237,6 @@ The under-the-hood functionality of the `gctree` package might be useful for som
 
 ### arguments for both inference and simulation programs
 
-`--igphyml`  include results for tree inference with the IgPhyML package
-
 `--dnaml`    include results for maximum likelihood tree inference using `dnaml` from the PHYLIP package
 
 `--nogctree` do not perform gctree inference
@@ -256,19 +254,3 @@ The under-the-hood functionality of the `gctree` package might be useful for som
 `--carry_cap`    carrying capacity of germinal center
 
 `--skip_update`  skip update step
-
-### additional dependencies for development functionality
-* IgPhyML (https://github.com/kbhoehn/IgPhyML)
-  * Needs to be in $PATH
-* perl5, with modules:
-  * PDL
-  * PDL::LinearAlgebra::Trans
-
-* installing python and perl dependencies *
-```
-sudo apt-get install python-pip scons
-pip install --user ete3 seaborn numpy scipy matplotlib pandas biopython nestly
-cpan
-> install PDL
-> install PDL::LinearAlgebra::Trans
-```

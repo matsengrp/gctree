@@ -38,8 +38,6 @@ AddOption("--frame", type="int", default=None, help="codon frame")
 frame = GetOption("frame")
 AddOption("--nogctree", action="store_true", help="don" "t use gctree inference")
 gctree = GetOption("nogctree") != True
-AddOption("--igphyml", action="store_true", help="use igphyml inference")
-igphyml = GetOption("igphyml")
 AddOption("--dnaml", action="store_true", help="use dnaml inference")
 dnaml = GetOption("dnaml")
 AddOption("--outdir", type="string", help="directory in which to output results")
@@ -72,10 +70,8 @@ class InputError(Exception):
     """Exception raised for errors in the input."""
 
 
-if not gctree and not igphyml and not GetOption("help"):
+if not gctree and not GetOption("help"):
     raise InputError("must set at least one inference method")
-if igphyml and frame != 1:
-    raise InputError("frame must equal 1 for igphyml")
 
 if not simulate and not inference and not GetOption("help"):
     raise InputError(
@@ -244,12 +240,12 @@ if simulate and not GetOption("help"):
         raise InputError("outdir must be specified")
     SConscript(
         "SConscript.simulation",
-        exports="env gctree igphyml dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg",
+        exports="env gctree dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg",
     )
 elif inference and not GetOption("help"):
     if None in [input_file, outdir]:
         raise InputError("input fasta or phylip and outdir must be specified")
     SConscript(
         "SConscript.inference",
-        exports="env gctree igphyml dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile",
+        exports="env gctree dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile",
     )

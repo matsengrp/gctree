@@ -91,8 +91,6 @@ kwargs = plot_options[var]
 
 plot_data = df.loc[df.loc[:, "metric"] == "RF", :]
 plf(x=var, y="value", hue="method", data=plot_data, legend_out=True, **kwargs)
-# colors = {'gctree':'red', 'igphyml':'blue'}
-# plot_data.plot(kind='scatter', x=var, y='value', c=plot_data['method'].apply(lambda x: colors[x]))
 ax.set(ylabel="RF distance")
 plt.title("Plot for tree size: {}. For RF.".format(var))
 plt.tight_layout()

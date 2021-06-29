@@ -7,7 +7,7 @@ from nestly.scons import SConsWrap
 
 # the following must be exported by parent SConstruct/SConscript
 Import(
-    "env gctree igphyml dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg"
+    "env gctree dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp selection_param xarg buffarg"
 )
 
 nest = Nest()
@@ -97,7 +97,7 @@ def infer(outdir, c):
     colorfile = None
     return SConscript(
         "SConscript.inference",
-        exports="env gctree igphyml dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile",
+        exports="env gctree dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile",
     )
 
 
@@ -137,7 +137,7 @@ if gctree:
     @w.add_target()
     def gctree_aggregate(outdir, c):
         """aggregate validation results"""
-        allmetrics_arg = " --allmetrics" if igphyml or dnaml else ""
+        allmetrics_arg = " --allmetrics" if dnaml else ""
         tgt = env.Command(
             [
                 os.path.join(outdir, "gctree.validaggreg.tsv"),

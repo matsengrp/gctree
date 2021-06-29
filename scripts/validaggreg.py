@@ -166,15 +166,6 @@ else:
                 color=next(palette),
                 data=aggdat_other[aggdat_other["method"] == "dnaml"],
             )
-            sns.stripplot(
-                x="simulations ranked by parsimony degeneracy",
-                y=metric,
-                size=4,
-                alpha=0.7,
-                jitter=2,
-                color=next(palette),
-                data=aggdat_other[aggdat_other["method"] == "igphyml"],
-            )
         if "COAR" in metric:
             plt.ylim(0, maxy[metric])
         else:
@@ -215,7 +206,7 @@ else:
                 x="method",
                 y=metric,
                 data=pd.concat([aggdat, aggdat_other]),
-                order=("parsimony", "gctree", "dnaml", "igphyml"),
+                order=("parsimony", "gctree", "dnaml"),
             )
         if "COAR" in metric:
             plt.ylim(0, maxy[metric])

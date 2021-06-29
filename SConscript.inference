@@ -18,7 +18,7 @@ def which(executable):
 
 # the following must be exported by parent SConstruct/SConscript
 Import(
-    "env gctree igphyml dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile"
+    "env gctree dnaml quick idlabel frame input_file input_file2 outdir naiveID converter CommandRunner bootstrap xarg buffarg colorfile"
 )
 
 
@@ -45,7 +45,7 @@ def delete_on_failure():
 return_list = []
 
 
-if gctree or igphyml or dnaml:
+if gctree or dnaml:
     if input_file2 is not None:
         basename = "combined"
     elif isinstance(input_file, str):
@@ -88,8 +88,8 @@ if gctree or igphyml or dnaml:
 
     if bootstrap:
 
-        if igphyml or dnaml:
-            raise NotImplementedError("bootstrap not implemented for dnaml or igphyml")
+        if dnaml:
+            raise NotImplementedError("bootstrap not implemented for dnaml")
 
         bootstrap_arg = " --bootstrap {} ".format(bootstrap)
         seqboot_config = env.Command(
@@ -232,96 +232,5 @@ if gctree:
         + " | tee ${TARGETS[1]}",
     )
     return_list.append(gctree_infer)
-
-
-if igphyml:
-    # basename = 'igphyml'
-    # Need the dedup phy as fa for ASR:
-    dedup_fasta = env.Command(
-        [
-            os.path.join(outdir, basename + ".dedup.fasta"),
-            os.path.join(outdir, basename + ".dedup.log"),
-        ],
-        phylip[0],
-        "seqmagick convert $SOURCE ${TARGETS[0]} > ${TARGETS[1]}",
-    )
-
-    # Run IgPhyML with the GY94 model to get the initial topology:
-    igphyml_gy94_topology = CommandRunner(
-        [
-            os.path.join(outdir, basename + ".phylip_igphyml_tree.txt_gy94"),
-            os.path.join(outdir, basename + ".phylip_igphyml_tree.txt_gy94.log"),
-        ],
-        phylip[0],
-        "igphyml -i $SOURCE -m GY -w M0 -t e --run_id gy94 > ${TARGETS[1]}",
-    )
-
-    # Run IgPhyML with the HLP16 model using the GY94 tree topology as starting point:
-    igphyml_opti = "tlr -s"  # <--- can be changed to 'lr' or 'r'
-    ### Full motif model: --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e
-    ### Less parameter rich motif model: --motifs WRC_2:0,GYW_0:0,WA_1:1,TW_0:2,SYC_2:3,GRS_0:3 --hotness e,e,e,e
-    igphyml_hlp16 = CommandRunner(
-        [
-            os.path.join(outdir, basename + ".phylip_igphyml_tree.txt"),
-            os.path.join(outdir, basename + ".phylip_igphyml_stats.txt"),
-            os.path.join(outdir, basename + ".phylip_igphyml_tree.txt.log"),
-        ],
-        [phylip[0], igphyml_gy94_topology[0]],
-        "igphyml --motifs WRC_2:0,GYW_0:1,WA_1:2,TW_0:3,SYC_2:4,GRS_0:5 --hotness e,e,e,e,e,e -i ${SOURCES[0]} -u ${SOURCES[1]} -m HLP17 --root "
-        + naiveID
-        + " -o "
-        + igphyml_opti
-        + " --run_id hlp16 > ${TARGETS[2]}",
-    )
-
-    # On the HLP16 output tree make the naive sequence an outgroup:
-    naive_outgroup = env.Command(
-        [
-            os.path.join(outdir, basename + ".phylip_igphyml_tree.txt.outgroup"),
-            os.path.join(outdir, basename + ".phylip_igphyml_tree.txt.outgroup.log"),
-        ],
-        igphyml_hlp16[0],
-        "python igphyml_files/igphyml_tools.py reroot --tree $SOURCE --reroot_tree ${TARGETS[0]} --pattern "
-        + naiveID
-        + " --outgroup 1 > ${TARGETS[1]}",
-    )
-
-    igphyml_dir = which("igphyml")
-    assert igphyml_dir is not None
-    igphyml_dir = re.sub(r"/src/\w+$", "", igphyml_dir)
-    # Run IgPhyML ASR script:
-    run_ASR = CommandRunner(
-        [
-            os.path.join(outdir, basename + ".MLcodons.fa"),
-            os.path.join(outdir, basename + ".igphyml_hlp16.MLcodons.log"),
-        ],
-        [igphyml_hlp16[1], naive_outgroup[0], dedup_fasta[0]],
-        buffarg
-        + "perl igphyml_files/ancReconstructHLP16.pl PLACEHOLDER_CONFIG_FILE -rooted 1 -length D -stats ${SOURCES[0]} -tree ${SOURCES[1]} -seqfile ${SOURCES[2]} -outdir "
-        + outdir
-        + " -stem "
-        + basename
-        + " -rootid "
-        + naiveID
-        + " -igphyml "
-        + igphyml_dir
-        + "> ${TARGETS[1]}",
-    )
-
-    # Convert the ASR output to an collapsed forest with an ete3 tree and pickle it:
-    igphyml_infer = env.Command(
-        [
-            os.path.join(outdir, "igphyml.inferred_tree.p"),
-            os.path.join(outdir, "igphyml.inferred_tree.log"),
-        ],
-        [naive_outgroup[0], phylip[1], run_ASR],
-        xarg
-        + "python igphyml_files/igphyml_tools.py ASR_parser --tree ${SOURCES[0]} --counts ${SOURCES[1]} --asr_seq ${SOURCES[2]} --outbase "
-        + os.path.join(outdir, "igphyml.inferred_tree")
-        + " --naive "
-        + naiveID
-        + " > ${TARGETS[1]}",
-    )
-    return_list.append(igphyml_infer)
 
 Return("return_list")
