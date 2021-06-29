@@ -46,51 +46,63 @@ import re, os, random
 import argparse
 from warnings import warn
 
+
 def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('phylip', help='PHYLIP input', type=str)
-    parser.add_argument('treeprog', help='dnaml or dnapars', type=str)
-    parser.add_argument('--quick', action='store_true', help='quicker (less thourough) dnapars')
-    parser.add_argument('--bootstrap', type=int, default=0, help='input is seqboot output with this many samples')
+    parser.add_argument("phylip", help="PHYLIP input", type=str)
+    parser.add_argument("treeprog", help="dnaml or dnapars", type=str)
+    parser.add_argument(
+        "--quick", action="store_true", help="quicker (less thourough) dnapars"
+    )
+    parser.add_argument(
+        "--bootstrap",
+        type=int,
+        default=0,
+        help="input is seqboot output with this many samples",
+    )
     args = parser.parse_args()
 
-    print(os.path.realpath(args.phylip))		# phylip input file
-    if args.treeprog == 'seqboot':
-        print('R')
+    print(os.path.realpath(args.phylip))  # phylip input file
+    if args.treeprog == "seqboot":
+        print("R")
         print(args.bootstrap)
-        print('Y')
-        print(str(1+2*random.randint(0, 1000000))) # random seed for bootstrap (odd integer)
+        print("Y")
+        print(
+            str(1 + 2 * random.randint(0, 1000000))
+        )  # random seed for bootstrap (odd integer)
         return
-    print('J')
-    print(str(1+2*random.randint(0, 1000000)))
-    print('10')
+    print("J")
+    print(str(1 + 2 * random.randint(0, 1000000)))
+    print("10")
     if args.bootstrap:
-        print('M')
-        print('D')
+        print("M")
+        print("D")
         print(args.bootstrap)
-    if args.treeprog == 'dnapars':
-        print("O")						# Outgroup root
-        print(1)		# arbitrary root on first
+    if args.treeprog == "dnapars":
+        print("O")  # Outgroup root
+        print(1)  # arbitrary root on first
         if args.quick:
-            print('S')
-            print('Y')
-        print('4')
-        print('5')
-        print('.')
-        print('Y')
-    elif args.treeprog == 'dnaml':
-        print("O")						# Outgroup root
-        print(1)		# arbitrary root on first
-        print("R") # gamma
-        print("5")                                         # Reconstruct hypothetical seq
-        print("Y")                                         # accept these
-        print("1.41421356237") # CV = sqrt(2) (alpha = .5)
-        print("4") # 4 catagories
+            print("S")
+            print("Y")
+        print("4")
+        print("5")
+        print(".")
+        print("Y")
+    elif args.treeprog == "dnaml":
+        print("O")  # Outgroup root
+        print(1)  # arbitrary root on first
+        print("R")  # gamma
+        print("5")  # Reconstruct hypothetical seq
+        print("Y")  # accept these
+        print("1.41421356237")  # CV = sqrt(2) (alpha = .5)
+        print("4")  # 4 catagories
     else:
-        raise RuntimeError('treeprog='+args.treeprog+' is not "dnaml", "dnapars", or "seqboot"')
+        raise RuntimeError(
+            "treeprog=" + args.treeprog + ' is not "dnaml", "dnapars", or "seqboot"'
+        )
 
 
 if __name__ == "__main__":
-   main()
+    main()

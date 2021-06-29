@@ -3,7 +3,7 @@
 
 
 def lineage_length_bigger_than(first_node, node, max_linlen):
-    '''
+    """
     Search for a lineage decending from a node that is longer
     than a given threshold, max_linlen. Terminate is such a
     lineage is found, that is:
@@ -18,7 +18,7 @@ def lineage_length_bigger_than(first_node, node, max_linlen):
                       ---------*
                     <------------->
                       linlen includes 2 nodes
-    '''
+    """
     if node.is_leaf() and first_node is not node:
         linlen = 1
         while True:
