@@ -101,7 +101,7 @@ def test(args):
                 ha="left",
             )
     g.set_axis_labels("", "")
-    g.fig.text(0.45, 0.02, s="GCtree likelihood", multialignment="center")
+    g.fig.text(0.45, 0.02, s="gctree likelihood", multialignment="center")
     g.fig.text(
         0.02,
         0.7,
@@ -277,12 +277,12 @@ def infer(args):
         plt.figure(figsize=(6.5, 2))
         try:
             plt.plot(np.exp(ls), "ko", clip_on=False, markersize=4)
-            plt.ylabel("GCtree likelihood")
+            plt.ylabel("gctree likelihood")
             plt.yscale("log")
             plt.ylim([None, 1.1 * max(np.exp(ls))])
         except FloatingPointError:
             plt.plot(ls, "ko", clip_on=False, markersize=4)
-            plt.ylabel("GCtree log-likelihood")
+            plt.ylabel("gctree log-likelihood")
             plt.ylim([None, 1.1 * max(ls)])
         plt.xlabel("parsimony tree")
         plt.xlim([-1, len(ls)])
@@ -535,7 +535,7 @@ def simulate(args):
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        description="germinal center tree inference and simulation"
+        description="genotype collapsed tree inference and simulation"
     )
     subparsers = parser.add_subparsers(
         title="subcommands",

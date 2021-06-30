@@ -39,7 +39,7 @@ w.add("runs", range(1, nsim + 1))
 @w.add_target()
 def gctree_sim(outdir, c):
     """
-    GCtree simulation
+    gctree simulation
     NOTE: xvfb-run is needed because of issue https://github.com/etetoolkit/ete/issues/101
     """
     frame_arg = " --frame {} ".format(frame) if frame is not None else ""

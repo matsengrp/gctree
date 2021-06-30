@@ -211,7 +211,7 @@ def hamming_distance(seq1, seq2):
 
 
 def tree_render_minimum(tree):
-    """Set the minimum settings on a ete3 tree for rendering a GCtree."""
+    """Set the minimum settings on a ete3 tree for rendering a gctree."""
     ts = TreeStyle()
     ts.show_leaf_name = False
     ts.rotation = 90
@@ -221,7 +221,7 @@ def tree_render_minimum(tree):
 
 
 def tree_render_default(tree, frame=None):
-    """Set the default settings on a ete3 tree for rendering a GCtree."""
+    """Set the default settings on a ete3 tree for rendering a gctree."""
     import sys
     from Bio.Seq import Seq
     import scipy
@@ -515,7 +515,7 @@ def make_tree(
 
     """
     This function wraps the rendering of an ete3 tree with custom user options
-    and the adding to the default GCtree rendering.
+    and the adding to the default gctree rendering.
     """
     if tree_features_file is not None and statsfile is not None:
         default_plot = False
@@ -592,7 +592,7 @@ def main():
     from gctree import CollapsedTree
 
     parser = argparse.ArgumentParser(
-        description="Custom plotting of a GCtree output tree.",
+        description="Custom plotting of a gctree output tree.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -600,7 +600,7 @@ def main():
         required=True,
         type=str,
         dest="forrest_file",
-        help="Output pickled forrest file from GCtree.",
+        help="Output pickled forrest file from gctree.",
     )
     parser.add_argument(
         "--tree_numb",

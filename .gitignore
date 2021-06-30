@@ -117,3 +117,6 @@ venv.bak/
 
 # scons
 .sconsign.dblite
+
+# sphinx autodoc
+docs/source/stubs

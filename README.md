@@ -1,4 +1,4 @@
-# GCtree
+# gctree
 
 Implements phylogenetic inference for data with repeated sequences, as described in:
 
@@ -59,7 +59,7 @@ All commands should be issued from within the gctree repo directory.
     - `dnapars/`: directory of parsimony tree output from PHYLIP's dnapars
     - `gctree.inference.*.svg`: rendered tree images for each of the parsimony trees
     - `gctree.inference.abundance_rank.pdf`: histogram of genotype abundances
-    - `gctree.inference.likelihood_rank.pdf`: rank plot of GCtree likelihoods for the parsimony trees
+    - `gctree.inference.likelihood_rank.pdf`: rank plot of gctree likelihoods for the parsimony trees
     - `gctree.inference.log`: log file containing parameter fits, numerical likelihood results, and any other program messages
     - `gctree.inference.parsimony_forest.p`: a python pickle file containing the parsimony trees as `CollapsedTree` objects
 
@@ -71,7 +71,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 ## Example
 
-### run GCtree inference on the included `FASTA` file
+### run gctree inference on the included `FASTA` file
 
 * **Example input data set**
     `example/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping.
@@ -99,7 +99,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
   scons --inference --input=example/150228_Clone_3-8.fasta --outdir=test --id_abundances --naiveID=GL --jobs=2
     ```
     This command will produce output in subdirectory `test/`.
-    This includes a log file with some messages about results (including the number of trees and the fitted branching process parameters), and then lists each parsimony tree by decreasing likelihood (with tree 1 corresponding to the GCtree MLE).
+    This includes a log file with some messages about results (including the number of trees and the fitted branching process parameters), and then lists each parsimony tree by decreasing likelihood (with tree 1 corresponding to the gctree MLE).
     ```bash
   $ head test/gctree.inference.log
   number of trees with integer branch lengths: 58
@@ -117,7 +117,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
     ![](example/gctree.inference.1.svg)
     There is also a rank plot of genotype abundance `test/gctree.inference.abundance_rank.png`:
     ![](example/gctree.inference.abundance_rank.png)
-    and of GCtree likelihood over the trees `test/gctree.inference.likelihood_rank.png`:
+    and of gctree likelihood over the trees `test/gctree.inference.likelihood_rank.png`:
     ![](example/gctree.inference.likelihood_rank.png)
 
     Finally, there are text files indicating abundance of each unique sequence,

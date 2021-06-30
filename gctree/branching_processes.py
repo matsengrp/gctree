@@ -690,7 +690,7 @@ class CollapsedTree(LeavesAndClades):
         return False
 
     def support(self, bootstrap_trees_list, weights=None, compatibility=False):
-        """compute support from a list of bootstrap GCtrees weights (optional)
+        """compute support from a list of bootstrap gctrees weights (optional)
         is needed for weighting parsimony degenerate trees compatibility mode
         counts trees that don't disconfirm the split."""
         for node in self.tree.get_descendants():

@@ -105,7 +105,7 @@ def check_header(header):
         pass
 
 
-def main():
+def get_parser():
     parser = argparse.ArgumentParser(
         description="Deduplicate sequences in a fasta file, write to stdout in phylip format, and creates a few other files (see arguments). Headers must be a unique ID of less than "
         "or equal to 10 ASCII characters."
@@ -152,7 +152,11 @@ def main():
         default=None,
         help="optional output filename for colors map.",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main(arg_list=None):
+    args = get_parser().parse_args(arg_list)
 
     new_aln, counts, id_map = fasta_parse(
         args.infile[0],
@@ -193,7 +197,3 @@ def main():
                         "{}:{}".format(color, count) for color, count in colors_counts
                     ]
                     print("{}\t{}".format(seq_id, ",".join(colors_strs)), file=f)
-
-
-if __name__ == "__main__":
-    main()

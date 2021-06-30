@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Utility functions"""
+
 
 def hamming_distance(seq1, seq2):
     """Hamming distance between two sequences of equal length."""

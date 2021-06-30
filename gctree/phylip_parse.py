@@ -197,24 +197,21 @@ def build_tree(sequences, parents, counts=None, naive="naive"):
     return tree
 
 
-def main():
-    def existing_file(fname):
-        """Argparse type for an existing file."""
-        if not os.path.isfile(fname):
-            raise ValueError("Invalid file: " + str(fname))
-        return fname
-
+def get_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "phylip_outfile",
-        type=existing_file,
+        type=str,
         help="dnaml outfile (verbose output with inferred ancestral sequences, option 5).",
     )
-    parser.add_argument("countfile", type=existing_file, help="count file")
+    parser.add_argument("countfile", type=str, help="count file")
     parser.add_argument("--outputfile", default=None, help="output file.")
     parser.add_argument("--naive", default="naive", help="naive sequence id")
+    return parser
 
-    args = parser.parse_args()
+
+def main(arg_list=None):
+    args = get_parser().parse_args(arg_list)
 
     if args.outputfile is None:
         args.outputfile = args.phylip_outfile + ".collapsed_forest.p"
