@@ -29,7 +29,7 @@ def main():
     parser.add_argument("heavy_log", type=str, help="log")
     parser.add_argument("light_log", type=str, help="log")
     parser.add_argument("outbase", type=str, help="output file base name")
-    parser.add_argument("--naiveid", type=str, default="GL", help="fasta")
+    parser.add_argument("--rootid", type=str, default="GL", help="fasta")
 
     # parser.add_argument('--outbase', type=str, required=True, help='output file base name')
     args = parser.parse_args()
@@ -41,11 +41,11 @@ def main():
 
     heavy_map = defaultdict(list)
     for seq in AlignIO.read(args.heavy_fasta, "fasta"):
-        if seq.id != args.naiveid:
+        if seq.id != args.rootid:
             heavy_map[str(seq.seq).lower()].append(seq.id)
     light_map = defaultdict(list)
     for seq in AlignIO.read(args.light_fasta, "fasta"):
-        if seq.id != args.naiveid:
+        if seq.id != args.rootid:
             light_map[str(seq.seq).lower()].append(seq.id)
 
     for heavy_tree in heavy_forest.forest:

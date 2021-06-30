@@ -7,7 +7,7 @@ from nestly.scons import SConsWrap
 
 # the following must be exported by parent SConstruct/SConscript
 Import(
-    "env dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp xarg buffarg"
+    "env dnaml quick idlabel outdir root mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list root_idexp xarg buffarg"
 )
 
 nest = Nest()
@@ -59,7 +59,7 @@ def gctree_sim(outdir, c):
         xarg
         + buffarg
         + "gctree simulate "
-        + naive
+        + root
         + " ${SOURCES[0]} ${SOURCES[1]}"
         + " --outbase "
         + os.path.join(outdir, "gctree")
@@ -81,13 +81,13 @@ def infer(outdir, c):
     """now do inference on the simulation results"""
     input_file = c["gctree_sim"][0]
     input_file2 = None
-    naiveID = "naive"  # this is what the simulation routine names the naive
+    root_id = "root"  # this is what the simulation routine names the root
     id_abundances = False
     bootstrap = 0
     colorfile = None
     return SConscript(
         "SConscript.inference",
-        exports="env dnaml quick idlabel frame input_file input_file2 outdir naiveID id_abundances CommandRunner bootstrap xarg buffarg colorfile",
+        exports="env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile",
     )
 
 
@@ -170,8 +170,8 @@ def summary_stats(outdir, c):
         + "python scripts/summary_stats.py $SOURCES --outbase "
         + os.path.join(outdir, "gctree.simulation.summary_stats")
         + exp_arg
-        + " --naiveIDexp "
-        + naiveIDexp
+        + " --root_idexp "
+        + root_idexp
         + " > ${TARGETS[0]}",
     )
     env.AlwaysBuild(tgt)

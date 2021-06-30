@@ -50,7 +50,7 @@ All commands should be issued from within the gctree repo directory.
 - *input file*: `FASTA` or `PHYLIP` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all observed sequences (used for outgroup rooting).
 - *run inference*:
     ```
-    scons --inference --outdir=<output directory path> --input=<input FASTA or PHYLIP file> --naiveID=<id of ancestral sequence in input file>
+    scons --inference --outdir=<output directory path> --input=<input FASTA or PHYLIP file> --rootID=<id of ancestral sequence in input file>
     ```
 - *description of inference output files*: After the inference pipeline has completed, the output directory will contain the following output files:
     - `<input file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
@@ -96,7 +96,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
     From within the `gctree` repository directory:
     ```
-  scons --inference --input=example/150228_Clone_3-8.fasta --outdir=test --id_abundances --naiveID=GL --jobs=2
+  scons --inference --input=example/150228_Clone_3-8.fasta --outdir=test --id_abundances --rootID=GL --jobs=2
     ```
     This command will produce output in subdirectory `test/`.
     This includes a log file with some messages about results (including the number of trees and the fitted branching process parameters), and then lists each parsimony tree by decreasing likelihood (with tree 1 corresponding to the gctree MLE).
@@ -170,7 +170,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
     `--id_abundances` flag means that integer sequence IDs in the input file are interpreted as abundances. The example input `FASTA` includes a sequence with id "17".
 
-    `--naiveID=GL` indicates that the root naive sequence has id "GL" in the input `FASTA`. This sequence is the germline sequence of the V gene used in the V(D)J rearrangement that defines this clonal family.
+    `--rootID=GL` indicates that the root root sequence has id "GL" in the input `FASTA`. This sequence is the germline sequence of the V gene used in the V(D)J rearrangement that defines this clonal family.
 
     `--jobs=2` indicates that 2 parallel processes should be used
 
@@ -186,7 +186,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 `--outdir=[path]` directory for output (created if does not exist)
 
-`--naiveID=[string]` ID of naive sequence in input file used for outgroup rooting, default 'naive'. For BCRs, we assume a known naive V(D)J rearrangemnt is an additional sequence in our alignment, regardless of whether it was observed or not. This ancestral sequence must appear as an additional sequence. For applications without a definite root state, an observed sequence can be used to root the tree by duplicating it in the alignment and giving it a new id, which can be passed as this argument.
+`--rootID=[string]` ID of root sequence in input file used for outgroup rooting, default 'root'. For BCRs, we assume a known root V(D)J rearrangemnt is an additional sequence in our alignment, regardless of whether it was observed or not. This ancestral sequence must appear as an additional sequence. For applications without a definite root state, an observed sequence can be used to root the tree by duplicating it in the alignment and giving it a new id, which can be passed as this argument.
 
 ### optional arguments
 
@@ -208,7 +208,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 ### optional arguments
 
-`--naive=[string]             ` DNA sequence of naive sequence from which to begin simulating, a default is used if omitted
+`--root=[string]             ` DNA sequence of root sequence from which to begin simulating, a default is used if omitted
 
 `--mutability=[path]          ` path to S5F mutability file, default 'S5F/mutability'
 

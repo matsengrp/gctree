@@ -76,16 +76,16 @@ if not simulate and not inference and not GetOption("help"):
 
 if simulate:
     AddOption(
-        "--naive",
+        "--root",
         type="string",
         default="ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactg"
         "gcgactccatcaccagtggttactggaactggatccggaaattcccagggaataa"
         "acttgagtacatggggtacataagctacagtggtagcacttactacaatccatct"
         "ctcaaaagtcgaatctccatcactcgagacacatccaagaaccagtactacctgc"
         "agttgaattctgtgactactgaggacacagccacatattactgt",
-        help="sequence of naive from which to simulate",
+        help="sequence of root from which to simulate",
     )
-    naive = GetOption("naive")
+    root = GetOption("root")
     AddOption(
         "--mutability",
         type="string",
@@ -149,12 +149,12 @@ if simulate:
     )
     experimental_list = GetOption("experimental")
     AddOption(
-        "--naiveIDexp",
+        "--root_idexp",
         type="string",
-        default="naive0",
-        help="id of naive seq in the experimental data",
+        default="root0",
+        help="id of root seq in the experimental data",
     )
-    naiveIDexp = GetOption("naiveIDexp")
+    root_idexp = GetOption("root_idexp")
 
 elif inference:
     AddOption(
@@ -182,13 +182,13 @@ elif inference:
     )
     colorfile = GetOption("colorfile")
     AddOption(
-        "--naiveID",
+        "--root_id",
         type="string",
         metavar="seqID",
-        default="naive",
-        help="id of naive sequence",
+        default="root",
+        help="id of root sequence",
     )
-    naiveID = GetOption("naiveID")
+    root_id = GetOption("root_id")
     AddOption(
         "--id_abundances",
         action='store_true',
@@ -210,12 +210,12 @@ if simulate and not GetOption("help"):
         raise InputError("outdir must be specified")
     SConscript(
         "SConscript.simulation",
-        exports="env dnaml quick idlabel outdir naive mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list naiveIDexp xarg buffarg",
+        exports="env dnaml quick idlabel outdir root mutability substitution lambda_list lambda0_list n frame N T nsim CommandRunner experimental_list root_idexp xarg buffarg",
     )
 elif inference and not GetOption("help"):
     if None in [input_file, outdir]:
         raise InputError("input fasta or phylip and outdir must be specified")
     SConscript(
         "SConscript.inference",
-        exports="env dnaml quick idlabel frame input_file input_file2 outdir naiveID id_abundances CommandRunner bootstrap xarg buffarg colorfile",
+        exports="env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile",
     )

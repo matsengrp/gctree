@@ -18,7 +18,7 @@ def which(executable):
 
 # the following must be exported by parent SConstruct/SConscript
 Import(
-    "env dnaml quick idlabel frame input_file input_file2 outdir naiveID id_abundances CommandRunner bootstrap xarg buffarg colorfile"
+    "env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile"
 )
 
 
@@ -80,8 +80,8 @@ phylip = env.Command(
     + " --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} "
     + frame_arg
     + id_abundances_arg
-    + "--naive "
-    + naiveID
+    + "--root "
+    + root_id
     + " > ${TARGETS[0]}",
 )
 
@@ -111,8 +111,8 @@ if bootstrap:
     # only get rerun if one of the targets are removed or if the input dnaml_config file is changed).
     env.Depends(seqboot, phylip)
 
-# Update the naive ID:
-naiveID = naiveID.lower()
+# Update the root ID:
+root_id = root_id.lower()
 
 if dnaml:
     dnaml_config = env.Command(
@@ -143,8 +143,8 @@ if dnaml:
         ],
         [dnaml[1], phylip[1]],
         xarg
-        + "phylip_parse ${SOURCES} --outputfile ${TARGETS[0]} --naive "
-        + naiveID
+        + "phylip_parse ${SOURCES} --outputfile ${TARGETS[0]} --root "
+        + root_id
         + " > ${TARGETS[1]}",
     )
     return_list.append(dnaml_tree)
@@ -219,8 +219,8 @@ gctree_infer = CommandRunner(
     + ([phylip[3]] if colorfile is not None else []),
     xarg
     + buffarg
-    + "gctree infer ${SOURCES[0]} ${SOURCES[1]} --naive "
-    + naiveID
+    + "gctree infer ${SOURCES[0]} ${SOURCES[1]} --root "
+    + root_id
     + " --outbase "
     + gctree_outbase
     + frame_arg

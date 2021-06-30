@@ -21,7 +21,7 @@ def main():
         "bootstrap", type=str, help="dnapars outfile from seqboot (multiple data sets)"
     )
     parser.add_argument(
-        "--naive", type=str, default=None, help="name of naive sequence (outgroup root)"
+        "--root", type=str, default=None, help="name of root sequence (outgroup root)"
     )
     parser.add_argument(
         "--frame", type=int, default=None, choices=(1, 2, 3), help="codon frame"
@@ -31,7 +31,7 @@ def main():
     )
     args = parser.parse_args()
 
-    consense = phylip_parse.parse_outfile(args.consense, args.countfile, args.naive)
+    consense = phylip_parse.parse_outfile(args.consense, args.countfile, args.root)
     assert len(consense) == 1
     consensus_gctree = CollapsedTree(tree=consense[0], frame=args.frame)
 
@@ -40,7 +40,7 @@ def main():
     weights = []
 
     for bootstrap in phylip_parse.parse_outfile(
-        args.bootstrap, args.countfile, args.naive
+        args.bootstrap, args.countfile, args.root
     ):
         new_gctrees = []
         for tree in bootstrap:

@@ -348,7 +348,7 @@ class CollapsedTree(LeavesAndClades):
             == -np.inf
         ):
             # if unifurcation not possible under current model, add a
-            # psuedocount for the naive
+            # psuedocount for the root
             leaves_and_clades_list[0].c = 1
         # extract vector of function values and gradient components
         logf_data = [

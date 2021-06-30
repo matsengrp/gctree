@@ -21,36 +21,36 @@ def main():
     )
     parser.add_argument("--outbase", type=str, help="output file base name")
     parser.add_argument(
-        "--naiveIDexp", type=str, default="naive0", help="naive sequence ID"
+        "--root_idexp", type=str, default="root0", help="root sequence ID"
     )
     args = parser.parse_args()
 
     # simulations
-    naiveID = "naive"
+    root_id = "root"
     for i, fname in enumerate(args.input):
         print(fname)
-        seqs = {seq.id: str(seq.seq) for seq in fasta_parse(fname, "naive")[0]}
+        seqs = {seq.id: str(seq.seq) for seq in fasta_parse(fname, "root")[0]}
         nseqs = len(seqs)
         if nseqs <= 2:
             continue
 
-        distance_from_naive, degree = zip(
+        distance_from_root, degree = zip(
             *[
                 (
-                    hamming_distance(seqs[seqid], seqs[naiveID]),
+                    hamming_distance(seqs[seqid], seqs[root_id]),
                     min(
                         hamming_distance(seqs[seqid], seqs[seqid2])
                         for seqid2 in seqs
-                        if seqid2 != naiveID and seqid2 != seqid
+                        if seqid2 != root_id and seqid2 != seqid
                     ),
                 )
                 for seqid in seqs
-                if seqid != naiveID
+                if seqid != root_id
             ]
         )
         df = pd.DataFrame(
             {
-                "distance to naive sequence": distance_from_naive,
+                "distance to root sequence": distance_from_root,
                 "nearest neighbor distance": degree,
             }
         )
@@ -67,29 +67,29 @@ def main():
         for i, fname in enumerate(args.experimental):
             print(fname)
             seqs = {
-                seq.id: str(seq.seq) for seq in fasta_parse(fname, args.naiveIDexp)[0]
+                seq.id: str(seq.seq) for seq in fasta_parse(fname, args.root_idexp)[0]
             }
             nseqs = len(seqs)
             if nseqs <= 2:
                 continue
 
-            distance_from_naive, degree = zip(
+            distance_from_root, degree = zip(
                 *[
                     (
-                        hamming_distance(seqs[seqid], seqs[args.naiveIDexp]),
+                        hamming_distance(seqs[seqid], seqs[args.root_idexp]),
                         min(
                             hamming_distance(seqs[seqid], seqs[seqid2])
                             for seqid2 in seqs
-                            if seqid2 != args.naiveIDexp and seqid2 != seqid
+                            if seqid2 != args.root_idexp and seqid2 != seqid
                         ),
                     )
                     for seqid in seqs
-                    if seqid != args.naiveIDexp
+                    if seqid != args.root_idexp
                 ]
             )
             df = pd.DataFrame(
                 {
-                    "distance to naive sequence": distance_from_naive,
+                    "distance to root sequence": distance_from_root,
                     "nearest neighbor distance": degree,
                 }
             )
@@ -105,8 +105,8 @@ def main():
     alpha = min([0.9, 20 / ndatasets])
     bins = range(
         max(
-            aggdat["distance to naive sequence"].max(),
-            aggdat_exp["distance to naive sequence"].max()
+            aggdat["distance to root sequence"].max(),
+            aggdat_exp["distance to root sequence"].max()
             if args.experimental is not None
             else 0,
         )
@@ -119,7 +119,7 @@ def main():
     for dataset, dataset_aggdat in aggdat.groupby("data set"):
         ct += 1
         sns.distplot(
-            dataset_aggdat["distance to naive sequence"],
+            dataset_aggdat["distance to root sequence"],
             bins=bins,
             kde=False,
             color="gray",
@@ -130,7 +130,7 @@ def main():
         for dataset, dataset_aggdat in aggdat_exp.groupby("data set"):
             ct += 1
             sns.distplot(
-                dataset_aggdat["distance to naive sequence"],
+                dataset_aggdat["distance to root sequence"],
                 bins=bins,
                 kde=False,
                 color="black",
@@ -141,7 +141,7 @@ def main():
                     "lw": 3,
                 },
             )
-    plt.xlabel("distance to naive sequence")
+    plt.xlabel("distance to root sequence")
     plt.xlim([0, bins[-1]])
     plt.ylabel("observed sequences")
     plt.tight_layout()

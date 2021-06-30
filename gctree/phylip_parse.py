@@ -38,7 +38,7 @@ def sections(fh):
 
 # iterate over entries in the distance section
 def iter_edges(fh):
-    #  152          >naive2           0.01208     (     zero,     0.02525) **
+    #  152          >root2           0.01208     (     zero,     0.02525) **
     pat = re.compile(
         r"\s*(?P<parent>\w+)\s+(?P<child>[\w>_.-]+)\s+(?P<distance>\d+\.\d+)"
     )
@@ -90,7 +90,7 @@ def parse_seqdict(fh, mode="dnaml"):
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
-def parse_outfile(outfile, countfile=None, naive="naive"):
+def parse_outfile(outfile, countfile=None, root="root"):
     """parse phylip outfile."""
     if countfile is not None:
         counts = {
@@ -117,9 +117,9 @@ def parse_outfile(outfile, countfile=None, naive="naive"):
                         )
                     )
                 if bootstrap:
-                    trees[-1].append(build_tree(sequences, parents, counts, naive))
+                    trees[-1].append(build_tree(sequences, parents, counts, root))
                 else:
-                    trees.append(build_tree(sequences, parents, counts, naive))
+                    trees.append(build_tree(sequences, parents, counts, root))
             elif sect == "seqboot_dataset":
                 bootstrap = True
                 trees.append([])
@@ -152,7 +152,7 @@ def disambiguate(tree):
 
 
 # build a tree from a set of sequences and an adjacency dict.
-def build_tree(sequences, parents, counts=None, naive="naive"):
+def build_tree(sequences, parents, counts=None, root="root"):
     # build an ete tree
     # first a dictionary of disconnected nodes
     nodes = {}
@@ -171,20 +171,20 @@ def build_tree(sequences, parents, counts=None, naive="naive"):
             nodes[parents[name]].add_child(nodes[name])
         else:
             tree = nodes[name]
-    # reroot on naive
-    if naive is not None:
-        naive_id = [node for node in nodes if naive in node][0]
-        assert len(nodes[naive_id].children) == 0
-        naive_parent = nodes[naive_id].up
-        naive_parent.remove_child(nodes[naive_id])
-        nodes[naive_id].add_child(naive_parent)
+    # reroot on root
+    if root is not None:
+        root_id = [node for node in nodes if root in node][0]
+        assert len(nodes[root_id].children) == 0
+        root_parent = nodes[root_id].up
+        root_parent.remove_child(nodes[root_id])
+        nodes[root_id].add_child(root_parent)
         # remove possible unecessary unifurcation after rerooting
-        if len(naive_parent.children) == 1:
-            naive_parent.delete(prevent_nondicotomic=False)
-            naive_parent.children[0].dist = hamming_distance(
-                naive_parent.children[0].sequence, nodes[naive_id].sequence
+        if len(root_parent.children) == 1:
+            root_parent.delete(prevent_nondicotomic=False)
+            root_parent.children[0].dist = hamming_distance(
+                root_parent.children[0].sequence, nodes[root_id].sequence
             )
-        tree = nodes[naive_id]
+        tree = nodes[root_id]
 
     # make random choices for ambiguous bases
     tree = disambiguate(tree)
@@ -206,7 +206,7 @@ def get_parser():
     )
     parser.add_argument("countfile", type=str, help="count file")
     parser.add_argument("--outputfile", default=None, help="output file.")
-    parser.add_argument("--naive", default="naive", help="naive sequence id")
+    parser.add_argument("--root", default="root", help="root sequence id")
     return parser
 
 
@@ -215,7 +215,7 @@ def main(arg_list=None):
 
     if args.outputfile is None:
         args.outputfile = args.phylip_outfile + ".collapsed_forest.p"
-    trees = pp.parse_outfile(args.phylip_outfile, args.countfile, args.naive)
+    trees = pp.parse_outfile(args.phylip_outfile, args.countfile, args.root)
     if isinstance(trees[0], list):
         print(trees[0][0])
         print(bp.CollapsedTree(tree=trees[0][0]))

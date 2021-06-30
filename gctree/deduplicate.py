@@ -9,7 +9,7 @@ from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 from collections import defaultdict, Counter
 
 
-def fasta_parse(aln_file, naive, frame=None, aln_file2=None, id_abundances=False):
+def fasta_parse(aln_file, root, frame=None, aln_file2=None, id_abundances=False):
     if aln_file.endswith("fasta") or aln_file.endswith("fa"):
         aln_format = "fasta"
     elif aln_file.endswith("phylip") or aln_file.endswith("phy"):
@@ -28,9 +28,9 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, id_abundances=False
             raise ValueError("unrecognized alignment file type: " + aln_file2)
         aln2 = AlignIO.read(aln_file2, aln_format2)
         for seq in aln:
-            cell = seq.id[:-1] if seq.id != naive else naive
+            cell = seq.id[:-1] if seq.id != root else root
             for seq2 in aln2:
-                cell2 = seq2.id[:-1] if seq2.id != naive else naive
+                cell2 = seq2.id[:-1] if seq2.id != root else root
                 if cell2 == cell:
                     aln_combined.append(
                         SeqRecord(Seq(str(seq.seq) + str(seq2.seq)), id=cell)
@@ -47,7 +47,7 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, id_abundances=False
 
     seqs_unique_counts = defaultdict(list)
     id_set = set()
-    naive_seq = None
+    root_seq = None
     for seq in aln:
         # seq.id = seq.id.lower()
         # if id is just an integer, assume it represents count of that sequence
@@ -56,28 +56,28 @@ def fasta_parse(aln_file, naive, frame=None, aln_file2=None, id_abundances=False
         else:
             id_set.add(seq.id)
         seqstr = str(seq.seq)[start:end]
-        if seq.id == naive:
-            naive_seq = seqstr
+        if seq.id == root:
+            root_seq = seqstr
             if seqstr not in seqs_unique_counts:
                 seqs_unique_counts[
                     seqstr
-                ] = []  # no observed naive unless we see it elsewhere
+                ] = []  # no observed root unless we see it elsewhere
         elif seq.id.isdigit() and id_abundances:
             seqs_unique_counts[seqstr] = [seq.id for _ in range(int(seq.id))]
         else:
             seqs_unique_counts[seqstr].append(seq.id)
 
-    if naive_seq is None:
-        raise ValueError("naive seq id {} not found".format(naive))
+    if root_seq is None:
+        raise ValueError("root seq id {} not found".format(root))
 
-    new_aln = MultipleSeqAlignment([SeqRecord(Seq(naive_seq), id=naive.lower())])
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(root_seq), id=root.lower())])
     counts = {
-        naive.lower(): len(seqs_unique_counts[naive_seq])
-    }  # Add the count for the naive sequence
-    id_map = {naive.lower(): [x for x in seqs_unique_counts[naive_seq] if x != naive]}
+        root.lower(): len(seqs_unique_counts[root_seq])
+    }  # Add the count for the root sequence
+    id_map = {root.lower(): [x for x in seqs_unique_counts[root_seq] if x != root]}
     del seqs_unique_counts[
-        naive_seq
-    ]  # Now delete the naive so it does not appear twice
+        root_seq
+    ]  # Now delete the root so it does not appear twice
     for i, seq in enumerate(seqs_unique_counts, 1):
         new_id = "seq" + str(i)
         new_aln.append(SeqRecord(Seq(seq), id=new_id))
@@ -136,7 +136,7 @@ def get_parser():
         action="store_true",
         help="flag to interpret integer ids in input as abundances",
     )
-    parser.add_argument("--naive", type=str, default="naive", help="naive sequence id")
+    parser.add_argument("--root", type=str, default="root", help="root sequence id")
     parser.add_argument(
         "--frame", type=int, default=None, help="codon frame", choices=(1, 2, 3)
     )
@@ -160,7 +160,7 @@ def main(arg_list=None):
 
     new_aln, counts, id_map = fasta_parse(
         args.infile[0],
-        args.naive,
+        args.root,
         frame=args.frame,
         aln_file2=args.infile[1] if len(args.infile) == 2 else None,
         id_abundances=args.id_abundances,

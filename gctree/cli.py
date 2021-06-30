@@ -153,10 +153,10 @@ def test(args):
 
 def infer(args):
     """inference subprogram."""
-    outfiles = [pp.parse_outfile(args.phylipfile, args.countfile, args.naive)]
+    outfiles = [pp.parse_outfile(args.phylipfile, args.countfile, args.root)]
     if args.bootstrap_phylipfile is not None:
         outfiles.extend(
-            pp.parse_outfile(args.bootstrap_phylipfile, args.countfile, args.naive)
+            pp.parse_outfile(args.bootstrap_phylipfile, args.countfile, args.root)
         )
     bootstrap = len(outfiles) > 1
     if bootstrap:
@@ -430,9 +430,9 @@ def simulate(args):
     if args.sequence2 is not None:
         fh1 = open(args.outbase + ".simulation_seq1.fasta", "w")
         fh2 = open(args.outbase + ".simulation_seq2.fasta", "w")
-        fh1.write(">naive\n")
+        fh1.write(">root\n")
         fh1.write(args.sequence[seq_bounds[0][0] : seq_bounds[0][1]] + "\n")
-        fh2.write(">naive\n")
+        fh2.write(">root\n")
         fh2.write(args.sequence[seq_bounds[1][0] : seq_bounds[1][1]] + "\n")
         for leaf in tree.iter_leaves():
             if leaf.frequency != 0:
@@ -442,7 +442,7 @@ def simulate(args):
                 fh2.write(leaf.sequence[seq_bounds[1][0] : seq_bounds[1][1]] + "\n")
     else:
         with open(args.outbase + ".simulation.fasta", "w") as f:
-            f.write(">naive\n")
+            f.write(">root\n")
             f.write(args.sequence + "\n")
             for leaf in tree.iter_leaves():
                 if leaf.frequency != 0:
@@ -450,7 +450,7 @@ def simulate(args):
                     f.write(leaf.sequence + "\n")
 
     # some observable simulation stats to write
-    frequency, distance_from_naive, degree = zip(
+    frequency, distance_from_root, degree = zip(
         *[
             (
                 node.frequency,
@@ -468,7 +468,7 @@ def simulate(args):
     stats = pd.DataFrame(
         {
             "genotype abundance": frequency,
-            "Hamming distance to root genotype": distance_from_naive,
+            "Hamming distance to root genotype": distance_from_root,
             "Hamming neighbor genotypes": degree,
         }
     )
@@ -559,7 +559,7 @@ def get_parser():
         help="likelihood ranking of parsimony trees",
     )
     parser_infer.add_argument(
-        "--naive", type=str, default=None, help="name of naive sequence (outgroup root)"
+        "--root", type=str, default=None, help="name of root sequence (outgroup root)"
     )
     parser_infer.add_argument(
         "phylipfile",
@@ -597,7 +597,7 @@ def get_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Neutral, and target selective, model gctree simulation",
     )
-    parser_sim.add_argument("sequence", type=str, help="seed naive nucleotide sequence")
+    parser_sim.add_argument("sequence", type=str, help="seed root nucleotide sequence")
     parser_sim.add_argument(
         "mutability", type=str, help="path to mutability model file"
     )
@@ -608,7 +608,7 @@ def get_parser():
         "--sequence2",
         type=str,
         default=None,
-        help="Second seed naive nucleotide sequence. "
+        help="Second seed root nucleotide sequence. "
         "For simulating heavy/light chain co-evolution.",
     )
     parser_sim.add_argument(
@@ -649,7 +649,7 @@ def get_parser():
         type=int,
         default=10,
         help="The number of non-synonymous mutations the target should be "
-        "away from the naive.",
+        "away from the root.",
     )
     parser_sim.add_argument(
         "--plotAA",

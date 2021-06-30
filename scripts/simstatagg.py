@@ -41,14 +41,14 @@ sims = set(aggdat["simulation"])
 nsims = len(sims)
 
 if args.experimental is not None:
-    new_aln, counts = fasta_parse(args.experimental, naive="GL", id_abundances=True)[:2]
+    new_aln, counts = fasta_parse(args.experimental, root="GL", id_abundances=True)[:2]
     exp_dict = {seq.id: str(seq.seq) for seq in new_aln}
-    naive_id = [seq for seq in exp_dict if "gl" in seq][0]
-    frequency, distance_from_naive, degree = zip(
+    root_id = [seq for seq in exp_dict if "gl" in seq][0]
+    frequency, distance_from_root, degree = zip(
         *[
             (
                 counts[seq],
-                hamming_distance(exp_dict[seq], exp_dict[naive_id]),
+                hamming_distance(exp_dict[seq], exp_dict[root_id]),
                 sum(
                     hamming_distance(exp_dict[seq], exp_dict[seq2]) == 1
                     for seq2 in exp_dict
@@ -62,7 +62,7 @@ if args.experimental is not None:
     exp_stats = pd.DataFrame(
         {
             "genotype abundance": frequency,
-            "Hamming distance to root genotype": distance_from_naive,
+            "Hamming distance to root genotype": distance_from_root,
             "Hamming neighbor genotypes": degree,
         }
     )
