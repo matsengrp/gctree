@@ -23,7 +23,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument("phylip", help="PHYLIP input", type=str)
-    parser.add_argument("treeprog", help="dnaml or dnapars", type=str)
+    parser.add_argument("treeprog", help="dnapars, dnaml, or seqboot", type=str)
     parser.add_argument(
         "--quick", action="store_true", help="quicker (less thourough) dnapars"
     )

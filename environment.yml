@@ -7,7 +7,6 @@ dependencies:
   - scons
   - nestly
   - phylip
-  - seqmagick
   - pip
   - pip:
     - . # installs gctree package from current directory "."

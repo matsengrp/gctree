@@ -7,8 +7,7 @@
 ._*
 
 # example output dir
-test
-gctree.out*
+_build
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
