@@ -26,7 +26,7 @@ Build docs locally (you can then see the generated documentation in ``docs/_buil
 
   make docs
 
-Deploy docs to gh-pages (https://matsengrp.github.io/gctree)::
+Deploy docs to ``docs/`` directory::
 
   make deploy
 

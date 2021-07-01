@@ -19,13 +19,9 @@ lint:
 	flake8 . --count --max-complexity=30 --max-line-length=127 --statistics
 
 docs:
-	make -C docs html
+	make -C docsrc html
 
 deploy:
-	git checkout gh-pages
-	cp -a docs/_build/html/* .
-	git add .
-	git commit --amend -av -m "update docs"
-	git push -f
+	make -C docsrc github
 
 .PHONY: install test format lint deploy docs
