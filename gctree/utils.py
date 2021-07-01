@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Utility functions"""
+"""Utility functions."""
 
 
 def hamming_distance(seq1, seq2):

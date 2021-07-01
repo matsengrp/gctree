@@ -74,9 +74,7 @@ def fasta_parse(aln_file, root, frame=None, aln_file2=None, id_abundances=False)
         root: len(seqs_unique_counts[root_seq])
     }  # Add the count for the root sequence
     id_map = {root: [x for x in seqs_unique_counts[root_seq] if x != root]}
-    del seqs_unique_counts[
-        root_seq
-    ]  # Now delete the root so it does not appear twice
+    del seqs_unique_counts[root_seq]  # Now delete the root so it does not appear twice
     for i, seq in enumerate(seqs_unique_counts, 1):
         new_id = "seq" + str(i)
         new_aln.append(SeqRecord(Seq(seq), id=new_id))

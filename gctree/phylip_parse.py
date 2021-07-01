@@ -17,7 +17,6 @@ from Bio.Data.IUPACData import ambiguous_dna_values
 
 import pickle
 import argparse
-import os
 
 
 # iterate over recognized sections in the phylip output file.

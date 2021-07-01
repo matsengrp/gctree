@@ -30,17 +30,25 @@ release = ''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx.ext.autodoc",  # Core Sphinx library for auto html doc generation from docstrings
-    "sphinx.ext.autosummary",  # Create neat summary tables for modules/classes/methods etc
+    # Core Sphinx library for auto html doc generation from docstrings
+    "sphinx.ext.autodoc",
+    # Create neat summary tables for modules/classes/methods etc
+    "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
-    "sphinx.ext.intersphinx",  # Link to other project's documentation (see mapping below)
+    # Link to other project's documentation (see mapping below)
+    "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
-    "sphinx.ext.viewcode",  # Add a link to the Python source code for classes, functions etc.
-    "sphinx.ext.napoleon", # support NumPy and Google style docstrings
-    "sphinx_autodoc_typehints",  # Automatically document param types (less noise in class signature)
-    "sphinx.ext.todo", # track to do list items
+    # Add a link to the Python source code for classes, functions etc.
+    "sphinx.ext.viewcode",
+    # support NumPy and Google style docstrings
+    "sphinx.ext.napoleon",
+    # Automatically document param types (less noise in class signature)
+    "sphinx_autodoc_typehints",
+    # track to do list items
+    "sphinx.ext.todo",
     "sphinxarg.ext",
-    "sphinxcontrib.programoutput", # render command line output
+    # render command line output
+    "sphinxcontrib.programoutput",
 ]
 
 # show todos in output
@@ -58,8 +66,8 @@ html_show_sourcelink = (
 autodoc_inherit_docstrings = True  # If no class summary, inherit base class summary
 
 autodoc_default_options = {
-    'members':         True,
-    'member-order':    'bysource',
+    'members': True,
+    'member-order': 'bysource',
     'special-members': '__init__',
 }
 
