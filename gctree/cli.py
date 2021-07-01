@@ -109,7 +109,7 @@ def test(args):
         rotation=90,
         multialignment="center",
     )
-    plt.savefig(args.outbase + ".pdf")
+    plt.savefig(args.outbase + "." + args.img_type)
 
     # MLE check
     n = 20
@@ -146,17 +146,17 @@ def test(args):
     for i in range(len(ps)):
         for j in range(len(qs)):
             plt.scatter([ps[i]], [qs[j]], c="black", marker="+")
-    plt.savefig(args.outbase + ".2.pdf")
+    plt.savefig(args.outbase + ".2." + args.img_type)
 
     return
 
 
 def infer(args):
     """inference subprogram."""
-    outfiles = [pp.parse_outfile(args.phylipfile, args.countfile, args.root)]
+    outfiles = [pp.parse_outfile(args.phylipfile, args.abundance_file, args.root)]
     if args.bootstrap_phylipfile is not None:
         outfiles.extend(
-            pp.parse_outfile(args.bootstrap_phylipfile, args.countfile, args.root)
+            pp.parse_outfile(args.bootstrap_phylipfile, args.abundance_file, args.root)
         )
     bootstrap = len(outfiles) > 1
     if bootstrap:
@@ -290,7 +290,7 @@ def infer(args):
         plt.tick_params(
             axis="x", which="both", bottom="off", top="off", labelbottom="off"
         )
-        plt.savefig(outbase + ".inference.likelihood_rank.pdf")
+        plt.savefig(outbase + ".inference.likelihood_rank." + args.img_type)
 
         # rank plot of observed allele frequencies
         y = sorted(
@@ -305,7 +305,7 @@ def infer(args):
         plt.bar(range(1, len(y) + 1), y, color="black")
         plt.xlabel("genotype")
         plt.ylabel("abundance")
-        plt.savefig(outbase + ".inference.abundance_rank.pdf")
+        plt.savefig(outbase + ".inference.abundance_rank." + args.img_type)
 
     if bootstrap:
         import seaborn as sns
@@ -326,7 +326,7 @@ def infer(args):
             ylim=(0, 1),
             height=3,
         )
-        plt.savefig(args.outbase + ".inference.bootstrap_theta.pdf")
+        plt.savefig(args.outbase + ".inference.bootstrap_theta." + args.img_type)
         gctrees[0].support(gctrees[1:])
         gctrees[0].render(
             args.outbase + ".inference.bootstrap_support.svg",
@@ -567,7 +567,7 @@ def get_parser():
         help="dnapars outfile (verbose output with sequences at each site)",
     )
     parser_infer.add_argument(
-        "countfile",
+        "abundance_file",
         type=str,
         help="File containing allele frequencies (sequence counts) in the "
         'format: "SeqID,Nobs"',
@@ -665,10 +665,13 @@ def get_parser():
     )
     parser_sim.set_defaults(func=simulate)
 
-    # a common outbase parameter
+    # shared parameters
     for subparser in [parser_test, parser_infer, parser_sim]:
         subparser.add_argument(
             "--outbase", type=str, default="gctree.out", help="output file base name"
+        )
+        subparser.add_argument(
+            "--img_type", type=str, default="svg", help="output image file type"
         )
 
     # common parameters for the inference and simulation subprograms
