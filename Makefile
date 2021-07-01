@@ -22,7 +22,6 @@ docs:
 	make -C docs html
 
 deploy:
-	make docs
 	git checkout gh-pages
 	cp -a docs/_build/html/* .
 	git add .
