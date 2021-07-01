@@ -27,10 +27,6 @@ jobs:
         python -m pip install --upgrade pip
         make install
 
-    - name: Test
-      run: |
-        make test
-
     - name: Lint
       run: |
         make lint
@@ -38,3 +34,7 @@ jobs:
     - name: Check format with black
       run: |
         black --check gctree
+
+    - name: Test
+      run: |
+        make test
