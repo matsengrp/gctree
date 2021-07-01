@@ -77,7 +77,7 @@ phylip = env.Command(
     + "deduplicate ${SOURCES[0]} "
     + (" --colorfile ${SOURCES[1]} " if colorfile is not None else "")
     + (" --colormap ${TARGETS[3]} " if colorfile is not None else "")
-    + " --countfile ${TARGETS[1]} --idmapfile ${TARGETS[2]} "
+    + " --abundance_file ${TARGETS[1]} --idmapfile ${TARGETS[2]} "
     + frame_arg
     + id_abundances_arg
     + "--root "

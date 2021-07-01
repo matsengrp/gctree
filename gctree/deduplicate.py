@@ -120,7 +120,7 @@ def get_parser():
         "at least one non number character (unless using the id_abundances option).",
     )
     parser.add_argument(
-        "--countfile",
+        "--abundance_file",
         type=str,
         default=None,
         help="filename for the output file containing the counts.",
@@ -166,8 +166,8 @@ def main(arg_list=None):
         id_abundances=args.id_abundances,
     )
     print(format(new_aln, "phylip"))
-    if args.countfile is not None:
-        with open(args.countfile, "w") as f:
+    if args.abundance_file is not None:
+        with open(args.abundance_file, "w") as f:
             for seqID, count in counts.items():
                 print("{},{}".format(seqID, count), file=f)
     if args.idmapfile is not None:

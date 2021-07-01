@@ -13,7 +13,7 @@ def main():
         "consense", type=str, help="dnapars outfile for fixed consense tree"
     )
     parser.add_argument(
-        "countfile",
+        "abundance_file",
         type=str,
         help='File containing allele frequencies (sequence counts) in the format: "SeqID,Nobs"',
     )
@@ -31,7 +31,7 @@ def main():
     )
     args = parser.parse_args()
 
-    consense = phylip_parse.parse_outfile(args.consense, args.countfile, args.root)
+    consense = phylip_parse.parse_outfile(args.consense, args.abundance_file, args.root)
     assert len(consense) == 1
     consensus_gctree = CollapsedTree(tree=consense[0], frame=args.frame)
 
@@ -40,7 +40,7 @@ def main():
     weights = []
 
     for bootstrap in phylip_parse.parse_outfile(
-        args.bootstrap, args.countfile, args.root
+        args.bootstrap, args.abundance_file, args.root
     ):
         new_gctrees = []
         for tree in bootstrap:

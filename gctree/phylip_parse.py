@@ -90,11 +90,11 @@ def parse_seqdict(fh, mode="dnaml"):
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
-def parse_outfile(outfile, countfile=None, root="root"):
+def parse_outfile(outfile, abundance_file=None, root="root"):
     """parse phylip outfile."""
-    if countfile is not None:
+    if abundance_file is not None:
         counts = {
-            line.split(",")[0]: int(line.split(",")[1]) for line in open(countfile)
+            line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)
         }
     # No count, just make an empty count dictionary:
     else:
@@ -204,7 +204,7 @@ def get_parser():
         type=str,
         help="dnaml outfile (verbose output with inferred ancestral sequences, option 5).",
     )
-    parser.add_argument("countfile", type=str, help="count file")
+    parser.add_argument("abundance_file", type=str, help="count file")
     parser.add_argument("--outputfile", default=None, help="output file.")
     parser.add_argument("--root", default="root", help="root sequence id")
     return parser
@@ -215,7 +215,7 @@ def main(arg_list=None):
 
     if args.outputfile is None:
         args.outputfile = args.phylip_outfile + ".collapsed_forest.p"
-    trees = pp.parse_outfile(args.phylip_outfile, args.countfile, args.root)
+    trees = pp.parse_outfile(args.phylip_outfile, args.abundance_file, args.root)
     if isinstance(trees[0], list):
         print(trees[0][0])
         print(bp.CollapsedTree(tree=trees[0][0]))
