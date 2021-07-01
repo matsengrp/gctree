@@ -1,5 +1,3 @@
-Command line interface
-
 gctree
 ======
 

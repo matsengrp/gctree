@@ -9,15 +9,16 @@ gctree documentation
 
   install
   cite
+  quickstart
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: CLI Documentation
 
    cli
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: API Documentation
 
    api

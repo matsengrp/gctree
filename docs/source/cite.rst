@@ -1,6 +1,9 @@
 Citing gctree
 #############
 
+.. image:: _static/molbiolevol_35_5cover.jpeg
+  :width: 300
+
 **Using Genotype Abundance to Improve Phylogenetic Inference**
 William S DeWitt, III,  Luka Mesin,  Gabriel D Victora,  Vladimir N Minin, Frederick A Matsen, IV
 *Molecular Biology and Evolution*, Volume 35, Issue 5, May 2018, Pages 1253–1265, https://doi.org/10.1093/molbev/msy020

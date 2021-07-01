@@ -40,6 +40,7 @@ extensions = [
     "sphinx_autodoc_typehints",  # Automatically document param types (less noise in class signature)
     "sphinx.ext.todo", # track to do list items
     "sphinxarg.ext",
+    "sphinxcontrib.programoutput", # render command line output
 ]
 
 # show todos in output
