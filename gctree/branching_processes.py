@@ -362,8 +362,8 @@ class CollapsedTree(LeavesAndClades):
     def mle(self, **kwargs):
         """Maximum likelihood estimate for params given tree updates params if
         not None returns optimization result."""
-        # random initalization
-        x_0 = (random.random(), random.random())
+        # initialization
+        x_0 = (1e-6, 1e-6)
         bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
         kwargs["sign"] = -1
         grad_check = check_grad(
