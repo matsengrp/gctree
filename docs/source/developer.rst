@@ -4,7 +4,7 @@ Open source code repository
 All code is freely available at `<https://github.com/matsengrp/gctree>`_
 
 Developer tools
----------------
+===============
 
 Developer install::
 
@@ -22,16 +22,16 @@ Lint::
 
   make lint
 
-Build docs locally (You can then see the generated documentation in ``docs/_build/index.html``.)::
+Build docs locally (you can then see the generated documentation in ``docs/_build/index.html``.)::
 
   make docs
 
-Deploy docs::
+Deploy docs to gh-pages (https://matsengrp.github.io/gctree)::
 
   make deploy
 
 
 Todo list
----------
+=========
 
 .. todolist::
