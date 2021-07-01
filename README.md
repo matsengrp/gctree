@@ -4,6 +4,10 @@ Implements phylogenetic inference for data with repeated sequences, as described
 
 DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve phylogenetic inference*, [arXiv:1708.08944](https://arxiv.org/abs/1708.08944).
 
+**Note: full documentation of the gctree package is available at: https://matsengrp.github.io/gctree**
+
+This readme provides info on use of scons pipelines that wrap the base gctree package.
+
 ## Installation
 
 ### Linux/MacOS
@@ -12,7 +16,7 @@ DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve p
 
 If you only want the base gctree package (without the pipeline infrastructure, see below), you can simply
 ```bash
-pip intall .
+pip intall gctree
 ```
 to install the gctree package and its command line interface.
 Subcommands are described in help
@@ -25,12 +29,13 @@ The most important subcommand is `gctree infer`.
 Additionally, the following command line utilities will be installed (each with help `-h`):
 - `deduplicate`: deduplicate fasta data with repeated genotypes
 - `mkconfig`: generate a config file for the phylip program
-- `phylip_parse`: parse output from
+- `phylip_parse`: parse output from phylip
 
 
 #### Pipeline install
 
 `SCons` pipelines can be used to for end-to-end phylogenetic inference from sequence data.
+These must be run from the repo directory after cloning.
 
 0. For installing dependencies, [conda](https://conda.io/docs/) environment management is recommended. First install conda or miniconda.
 1. Create a python 3 conda environment called gctree from the included environment file:
@@ -50,7 +55,7 @@ All commands should be issued from within the gctree repo directory.
 - *input file*: `FASTA` or `PHYLIP` file containing a sequence for each observed individual/cell, and an additional sequence containing the ancestral genotype of all observed sequences (used for outgroup rooting).
 - *run inference*:
     ```
-    scons --inference --outdir=<output directory path> --input=<input FASTA or PHYLIP file> --rootID=<id of ancestral sequence in input file>
+    scons --inference --outdir=<output directory path> --input=<input FASTA or PHYLIP file> --root_id=<id of ancestral sequence in input file>
     ```
 - *description of inference output files*: After the inference pipeline has completed, the output directory will contain the following output files:
     - `<input file>.idmap`: text file mapping collapsed sequenced ids to cell ids from the original input file
@@ -69,114 +74,36 @@ All commands should be issued from within the gctree repo directory.
 scons --simulate  --outdir=<output directory path> --N=<integer population size to simulate>
 ```
 
-## Example
+## Pipeline example
 
-### run gctree inference on the included `FASTA` file
+### run gctree inference pipeline on the included `FASTA` file
 
 * **Example input data set**
-    `example/150228_Clone_3-8.fasta` contains heavy chain V gene sequences from 65 germinal B cells sorted from a brainbow mouse using multicolor fate mapping.
-    ```
-  $ head example/150228_Clone_3-8.fasta
-  >VIBM1S4A05IgG
-  ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
-  tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
-  atggggtacataagcttcagtggtggtacttactacaatccatctctcaaaagtcgaatc
-  tccatcactcgagacacatccaagaaccagtaccacctgcagttgaattctgtgactact
-  gaggacacagccacatattactgt
-  >VIBM1S4A06IgG
-  ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
-  tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
-  atggggtacataagcttcagtggtagcacttactacaatccatctctcaaaagtcgaatc
-    ```
-    These data were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
 
-    ![](example/gc1.png)
+  See the quickstart docs page for a description of these example data.
 
 * **Run inference**  
 
     From within the `gctree` repository directory:
     ```
-  scons --inference --input=example/150228_Clone_3-8.fasta --outdir=test --id_abundances --rootID=GL --jobs=2
+    scons --inference --input=example/150228_Clone_3-8.fasta --outdir=_build --id_abundances --root_id=GL --jobs=2
     ```
-    This command will produce output in subdirectory `test/`.
-    This includes a log file with some messages about results (including the number of trees and the fitted branching process parameters), and then lists each parsimony tree by decreasing likelihood (with tree 1 corresponding to the gctree MLE).
-    ```bash
-  $ head test/gctree.inference.log
-  number of trees with integer branch lengths: 58
-  58 trees exhibit unobserved unifurcation from root. Adding psuedocounts to these roots
-  params = [0.4961832081885355, 0.36484189590092164]
-  tree	alleles	logLikelihood
-  1	48	-79.016217483
-  2	48	-79.016217483
-  3	48	-80.0883965146
-  4	48	-80.1148297716
-  5	49	-80.3507858934
-  6	49	-80.3507858934
-    ```
-    For each tree, the directory will include an SVG file rendering of the tree. E.g. the MLE `test/gctree.inference.1.svg`:
-    ![](example/gctree.inference.1.svg)
-    There is also a rank plot of genotype abundance `test/gctree.inference.abundance_rank.png`:
-    ![](example/gctree.inference.abundance_rank.png)
-    and of gctree likelihood over the trees `test/gctree.inference.likelihood_rank.png`:
-    ![](example/gctree.inference.likelihood_rank.png)
+    This command will produce output in subdirectory `_build/`.
 
-    Finally, there are text files indicating abundance of each unique sequence,
-    ```
-  $ head test/150228_Clone_3-8.counts
-  seq22,3
-  seq23,1
-  seq20,1
-  seq21,1
-  seq26,1
-  seq27,1
-  seq24,1
-  seq25,1
-  seq28,1
-  seq29,1    
-    ```
-    the mapping of unique sequence ids to the sequence ids in the input `FASTA`,
-    ```
-  $ head test/150228_Clone_3-8.idmap
-  seq22,VIBM1S4B10IgG:VIBM1S4C09IgG:VIBM1S4H12IgG
-  seq23,VIBM1S4E03IgG
-  seq20,VIBM1S4D02IgG
-  seq21,VIBM1S4A05IgG
-  seq26,VIBM1S4F11IgG
-  seq27,VIBM1S4E12IgG
-  seq24,VIBM1S4B03IgG
-  seq25,VIBM1S4D05IgG
-  seq28,VIBM1S4G04IgG
-  seq29,VIBM1S4E09IgG
-    ```
-    and the `PHYLIP` alignment of the unique sequences,
-    ```
-  $ head test/150228_Clone_3-8.phylip
-   43 264
-  gl         ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-  seq1       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-  seq2       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-  seq3       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-  seq4       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-  seq5       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-  seq6       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-  seq7       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-  seq8       ggacctagcc tcgtgaaacc ttctcagact ctgtccctca cctgttctgt
-    ```
-    When using the optional `--idlabel` flag, which shows labels `seq1, seq2, ...` in the tree rendering (see documentation below), these id/sequence files can be used to associate DNA sequences or cell labels with specific tree nodes.
 
 * **Explanation of arguments**    
 
-    `--outdir=test` specifies that results are to be saved in directory `test/` (which will be created if it does not exist)
+    `--outdir=_build` specifies that results are to be saved in directory `_build/` (which will be created if it does not exist)
 
     `--id_abundances` flag means that integer sequence IDs in the input file are interpreted as abundances. The example input `FASTA` includes a sequence with id "17".
 
-    `--rootID=GL` indicates that the root root sequence has id "GL" in the input `FASTA`. This sequence is the germline sequence of the V gene used in the V(D)J rearrangement that defines this clonal family.
+    `--root_id=GL` indicates that the root root sequence has id "GL" in the input `FASTA`. This sequence is the germline sequence of the V gene used in the V(D)J rearrangement that defines this clonal family.
 
     `--jobs=2` indicates that 2 parallel processes should be used
 
     If running on a remote machine via ssh, it may be necessary to provide the flag `--xvfb` which will allow X rendering of ETE trees without X forwarding.
 
-## Inference
+## Inference pipeline
 
 `scons --inference ...`
 
@@ -186,7 +113,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 `--outdir=[path]` directory for output (created if does not exist)
 
-`--rootID=[string]` ID of root sequence in input file used for outgroup rooting, default 'root'. For BCRs, we assume a known root V(D)J rearrangemnt is an additional sequence in our alignment, regardless of whether it was observed or not. This ancestral sequence must appear as an additional sequence. For applications without a definite root state, an observed sequence can be used to root the tree by duplicating it in the alignment and giving it a new id, which can be passed as this argument.
+`--root_id=[string]` ID of root sequence in input file used for outgroup rooting, default 'root'. For BCRs, we assume a known root V(D)J rearrangemnt is an additional sequence in our alignment, regardless of whether it was observed or not. This ancestral sequence must appear as an additional sequence. For applications without a definite root state, an observed sequence can be used to root the tree by duplicating it in the alignment and giving it a new id, which can be passed as this argument.
 
 ### optional arguments
 
@@ -196,7 +123,7 @@ scons --simulate  --outdir=<output directory path> --N=<integer population size 
 
 `--id_abundances` if this flag is set, parse input IDs that are integers as indicating sequence abundance. Otherwise each line in the input is assumed to indicate an individual (non-deduplicated) sequence. **NOTE:** the example input `FASTA` file `example/150228_Clone_3-8.fasta` requires this option.
 
-## Simulation
+## Simulation pipeline
 
 `scons --simulation ...`
 
