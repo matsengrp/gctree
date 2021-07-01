@@ -1,0 +1,1033 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>gctree.branching_processes &mdash; gctree  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html">
+          
+
+          
+            
+            <img src="../../_static/logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cite.html">Citing gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption"><span class="caption-text">CLI Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html#parsimony-utilities">Parsimony utilities</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Modules</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html">Open source code repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html#developer-tools">Developer tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html#todo-list">Todo list</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gctree</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>gctree.branching_processes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for gctree.branching_processes</h1><div class="highlight"><pre>
+<span></span><span class="ch">#! /usr/bin/env python</span>
+
+<span class="sd">&quot;&quot;&quot;This module contains classes for simulation and inference for a binary</span>
+<span class="sd">branching process with mutation in which the tree is collapsed to nodes that</span>
+<span class="sd">count the number of clonal leaves of each type.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">gctree.utils</span> <span class="kn">import</span> <span class="n">hamming_distance</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">logsumexp</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">softmax</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">minimize</span><span class="p">,</span> <span class="n">check_grad</span>
+<span class="kn">import</span> <span class="nn">ete3</span>
+<span class="kn">from</span> <span class="nn">Bio.Seq</span> <span class="kn">import</span> <span class="n">Seq</span>
+<span class="kn">from</span> <span class="nn">Bio.SeqRecord</span> <span class="kn">import</span> <span class="n">SeqRecord</span>
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">AlignIO</span>
+<span class="kn">from</span> <span class="nn">Bio.Phylo.TreeConstruction</span> <span class="kn">import</span> <span class="n">MultipleSeqAlignment</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">lru_cache</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="LeavesAndClades"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.LeavesAndClades.html#gctree.branching_processes.LeavesAndClades">[docs]</a><span class="k">class</span> <span class="nc">LeavesAndClades</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;This is a base class for simulating, and computing likelihood for, an</span>
+<span class="sd">    infinite type branching process with branching probability p, mutation</span>
+<span class="sd">    probability q, and we collapse mutant clades off the root type and consider</span>
+<span class="sd">    just the number of clone leaves, c, and mutant clades, m.</span>
+
+<span class="sd">      /\</span>
+<span class="sd">     /\ ^          (3)</span>
+<span class="sd">      /\     ==&gt;   / \\</span>
+<span class="sd">       /\\</span>
+<span class="sd">        ^</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LeavesAndClades.__init__"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.html#gctree.branching_processes.LeavesAndClades.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;initialize with branching probability p and mutation probability q,</span>
+<span class="sd">        both in the unit interval.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">params</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">p</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;p and q must be in the unit interval: &quot;</span> <span class="sa">f</span><span class="s2">&quot;p = </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">, q = </span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">c</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">m</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">c</span> <span class="o">+</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;c and m must be nonnegative integers &quot;</span>
+                    <span class="s2">&quot;summing greater than zero: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;c = </span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">, m = </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">c</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">m</span></div>
+
+<div class="viewcode-block" id="LeavesAndClades.simulate"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.LeavesAndClades.html#gctree.branching_processes.LeavesAndClades.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;simulate the number of clone leaves and mutant clades off a root</span>
+<span class="sd">        node.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;p = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="si">}</span><span class="s2"> is not subcritical, tree simulations&quot;</span>
+                <span class="s2">&quot; not garanteed to terminate&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;params must be defined for simulation</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># let&#39;s track the tree in breadth first order, listing number of clonal</span>
+        <span class="c1"># and mutant descendants of each node mutant clades terminate in this</span>
+        <span class="c1"># view</span>
+        <span class="n">cumsum_clones</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">len_tree</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># while termination condition not met</span>
+        <span class="k">while</span> <span class="n">cumsum_clones</span> <span class="o">&gt;</span> <span class="n">len_tree</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">mutants</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+                <span class="n">clones</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">mutants</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">+=</span> <span class="n">mutants</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mutants</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">clones</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">cumsum_clones</span> <span class="o">+=</span> <span class="n">clones</span>
+            <span class="n">len_tree</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">assert</span> <span class="n">cumsum_clones</span> <span class="o">==</span> <span class="n">len_tree</span> <span class="o">-</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="LeavesAndClades.logf"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.LeavesAndClades.html#gctree.branching_processes.LeavesAndClades.logf">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">logf</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Log-probability of getting c leaves that are clones of the root and</span>
+<span class="sd">        m mutant clades off the root lineage, given branching probability p and</span>
+<span class="sd">        mutation probability q.</span>
+
+<span class="sd">        AKA the spaceship distribution. Also returns gradient wrt params</span>
+<span class="sd">        (p, q). Computed by dynamic programming.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">logf_result</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+            <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">elif</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logf_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
+            <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
+            <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">elif</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">logf_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+            <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">p</span>
+            <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">q</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">m</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">neighbor_logf</span><span class="p">,</span> <span class="p">(</span>
+                    <span class="n">neighbor_dlogfdp</span><span class="p">,</span>
+                    <span class="n">neighbor_dlogfdq</span><span class="p">,</span>
+                <span class="p">)</span> <span class="o">=</span> <span class="n">LeavesAndClades</span><span class="o">.</span><span class="n">logf</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+                <span class="n">logf_result</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="n">neighbor_logf</span>
+                <span class="p">)</span>
+                <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">p</span> <span class="o">+</span> <span class="n">neighbor_dlogfdp</span>
+                <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">q</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="n">neighbor_dlogfdq</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logf_result</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">logg_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">logf_result</span><span class="p">]</span>
+            <span class="n">dloggdp_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">dlogfdp_result</span><span class="p">]</span>
+            <span class="n">dloggdq_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">dlogfdq_result</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">cx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">mx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="p">(</span><span class="n">cx</span> <span class="o">==</span> <span class="n">mx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="p">(</span><span class="n">cx</span> <span class="o">==</span> <span class="n">c</span> <span class="ow">and</span> <span class="n">mx</span> <span class="o">==</span> <span class="n">m</span><span class="p">)):</span>
+                        <span class="p">(</span>
+                            <span class="n">neighbor1_logf</span><span class="p">,</span>
+                            <span class="p">(</span><span class="n">neighbor1_dlogfdp</span><span class="p">,</span> <span class="n">neighbor1_dlogfdq</span><span class="p">),</span>
+                        <span class="p">)</span> <span class="o">=</span> <span class="n">LeavesAndClades</span><span class="o">.</span><span class="n">logf</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">mx</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+                        <span class="p">(</span>
+                            <span class="n">neighbor2_logf</span><span class="p">,</span>
+                            <span class="p">(</span><span class="n">neighbor2_dlogfdp</span><span class="p">,</span> <span class="n">neighbor2_dlogfdq</span><span class="p">),</span>
+                        <span class="p">)</span> <span class="o">=</span> <span class="n">LeavesAndClades</span><span class="o">.</span><span class="n">logf</span><span class="p">(</span><span class="n">c</span> <span class="o">-</span> <span class="n">cx</span><span class="p">,</span> <span class="n">m</span> <span class="o">-</span> <span class="n">mx</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+                        <span class="n">logg</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                            <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span>
+                            <span class="o">+</span> <span class="n">neighbor1_logf</span>
+                            <span class="o">+</span> <span class="n">neighbor2_logf</span>
+                        <span class="p">)</span>
+                        <span class="n">dloggdp</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">p</span> <span class="o">+</span> <span class="n">neighbor1_dlogfdp</span> <span class="o">+</span> <span class="n">neighbor2_dlogfdp</span>
+                        <span class="n">dloggdq</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="n">neighbor1_dlogfdq</span> <span class="o">+</span> <span class="n">neighbor2_dlogfdq</span>
+                        <span class="n">logg_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">logg</span><span class="p">)</span>
+                        <span class="n">dloggdp_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dloggdp</span><span class="p">)</span>
+                        <span class="n">dloggdq_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dloggdq</span><span class="p">)</span>
+            <span class="n">logf_result</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">logg_array</span><span class="p">)</span>
+            <span class="n">softmax_logg_array</span> <span class="o">=</span> <span class="n">softmax</span><span class="p">(</span><span class="n">logg_array</span><span class="p">)</span>
+            <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">softmax_logg_array</span><span class="p">,</span> <span class="n">dloggdp_array</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">softmax_logg_array</span><span class="p">,</span> <span class="n">dloggdq_array</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">logf_result</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dlogfdp_result</span><span class="p">,</span> <span class="n">dlogfdq_result</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="LeavesAndClades.build_logf_cache"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.LeavesAndClades.html#gctree.branching_processes.LeavesAndClades.build_logf_cache">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">build_logf_cache</span><span class="p">(</span><span class="n">c_max</span><span class="p">,</span> <span class="n">m_max</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;build up the lru_cache from the bottom to avoid recursion depth</span>
+<span class="sd">        issues.&quot;&quot;&quot;</span>
+        <span class="n">LeavesAndClades</span><span class="o">.</span><span class="n">logf</span><span class="o">.</span><span class="n">cache_clear</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">c_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">LeavesAndClades</span><span class="o">.</span><span class="n">logf</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CollapsedTree"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree">[docs]</a><span class="k">class</span> <span class="nc">CollapsedTree</span><span class="p">(</span><span class="n">LeavesAndClades</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Here&#39;s a derived class for a collapsed tree, where we recurse into the</span>
+<span class="sd">    mutant clades</span>
+<span class="sd">          (4)</span>
+<span class="sd">         / | \\</span>
+<span class="sd">       (3)(1)(2)</span>
+<span class="sd">           |   \\</span>
+<span class="sd">          (2)  (1)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CollapsedTree.__init__"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.html#gctree.branching_processes.CollapsedTree.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">tree</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">collapse_syn</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">allow_repeats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For intialization, either params or tree (or both) must be provided</span>
+<span class="sd">        params: offspring distribution parameters</span>
+<span class="sd">        tree: ete tree with frequency node feature. If uncollapsed, it will be</span>
+<span class="sd">        collapsed</span>
+<span class="sd">        frame: tranlation frame, with default None, no tranlation attempted</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LeavesAndClades</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frame</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;frame must be 1, 2, 3, or None&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">frame</span>
+
+        <span class="k">if</span> <span class="n">collapse_syn</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># no branch above root</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
+                <span class="n">aa</span> <span class="o">=</span> <span class="n">Seq</span><span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span>
+                        <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
+                            <span class="n">frame</span>
+                            <span class="o">-</span> <span class="mi">1</span>
+                            <span class="o">+</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(((</span><span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="mi">3</span><span class="p">)))</span>
+                        <span class="p">)</span>
+                    <span class="p">]</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">()</span>
+                <span class="n">aa_parent</span> <span class="o">=</span> <span class="n">Seq</span><span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span>
+                        <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
+                            <span class="n">frame</span>
+                            <span class="o">-</span> <span class="mi">1</span>
+                            <span class="o">+</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(((</span><span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="mi">3</span><span class="p">)))</span>
+                        <span class="p">)</span>
+                    <span class="p">]</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">()</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span><span class="n">aa</span><span class="p">,</span> <span class="n">aa_parent</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tree</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="c1"># remove unobserved internal unifurcations</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
+                <span class="n">parent</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">parent</span><span class="o">.</span><span class="n">sequence</span>
+                    <span class="p">)</span>
+
+            <span class="c1"># iterate over the tree below root and collapse edges of zero</span>
+            <span class="c1"># length if the node is a leaf and it&#39;s parent has nonzero</span>
+            <span class="c1"># frequency we combine taxa names to a set this acommodates</span>
+            <span class="c1"># bootstrap samples that result in repeated genotypes</span>
+            <span class="n">observed_genotypes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">((</span><span class="n">leaf</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">))</span>
+            <span class="n">observed_genotypes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_descendants</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">frequency</span> <span class="o">+=</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">node_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">node_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">node_up_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">node_up_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">node_up_set</span> <span class="o">&lt;</span> <span class="n">observed_genotypes</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">node_set</span> <span class="o">&lt;</span> <span class="n">observed_genotypes</span><span class="p">:</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">node_set</span> <span class="o">|</span> <span class="n">node_up_set</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                                <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">elif</span> <span class="n">node_set</span> <span class="o">&lt;</span> <span class="n">observed_genotypes</span><span class="p">:</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">node_set</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="n">final_observed_genotypes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">node</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span>
+                        <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span>
+                    <span class="p">):</span>
+                        <span class="n">final_observed_genotypes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">final_observed_genotypes</span> <span class="o">!=</span> <span class="n">observed_genotypes</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;observed genotypes don&#39;t match after &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;collapse</span><span class="se">\n\t</span><span class="s2">before: </span><span class="si">{</span><span class="n">observed_genotypes</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n\t</span><span class="s2">after: </span><span class="si">{</span><span class="n">final_observed_genotypes</span><span class="si">}</span><span class="se">\n\t</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;symmetric diff: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">observed_genotypes</span> <span class="o">^</span> <span class="n">final_observed_genotypes</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+            <span class="p">)</span>
+
+            <span class="n">rep_seq</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span>
+                <span class="nb">set</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">sequence</span>
+                        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">allow_repeats</span> <span class="ow">and</span> <span class="n">rep_seq</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Repeated observed sequences in collapsed &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;tree. </span><span class="si">{</span><span class="n">rep_seq</span><span class="si">}</span><span class="s2"> sequences were found repeated.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">allow_repeats</span> <span class="ow">and</span> <span class="n">rep_seq</span><span class="p">:</span>
+                <span class="n">rep_seq</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+                <span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span>
+                    <span class="nb">set</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">sequence</span>
+                            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                        <span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;Repeated observed sequences in collapsed tree. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rep_seq</span><span class="si">}</span><span class="s2"> sequences were found repeated.&quot;</span>
+                <span class="p">)</span>
+            <span class="c1"># a custom ladderize accounting for abundance and sequence to break</span>
+            <span class="c1"># ties in abundance</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
+                <span class="c1"># add a partition feature and compute it recursively up tree</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span>
+                    <span class="s2">&quot;partition&quot;</span><span class="p">,</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">partition</span> <span class="k">for</span> <span class="n">node2</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="c1"># sort children of this node based on partion and sequence</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">node</span><span class="p">:</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">partition</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span></div>
+
+<div class="viewcode-block" id="CollapsedTree.ll"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.ll">[docs]</a>    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">sign</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">build_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;log likelihood of params, conditioned on collapsed tree, and its</span>
+<span class="sd">        gradient wrt params optional parameter sign must be 1 or -1, with the</span>
+<span class="sd">        latter useful for MLE by minimization.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tree data must be defined to compute likelihood&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sign</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sign must be 1 or -1&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">build_cache</span><span class="p">:</span>
+            <span class="n">c_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span>
+            <span class="n">m_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span>
+            <span class="n">LeavesAndClades</span><span class="o">.</span><span class="n">build_logf_cache</span><span class="p">(</span><span class="n">c_max</span><span class="p">,</span> <span class="n">m_max</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">leaves_and_clades_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">LeavesAndClades</span><span class="p">(</span><span class="n">c</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">leaves_and_clades_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">c</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="ow">and</span> <span class="n">leaves_and_clades_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">m</span> <span class="o">==</span> <span class="mi">1</span>
+            <span class="ow">and</span> <span class="n">leaves_and_clades_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">logf</span><span class="p">(</span>
+                <span class="n">leaves_and_clades_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="n">leaves_and_clades_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span>
+            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="o">==</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="p">):</span>
+            <span class="c1"># if unifurcation not possible under current model, add a</span>
+            <span class="c1"># psuedocount for the root</span>
+            <span class="n">leaves_and_clades_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="c1"># extract vector of function values and gradient components</span>
+        <span class="n">logf_data</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">leaves_and_clades</span><span class="o">.</span><span class="n">logf</span><span class="p">(</span><span class="n">leaves_and_clades</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="n">leaves_and_clades</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">leaves_and_clades</span> <span class="ow">in</span> <span class="n">leaves_and_clades_list</span>
+        <span class="p">]</span>
+        <span class="n">logf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">logf_data</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">grad_logf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">logf_data</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">logf</span><span class="p">,</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">grad_logf</span></div>
+
+<div class="viewcode-block" id="CollapsedTree.mle"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.mle">[docs]</a>    <span class="k">def</span> <span class="nf">mle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Maximum likelihood estimate for params given tree updates params if</span>
+<span class="sd">        not None returns optimization result.&quot;&quot;&quot;</span>
+        <span class="c1"># initialization</span>
+        <span class="n">x_0</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="p">((</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-6</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-6</span><span class="p">))</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;sign&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">grad_check</span> <span class="o">=</span> <span class="n">check_grad</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x_0</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">grad_check</span> <span class="o">&gt;</span> <span class="mf">1e-3</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;gradient mismatches finite difference &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;approximation by </span><span class="si">{</span><span class="n">grad_check</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="ne">RuntimeWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">jac</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">x0</span><span class="o">=</span><span class="n">x_0</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">,</span>
+            <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ftol&quot;</span><span class="p">:</span> <span class="mf">1e-10</span><span class="p">},</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># update params if None and optimization successful</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;optimization not sucessful, &quot;</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="ne">RuntimeWarning</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="CollapsedTree.simulate"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;simulate a collapsed tree given params replaces existing tree data</span>
+<span class="sd">        member with simulation result, and returns self.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;params must be defined for simulation&quot;</span><span class="p">)</span>
+
+        <span class="c1"># initiate by running a LeavesAndClades simulation to get the number of</span>
+        <span class="c1"># clones and mutants in the root node of the collapsed tree</span>
+        <span class="n">LeavesAndClades</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;frequency&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">):</span>
+            <span class="c1"># ooooh, recursion</span>
+            <span class="n">child</span> <span class="o">=</span> <span class="n">CollapsedTree</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span><span class="o">.</span><span class="n">tree</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;return a string representation for printing.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;params = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">tree:</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CollapsedTree.render"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.render">[docs]</a>    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">outfile</span><span class="p">,</span>
+        <span class="n">idlabel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">colormap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_support</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">chain_split</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;render to image file, filetype inferred from suffix, svg for color</span>
+<span class="sd">        images.&quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">my_layout</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">colormap</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">colormap</span><span class="p">:</span>
+                <span class="n">circle_color</span> <span class="o">=</span> <span class="s2">&quot;lightgray&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">circle_color</span> <span class="o">=</span> <span class="n">colormap</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">text_color</span> <span class="o">=</span> <span class="s2">&quot;black&quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circle_color</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">C</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">CircleFace</span><span class="p">(</span>
+                    <span class="n">radius</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="p">)),</span>
+                    <span class="n">color</span><span class="o">=</span><span class="n">circle_color</span><span class="p">,</span>
+                    <span class="n">label</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="p">),</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">text_color</span><span class="p">}</span>
+                    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">C</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
+                <span class="n">C</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">P</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">PieChartFace</span><span class="p">(</span>
+                    <span class="p">[</span><span class="mi">100</span> <span class="o">*</span> <span class="n">x</span> <span class="o">/</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">circle_color</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>
+                    <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="p">),</span>
+                    <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="p">),</span>
+                    <span class="n">colors</span><span class="o">=</span><span class="p">[</span>
+                        <span class="p">(</span><span class="n">color</span> <span class="k">if</span> <span class="n">color</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span> <span class="k">else</span> <span class="s2">&quot;lightgray&quot;</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">circle_color</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                    <span class="p">],</span>
+                    <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">T</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TextFace</span><span class="p">(</span>
+                    <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">circle_color</span><span class="o">.</span><span class="n">values</span><span class="p">())]),</span>
+                    <span class="n">tight_text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">T</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">T</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
+                <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-right&quot;</span><span class="p">)</span>
+                <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-right&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">idlabel</span><span class="p">:</span>
+                <span class="n">T</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TextFace</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">tight_text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fsize</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+                <span class="n">T</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
+                <span class="n">T</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span>
+                    <span class="n">T</span><span class="p">,</span>
+                    <span class="n">node</span><span class="p">,</span>
+                    <span class="mi">1</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circle_color</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="mi">2</span><span class="p">,</span>
+                    <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-right&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+            <span class="n">nstyle</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">NodeStyle</span><span class="p">()</span>
+            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;ACGT&quot;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                                <span class="s2">&quot;frame not implemented with chain_split&quot;</span>
+                            <span class="p">)</span>
+                        <span class="n">leftseq_mutated</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">hamming_distance</span><span class="p">(</span>
+                                <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">[:</span><span class="n">chain_split</span><span class="p">],</span>
+                                <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span><span class="p">[:</span><span class="n">chain_split</span><span class="p">],</span>
+                            <span class="p">)</span>
+                            <span class="o">&gt;</span> <span class="mi">0</span>
+                        <span class="p">)</span>
+                        <span class="n">rightseq_mutated</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">hamming_distance</span><span class="p">(</span>
+                                <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span><span class="n">chain_split</span><span class="p">:],</span>
+                                <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span><span class="n">chain_split</span><span class="p">:],</span>
+                            <span class="p">)</span>
+                            <span class="o">&gt;</span> <span class="mi">0</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">leftseq_mutated</span> <span class="ow">and</span> <span class="n">rightseq_mutated</span><span class="p">:</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;purple&quot;</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+                        <span class="k">elif</span> <span class="n">leftseq_mutated</span><span class="p">:</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+                        <span class="k">elif</span> <span class="n">rightseq_mutated</span><span class="p">:</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;blue&quot;</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">aa</span> <span class="o">=</span> <span class="n">Seq</span><span class="p">(</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span>
+                                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">frame</span>
+                                    <span class="o">-</span> <span class="mi">1</span>
+                                    <span class="o">+</span> <span class="p">(</span>
+                                        <span class="mi">3</span>
+                                        <span class="o">*</span> <span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="mi">3</span><span class="p">)</span>
+                                    <span class="p">)</span>
+                                <span class="p">)</span>
+                            <span class="p">]</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">()</span>
+                        <span class="n">aa_parent</span> <span class="o">=</span> <span class="n">Seq</span><span class="p">(</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span>
+                                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">frame</span>
+                                    <span class="o">-</span> <span class="mi">1</span>
+                                    <span class="o">+</span> <span class="p">(</span>
+                                        <span class="mi">3</span>
+                                        <span class="o">*</span> <span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="mi">3</span><span class="p">)</span>
+                                    <span class="p">)</span>
+                                <span class="p">)</span>
+                            <span class="p">]</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">()</span>
+                        <span class="n">nonsyn</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span><span class="n">aa</span><span class="p">,</span> <span class="n">aa_parent</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="n">aa</span><span class="p">:</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;bgcolor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span>
+                        <span class="k">if</span> <span class="n">nonsyn</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;black&quot;</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nonsyn</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="n">nstyle</span><span class="p">)</span>
+
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeStyle</span><span class="p">()</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">show_leaf_name</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="mi">90</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">draw_aligned_faces_as_table</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">allow_face_overlap</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">layout_fn</span> <span class="o">=</span> <span class="n">my_layout</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">show_scale</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">show_branch_support</span> <span class="o">=</span> <span class="n">show_support</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">tree_style</span><span class="o">=</span><span class="n">ts</span><span class="p">)</span>
+        <span class="c1"># if we labelled seqs, let&#39;s also write the alignment out so we have</span>
+        <span class="c1"># the sequences (including of internal nodes)</span>
+        <span class="k">if</span> <span class="n">idlabel</span><span class="p">:</span>
+            <span class="n">aln</span> <span class="o">=</span> <span class="n">MultipleSeqAlignment</span><span class="p">([])</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+                <span class="n">aln</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">SeqRecord</span><span class="p">(</span>
+                        <span class="n">Seq</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)),</span>
+                        <span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                        <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;abundance=</span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">AlignIO</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="n">aln</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">outfile</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">),</span> <span class="s2">&quot;fasta&quot;</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CollapsedTree.write"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;serialize tree to file.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CollapsedTree.newick"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.newick">[docs]</a>    <span class="k">def</span> <span class="nf">newick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;write to newick file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="n">file_name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CollapsedTree.compare"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree2</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;identity&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;compare this tree to the other tree.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;identity&quot;</span><span class="p">:</span>
+            <span class="c1"># we compare lists of seq, parent, abundance</span>
+            <span class="c1"># return true if these lists are identical, else false</span>
+            <span class="n">list1</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">list2</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree2</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">list1</span> <span class="o">==</span> <span class="n">list2</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;MRCA&quot;</span><span class="p">:</span>
+            <span class="c1"># matrix of hamming distance of common ancestors of taxa</span>
+            <span class="c1"># takes a true and inferred tree as CollapsedTree objects</span>
+            <span class="n">taxa</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span><span class="p">]</span>
+            <span class="n">n_taxa</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">taxa</span><span class="p">)</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_taxa</span><span class="p">,</span> <span class="n">n_taxa</span><span class="p">))</span>
+            <span class="n">sum_sites</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_taxa</span><span class="p">,</span> <span class="n">n_taxa</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_taxa</span><span class="p">):</span>
+                <span class="n">nodei_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_search_nodes</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="n">taxa</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span>
+                <span class="n">nodei</span> <span class="o">=</span> <span class="n">tree2</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_search_nodes</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="n">taxa</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_taxa</span><span class="p">):</span>
+                    <span class="n">nodej_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_search_nodes</span><span class="p">(</span>
+                        <span class="n">sequence</span><span class="o">=</span><span class="n">taxa</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                    <span class="p">)</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span>
+                    <span class="n">nodej</span> <span class="o">=</span> <span class="n">tree2</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_search_nodes</span><span class="p">(</span><span class="n">sequence</span><span class="o">=</span><span class="n">taxa</span><span class="p">[</span><span class="n">j</span><span class="p">])</span><span class="o">.</span><span class="fm">__next__</span><span class="p">()</span>
+                    <span class="n">MRCA_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_common_ancestor</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">nodei_true</span><span class="p">,</span> <span class="n">nodej_true</span><span class="p">)</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">sequence</span>
+                    <span class="n">MRCA</span> <span class="o">=</span> <span class="n">tree2</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_common_ancestor</span><span class="p">((</span><span class="n">nodei</span><span class="p">,</span> <span class="n">nodej</span><span class="p">))</span><span class="o">.</span><span class="n">sequence</span>
+                    <span class="n">d</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span><span class="n">MRCA_true</span><span class="p">,</span> <span class="n">MRCA</span><span class="p">)</span>
+                    <span class="n">sum_sites</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">MRCA_true</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">sum_sites</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;RF&quot;</span><span class="p">:</span>
+            <span class="n">tree1_copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;deepcopy&quot;</span><span class="p">)</span>
+            <span class="n">tree2_copy</span> <span class="o">=</span> <span class="n">tree2</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;deepcopy&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">treex</span> <span class="ow">in</span> <span class="p">(</span><span class="n">tree1_copy</span><span class="p">,</span> <span class="n">tree2_copy</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">treex</span><span class="o">.</span><span class="n">traverse</span><span class="p">()):</span>
+                    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">child</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">()</span>
+                        <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">tree1_copy</span><span class="o">.</span><span class="n">robinson_foulds</span><span class="p">(</span>
+                <span class="n">tree2_copy</span><span class="p">,</span>
+                <span class="n">attr_t1</span><span class="o">=</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span>
+                <span class="n">attr_t2</span><span class="o">=</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span>
+                <span class="n">unrooted_trees</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid distance method: &quot;</span> <span class="o">+</span> <span class="n">method</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CollapsedTree.get_split"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.get_split">[docs]</a>    <span class="k">def</span> <span class="nf">get_split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;return the bipartition resulting from clipping this node&#39;s edge</span>
+<span class="sd">        above.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">get_tree_root</span><span class="p">()</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;node not found&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">node</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;this node is the root (no split above)&quot;</span><span class="p">)</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span>
+        <span class="n">taxa1</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node2</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">node2</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">node2</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">taxa1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">taxa1</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">taxa1</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">taxa1</span><span class="p">)</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+        <span class="n">taxa2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node2</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">node2</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">node2</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">taxa2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">taxa2</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">taxa2</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">taxa2</span><span class="p">)</span>
+        <span class="n">parent</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">taxa1</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="n">taxa2</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">taxa1</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">taxa2</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">name</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">node</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">((</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">([</span><span class="n">taxa1</span><span class="p">,</span> <span class="n">taxa2</span><span class="p">]))</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">split_compatibility</span><span class="p">(</span><span class="n">split1</span><span class="p">,</span> <span class="n">split2</span><span class="p">):</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">split1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">split1</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">^</span> <span class="n">split2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">split2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">diff</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;splits do not cover the same taxa</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">taxa not in both: </span><span class="si">{</span><span class="n">diff</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">for</span> <span class="n">partition1</span> <span class="ow">in</span> <span class="n">split1</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">partition2</span> <span class="ow">in</span> <span class="n">split2</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">partition1</span><span class="o">.</span><span class="n">isdisjoint</span><span class="p">(</span><span class="n">partition2</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="CollapsedTree.support"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree.support">[docs]</a>    <span class="k">def</span> <span class="nf">support</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bootstrap_trees_list</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compatibility</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;compute support from a list of bootstrap gctrees weights (optional)</span>
+<span class="sd">        is needed for weighting parsimony degenerate trees compatibility mode</span>
+<span class="sd">        counts trees that don&#39;t disconfirm the split.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_descendants</span><span class="p">():</span>
+            <span class="n">split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_split</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="n">support</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">compatibility_</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tree</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bootstrap_trees_list</span><span class="p">):</span>
+                <span class="n">compatible</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">supported</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">for</span> <span class="n">boot_node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_descendants</span><span class="p">():</span>
+                    <span class="n">boot_split</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">get_split</span><span class="p">(</span><span class="n">boot_node</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">compatibility</span>
+                        <span class="ow">and</span> <span class="n">compatible</span>
+                        <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_compatibility</span><span class="p">(</span><span class="n">split</span><span class="p">,</span> <span class="n">boot_split</span><span class="p">)</span>
+                    <span class="p">):</span>
+                        <span class="n">compatible</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">compatibility</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">supported</span> <span class="ow">and</span> <span class="n">boot_split</span> <span class="o">==</span> <span class="n">split</span><span class="p">:</span>
+                        <span class="n">supported</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="n">supported</span><span class="p">:</span>
+                    <span class="n">support</span> <span class="o">+=</span> <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">compatible</span><span class="p">:</span>
+                    <span class="n">compatibility_</span> <span class="o">+=</span> <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">support</span> <span class="o">=</span> <span class="n">compatibility_</span> <span class="k">if</span> <span class="n">compatibility</span> <span class="k">else</span> <span class="n">support</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div></div>
+
+
+<div class="viewcode-block" id="CollapsedForest"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.branching_processes.CollapsedForest">[docs]</a><span class="k">class</span> <span class="nc">CollapsedForest</span><span class="p">(</span><span class="n">CollapsedTree</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;simply a set of CollapsedTrees, with the same p and q parameters</span>
+<span class="sd">          (4)          (3)</span>
+<span class="sd">         / | \\         / \\</span>
+<span class="sd">       (3)(1)(2)     (1) (2)</span>
+<span class="sd">           |   \\  ,          , ...</span>
+<span class="sd">          (2)  (1)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CollapsedForest.__init__"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.html#gctree.branching_processes.CollapsedForest.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_trees</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">forest</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;in addition to p and q, we need number of trees can also intialize</span>
+<span class="sd">        with forest, a list of trees, each an instance of CollapsedTree.&quot;&quot;&quot;</span>
+        <span class="n">CollapsedTree</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">forest</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;either params or forest (or both) must be &quot;</span> <span class="s2">&quot;provided&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">forest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;passed empty tree list&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">n_trees</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_trees</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_trees not consistent with forest&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="o">=</span> <span class="n">forest</span>
+        <span class="k">if</span> <span class="n">n_trees</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">n_trees</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span> <span class="ow">or</span> <span class="n">n_trees</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;number of trees must be at least one&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span> <span class="o">=</span> <span class="n">n_trees</span>
+        <span class="k">if</span> <span class="n">n_trees</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">forest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CollapsedForest.simulate"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.branching_processes.CollapsedForest.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;simulate a forest of collapsed trees given params and number of</span>
+<span class="sd">        trees replaces existing forest data member with simulation result, and</span>
+<span class="sd">        returns self.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;params and n_trees parameters must be defined for simulation&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">CollapsedTree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="CollapsedForest.ll"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.branching_processes.CollapsedForest.ll">[docs]</a>    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">sign</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">empirical_bayes_sum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">build_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;likelihood of params, given forest, and it&#39;s gradient wrt params</span>
+<span class="sd">        optional parameter sign must be 1 or -1, with the latter useful for MLE</span>
+<span class="sd">        by minimization if optional parameter empirical_bayes_sum is true,</span>
+<span class="sd">        we&#39;re estimating params for a set of parsimony trees.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;forest data must be defined to compute likelihood&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sign</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sign must be 1 or -1&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">build_cache</span><span class="p">:</span>
+            <span class="n">c_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">frequency</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">m_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">LeavesAndClades</span><span class="o">.</span><span class="n">build_logf_cache</span><span class="p">(</span><span class="n">c_max</span><span class="p">,</span> <span class="n">m_max</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+        <span class="c1"># we don&#39;t want to build the cache again in each tree</span>
+        <span class="n">terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">tree</span><span class="o">.</span><span class="n">ll</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">build_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span><span class="p">]</span>
+        <span class="n">ls</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">term</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">])</span>
+        <span class="n">grad_ls</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">term</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">empirical_bayes_sum</span><span class="p">:</span>
+            <span class="c1"># we need to find the smallest derivative component for each</span>
+            <span class="c1"># coordinate, then subtract off to get positive things to logsumexp</span>
+            <span class="n">grad_l</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)):</span>
+                <span class="n">i_prime</span> <span class="o">=</span> <span class="n">grad_ls</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+                <span class="n">grad_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">grad_ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+                        <span class="n">logsumexp</span><span class="p">(</span>
+                            <span class="n">ls</span> <span class="o">-</span> <span class="n">ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">],</span> <span class="n">b</span><span class="o">=</span><span class="n">grad_ls</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">grad_ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="o">-</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">ls</span> <span class="o">-</span> <span class="n">ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">])</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">sign</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ls</span><span class="p">))</span> <span class="o">+</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">ls</span><span class="p">)),</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">grad_l</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">ls</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">grad_ls</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+    <span class="c1"># NOTE: we get mle() method for free by inheritance/polymorphism magic</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;return a string representation for printing.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;params = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="si">}</span><span class="s2">, n_trees = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span><span class="p">]</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, William DeWitt.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

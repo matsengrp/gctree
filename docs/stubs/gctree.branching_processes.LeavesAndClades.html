@@ -40,7 +40,9 @@
 
     
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gctree.mutation_model" href="gctree.mutation_model.html" />
+    <link rel="prev" title="gctree.branching_processes.CollapsedTree" href="gctree.branching_processes.CollapsedTree.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -100,8 +102,18 @@
 <li class="toctree-l1"><a class="reference internal" href="../cli.html#parsimony-utilities">Parsimony utilities</a></li>
 </ul>
 <p class="caption"><span class="caption-text">API Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../api.html">Modules</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="gctree.branching_processes.html">gctree.branching_processes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.CollapsedForest.html">gctree.branching_processes.CollapsedForest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.CollapsedTree.html">gctree.branching_processes.CollapsedTree</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gctree.branching_processes.LeavesAndClades</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.mutation_model.html">gctree.mutation_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.utils.html">gctree.utils</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -156,6 +168,10 @@
     
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
+          <li><a href="../api.html">Modules</a> &raquo;</li>
+        
+          <li><a href="gctree.branching_processes.html">gctree.branching_processes</a> &raquo;</li>
+        
       <li>gctree.branching_processes.LeavesAndClades</li>
     
     
@@ -175,6 +191,75 @@
             
   <div class="section" id="gctree-branching-processes-leavesandclades">
 <h1>gctree.branching_processes.LeavesAndClades<a class="headerlink" href="#gctree-branching-processes-leavesandclades" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="gctree.branching_processes.LeavesAndClades">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gctree.branching_processes.</span></span><span class="sig-name descname"><span class="pre">LeavesAndClades</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#LeavesAndClades"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.LeavesAndClades" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This is a base class for simulating, and computing likelihood for, an
+infinite type branching process with branching probability p, mutation
+probability q, and we collapse mutant clades off the root type and consider
+just the number of clone leaves, c, and mutant clades, m.</p>
+<blockquote>
+<div><blockquote>
+<div><p>/</p>
+</div></blockquote>
+<dl class="simple">
+<dt>/^          (3)</dt><dd><dl class="simple">
+<dt>/    ==&gt;   / \</dt><dd><dl class="simple">
+<dt>/\</dt><dd><p>^</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<p>initialize with branching probability p and mutation probability q,
+both in the unit interval.</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.branching_processes.LeavesAndClades.build_logf_cache" title="gctree.branching_processes.LeavesAndClades.build_logf_cache"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_logf_cache</span></code></a></p></td>
+<td><p>build up the lru_cache from the bottom to avoid recursion depth issues.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.branching_processes.LeavesAndClades.logf" title="gctree.branching_processes.LeavesAndClades.logf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logf</span></code></a></p></td>
+<td><p>Log-probability of getting c leaves that are clones of the root and m mutant clades off the root lineage, given branching probability p and mutation probability q.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.branching_processes.LeavesAndClades.simulate" title="gctree.branching_processes.LeavesAndClades.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a></p></td>
+<td><p>simulate the number of clone leaves and mutant clades off a root node.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.LeavesAndClades.simulate">
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#LeavesAndClades.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.LeavesAndClades.simulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>simulate the number of clone leaves and mutant clades off a root
+node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.LeavesAndClades.logf">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">logf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#LeavesAndClades.logf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.LeavesAndClades.logf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log-probability of getting c leaves that are clones of the root and
+m mutant clades off the root lineage, given branching probability p and
+mutation probability q.</p>
+<p>AKA the spaceship distribution. Also returns gradient wrt params
+(p, q). Computed by dynamic programming.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.LeavesAndClades.build_logf_cache">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">build_logf_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m_max</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#LeavesAndClades.build_logf_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.LeavesAndClades.build_logf_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>build up the lru_cache from the bottom to avoid recursion depth
+issues.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
@@ -182,6 +267,10 @@
            
           </div>
           <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="gctree.mutation_model.html" class="btn btn-neutral float-right" title="gctree.mutation_model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="gctree.branching_processes.CollapsedTree.html" class="btn btn-neutral float-left" title="gctree.branching_processes.CollapsedTree" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 

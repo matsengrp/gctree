@@ -40,7 +40,9 @@
 
     
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gctree.utils" href="gctree.utils.html" />
+    <link rel="prev" title="gctree.mutation_model" href="gctree.mutation_model.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -100,8 +102,16 @@
 <li class="toctree-l1"><a class="reference internal" href="../cli.html#parsimony-utilities">Parsimony utilities</a></li>
 </ul>
 <p class="caption"><span class="caption-text">API Documentation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../api.html">Modules</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gctree.branching_processes.html">gctree.branching_processes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gctree.mutation_model.html">gctree.mutation_model</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gctree.mutation_model.MutationModel</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.utils.html">gctree.utils</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -156,6 +166,10 @@
     
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
+          <li><a href="../api.html">Modules</a> &raquo;</li>
+        
+          <li><a href="gctree.mutation_model.html">gctree.mutation_model</a> &raquo;</li>
+        
       <li>gctree.mutation_model.MutationModel</li>
     
     
@@ -175,6 +189,92 @@
             
   <div class="section" id="gctree-mutation-model-mutationmodel">
 <h1>gctree.mutation_model.MutationModel<a class="headerlink" href="#gctree-mutation-model-mutationmodel" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="gctree.mutation_model.MutationModel">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gctree.mutation_model.</span></span><span class="sig-name descname"><span class="pre">MutationModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mutability_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitution_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutation_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_replacement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>a class for a mutation model, and functions to mutate sequences.</p>
+<p>initialized with input files of the S5F format.</p>
+<dl class="simple">
+<dt>&#64;param mutation_order: whether or not to mutate sequences using a context sensitive manner</dt><dd><p>where mutation order matters</p>
+</dd>
+</dl>
+<p>&#64;param with_replacement: allow the same position to mutate multiple times on a single branch</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.mutation_model.MutationModel.disambiguate" title="gctree.mutation_model.MutationModel.disambiguate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">disambiguate</span></code></a></p></td>
+<td><p>generator of all possible nt sequences implied by a sequence containing Ns.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.mutation_model.MutationModel.mutabilities" title="gctree.mutation_model.MutationModel.mutabilities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mutabilities</span></code></a></p></td>
+<td><p>returns the mutability of a sequence at each site, along with nucleotide biases.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.mutation_model.MutationModel.mutability" title="gctree.mutation_model.MutationModel.mutability"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mutability</span></code></a></p></td>
+<td><p>returns the mutability of a central base of kmer, along with nucleotide bias averages over N nucleotide identities.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.mutation_model.MutationModel.mutate" title="gctree.mutation_model.MutationModel.mutate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mutate</span></code></a></p></td>
+<td><p>Mutate a sequence, with lamdba0 the baseline mutability Cannot mutate the same position multiple times.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.mutation_model.MutationModel.one_mutant" title="gctree.mutation_model.MutationModel.one_mutant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">one_mutant</span></code></a></p></td>
+<td><p>Make a single mutant with a distance, in amino acid sequence, of Nmuts away from the starting point.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.mutation_model.MutationModel.simulate" title="gctree.mutation_model.MutationModel.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a></p></td>
+<td><p>simulate neutral binary branching process with mutation model progeny must be like a scipy.stats distribution, with rvs() and mean() methods.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.disambiguate">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">disambiguate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.disambiguate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.disambiguate" title="Permalink to this definition">¶</a></dt>
+<dd><p>generator of all possible nt sequences implied by a sequence
+containing Ns.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.mutability">
+<span class="sig-name descname"><span class="pre">mutability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kmer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutability" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the mutability of a central base of kmer, along with
+nucleotide bias averages over N nucleotide identities.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.mutabilities">
+<span class="sig-name descname"><span class="pre">mutabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutabilities" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the mutability of a sequence at each site, along with
+nucleotide biases.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.mutate">
+<span class="sig-name descname"><span class="pre">mutate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mutate a sequence, with lamdba0 the baseline mutability Cannot
+mutate the same position multiple times.</p>
+<p>&#64;param sequence: the original sequence to mutate
+&#64;param lambda0: a “baseline” mutation rate
+&#64;param frame: the reading frame index</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.one_mutant">
+<span class="sig-name descname"><span class="pre">one_mutant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Nmuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.one_mutant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.one_mutant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a single mutant with a distance, in amino acid sequence, of
+Nmuts away from the starting point.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.simulate">
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">sequence,</span> <span class="pre">seq_bounds=None,</span> <span class="pre">progeny=&lt;scipy.stats._distn_infrastructure.rv_frozen</span> <span class="pre">object&gt;,</span> <span class="pre">lambda0=[1],</span> <span class="pre">frame=None,</span> <span class="pre">N=None,</span> <span class="pre">T=None,</span> <span class="pre">n=None,</span> <span class="pre">verbose=False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.simulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>simulate neutral binary branching process with mutation model
+progeny must be like a scipy.stats distribution, with rvs() and mean()
+methods.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
@@ -182,6 +282,10 @@
            
           </div>
           <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="gctree.utils.html" class="btn btn-neutral float-right" title="gctree.utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="gctree.mutation_model.html" class="btn btn-neutral float-left" title="gctree.mutation_model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 

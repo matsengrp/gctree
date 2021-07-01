@@ -190,9 +190,9 @@ See the CLI and API docs for complete documentation of command options, included
 <div class="section" id="input-data">
 <h2>Input data<a class="headerlink" href="#input-data" title="Permalink to this headline">¶</a></h2>
 <p>We start with a fasta alignment file.
-From the <code class="docutils literal notranslate"><span class="pre">example/</span></code> directory, the file <code class="docutils literal notranslate"><span class="pre">150228_Clone_3-8.fasta</span></code> contains heavy chain V gene sequences from
+The file <code class="docutils literal notranslate"><span class="pre">../example/150228_Clone_3-8.fasta</span></code> contains heavy chain V gene sequences from
 germinal B cells sorted from a brainbow mouse using multicolor fate mapping.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ tail -30 150228_Clone_3-8.fasta
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ tail -30 ../example/150228_Clone_3-8.fasta
 &gt;VIBM1S4H08IgG
 ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
 tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
@@ -237,7 +237,7 @@ The <code class="docutils literal notranslate"><span class="pre">deduplicate</sp
 The argument <code class="docutils literal notranslate"><span class="pre">--root</span></code> indicates the root id.
 The flag <code class="docutils literal notranslate"><span class="pre">--id_abundances</span></code> indicates that integer sequence ids should be interepreted as abundances (our <code class="docutils literal notranslate"><span class="pre">17</span></code> sequence).
 The argument <code class="docutils literal notranslate"><span class="pre">--abundance_file</span></code> indicates that sequence abundance information should be written to the specified <code class="docutils literal notranslate"><span class="pre">csv</span></code> file.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ deduplicate 150228_Clone_3-8.fasta --root GL --id_abundances --abundance_file abundances.csv &gt; deduplicated.phylip
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ deduplicate ../example/150228_Clone_3-8.fasta --root GL --id_abundances --abundance_file abundances.csv &gt; deduplicated.phylip
 </pre></div>
 </div>
 <p>We now have files <code class="docutils literal notranslate"><span class="pre">deduplicated.phylip</span></code> and <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>:</p>

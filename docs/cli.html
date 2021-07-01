@@ -98,11 +98,42 @@
 </ul>
 <p class="caption"><span class="caption-text">CLI Documentation</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">gctree</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">gctree</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Sub-commands:">Sub-commands:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#test">test</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#infer">infer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Named Arguments_repeat1">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#simulate">simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Positional Arguments_repeat1">Positional Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Named Arguments_repeat2">Named Arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="#parsimony-utilities">Parsimony utilities</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#deduplicate">deduplicate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#mkconfig">mkconfig</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#phylip-parse">phylip_parse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deduplicate">deduplicate</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#mkconfig">mkconfig</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#phylip-parse">phylip_parse</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -183,6 +214,153 @@
   <div class="section" id="gctree">
 <h1>gctree<a class="headerlink" href="#gctree" title="Permalink to this headline">¶</a></h1>
 <p>The primary gctree command.</p>
+<p><p>genotype collapsed tree inference and simulation</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">gctree</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">{</span><span class="n">test</span><span class="p">,</span><span class="n">infer</span><span class="p">,</span><span class="n">simulate</span><span class="p">}</span> <span class="o">...</span>
+</pre></div>
+</div>
+<div class="section" id="Sub-commands:">
+<h2>Sub-commands:<a class="headerlink" href="#Sub-commands:" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="test">
+<h3>test<a class="headerlink" href="#test" title="Permalink to this headline">¶</a></h3>
+<p>run tests on library functions</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">test</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h4>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h4>
+<dl class="option-list">
+<dt><kbd>--outbase</kbd></dt>
+<dd><p>output file base name</p>
+</dd>
+<dt><kbd>--img_type</kbd></dt>
+<dd><p>output image file type</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="infer">
+<h3>infer<a class="headerlink" href="#infer" title="Permalink to this headline">¶</a></h3>
+<p>likelihood ranking of parsimony trees</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">infer</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap_phylipfile</span> <span class="n">BOOTSTRAP_PHYLIPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">colormapfile</span> <span class="n">COLORMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">chain_split</span> <span class="n">CHAIN_SPLIT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+             <span class="n">phylipfile</span> <span class="n">abundance_file</span>
+</pre></div>
+</div>
+<div class="section" id="Positional Arguments">
+<h4>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline">¶</a></h4>
+<dl class="option-list">
+<dt><kbd>phylipfile</kbd></dt>
+<dd><p>dnapars outfile (verbose output with sequences at each site)</p>
+</dd>
+<dt><kbd>abundance_file</kbd></dt>
+<dd><p>File containing allele frequencies (sequence counts) in the format: “SeqID,Nobs”</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Named Arguments_repeat1">
+<h4>Named Arguments<a class="headerlink" href="#Named Arguments_repeat1" title="Permalink to this headline">¶</a></h4>
+<dl class="option-list">
+<dt><kbd>--root</kbd></dt>
+<dd><p>name of root sequence (outgroup root)</p>
+</dd>
+<dt><kbd>--bootstrap_phylipfile</kbd></dt>
+<dd><p>dnapars outfile from seqboot (multiple data sets)</p>
+</dd>
+<dt><kbd>--colormapfile</kbd></dt>
+<dd><p>File containing color map in the format: “SeqID color”</p>
+</dd>
+<dt><kbd>--chain_split</kbd></dt>
+<dd><p>split between heavy and light for combined seqs</p>
+</dd>
+<dt><kbd>--outbase</kbd></dt>
+<dd><p>output file base name</p>
+</dd>
+<dt><kbd>--img_type</kbd></dt>
+<dd><p>output image file type</p>
+</dd>
+<dt><kbd>--frame</kbd></dt>
+<dd><p>Possible choices: 1, 2, 3</p>
+<p>codon frame</p>
+</dd>
+<dt><kbd>--idlabel</kbd></dt>
+<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if True</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="simulate">
+<h3>simulate<a class="headerlink" href="#simulate" title="Permalink to this headline">¶</a></h3>
+<p>Neutral, and target selective, model gctree simulation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">simulate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sequence2</span> <span class="n">SEQUENCE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="k">lambda</span> <span class="n">LAMBDA_</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">lambda0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">T</span> <span class="n">T</span> <span class="p">[</span><span class="n">T</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">target_dist</span> <span class="n">TARGET_DIST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">plotAA</span> <span class="n">PLOTAA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span> <span class="n">VERBOSE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+                <span class="n">sequence</span> <span class="n">mutability</span> <span class="n">substitution</span>
+</pre></div>
+</div>
+<div class="section" id="Positional Arguments_repeat1">
+<h4>Positional Arguments<a class="headerlink" href="#Positional Arguments_repeat1" title="Permalink to this headline">¶</a></h4>
+<dl class="option-list">
+<dt><kbd>sequence</kbd></dt>
+<dd><p>seed root nucleotide sequence</p>
+</dd>
+<dt><kbd>mutability</kbd></dt>
+<dd><p>path to mutability model file</p>
+</dd>
+<dt><kbd>substitution</kbd></dt>
+<dd><p>path to substitution model file</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Named Arguments_repeat2">
+<h4>Named Arguments<a class="headerlink" href="#Named Arguments_repeat2" title="Permalink to this headline">¶</a></h4>
+<dl class="option-list">
+<dt><kbd>--sequence2</kbd></dt>
+<dd><p>Second seed root nucleotide sequence. For simulating heavy/light chain co-evolution.</p>
+</dd>
+<dt><kbd>--lambda</kbd></dt>
+<dd><p>poisson branching parameter</p>
+</dd>
+<dt><kbd>--lambda0</kbd></dt>
+<dd><p>List of one or two elements with the baseline mutation rates. Space separated input values. First element belonging to seed sequence one and optionally the next to sequence 2. If only one rate is provided for two sequences, this rate will be used on both.</p>
+</dd>
+<dt><kbd>--n</kbd></dt>
+<dd><p>cells downsampled</p>
+</dd>
+<dt><kbd>--N</kbd></dt>
+<dd><p>target simulation size</p>
+</dd>
+<dt><kbd>--T</kbd></dt>
+<dd><p>observation time, if None we run until termination and take all leaves</p>
+</dd>
+<dt><kbd>--seed</kbd></dt>
+<dd><p>integer random seed</p>
+</dd>
+<dt><kbd>--target_dist</kbd></dt>
+<dd><p>The number of non-synonymous mutations the target should be away from the root.</p>
+</dd>
+<dt><kbd>--plotAA</kbd></dt>
+<dd><p>Plot trees with collapsing and coloring on amino acid level.</p>
+</dd>
+<dt><kbd>--verbose</kbd></dt>
+<dd><p>Print progress during simulation.</p>
+</dd>
+<dt><kbd>--outbase</kbd></dt>
+<dd><p>output file base name</p>
+</dd>
+<dt><kbd>--img_type</kbd></dt>
+<dd><p>output image file type</p>
+</dd>
+<dt><kbd>--frame</kbd></dt>
+<dd><p>Possible choices: 1, 2, 3</p>
+<p>codon frame</p>
+</dd>
+<dt><kbd>--idlabel</kbd></dt>
+<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if True</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
 </div>
 <div class="section" id="parsimony-utilities">
 <h1>Parsimony utilities<a class="headerlink" href="#parsimony-utilities" title="Permalink to this headline">¶</a></h1>
@@ -191,12 +369,119 @@ inferring parsimony trees with phylip, and prepping parsimony trees for analysis
 with gctree.</p>
 <div class="section" id="deduplicate">
 <h2>deduplicate<a class="headerlink" href="#deduplicate" title="Permalink to this headline">¶</a></h2>
+<p><p>Deduplicate sequences in a fasta file, write to stdout in phylip format, and creates a few other files (see arguments). Headers must be a unique ID of less than or equal to 10 ASCII characters.An additional sequence representing the outgroup/root must be included (even if one or more observed sequences are identical to it).</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">deduplicate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">abundance_file</span> <span class="n">ABUNDANCE_FILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">id_abundances</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">colorfile</span> <span class="n">COLORFILE</span><span class="p">]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">colormap</span> <span class="n">COLORMAP</span><span class="p">]</span>
+                   <span class="n">infile</span> <span class="p">[</span><span class="n">infile</span> <span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Positional Arguments">
+<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>infile</kbd></dt>
+<dd><p>Fasta file with less than or equal to 10 characters unique header ID. Because dnapars will name internal nodes by integers a node name must includeat least one non number character (unless using the id_abundances option).</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--abundance_file</kbd></dt>
+<dd><p>filename for the output file containing the counts.</p>
+</dd>
+<dt><kbd>--idmapfile</kbd></dt>
+<dd><p>filename for the output file containing the map of new unique ids to original seq ids.</p>
+</dd>
+<dt><kbd>--id_abundances</kbd></dt>
+<dd><p>flag to interpret integer ids in input as abundances</p>
+</dd>
+<dt><kbd>--root</kbd></dt>
+<dd><p>root sequence id</p>
+</dd>
+<dt><kbd>--frame</kbd></dt>
+<dd><p>Possible choices: 1, 2, 3</p>
+<p>codon frame</p>
+</dd>
+<dt><kbd>--colorfile</kbd></dt>
+<dd><p>optional input csv filename for colors of each cell.</p>
+</dd>
+<dt><kbd>--colormap</kbd></dt>
+<dd><p>optional output filename for colors map.</p>
+</dd>
+</dl>
+</div>
 </div>
 <div class="section" id="mkconfig">
 <h2>mkconfig<a class="headerlink" href="#mkconfig" title="Permalink to this headline">¶</a></h2>
+<p><p>Read a PHYLIP-format file and produce an appropriate config file for passing
+to <cite>dnapars</cite>.</p>
+<p><cite>dnapars</cite> doesn’t play very well in a
+pipeline.  It prompts the user for configuration information and reads
+responses from stdin.  The config file generated by this script is
+meant to mimic the responses to the expected prompts.</p>
+<p>Typical usage is,</p>
+<blockquote>
+<div><p>$ mkconfig sequence.phy &gt; dnapars.cfg
+$ dnapars &lt; dnapars.cfg</p>
+</div></blockquote>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">mkconfig</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">quick</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap</span> <span class="n">BOOTSTRAP</span><span class="p">]</span> <span class="n">phylip</span> <span class="n">treeprog</span>
+</pre></div>
+</div>
+<div class="section" id="Positional Arguments">
+<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>phylip</kbd></dt>
+<dd><p>PHYLIP input</p>
+</dd>
+<dt><kbd>treeprog</kbd></dt>
+<dd><p>dnapars, dnaml, or seqboot</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--quick</kbd></dt>
+<dd><p>quicker (less thourough) dnapars</p>
+</dd>
+<dt><kbd>--bootstrap</kbd></dt>
+<dd><p>input is seqboot output with this many samples</p>
+</dd>
+</dl>
+</div>
 </div>
 <div class="section" id="phylip-parse">
 <h2>phylip_parse<a class="headerlink" href="#phylip-parse" title="Permalink to this headline">¶</a></h2>
+<p><p>Given an outputfile from one of the PHYLIP tools - <cite>dnaml</cite> or <cite>dnapars</cite> - produce an alignment (including
+ancestral sequences), a newick tree (with matching internal node lables), and an svg rendering of said tree.</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">phylip_parse</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outputfile</span> <span class="n">OUTPUTFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="n">phylip_outfile</span> <span class="n">abundance_file</span>
+</pre></div>
+</div>
+<div class="section" id="Positional Arguments">
+<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>phylip_outfile</kbd></dt>
+<dd><p>dnaml outfile (verbose output with inferred ancestral sequences, option 5).</p>
+</dd>
+<dt><kbd>abundance_file</kbd></dt>
+<dd><p>count file</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h3>
+<dl class="option-list">
+<dt><kbd>--outputfile</kbd></dt>
+<dd><p>output file.</p>
+</dd>
+<dt><kbd>--root</kbd></dt>
+<dd><p>root sequence id</p>
+</dd>
+</dl>
+</div>
 </div>
 </div>
 
