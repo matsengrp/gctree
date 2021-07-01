@@ -4,7 +4,7 @@ Quickstart
 In this minimal example we show how to use gctree commands to rank parsimony trees from PHYLIP's dnapars program.
 See the CLI and API docs for complete documentation of command options, included many not used here.
 
-The data in this example were published in [Tas et al. 2016. *Visualizing Antibody Affinity Maturation in Germinal Centers.* Science 351 (6277)](http://science.sciencemag.org/content/351/6277/1048)) and shown in Fig. 4 (lymph node 2, germinal center 1).
+The data in this example were published in `Tas et al. 2016. Visualizing Antibody Affinity Maturation in Germinal Centers. Science 351 (6277) <http://science.sciencemag.org/content/351/6277/1048>`_ and shown in Fig. 4 (lymph node 2, germinal center 1).
 
 .. image:: _static/gc1.png
   :width: 200
