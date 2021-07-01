@@ -129,6 +129,8 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
 
 def disambiguate(tree):
     """make random choices for ambiguous bases, respecting tree inheritance."""
+    # random seed based on newick string of tree
+    random.seed(tree.write(format=1))
     ambiguous_dna_values["?"] = "GATC-"
     sequence_length = len(tree.sequence)
     for node in tree.traverse():
