@@ -1,0 +1,10 @@
+black
+docformatter
+flake8
+pytest
+sphinx
+sphinx-argparse
+sphinx_rtd_theme
+sphinx-click
+sphinx-autodoc-typehints
+sphinxcontrib-programoutput
