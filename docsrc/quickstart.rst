@@ -14,11 +14,10 @@ Input data
 ==========
 
 We start with a fasta alignment file.
-From the ``example/`` directory, the file ``150228_Clone_3-8.fasta`` contains heavy chain V gene sequences from
+The file ``../example/150228_Clone_3-8.fasta`` contains heavy chain V gene sequences from
 germinal B cells sorted from a brainbow mouse using multicolor fate mapping.
 
-.. command-output:: tail -30 150228_Clone_3-8.fasta
-  :cwd: ../example
+.. command-output:: tail -30 ../example/150228_Clone_3-8.fasta
 
 In this file the sequence with id ``GL`` is the naive germline sequence, and represents the root of the tree.
 It does not refer to an observed sequence, but is included to outgroup root the tree!
@@ -35,18 +34,15 @@ The argument ``--root`` indicates the root id.
 The flag ``--id_abundances`` indicates that integer sequence ids should be interepreted as abundances (our ``17`` sequence).
 The argument ``--abundance_file`` indicates that sequence abundance information should be written to the specified ``csv`` file.
 
-.. command-output:: deduplicate 150228_Clone_3-8.fasta --root GL --id_abundances --abundance_file abundances.csv > deduplicated.phylip
-  :cwd: ../example
+.. command-output:: deduplicate ../example/150228_Clone_3-8.fasta --root GL --id_abundances --abundance_file abundances.csv > deduplicated.phylip
   :shell:
 
 We now have files ``deduplicated.phylip`` and ``abundances.csv``:
 
 .. command-output:: head deduplicated.phylip
-  :cwd: ../example
   :shell:
 
 .. command-output:: head abundances.csv
-  :cwd: ../example
   :shell:
 
 
@@ -59,13 +55,11 @@ PHYLIP is an interactive command line tool, so we will automatically generate a 
 We generate a config file for ``dnapars`` based on our deduplicated alignment using the ``mkconfig`` command.
 
 .. command-output:: mkconfig deduplicated.phylip dnapars > dnapars.cfg
-  :cwd: ../example
   :shell:
 
 Run ``dnapars`` using this config file, redirecting stdout to a log file.
 
 .. command-output:: dnapars < dnapars.cfg > dnapars.log
-  :cwd: ../example
   :shell:
 
 You now have two new files, ``outfile`` and ``outtree``.
@@ -78,7 +72,6 @@ gctree
 We're now ready to run ``gctree infer`` to use abundance data (in ``abundances.csv``) to rank the eqaully parsimonious trees (in ``outfile``).
 
 .. command-output:: gctree infer outfile abundances.csv --root GL
-  :cwd: ../example
   :shell:
   :ellipsis: 10
 
@@ -86,16 +79,16 @@ The information printed to stdout (truncated above) shows a list of parsimony tr
 A large number of output files with the basename ``gctree.out.`` are also created.
 The SVG image file ``gctree.out.inference.abundance_rank.svg`` shows a distribution of genotype abundances in the original data:
 
-.. image:: ../example/gctree.out.inference.abundance_rank.svg
+.. image:: gctree.out.inference.abundance_rank.svg
   :width: 600
 
 The SVG image file ``gctree.out.inference.likelihood_rank.svg`` is a rank plot of these likelihoods over the set of maximum parsimony trees:
 
-.. image:: ../example/gctree.out.inference.likelihood_rank.svg
+.. image:: gctree.out.inference.likelihood_rank.svg
   :width: 600
 
 Then there are files ``gctree.out.inference.[1,2,...].svg`` and ``gctree.out.inference.[1,2,...].nk`` containing an SVG tree image and newick tree file for each of the parsimony trees (numbered according to likelihood rank).
 For example here is the top ranked tree ``gctree.out.inference.1.svg``:
 
-.. image:: ../example/gctree.out.inference.1.svg
+.. image:: gctree.out.inference.1.svg
   :width: 600
