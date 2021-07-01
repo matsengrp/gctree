@@ -49,7 +49,6 @@ def fasta_parse(aln_file, root, frame=None, aln_file2=None, id_abundances=False)
     id_set = set()
     root_seq = None
     for seq in aln:
-        # seq.id = seq.id.lower()
         # if id is just an integer, assume it represents count of that sequence
         if seq.id in id_set:
             raise ValueError("Sequence ID found multiple times:", seq.id)
@@ -70,11 +69,11 @@ def fasta_parse(aln_file, root, frame=None, aln_file2=None, id_abundances=False)
     if root_seq is None:
         raise ValueError("root seq id {} not found".format(root))
 
-    new_aln = MultipleSeqAlignment([SeqRecord(Seq(root_seq), id=root.lower())])
+    new_aln = MultipleSeqAlignment([SeqRecord(Seq(root_seq), id=root)])
     counts = {
-        root.lower(): len(seqs_unique_counts[root_seq])
+        root: len(seqs_unique_counts[root_seq])
     }  # Add the count for the root sequence
-    id_map = {root.lower(): [x for x in seqs_unique_counts[root_seq] if x != root]}
+    id_map = {root: [x for x in seqs_unique_counts[root_seq] if x != root]}
     del seqs_unique_counts[
         root_seq
     ]  # Now delete the root so it does not appear twice
@@ -109,7 +108,7 @@ def get_parser():
     parser = argparse.ArgumentParser(
         description="Deduplicate sequences in a fasta file, write to stdout in phylip format, and creates a few other files (see arguments). Headers must be a unique ID of less than "
         "or equal to 10 ASCII characters."
-        " All headers are converted to lower case."
+        "An additional sequence representing the outgroup/root must be included (even if one or more observed sequences are identical to it)."
     )
     parser.add_argument(
         "infile",
