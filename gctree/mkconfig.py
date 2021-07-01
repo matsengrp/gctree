@@ -43,12 +43,12 @@ def main(arg_list=None):
         print("R")
         print(args.bootstrap)
         print("Y")
-        print(
-            str(1 + 2 * random.randint(0, 1000000))
-        )  # random seed for bootstrap (odd integer)
+        # random seed for bootstrap (odd integer)
+        print("1")
         return
     print("J")
-    print(str(1 + 2 * random.randint(0, 1000000)))
+    # random seed for tree search
+    print("1")
     print("10")
     if args.bootstrap:
         print("M")
