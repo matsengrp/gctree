@@ -559,7 +559,10 @@ def get_parser():
         help="likelihood ranking of parsimony trees",
     )
     parser_infer.add_argument(
-        "--root", type=str, default="root", help="name of root sequence (outgroup root), default 'root'"
+        "--root",
+        type=str,
+        default="root",
+        help="name of root sequence (outgroup root), default 'root'",
     )
     parser_infer.add_argument(
         "phylipfile",
