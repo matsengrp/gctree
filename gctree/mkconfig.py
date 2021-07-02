@@ -15,7 +15,6 @@ Typical usage is,
 
 """
 import os
-import random
 import argparse
 
 
