@@ -69,20 +69,20 @@ Note: if you want to rerun the above ``dnapars`` command, you must delete these 
 gctree
 ======
 
-We're now ready to run ``gctree infer`` to use abundance data (in ``abundances.csv``) to rank the eqaully parsimonious trees (in ``outfile``).
+We're now ready to run ``gctree infer`` to use abundance data (in ``abundances.csv``) to rank the equally parsimonious trees (in ``outfile``).
+We can use the optional argument ``--frame`` to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.
 
-.. command-output:: gctree infer outfile abundances.csv --root GL
+.. command-output:: gctree infer outfile abundances.csv --root GL --frame 1
   :shell:
   :ellipsis: 10
 
-The information printed to stdout (truncated above) shows a list of parsimony trees ranked by decreasing gctree log-likelihood.
-A large number of output files with the basename ``gctree.out.`` are also created.
+A large number of output files with the basename ``gctree.out.*`` are also created.
 The SVG image file ``gctree.out.inference.abundance_rank.svg`` shows a distribution of genotype abundances in the original data:
 
 .. image:: gctree.out.inference.abundance_rank.svg
   :width: 600
 
-The SVG image file ``gctree.out.inference.likelihood_rank.svg`` is a rank plot of these likelihoods over the set of maximum parsimony trees:
+The SVG image file ``gctree.out.inference.likelihood_rank.svg`` is a rank plot of likelihood over the set of maximum parsimony trees:
 
 .. image:: gctree.out.inference.likelihood_rank.svg
   :width: 600
@@ -92,3 +92,5 @@ For example here is the top ranked tree ``gctree.out.inference.1.svg``:
 
 .. image:: gctree.out.inference.1.svg
   :width: 600
+
+You will also see Python pickle files ``gctree.out.inference.[1,2,...].p`` containing a :obj:`gctree.branching_processes.CollapsedTree` object for each tree, which can be loaded and manipulated via the API.

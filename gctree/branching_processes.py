@@ -183,8 +183,6 @@ class CollapsedTree(LeavesAndClades):
         self,
         params=None,
         tree=None,
-        frame=None,
-        collapse_syn=False,
         allow_repeats=False,
     ):
         """
@@ -192,36 +190,8 @@ class CollapsedTree(LeavesAndClades):
         params: offspring distribution parameters
         tree: ete tree with frequency node feature. If uncollapsed, it will be
         collapsed
-        frame: tranlation frame, with default None, no tranlation attempted
         """
         LeavesAndClades.__init__(self, params=params)
-        if frame is not None and frame not in (1, 2, 3):
-            raise RuntimeError("frame must be 1, 2, 3, or None")
-        self.frame = frame
-
-        if collapse_syn is True:
-            tree.dist = 0  # no branch above root
-            for node in tree.iter_descendants():
-                aa = Seq(
-                    node.sequence[
-                        (frame - 1) : (
-                            frame
-                            - 1
-                            + (3 * (((len(node.sequence) - (frame - 1)) // 3)))
-                        )
-                    ]
-                ).translate()
-                aa_parent = Seq(
-                    node.up.sequence[
-                        (frame - 1) : (
-                            frame
-                            - 1
-                            + (3 * (((len(node.sequence) - (frame - 1)) // 3)))
-                        )
-                    ]
-                ).translate()
-                node.dist = hamming_distance(aa, aa_parent)
-
         if tree is not None:
             self.tree = tree.copy()
             # remove unobserved internal unifurcations
@@ -363,7 +333,7 @@ class CollapsedTree(LeavesAndClades):
         """Maximum likelihood estimate for params given tree updates params if
         not None returns optimization result."""
         # initialization
-        x_0 = (1e-6, 1e-6)
+        x_0 = (0.5, 0.5)
         bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
         kwargs["sign"] = -1
         grad_check = check_grad(
@@ -407,7 +377,7 @@ class CollapsedTree(LeavesAndClades):
             return self
         for _ in range(self.m):
             # ooooh, recursion
-            child = CollapsedTree(params=self.params, frame=self.frame).simulate().tree
+            child = CollapsedTree(params=self.params).simulate().tree
             child.dist = 1
             self.tree.add_child(child)
 
@@ -422,11 +392,20 @@ class CollapsedTree(LeavesAndClades):
         outfile,
         idlabel=False,
         colormap=None,
-        show_support=False,
+        frame=None,
+        position_map=None,
         chain_split=None,
+        frame2=None,
+        position_map2=None,
+        show_support=False,
     ):
         """render to image file, filetype inferred from suffix, svg for color
-        images."""
+        images.
+
+        frame: tranlation frame, with default None, no tranlation attempted
+        """
+        if frame is not None and frame not in (1, 2, 3):
+            raise RuntimeError("frame must be 1, 2, or 3")
 
         def my_layout(node):
             if colormap is None or node.name not in colormap:
@@ -475,72 +454,56 @@ class CollapsedTree(LeavesAndClades):
                     position="branch-right",
                 )
 
-        for node in self.tree.traverse():
+        # we render on a copy, so faces are not permanent
+        tree_copy = self.tree.copy(method="deepcopy")
+        for node in tree_copy.traverse():
             nstyle = ete3.NodeStyle()
             nstyle["size"] = 0
             if node.up is not None:
                 if set(node.sequence.upper()) == set("ACGT"):
-                    if chain_split is not None:
-                        if self.frame is not None:
-                            raise NotImplementedError(
-                                "frame not implemented with chain_split"
-                            )
-                        leftseq_mutated = (
-                            hamming_distance(
-                                node.sequence[:chain_split],
-                                node.up.sequence[:chain_split],
-                            )
-                            > 0
-                        )
-                        rightseq_mutated = (
-                            hamming_distance(
-                                node.sequence[chain_split:],
-                                node.up.sequence[chain_split:],
-                            )
-                            > 0
-                        )
-                        if leftseq_mutated and rightseq_mutated:
-                            nstyle["hz_line_color"] = "purple"
-                            nstyle["hz_line_width"] = 3
-                        elif leftseq_mutated:
-                            nstyle["hz_line_color"] = "red"
-                            nstyle["hz_line_width"] = 2
-                        elif rightseq_mutated:
-                            nstyle["hz_line_color"] = "blue"
-                            nstyle["hz_line_width"] = 2
-                    if self.frame is not None:
-                        aa = Seq(
-                            node.sequence[
-                                (self.frame - 1) : (
-                                    self.frame
-                                    - 1
-                                    + (
-                                        3
-                                        * ((len(node.sequence) - (self.frame - 1)) // 3)
-                                    )
-                                )
-                            ]
-                        ).translate()
-                        aa_parent = Seq(
-                            node.up.sequence[
-                                (self.frame - 1) : (
-                                    self.frame
-                                    - 1
-                                    + (
-                                        3
-                                        * ((len(node.sequence) - (self.frame - 1)) // 3)
-                                    )
-                                )
-                            ]
-                        ).translate()
-                        nonsyn = hamming_distance(aa, aa_parent)
-                        if "*" in aa:
-                            nstyle["bgcolor"] = "red"
-                        if nonsyn > 0:
-                            nstyle["hz_line_color"] = "black"
-                            nstyle["hz_line_width"] = nonsyn
-                        else:
-                            nstyle["hz_line_type"] = 1
+                    if frame is not None:
+                        if chain_split is not None and frame2 is None:
+                            raise ValueError("must define frame2 when using chain_split")
+                        if frame2 is not None and chain_split is None:
+                            raise ValueError("must define chain_split when using frame2")
+                        # loop over split heavy/light chain subsequences
+                        for start, end, framex, position_mapx in ((0, chain_split, frame, position_map), (chain_split, None, frame2, position_map2)):
+                            if start != None:
+                                seq = node.sequence[start:end]
+                                aa = Seq(
+                                    seq[
+                                        (framex - 1) : (
+                                            framex
+                                            - 1
+                                            + (3 * ((len(seq) - (framex - 1)) // 3))
+                                        )
+                                    ]
+                                ).translate()
+                                seq = node.up.sequence[start:end]
+                                aa_parent = Seq(
+                                    seq[
+                                        (framex - 1) : (
+                                            framex
+                                            - 1
+                                            + (3 * ((len(seq) - (framex - 1)) // 3))
+                                        )
+                                    ]
+                                ).translate()
+                                mutations = [
+                                    f"{aa1}{pos if position_mapx is None else position_mapx[pos]}{aa2}"
+                                    for pos, (aa1, aa2) in enumerate(zip(aa_parent, aa))
+                                    if aa1 != aa2
+                                ]
+                                if mutations:
+                                    T = ete3.TextFace("\n".join(mutations), fsize=6, tight_text=False, ftype="Courier")
+                                    if start == 0:
+                                        T.margin_top = 6
+                                    else:
+                                        T.margin_bottom = 6
+                                    T.rotation = -90
+                                    node.add_face(T, 0, position="branch-bottom" if start == 0 else "branch-top")
+                                if "*" in aa:
+                                    nstyle["hz_line_color"] = "red"
             node.set_style(nstyle)
 
         ts = ete3.TreeStyle()
@@ -551,12 +514,12 @@ class CollapsedTree(LeavesAndClades):
         ts.layout_fn = my_layout
         ts.show_scale = False
         ts.show_branch_support = show_support
-        self.tree.render(outfile, tree_style=ts)
+        tree_copy.render(outfile, tree_style=ts)
         # if we labelled seqs, let's also write the alignment out so we have
         # the sequences (including of internal nodes)
         if idlabel:
             aln = MultipleSeqAlignment([])
-            for node in self.tree.traverse():
+            for node in tree_copy.traverse():
                 aln.append(
                     SeqRecord(
                         Seq(str(node.sequence)),
