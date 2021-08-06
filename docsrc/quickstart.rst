@@ -93,4 +93,4 @@ For example here is the top ranked tree ``gctree.out.inference.1.svg``:
 .. image:: gctree.out.inference.1.svg
   :width: 1000
 
-You will also see Python pickle files ``gctree.out.inference.[1,2,...].p`` containing a :obj:`gctree.branching_processes.CollapsedTree` object for each tree, which can be loaded and manipulated via the API.
+You will also see Python pickle files ``gctree.out.inference.[1,2,...].p`` containing a :obj:`gctree.CollapsedTree` object for each tree, which can be loaded and manipulated via the API.

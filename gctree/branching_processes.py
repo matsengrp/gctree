@@ -326,7 +326,7 @@ class CollapsedTree:
             (p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)
 
         Args:
-            kwargs: keyword arguments passed along to the log likelihood :meth:`branching_processes.CollapsedTree.ll`
+            kwargs: keyword arguments passed along to the log likelihood :meth:`CollapsedTree.ll`
 
         Returns:
             Tuple :math:`(p, q)` with estimated branching probability and estimated mutation probability
@@ -720,16 +720,16 @@ class CollapsedTree:
 
 
 class CollapsedForest():
-    r"""A collection of ``CollapsedTree``
+    r"""A collection of :class:`CollapsedTree`
 
-    We can intialize with a list of trees, each an instance of :class:`branching_processes.CollapsedTree`, or we can simulate the forest later.
+    We can intialize with a list of trees, each an instance of :class:`CollapsedTree`, or we can simulate the forest later.
 
     Attributes:
         forest: list of trees
         n_trees: number of trees in forest
 
     Args:
-        forest: list of :class:`branching_processes.CollapsedTree`
+        forest: list of :class:`CollapsedTree`
     """
 
     def __init__(self, forest=None):
