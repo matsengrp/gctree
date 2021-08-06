@@ -44,7 +44,7 @@ if args.experimental is not None:
     new_aln, counts = fasta_parse(args.experimental, root="GL", id_abundances=True)[:2]
     exp_dict = {seq.id: str(seq.seq) for seq in new_aln}
     root_id = [seq for seq in exp_dict if "gl" in seq][0]
-    frequency, distance_from_root, degree = zip(
+    abundance, distance_from_root, degree = zip(
         *[
             (
                 counts[seq],
@@ -61,7 +61,7 @@ if args.experimental is not None:
     )
     exp_stats = pd.DataFrame(
         {
-            "genotype abundance": frequency,
+            "genotype abundance": abundance,
             "Hamming distance to root genotype": distance_from_root,
             "Hamming neighbor genotypes": degree,
         }

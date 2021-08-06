@@ -55,8 +55,12 @@ extensions = [
 todo_include_todos = True
 
 # Mappings for sphinx.ext.intersphinx. Projects have to have Sphinx-generated doc! (.inv file)
-intersphinx_mapping = {"python": ("https://docs.python.org/3/", None),
-                       "PyTorch": ('http://pytorch.org/docs/master/', None)}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'ete3': ('http://etetoolkit.org/docs/latest/', None),
+}
 
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 autoclass_content = "both"  # Add __init__ doc (ie. params) to class summaries

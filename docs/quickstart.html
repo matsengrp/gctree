@@ -90,7 +90,7 @@
               
             
             
-              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cite.html">Citing gctree</a></li>
@@ -102,16 +102,17 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">CLI Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">gctree</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html#parsimony-utilities">Parsimony utilities</a></li>
 </ul>
-<p class="caption"><span class="caption-text">API Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#submodules">Submodules</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="developer.html">Open source code repository</a></li>
 <li class="toctree-l1"><a class="reference internal" href="developer.html#developer-tools">Developer tools</a></li>
@@ -285,30 +286,21 @@ Note: if you want to rerun the above <code class="docutils literal notranslate">
 </div>
 <div class="section" id="gctree">
 <h2>gctree<a class="headerlink" href="#gctree" title="Permalink to this headline">¶</a></h2>
-<p>We’re now ready to run <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> to use abundance data (in <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>) to rank the eqaully parsimonious trees (in <code class="docutils literal notranslate"><span class="pre">outfile</span></code>).</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL
-/Users/williamdewitt/Desktop/repos.nosync/gctree/gctree/branching_processes.py:373: RuntimeWarning: gradient mismatches finite difference approximation by 591756.2709373797
-  warnings.warn(
-number of trees with integer branch lengths: 207
-207 trees exhibit unobserved unifurcation from root. Adding psuedocounts to these roots
-params = [0.4961832061114772, 0.3656706398045132]
-tree	alleles	logLikelihood
-1	48	-78.00634418534649
-2	48	-79.82079119484135
-3	48	-79.82079119484135
-4	48	-79.82079119484135
+<p>We’re now ready to run <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> to use abundance data (in <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>) to rank the equally parsimonious trees (in <code class="docutils literal notranslate"><span class="pre">outfile</span></code>).
+We can use the optional argument <code class="docutils literal notranslate"><span class="pre">--frame</span></code> to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1
 ...
 </pre></div>
 </div>
-<p>The information printed to stdout (truncated above) shows a list of parsimony trees ranked by decreasing gctree log-likelihood.
-A large number of output files with the basename <code class="docutils literal notranslate"><span class="pre">gctree.out.</span></code> are also created.
+<p>A large number of output files with the basename <code class="docutils literal notranslate"><span class="pre">gctree.out.*</span></code> are also created.
 The SVG image file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.abundance_rank.svg</span></code> shows a distribution of genotype abundances in the original data:</p>
 <a class="reference internal image-reference" href="_images/gctree.out.inference.abundance_rank.svg"><img alt="_images/gctree.out.inference.abundance_rank.svg" src="_images/gctree.out.inference.abundance_rank.svg" width="600" /></a>
-<p>The SVG image file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.likelihood_rank.svg</span></code> is a rank plot of these likelihoods over the set of maximum parsimony trees:</p>
+<p>The SVG image file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.likelihood_rank.svg</span></code> is a rank plot of likelihood over the set of maximum parsimony trees:</p>
 <a class="reference internal image-reference" href="_images/gctree.out.inference.likelihood_rank.svg"><img alt="_images/gctree.out.inference.likelihood_rank.svg" src="_images/gctree.out.inference.likelihood_rank.svg" width="600" /></a>
 <p>Then there are files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].svg</span></code> and <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].nk</span></code> containing an SVG tree image and newick tree file for each of the parsimony trees (numbered according to likelihood rank).
 For example here is the top ranked tree <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.svg</span></code>:</p>
-<a class="reference internal image-reference" href="_images/gctree.out.inference.1.svg"><img alt="_images/gctree.out.inference.1.svg" src="_images/gctree.out.inference.1.svg" width="600" /></a>
+<a class="reference internal image-reference" href="_images/gctree.out.inference.1.svg"><img alt="_images/gctree.out.inference.1.svg" src="_images/gctree.out.inference.1.svg" width="1000" /></a>
+<p>You will also see Python pickle files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].p</span></code> containing a <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gctree.CollapsedTree</span></code></a> object for each tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.render" title="gctree.CollapsedTree.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gctree.CollapsedTree.render()</span></code></a>).</p>
 </div>
 </div>
 

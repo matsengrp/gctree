@@ -219,7 +219,7 @@ gctree_infer = CommandRunner(
     + ([phylip[3]] if colorfile is not None else []),
     xarg
     + buffarg
-    + "gctree infer ${SOURCES[0]} ${SOURCES[1]} --root "
+    + "gctree infer --verbose ${SOURCES[0]} ${SOURCES[1]} --root "
     + root_id
     + " --outbase "
     + gctree_outbase

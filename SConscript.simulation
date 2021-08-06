@@ -58,7 +58,7 @@ def gctree_sim(outdir, c):
         [mutability, substitution],
         xarg
         + buffarg
-        + "gctree simulate "
+        + "gctree simulate --verbose "
         + root
         + " ${SOURCES[0]} ${SOURCES[1]}"
         + " --outbase "
@@ -118,6 +118,7 @@ def validate(outdir, c):
 
 
 w.pop("runs")
+
 
 @w.add_target()
 def gctree_aggregate(outdir, c):

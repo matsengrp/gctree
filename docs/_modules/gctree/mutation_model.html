@@ -88,22 +88,23 @@
               
             
             
-              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cite.html">Citing gctree</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
 </ul>
-<p class="caption"><span class="caption-text">CLI Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html">gctree</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html#parsimony-utilities">Parsimony utilities</a></li>
 </ul>
-<p class="caption"><span class="caption-text">API Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../api.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html#submodules">Submodules</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../developer.html">Open source code repository</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../developer.html#developer-tools">Developer tools</a></li>
@@ -174,35 +175,35 @@
            <div itemprop="articleBody">
             
   <h1>Source code for gctree.mutation_model</h1><div class="highlight"><pre>
-<span></span><span class="ch">#! /usr/bin/env python</span>
-
-<span class="sd">&quot;&quot;&quot;Mutation models.&quot;&quot;&quot;</span>
-
-<span class="kn">from</span> <span class="nn">gctree.utils</span> <span class="kn">import</span> <span class="n">hamming_distance</span>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Mutation models.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">ete3</span> <span class="kn">import</span> <span class="n">TreeNode</span>
-<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">poisson</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">poisson</span><span class="p">,</span> <span class="n">rv_discrete</span>
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">import</span> <span class="nn">scipy</span>
 <span class="kn">from</span> <span class="nn">Bio.Seq</span> <span class="kn">import</span> <span class="n">Seq</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span>
 
 
 <div class="viewcode-block" id="MutationModel"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel">[docs]</a><span class="k">class</span> <span class="nc">MutationModel</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;a class for a mutation model, and functions to mutate sequences.&quot;&quot;&quot;</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;A class for a mutation model, and functions to mutate sequences.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mutability_file: S5F format mutabilities</span>
+<span class="sd">        substitution_file: S5F format substitution biases</span>
+<span class="sd">        mutation_order: whether or not to mutate sequences using a context sensitive manner</span>
+<span class="sd">                        where mutation order matters</span>
+<span class="sd">        with_replacement: allow the same position to mutate multiple times on a single branch</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="MutationModel.__init__"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.html#gctree.mutation_model.MutationModel.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">mutability_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">substitution_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">mutation_order</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">with_replacement</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">mutability_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">substitution_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mutation_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">with_replacement</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;initialized with input files of the S5F format.</span>
-
-<span class="sd">        @param mutation_order: whether or not to mutate sequences using a context sensitive manner</span>
-<span class="sd">                                where mutation order matters</span>
-<span class="sd">        @param with_replacement: allow the same position to mutate multiple times on a single branch</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mutation_order</span> <span class="o">=</span> <span class="n">mutation_order</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">with_replacement</span> <span class="o">=</span> <span class="n">with_replacement</span>
         <span class="k">if</span> <span class="n">mutability_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">substitution_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -234,9 +235,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">context_model</span> <span class="o">=</span> <span class="kc">None</span></div>
 
-<div class="viewcode-block" id="MutationModel.disambiguate"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.disambiguate">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">disambiguate</span><span class="p">(</span><span class="n">sequence</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;generator of all possible nt sequences implied by a sequence</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_disambiguate</span><span class="p">(</span><span class="n">sequence</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;generator of all possible nt sequences implied by a sequence</span>
 <span class="sd">        containing Ns.&quot;&quot;&quot;</span>
         <span class="c1"># find the first N nucleotide</span>
         <span class="n">N_index</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
@@ -247,14 +248,18 @@
             <span class="k">for</span> <span class="n">n_replace</span> <span class="ow">in</span> <span class="s2">&quot;ACGT&quot;</span><span class="p">:</span>
                 <span class="c1"># ooooh, recursion</span>
                 <span class="c1"># NOTE: in python3 we could simply use &quot;yield from...&quot; instead of this loop</span>
-                <span class="k">for</span> <span class="n">sequence_recurse</span> <span class="ow">in</span> <span class="n">MutationModel</span><span class="o">.</span><span class="n">disambiguate</span><span class="p">(</span>
+                <span class="k">for</span> <span class="n">sequence_recurse</span> <span class="ow">in</span> <span class="n">MutationModel</span><span class="o">.</span><span class="n">_disambiguate</span><span class="p">(</span>
                     <span class="n">sequence</span><span class="p">[:</span><span class="n">N_index</span><span class="p">]</span> <span class="o">+</span> <span class="n">n_replace</span> <span class="o">+</span> <span class="n">sequence</span><span class="p">[</span><span class="n">N_index</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
                 <span class="p">):</span>
-                    <span class="k">yield</span> <span class="n">sequence_recurse</span></div>
+                    <span class="k">yield</span> <span class="n">sequence_recurse</span>
 
-<div class="viewcode-block" id="MutationModel.mutability"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutability">[docs]</a>    <span class="k">def</span> <span class="nf">mutability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kmer</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;returns the mutability of a central base of kmer, along with</span>
-<span class="sd">        nucleotide bias averages over N nucleotide identities.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="MutationModel.mutability"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutability">[docs]</a>    <span class="k">def</span> <span class="nf">mutability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kmer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a central base of :math:`k`-mer, along with</span>
+<span class="sd">        nucleotide bias averages over ambiguous ``&quot;N&quot;`` nucleotide identities.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            kmer: nucleotide :math:`k`-mer</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;kmer mutability only defined for context models&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kmer</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">:</span>
@@ -269,7 +274,7 @@
             <span class="p">)</span>
 
         <span class="n">mutabilities_to_average</span><span class="p">,</span> <span class="n">substitutions_to_average</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">context_model</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">MutationModel</span><span class="o">.</span><span class="n">disambiguate</span><span class="p">(</span><span class="n">kmer</span><span class="p">)]</span>
+            <span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">context_model</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">MutationModel</span><span class="o">.</span><span class="n">_disambiguate</span><span class="p">(</span><span class="n">kmer</span><span class="p">)]</span>
         <span class="p">)</span>
 
         <span class="n">average_mutability</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mutabilities_to_average</span><span class="p">)</span>
@@ -283,9 +288,13 @@
 
         <span class="k">return</span> <span class="n">average_mutability</span><span class="p">,</span> <span class="n">average_substitution</span></div>
 
-<div class="viewcode-block" id="MutationModel.mutabilities"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutabilities">[docs]</a>    <span class="k">def</span> <span class="nf">mutabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;returns the mutability of a sequence at each site, along with</span>
-<span class="sd">        nucleotide biases.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="MutationModel.mutabilities"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutabilities">[docs]</a>    <span class="k">def</span> <span class="nf">mutabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]:</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a sequence at each site, along with</span>
+<span class="sd">        nucleotide biases.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sequence: nucleotide sequence</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[</span>
                 <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">dict</span><span class="p">((</span><span class="n">n2</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="k">if</span> <span class="n">n2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">n</span> <span class="k">else</span> <span class="p">(</span><span class="n">n2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">n2</span> <span class="ow">in</span> <span class="s2">&quot;ACGT&quot;</span><span class="p">))</span>
@@ -300,13 +309,14 @@
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
             <span class="p">]</span></div>
 
-<div class="viewcode-block" id="MutationModel.mutate"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutate">[docs]</a>    <span class="k">def</span> <span class="nf">mutate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">,</span> <span class="n">lambda0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Mutate a sequence, with lamdba0 the baseline mutability Cannot</span>
+<div class="viewcode-block" id="MutationModel.mutate"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutate">[docs]</a>    <span class="k">def</span> <span class="nf">mutate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">lambda0</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Mutate a sequence, with lamdba0 the baseline mutability. Cannot</span>
 <span class="sd">        mutate the same position multiple times.</span>
 
-<span class="sd">        @param sequence: the original sequence to mutate</span>
-<span class="sd">        @param lambda0: a &quot;baseline&quot; mutation rate</span>
-<span class="sd">        @param frame: the reading frame index</span>
+<span class="sd">        Args:</span>
+<span class="sd">            sequence: nucleotide sequence to mutate</span>
+<span class="sd">            lambda0: a baseline mutation rate</span>
+<span class="sd">            frame: the reading frame of the first postition</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">sequence_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -373,64 +383,31 @@
 
         <span class="k">return</span> <span class="n">sequence</span></div>
 
-<div class="viewcode-block" id="MutationModel.one_mutant"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.one_mutant">[docs]</a>    <span class="k">def</span> <span class="nf">one_mutant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">,</span> <span class="n">Nmuts</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lambda0</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make a single mutant with a distance, in amino acid sequence, of</span>
-<span class="sd">        Nmuts away from the starting point.&quot;&quot;&quot;</span>
-        <span class="n">trial</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># Allow 100 trials before quitting</span>
-        <span class="k">while</span> <span class="n">trial</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">mut_seq</span> <span class="o">=</span> <span class="n">sequence</span><span class="p">[:]</span>
-            <span class="n">aa</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
-                <span class="n">Seq</span><span class="p">(</span>
-                    <span class="n">sequence</span><span class="p">[</span>
-                        <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
-                            <span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(((</span><span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="mi">3</span><span class="p">)))</span>
-                        <span class="p">)</span>
-                    <span class="p">]</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">()</span>
-            <span class="p">)</span>
-            <span class="n">aa_mut</span> <span class="o">=</span> <span class="n">Seq</span><span class="p">(</span>
-                <span class="n">mut_seq</span><span class="p">[</span>
-                    <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
-                        <span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(((</span><span class="nb">len</span><span class="p">(</span><span class="n">mut_seq</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="mi">3</span><span class="p">)))</span>
-                    <span class="p">)</span>
-                <span class="p">]</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">()</span>
-            <span class="n">dist</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span><span class="n">aa</span><span class="p">,</span> <span class="n">aa_mut</span><span class="p">)</span>
-            <span class="k">while</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">Nmuts</span><span class="p">:</span>
-                <span class="n">mut_seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutate</span><span class="p">(</span><span class="n">mut_seq</span><span class="p">,</span> <span class="n">lambda0</span><span class="o">=</span><span class="n">lambda0</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
-                <span class="n">aa_mut</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
-                    <span class="n">Seq</span><span class="p">(</span>
-                        <span class="n">mut_seq</span><span class="p">[</span>
-                            <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
-                                <span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(((</span><span class="nb">len</span><span class="p">(</span><span class="n">mut_seq</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="mi">3</span><span class="p">)))</span>
-                            <span class="p">)</span>
-                        <span class="p">]</span>
-                    <span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">()</span>
-                <span class="p">)</span>
-                <span class="n">dist</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span><span class="n">aa</span><span class="p">,</span> <span class="n">aa_mut</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">dist</span> <span class="o">==</span> <span class="n">Nmuts</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">aa_mut</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">trial</span> <span class="o">-=</span> <span class="mi">1</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;100 consecutive attempts for creating a target sequence failed.&quot;</span>
-        <span class="p">)</span></div>
-
 <div class="viewcode-block" id="MutationModel.simulate"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">sequence</span><span class="p">,</span>
-        <span class="n">seq_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">progeny</span><span class="o">=</span><span class="n">poisson</span><span class="p">(</span><span class="mf">0.9</span><span class="p">),</span>
-        <span class="n">lambda0</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-        <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">N</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">n</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;simulate neutral binary branching process with mutation model</span>
-<span class="sd">        progeny must be like a scipy.stats distribution, with rvs() and mean()</span>
-<span class="sd">        methods.&quot;&quot;&quot;</span>
+        <span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">seq_bounds</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">progeny</span><span class="p">:</span> <span class="n">rv_discrete</span> <span class="o">=</span> <span class="n">poisson</span><span class="p">(</span><span class="mf">0.9</span><span class="p">),</span>
+        <span class="n">lambda0</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">frame</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">N</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">T</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TreeNode</span><span class="p">:</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sequence: root nucleotide sequence</span>
+<span class="sd">            seq_bounds: ranges for two subsequences used as two parallel genes</span>
+<span class="sd">            progeny: offspring distribution</span>
+<span class="sd">            lambda0: baseline mutation rate(s)</span>
+<span class="sd">            frame: coding frame of starting position(s)</span>
+<span class="sd">            N: maximum population size</span>
+<span class="sd">            T: maximum generation time</span>
+<span class="sd">            n: sample size</span>
+<span class="sd">            verbose: print more messages</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Checking the validity of the input parameters:</span>
         <span class="k">if</span> <span class="n">N</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">T</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of N and T can be used. One must be None.&quot;</span><span class="p">)</span>
@@ -444,7 +421,7 @@
         <span class="n">tree</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span> <span class="n">sequence</span><span class="p">)</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;terminated&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;frequency&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;abundance&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
         <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># &lt;-- time</span>
@@ -490,7 +467,7 @@
                             <span class="n">x</span> <span class="o">!=</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">mutated_sequence</span><span class="p">,</span> <span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
                         <span class="p">)</span>
                         <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span> <span class="n">mutated_sequence</span><span class="p">)</span>
-                        <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;frequency&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                        <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;abundance&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
                         <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;terminated&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
                         <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
                         <span class="n">leaf</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
@@ -502,7 +479,7 @@
                 <span class="p">)</span>
             <span class="p">)</span>
 
-        <span class="c1"># each leaf in final generation gets an observation frequency of 1, unless downsampled</span>
+        <span class="c1"># each leaf in final generation gets an observed abundance of 1, unless downsampled</span>
         <span class="k">if</span> <span class="n">T</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="c1"># Iterate the intermediate time steps:</span>
             <span class="k">for</span> <span class="n">Ti</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">T</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
@@ -523,19 +500,19 @@
                 <span class="p">)</span> <span class="ow">in</span> <span class="p">(</span>
                     <span class="n">final_leaves</span>
                 <span class="p">):</span>  <span class="c1"># No need to down-sample, this was already done in the simulation loop</span>
-                    <span class="n">leaf</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">leaf</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="c1"># Do the normal sampling of the last time step:</span>
         <span class="n">final_leaves</span> <span class="o">=</span> <span class="p">[</span><span class="n">leaf</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">()</span> <span class="k">if</span> <span class="n">leaf</span><span class="o">.</span><span class="n">time</span> <span class="o">==</span> <span class="n">t</span><span class="p">]</span>
         <span class="c1"># by default, downsample to the target simulation size</span>
         <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">final_leaves</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">n</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">final_leaves</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-                <span class="n">leaf</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">leaf</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">elif</span> <span class="n">n</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">N</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">final_leaves</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
-                <span class="n">leaf</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">leaf</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">elif</span> <span class="n">N</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">T</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">final_leaves</span><span class="p">:</span>
-                <span class="n">leaf</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">leaf</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">elif</span> <span class="n">n</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">final_leaves</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="s2">&quot;tree terminated with </span><span class="si">{}</span><span class="s2"> leaves, less than what desired after downsampling </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -547,13 +524,13 @@
 
         <span class="c1"># prune away lineages that are unobserved</span>
         <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">frequency</span> <span class="k">for</span> <span class="n">node2</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">node2</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">node</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
 
         <span class="c1"># # remove unobserved unifurcations</span>
         <span class="c1"># for node in tree.iter_descendants():</span>
         <span class="c1">#     parent = node.up</span>
-        <span class="c1">#     if node.frequency == 0 and len(node.children) == 1:</span>
+        <span class="c1">#     if node.abundance == 0 and len(node.children) == 1:</span>
         <span class="c1">#         node.delete(prevent_nondicotomic=False)</span>
         <span class="c1">#         node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)</span>
 

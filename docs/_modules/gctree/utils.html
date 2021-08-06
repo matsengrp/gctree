@@ -88,22 +88,23 @@
               
             
             
-              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cite.html">Citing gctree</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
 </ul>
-<p class="caption"><span class="caption-text">CLI Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html">gctree</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../cli.html#parsimony-utilities">Parsimony utilities</a></li>
 </ul>
-<p class="caption"><span class="caption-text">API Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../api.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html#submodules">Submodules</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../developer.html">Open source code repository</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../developer.html#developer-tools">Developer tools</a></li>
@@ -174,14 +175,16 @@
            <div itemprop="articleBody">
             
   <h1>Source code for gctree.utils</h1><div class="highlight"><pre>
-<span></span><span class="ch">#! /usr/bin/env python</span>
-<span class="c1"># -*- coding: utf-8 -*-</span>
-
-<span class="sd">&quot;&quot;&quot;Utility functions.&quot;&quot;&quot;</span>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Utility functions.&quot;&quot;&quot;</span>
 
 
-<div class="viewcode-block" id="hamming_distance"><a class="viewcode-back" href="../../stubs/gctree.utils.hamming_distance.html#gctree.utils.hamming_distance">[docs]</a><span class="k">def</span> <span class="nf">hamming_distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Hamming distance between two sequences of equal length.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="hamming_distance"><a class="viewcode-back" href="../../stubs/gctree.utils.hamming_distance.html#gctree.utils.hamming_distance">[docs]</a><span class="k">def</span> <span class="nf">hamming_distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seq2</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Hamming distance between two sequences of equal length.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        seq1: sequence 1</span>
+<span class="sd">        seq2: sequence 2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq2</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>

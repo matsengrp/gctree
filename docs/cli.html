@@ -41,7 +41,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Modules" href="api.html" />
+    <link rel="next" title="Classes" href="api.html" />
     <link rel="prev" title="Quickstart" href="quickstart.html" /> 
 </head>
 
@@ -90,13 +90,13 @@
               
             
             
-              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cite.html">Citing gctree</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 </ul>
-<p class="caption"><span class="caption-text">CLI Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">gctree</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Sub-commands:">Sub-commands:</a><ul>
@@ -137,11 +137,12 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">API Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#submodules">Submodules</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="developer.html">Open source code repository</a></li>
 <li class="toctree-l1"><a class="reference internal" href="developer.html#developer-tools">Developer tools</a></li>
@@ -224,7 +225,7 @@
 <div class="section" id="test">
 <h3>test<a class="headerlink" href="#test" title="Permalink to this headline">¶</a></h3>
 <p>run tests on library functions</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">test</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">test</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
 </pre></div>
 </div>
 <div class="section" id="Named Arguments">
@@ -236,14 +237,18 @@
 <dt><kbd>--img_type</kbd></dt>
 <dd><p>output image file type</p>
 </dd>
+<dt><kbd>--verbose</kbd></dt>
+<dd><p>flag for verbose messaging</p>
+</dd>
 </dl>
 </div>
 </div>
 <div class="section" id="infer">
 <h3>infer<a class="headerlink" href="#infer" title="Permalink to this headline">¶</a></h3>
 <p>likelihood ranking of parsimony trees</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">infer</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap_phylipfile</span> <span class="n">BOOTSTRAP_PHYLIPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">colormapfile</span> <span class="n">COLORMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">chain_split</span> <span class="n">CHAIN_SPLIT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span>
-             <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">infer</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap_phylipfile</span> <span class="n">BOOTSTRAP_PHYLIPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">colormapfile</span> <span class="n">COLORMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">chain_split</span> <span class="n">CHAIN_SPLIT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame2</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">positionmapfile</span> <span class="n">POSITIONMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">positionmapfile2</span> <span class="n">POSITIONMAPFILE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
              <span class="n">phylipfile</span> <span class="n">abundance_file</span>
 </pre></div>
 </div>
@@ -262,16 +267,26 @@
 <h4>Named Arguments<a class="headerlink" href="#Named Arguments_repeat1" title="Permalink to this headline">¶</a></h4>
 <dl class="option-list">
 <dt><kbd>--root</kbd></dt>
-<dd><p>name of root sequence (outgroup root), default ‘root’</p>
+<dd><p>name of root sequence (outgroup root), default <code class="docutils literal notranslate"><span class="pre">&quot;root&quot;</span></code></p>
 </dd>
 <dt><kbd>--bootstrap_phylipfile</kbd></dt>
 <dd><p>dnapars outfile from seqboot (multiple data sets)</p>
 </dd>
 <dt><kbd>--colormapfile</kbd></dt>
-<dd><p>File containing color map in the format: “SeqID color”</p>
+<dd><p>File containing color map in the tab-separated format: <code class="docutils literal notranslate"><span class="pre">&quot;SeqID</span> <span class="pre">color&quot;</span></code></p>
 </dd>
 <dt><kbd>--chain_split</kbd></dt>
-<dd><p>split between heavy and light for combined seqs</p>
+<dd><p>when using concatenated heavy and light chains, this is the 0-based index at which the 2nd chain begins, needed for determining coding frame in both chains</p>
+</dd>
+<dt><kbd>--frame2</kbd></dt>
+<dd><p>Possible choices: 1, 2, 3</p>
+<p>codon frame for the second chain when using the <code class="docutils literal notranslate"><span class="pre">chain_split</span></code> option</p>
+</dd>
+<dt><kbd>--positionmapfile</kbd></dt>
+<dd><p>file containing a list of position numbers (e.g. IMGT) corresponding to indices in sequence</p>
+</dd>
+<dt><kbd>--positionmapfile2</kbd></dt>
+<dd><p>positionmapfile for the 2nd chain when using the <code class="docutils literal notranslate"><span class="pre">chain_split</span></code> option</p>
 </dd>
 <dt><kbd>--outbase</kbd></dt>
 <dd><p>output file base name</p>
@@ -279,12 +294,15 @@
 <dt><kbd>--img_type</kbd></dt>
 <dd><p>output image file type</p>
 </dd>
+<dt><kbd>--verbose</kbd></dt>
+<dd><p>flag for verbose messaging</p>
+</dd>
 <dt><kbd>--frame</kbd></dt>
 <dd><p>Possible choices: 1, 2, 3</p>
 <p>codon frame</p>
 </dd>
 <dt><kbd>--idlabel</kbd></dt>
-<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if True</p>
+<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
 </dd>
 </dl>
 </div>
@@ -293,7 +311,7 @@
 <h3>simulate<a class="headerlink" href="#simulate" title="Permalink to this headline">¶</a></h3>
 <p>Neutral, and target selective, model gctree simulation</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">simulate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sequence2</span> <span class="n">SEQUENCE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="k">lambda</span> <span class="n">LAMBDA_</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">lambda0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">T</span> <span class="n">T</span> <span class="p">[</span><span class="n">T</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">target_dist</span> <span class="n">TARGET_DIST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">plotAA</span> <span class="n">PLOTAA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span> <span class="n">VERBOSE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">target_dist</span> <span class="n">TARGET_DIST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">plotAA</span> <span class="n">PLOTAA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
                 <span class="n">sequence</span> <span class="n">mutability</span> <span class="n">substitution</span>
 </pre></div>
 </div>
@@ -341,21 +359,21 @@
 <dt><kbd>--plotAA</kbd></dt>
 <dd><p>Plot trees with collapsing and coloring on amino acid level.</p>
 </dd>
-<dt><kbd>--verbose</kbd></dt>
-<dd><p>Print progress during simulation.</p>
-</dd>
 <dt><kbd>--outbase</kbd></dt>
 <dd><p>output file base name</p>
 </dd>
 <dt><kbd>--img_type</kbd></dt>
 <dd><p>output image file type</p>
 </dd>
+<dt><kbd>--verbose</kbd></dt>
+<dd><p>flag for verbose messaging</p>
+</dd>
 <dt><kbd>--frame</kbd></dt>
 <dd><p>Possible choices: 1, 2, 3</p>
 <p>codon frame</p>
 </dd>
 <dt><kbd>--idlabel</kbd></dt>
-<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if True</p>
+<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
 </dd>
 </dl>
 </div>
@@ -491,7 +509,7 @@ ancestral sequences), a newick tree (with matching internal node lables), and an
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="api.html" class="btn btn-neutral float-right" title="Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="api.html" class="btn btn-neutral float-right" title="Classes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
         <a href="quickstart.html" class="btn btn-neutral float-left" title="Quickstart" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 

@@ -40,17 +40,18 @@ def test(args):
     np.seterr(all="ignore")
     for p in ps:
         for q in qs:
-            forest = bp.CollapsedForest((p, q), n)
-            print(f"parameters: p = {p}, q = {q}")
-            forest.simulate()
+            forest = bp.CollapsedForest()
+            if args.verbose:
+                print(f"parameters: p = {p}, q = {q}")
+            forest.simulate(p, q, n)
             tree_dict = {}
             for tree in forest.forest:
                 tree_hash = tuple(
-                    (node.frequency, len(node.children))
+                    (node.abundance, len(node.children))
                     for node in tree.tree.traverse()
                 )
                 if tree_hash not in tree_dict:
-                    tree_dict[tree_hash] = [tree, tree.ll((p, q))[0], 1]
+                    tree_dict[tree_hash] = [tree, tree.ll(p, q)[0], 1]
                 else:
                     tree_dict[tree_hash][-1] += 1
             L_empirical, L_theoretical = zip(
@@ -69,7 +70,8 @@ def test(args):
                     np.exp(tree_dict[tree_hash][1]),
                 )
                 ct += 1
-    print()
+    if args.verbose:
+        print()
 
     plt.figure()
     limx = (1 / n, 1.1)
@@ -119,11 +121,12 @@ def test(args):
     for p in ps:
         for q in qs:
             for _ in range(n):
-                forest = bp.CollapsedForest((p, q), n2)
-                print(f"parameters: p = {p}, q = {q}")
-                forest.simulate()
-                result = forest.mle()
-                df.loc[ct] = (f"p={p}, q={q}", result.x[0], result.x[1])
+                forest = bp.CollapsedForest()
+                if args.verbose:
+                    print(f"parameters: p = {p}, q = {q}")
+                forest.simulate(p, q, n2)
+                p_inferred, q_inferred = forest.mle()
+                df.loc[ct] = (f"p={p}, q={q}", p_inferred, q_inferred)
                 ct += 1
 
     plt.figure()
@@ -167,14 +170,14 @@ def infer(args):
 
     for i, content in enumerate(outfiles):
         if i > 0:
-            print(f"bootstrap sample {i}")
-            print("----------------------")
+            if args.verbose:
+                print(f"bootstrap sample {i}")
+                print("----------------------")
             outbase = args.outbase + f".bootstrap_{i}"
         else:
             outbase = args.outbase
         phylip_collapsed = [
-            bp.CollapsedTree(tree=tree, frame=args.frame, allow_repeats=(i > 0))
-            for tree in content
+            bp.CollapsedTree(tree=tree, allow_repeats=(i > 0)) for tree in content
         ]
         phylip_collapsed_unique = []
         for tree in phylip_collapsed:
@@ -192,14 +195,17 @@ def infer(args):
         if parsimony_forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
 
-        print("number of trees with integer branch lengths:", parsimony_forest.n_trees)
+        if args.verbose:
+            print(
+                "number of trees with integer branch lengths:", parsimony_forest.n_trees
+            )
 
         # check for unifurcations at root
         unifurcations = sum(
-            tree.tree.frequency == 0 and len(tree.tree.children) == 1
+            tree.tree.abundance == 0 and len(tree.tree.children) == 1
             for tree in parsimony_forest.forest
         )
-        if unifurcations:
+        if unifurcations and args.verbose:
             print(
                 f"{unifurcations} trees exhibit unobserved unifurcation from"
                 " root. Adding psuedocounts to these roots"
@@ -211,10 +217,10 @@ def infer(args):
         max_tries = 10
         for tries in range(max_tries):
             try:
-                parsimony_forest.mle(empirical_bayes_sum=True)
+                p, q = parsimony_forest.mle(marginal=True)
                 break
             except FloatingPointError as e:
-                if tries + 1 < max_tries:
+                if tries + 1 < max_tries and args.verbose:
                     print(
                         f"floating point error in MLE: {e}. "
                         f"Attempt {tries + 1} of {max_tries}. "
@@ -225,16 +231,14 @@ def infer(args):
             else:
                 raise
 
-        print(f"params = {parsimony_forest.params}")
+        if args.verbose:
+            print(f"params: {(p, q)}")
 
         if i > 0:
-            df.loc[i - 1] = parsimony_forest.params
+            df.loc[i - 1] = p, q
 
         # get likelihoods and sort by them
-        ls = [
-            tree.ll(parsimony_forest.params, build_cache=False)[0]
-            for tree in parsimony_forest.forest
-        ]
+        ls = [tree.ll(p, q)[0] for tree in parsimony_forest.forest]
         ls, parsimony_forest.forest = zip(
             *sorted(zip(ls, parsimony_forest.forest), key=lambda x: x[0], reverse=True)
         )
@@ -261,17 +265,38 @@ def infer(args):
         else:
             colormap = None
 
-        print("tree\talleles\tlogLikelihood")
+        # parse position map file(s)
+        if args.positionmapfile is not None:
+            with open(args.positionmapfile) as f:
+                position_map = [int(x) for x in f.read().split()]
+        else:
+            position_map = None
+
+        if args.positionmapfile2 is not None:
+            with open(args.positionmapfile2) as f:
+                position_map2 = [int(x) for x in f.read().split()]
+        else:
+            position_map2 = None
+
+        if args.verbose:
+            print("tree\talleles\tlogLikelihood")
         for j, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
             alleles = sum(1 for _ in collapsed_tree.tree.traverse())
-            print(f"{j}\t{alleles}\t{l}")
+            if args.verbose:
+                print(f"{j}\t{alleles}\t{l}")
             collapsed_tree.render(
                 f"{outbase}.inference.{j}.svg",
                 idlabel=args.idlabel,
                 colormap=colormap,
+                frame=args.frame,
+                position_map=position_map,
                 chain_split=args.chain_split,
+                frame2=args.frame2,
+                position_map2=position_map2,
             )
             collapsed_tree.newick(f"{outbase}.inference.{j}.nk")
+            with open(f"{outbase}.inference.{j}.p", "wb") as f:
+                pickle.dump(collapsed_tree, f)
 
         # rank plot of likelihoods
         plt.figure(figsize=(6.5, 2))
@@ -295,9 +320,9 @@ def infer(args):
         # rank plot of observed allele frequencies
         y = sorted(
             (
-                node.frequency
+                node.abundance
                 for node in parsimony_forest.forest[0].tree.traverse()
-                if node.frequency != 0
+                if node.abundance != 0
             ),
             reverse=True,
         )
@@ -332,16 +357,24 @@ def infer(args):
             args.outbase + ".inference.bootstrap_support.svg",
             colormap=colormap,
             idlabel=args.idlabel,
-            chain_split=args.chain_split,
+            frame=args.frame,
+            position_map=position_map,
             show_support=True,
+            chain_split=args.chain_split,
+            frame2=args.frame2,
+            position_map2=position_map2,
         )
         gctrees[0].support(gctrees[1:], compatibility=True)
         gctrees[0].render(
             args.outbase + ".inference.bootstrap_compatibility.svg",
             colormap=colormap,
             idlabel=args.idlabel,
-            chain_split=args.chain_split,
+            frame=args.frame,
+            position_map=position_map,
             show_support=True,
+            chain_split=args.chain_split,
+            frame2=args.frame2,
+            position_map2=position_map2,
         )
 
 
@@ -367,10 +400,11 @@ def simulate(args):
             )
         # Require both sequences to be in frame 1:
         if args.frame is not None and args.frame != 1:
-            print(
-                "Warning: When simulating with two sequences they are "
-                "truncated to be beginning at frame 1."
-            )
+            if args.verbose:
+                print(
+                    "Warning: When simulating with two sequences they are "
+                    "truncated to be beginning at frame 1."
+                )
             args.sequence = args.sequence[
                 (args.frame - 1) : (
                     args.frame
@@ -391,7 +425,7 @@ def simulate(args):
             (len(args.sequence), len(args.sequence) + len(args.sequence2)),
         )
         # Merge the two seqeunces to simplify future dealing with the pair:
-        args.sequence += args.sequence2.upper()
+        args.sequence += args.sequence2
     else:
         seq_bounds = None
 
@@ -411,9 +445,9 @@ def simulate(args):
                 verbose=args.verbose,
             )
             # this will fail if backmutations
-            collapsed_tree = bp.CollapsedTree(tree=tree, frame=args.frame)
+            collapsed_tree = bp.CollapsedTree(tree=tree)
             tree.ladderize()
-            uniques = sum(node.frequency > 0 for node in collapsed_tree.tree.traverse())
+            uniques = sum(node.abundance > 0 for node in collapsed_tree.tree.traverse())
             if uniques < 2:
                 raise RuntimeError(
                     f"collapsed tree contains {uniques} " "sampled sequences"
@@ -435,7 +469,7 @@ def simulate(args):
         fh2.write(">root\n")
         fh2.write(args.sequence[seq_bounds[1][0] : seq_bounds[1][1]] + "\n")
         for leaf in tree.iter_leaves():
-            if leaf.frequency != 0:
+            if leaf.abundance != 0:
                 fh1.write(">" + leaf.name + "\n")
                 fh1.write(leaf.sequence[seq_bounds[0][0] : seq_bounds[0][1]] + "\n")
                 fh2.write(">" + leaf.name + "\n")
@@ -445,29 +479,29 @@ def simulate(args):
             f.write(">root\n")
             f.write(args.sequence + "\n")
             for leaf in tree.iter_leaves():
-                if leaf.frequency != 0:
+                if leaf.abundance != 0:
                     f.write(">" + leaf.name + "\n")
                     f.write(leaf.sequence + "\n")
 
     # some observable simulation stats to write
-    frequency, distance_from_root, degree = zip(
+    abundance, distance_from_root, degree = zip(
         *[
             (
-                node.frequency,
+                node.abundance,
                 utils.hamming_distance(node.sequence, args.sequence),
                 sum(
                     utils.hamming_distance(node.sequence, node2.sequence) == 1
                     for node2 in collapsed_tree.tree.traverse()
-                    if node2.frequency and node2 is not node
+                    if node2.abundance and node2 is not node
                 ),
             )
             for node in collapsed_tree.tree.traverse()
-            if node.frequency
+            if node.abundance
         ]
     )
     stats = pd.DataFrame(
         {
-            "genotype abundance": frequency,
+            "genotype abundance": abundance,
             "Hamming distance to root genotype": distance_from_root,
             "Hamming neighbor genotypes": degree,
         }
@@ -475,7 +509,7 @@ def simulate(args):
     stats.to_csv(args.outbase + ".simulation.stats.tsv", sep="\t", index=False)
 
     print(
-        f"{sum(leaf.frequency for leaf in collapsed_tree.tree.traverse())}"
+        f"{sum(leaf.abundance for leaf in collapsed_tree.tree.traverse())}"
         " simulated observed sequences"
     )
 
@@ -521,6 +555,7 @@ def simulate(args):
         args.outbase + ".simulation.collapsed_tree.svg",
         idlabel=args.idlabel,
         colormap=colormap,
+        frame=args.frame,
     )
     # print colormap to file
     with open(args.outbase + ".simulation.collapsed_tree.colormap.tsv", "w") as f:
@@ -562,7 +597,7 @@ def get_parser():
         "--root",
         type=str,
         default="root",
-        help="name of root sequence (outgroup root), default 'root'",
+        help=r'name of root sequence (outgroup root), default ``"root"``',
     )
     parser_infer.add_argument(
         "phylipfile",
@@ -584,13 +619,32 @@ def get_parser():
         "--colormapfile",
         type=str,
         default=None,
-        help='File containing color map in the format: "SeqID\tcolor"',
+        help='File containing color map in the tab-separated format: ``"SeqID\tcolor"``',
     )
     parser_infer.add_argument(
         "--chain_split",
         type=int,
         default=None,
-        help="split between heavy and light for combined seqs",
+        help="when using concatenated heavy and light chains, this is the 0-based index at which the 2nd chain begins, needed for determining coding frame in both chains",
+    )
+    parser_infer.add_argument(
+        "--frame2",
+        type=int,
+        default=None,
+        choices=(1, 2, 3),
+        help=r"codon frame for the second chain when using the ``chain_split`` option",
+    )
+    parser_infer.add_argument(
+        "--positionmapfile",
+        type=str,
+        default=None,
+        help="file containing a list of position numbers (e.g. IMGT) corresponding to indices in sequence",
+    )
+    parser_infer.add_argument(
+        "--positionmapfile2",
+        type=str,
+        default=None,
+        help="positionmapfile for the 2nd chain when using the ``chain_split`` option",
     )
     parser_infer.set_defaults(func=infer)
 
@@ -660,12 +714,6 @@ def get_parser():
         default=False,
         help="Plot trees with collapsing and coloring on amino acid level.",
     )
-    parser_sim.add_argument(
-        "--verbose",
-        type=bool,
-        default=False,
-        help="Print progress during simulation.",
-    )
     parser_sim.set_defaults(func=simulate)
 
     # shared parameters
@@ -676,6 +724,9 @@ def get_parser():
         subparser.add_argument(
             "--img_type", type=str, default="svg", help="output image file type"
         )
+        subparser.add_argument(
+            "--verbose", action="store_true", help="flag for verbose messaging"
+        )
 
     # common parameters for the inference and simulation subprograms
     for subparser in [parser_infer, parser_sim]:
@@ -685,9 +736,9 @@ def get_parser():
         subparser.add_argument(
             "--idlabel",
             action="store_true",
-            help="flag for labeling the sequence ids of the nodes in the "
+            help=r"flag for labeling the sequence ids of the nodes in the "
             "output tree images, also write associated fasta alignment "
-            "if True",
+            "if ``True``",
         )
 
     return parser
