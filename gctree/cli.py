@@ -217,7 +217,7 @@ def infer(args):
         max_tries = 10
         for tries in range(max_tries):
             try:
-                p, q = parsimony_forest.mle(empirical_bayes_sum=True)
+                p, q = parsimony_forest.mle(marginal=True)
                 break
             except FloatingPointError as e:
                 if tries + 1 < max_tries and args.verbose:

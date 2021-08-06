@@ -32,7 +32,7 @@ class CollapsedTree:
     to extinction.
 
     Attributes:
-        tree: ete3 tree with ``abundance`` node features
+        tree: :class:`ete3.TreeNode` object with ``abundance`` node features
 
     Args:
         tree: ete3 tree with ``abundance`` node features. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
@@ -288,7 +288,10 @@ class CollapsedTree:
     def ll(
         self, p: np.float64, q: np.float64, build_cache: bool = True
     ) -> Tuple[np.float64, np.ndarray]:
-        r"""Log likelihood :math:`\ell(p, q)` and its gradient :math:`\nabla\ell(p, q)`.
+        r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.
+
+        .. math::
+            \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)
 
         Args:
             p: branching probability
@@ -296,7 +299,7 @@ class CollapsedTree:
             build_cache: build cache from the bottom up. Normally this should be left to its default ``True``.
 
         Returns:
-            log-likelihood and gradient
+            Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
         """
         if self.tree is None:
             raise ValueError("tree data must be defined to compute likelihood")
@@ -625,7 +628,7 @@ class CollapsedTree:
         else:
             raise ValueError("invalid distance method: " + method)
 
-    def get_split(self, node: ete3.TreeNode) -> Tuple[Set, Set]:
+    def _get_split(self, node: ete3.TreeNode) -> Tuple[Set, Set]:
         r"""Return the bipartition resulting from clipping this node's edge
         above.
 
@@ -688,7 +691,7 @@ class CollapsedTree:
         weights: List[np.float64] = None,
         compatibility: bool = False,
     ):
-        r"""Compute support from a list of bootstrap ``CollapsedTree`` objects, and add to tree attibute.
+        r"""Compute support from a list of bootstrap :class:`CollapsedTree` objects, and add to tree attibute.
 
         Args:
             bootstrap_trees_list: List of trees
@@ -696,14 +699,14 @@ class CollapsedTree:
             compatibility: counts trees that don't disconfirm the split.
         """
         for node in self.tree.get_descendants():
-            split = self.get_split(node)
+            split = self._get_split(node)
             support = 0
             compatibility_ = 0
             for i, tree in enumerate(bootstrap_trees_list):
                 compatible = True
                 supported = False
                 for boot_node in tree.tree.get_descendants():
-                    boot_split = tree.get_split(boot_node)
+                    boot_split = tree._get_split(boot_node)
                     if (
                         compatibility
                         and compatible
@@ -732,7 +735,7 @@ class CollapsedForest:
         forest: list of :class:`CollapsedTree`
     """
 
-    def __init__(self, forest=None):
+    def __init__(self, forest: List[CollapsedTree] = None):
         if forest is not None:
             if len(forest) == 0:
                 raise ValueError("passed empty tree list")
@@ -774,20 +777,27 @@ class CollapsedForest:
         self,
         p: np.float64,
         q: np.float64,
-        empirical_bayes_sum: bool = False,
+        marginal: bool = False,
     ) -> Tuple[np.float64, np.ndarray]:
-        r"""Log likelihood :math:`\ell(p, q)` and its gradient :math:`\nabla\ell(p, q)`.
+        r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topologies :math:`T_1, \dots, T_n` and corresponding genotype abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees in the forest.
+
+        If ``marginal=False`` (the default), compute the joint log likelihood
+
+        .. math::
+            \ell(p, q; T, A) = \sum_{i=1}^n\log\mathbb{P}(T_i, A_i \mid p, q),
+
+        otherwise compute the marginal log likelihood
+
+        .. math::
+            \ell(p, q; T, A) = \log\left(\sum_{i=1}^n\mathbb{P}(T_i, A_i \mid p, q)\right).
 
         Args:
             p: branching probability
             q: mutation probability
-            empirical_bayes_sum: log of the total likelihood (marginalizing over trees)
+            marginal: compute the marginal likelihood over trees, otherwise compute the joint likelihood of trees
 
         Returns:
-            log-likelihood and gradient
-
-            optional parameter empirical_bayes_sum is true,
-        we're estimating params for a set of parsimony trees
+            Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
         """
         if self.forest is None:
             raise ValueError("forest data must be defined to compute likelihood")
@@ -796,7 +806,7 @@ class CollapsedForest:
         terms = [tree.ll(p, q, build_cache=False) for tree in self.forest]
         ls = np.array([term[0] for term in terms])
         grad_ls = np.array([term[1] for term in terms])
-        if empirical_bayes_sum:
+        if marginal:
             # we need to find the smallest derivative component for each
             # coordinate, then subtract off to get positive things to logsumexp
             grad_l = []
