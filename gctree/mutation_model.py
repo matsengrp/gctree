@@ -1,32 +1,32 @@
-#! /usr/bin/env python
-
-"""Mutation models."""
-
-from gctree.utils import hamming_distance
+r"""Mutation models."""
 
 from ete3 import TreeNode
-from scipy.stats import poisson
+import numpy as np
+from scipy.stats import poisson, rv_discrete
 import random
 import scipy
 from Bio.Seq import Seq
+from typing import Tuple, List
 
 
 class MutationModel:
-    """a class for a mutation model, and functions to mutate sequences."""
+    r"""A class for a mutation model, and functions to mutate sequences.
+
+    Args:
+        mutability_file: S5F format mutabilities
+        substitution_file: S5F format substitution biases
+        mutation_order: whether or not to mutate sequences using a context sensitive manner
+                        where mutation order matters
+        with_replacement: allow the same position to mutate multiple times on a single branch
+    """
 
     def __init__(
         self,
-        mutability_file=None,
-        substitution_file=None,
-        mutation_order=True,
-        with_replacement=True,
+        mutability_file: str = None,
+        substitution_file: str = None,
+        mutation_order: bool = True,
+        with_replacement: bool = True,
     ):
-        """initialized with input files of the S5F format.
-
-        @param mutation_order: whether or not to mutate sequences using a context sensitive manner
-                                where mutation order matters
-        @param with_replacement: allow the same position to mutate multiple times on a single branch
-        """
         self.mutation_order = mutation_order
         self.with_replacement = with_replacement
         if mutability_file is not None and substitution_file is not None:
@@ -59,8 +59,8 @@ class MutationModel:
             self.context_model = None
 
     @staticmethod
-    def disambiguate(sequence):
-        """generator of all possible nt sequences implied by a sequence
+    def _disambiguate(sequence):
+        r"""generator of all possible nt sequences implied by a sequence
         containing Ns."""
         # find the first N nucleotide
         N_index = sequence.find("N")
@@ -71,14 +71,18 @@ class MutationModel:
             for n_replace in "ACGT":
                 # ooooh, recursion
                 # NOTE: in python3 we could simply use "yield from..." instead of this loop
-                for sequence_recurse in MutationModel.disambiguate(
+                for sequence_recurse in MutationModel._disambiguate(
                     sequence[:N_index] + n_replace + sequence[N_index + 1 :]
                 ):
                     yield sequence_recurse
 
-    def mutability(self, kmer):
-        """returns the mutability of a central base of kmer, along with
-        nucleotide bias averages over N nucleotide identities."""
+    def mutability(self, kmer: str) -> Tuple[np.float64, np.float64]:
+        r"""Returns the mutability of a central base of :math:`k`-mer, along with
+        nucleotide bias averages over ``N`` nucleotide identities.
+
+        Args:
+            kmer: nucleotide :math:`k`-mer
+        """
         if self.context_model is None:
             raise ValueError("kmer mutability only defined for context models")
         if len(kmer) != self.k:
@@ -93,7 +97,7 @@ class MutationModel:
             )
 
         mutabilities_to_average, substitutions_to_average = zip(
-            *[self.context_model[x] for x in MutationModel.disambiguate(kmer)]
+            *[self.context_model[x] for x in MutationModel._disambiguate(kmer)]
         )
 
         average_mutability = scipy.mean(mutabilities_to_average)
@@ -107,9 +111,13 @@ class MutationModel:
 
         return average_mutability, average_substitution
 
-    def mutabilities(self, sequence):
-        """returns the mutability of a sequence at each site, along with
-        nucleotide biases."""
+    def mutabilities(self, sequence: str) -> List[Tuple[np.float64, np.float64]]:
+        r"""Returns the mutability of a sequence at each site, along with
+        nucleotide biases.
+
+        Args:
+            sequence: nucleotide sequence
+        """
         if self.context_model is None:
             return [
                 (1, dict((n2, 1 / 3) if n2 is not n else (n2, 0.0) for n2 in "ACGT"))
@@ -124,13 +132,14 @@ class MutationModel:
                 for i in range(self.k // 2, len(sequence) - self.k // 2)
             ]
 
-    def mutate(self, sequence, lambda0=1, frame=None):
-        """Mutate a sequence, with lamdba0 the baseline mutability Cannot
+    def mutate(self, sequence: str, lambda0: np.float64 = 1, frame: int = None) -> str:
+        r"""Mutate a sequence, with lamdba0 the baseline mutability. Cannot
         mutate the same position multiple times.
 
-        @param sequence: the original sequence to mutate
-        @param lambda0: a "baseline" mutation rate
-        @param frame: the reading frame index
+        Args:
+            sequence: nucleotide sequence to mutate
+            lambda0: a baseline mutation rate
+            frame: the reading frame of the first postition
         """
         sequence_length = len(sequence)
         if frame is not None:
@@ -197,64 +206,31 @@ class MutationModel:
 
         return sequence
 
-    def one_mutant(self, sequence, Nmuts, frame=1, lambda0=0.1):
-        """Make a single mutant with a distance, in amino acid sequence, of
-        Nmuts away from the starting point."""
-        trial = 100  # Allow 100 trials before quitting
-        while trial > 0:
-            mut_seq = sequence[:]
-            aa = str(
-                Seq(
-                    sequence[
-                        (frame - 1) : (
-                            frame - 1 + (3 * (((len(sequence) - (frame - 1)) // 3)))
-                        )
-                    ]
-                ).translate()
-            )
-            aa_mut = Seq(
-                mut_seq[
-                    (frame - 1) : (
-                        frame - 1 + (3 * (((len(mut_seq) - (frame - 1)) // 3)))
-                    )
-                ]
-            ).translate()
-            dist = hamming_distance(aa, aa_mut)
-            while dist < Nmuts:
-                mut_seq = self.mutate(mut_seq, lambda0=lambda0, frame=frame)
-                aa_mut = str(
-                    Seq(
-                        mut_seq[
-                            (frame - 1) : (
-                                frame - 1 + (3 * (((len(mut_seq) - (frame - 1)) // 3)))
-                            )
-                        ]
-                    ).translate()
-                )
-                dist = hamming_distance(aa, aa_mut)
-            if dist == Nmuts:
-                return aa_mut
-            else:
-                trial -= 1
-        raise RuntimeError(
-            "100 consecutive attempts for creating a target sequence failed."
-        )
-
     def simulate(
         self,
-        sequence,
-        seq_bounds=None,
-        progeny=poisson(0.9),
-        lambda0=[1],
-        frame=None,
-        N=None,
-        T=None,
-        n=None,
-        verbose=False,
-    ):
-        """simulate neutral binary branching process with mutation model
-        progeny must be like a scipy.stats distribution, with rvs() and mean()
-        methods."""
+        sequence: str,
+        seq_bounds: Tuple[Tuple[int, int], Tuple[int, int]] = None,
+        progeny: rv_discrete = poisson(0.9),
+        lambda0: List[np.float64] = [1],
+        frame: int = None,
+        N: int = None,
+        T: int = None,
+        n: int = None,
+        verbose: bool = False,
+    ) -> TreeNode:
+        r"""Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.
+
+        Args:
+            sequence: root nucleotide sequence
+            seq_bounds: ranges for two subsequences used as two parallel genes
+            progeny: offspring distribution
+            lambda0: baseline mutation rate(s)
+            frame: coding frame of starting position(s)
+            N: maximum population size
+            T: maximum generation time
+            n: sample size
+            verbose: print more messages
+        """
         # Checking the validity of the input parameters:
         if N is not None and T is not None:
             raise ValueError("Only one of N and T can be used. One must be None.")
