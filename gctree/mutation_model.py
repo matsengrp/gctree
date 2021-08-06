@@ -78,7 +78,7 @@ class MutationModel:
 
     def mutability(self, kmer: str) -> Tuple[np.float64, np.float64]:
         r"""Returns the mutability of a central base of :math:`k`-mer, along with
-        nucleotide bias averages over ``N`` nucleotide identities.
+        nucleotide bias averages over ambiguous ``"N"`` nucleotide identities.
 
         Args:
             kmer: nucleotide :math:`k`-mer
