@@ -91,6 +91,6 @@ Then there are files ``gctree.out.inference.[1,2,...].svg`` and ``gctree.out.inf
 For example here is the top ranked tree ``gctree.out.inference.1.svg``:
 
 .. image:: gctree.out.inference.1.svg
-  :width: 600
+  :width: 1000
 
 You will also see Python pickle files ``gctree.out.inference.[1,2,...].p`` containing a :obj:`gctree.branching_processes.CollapsedTree` object for each tree, which can be loaded and manipulated via the API.

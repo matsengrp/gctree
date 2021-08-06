@@ -22,7 +22,7 @@ from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 import pickle
 from functools import lru_cache
-from typing import Tuple, Dict, List, Union, Set
+from typing import Tuple, Dict, List, Union, Set, Callable
 
 np.seterr(all="raise")
 
@@ -288,12 +288,12 @@ class CollapsedTree:
     def ll(
         self, p: np.float64, q: np.float64, build_cache: bool = True
     ) -> Tuple[np.float64, np.ndarray]:
-        r"""Log likelihood of :math:`p` and :math:`q` and its
-        gradient.
+        r"""Log likelihood :math:`\ell(p, q)` and its gradient :math:`\nabla\ell(p, q)`.
 
         Args:
             p: branching probability
             q: mutation probability
+            build_cache: build cache from the bottom up. Normally this should be left to its default ``True``.
 
         Returns:
             log-likelihood and gradient
@@ -320,45 +320,18 @@ class CollapsedTree:
         return logf, grad_ll_genotype
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
-        r"""Maximum likelihood estimate for params given tree updates params if
-        not None returns optimization result.
+        r"""Maximum likelihood estimate of :math:`(p, q)`.
+
+        .. math::
+            (p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)
 
         Args:
-            kwargs: keyword arguments passed along to :meth:`branching_processes.CollapsedTree.ll`
+            kwargs: keyword arguments passed along to the log likelihood :meth:`branching_processes.CollapsedTree.ll`
 
         Returns:
             Tuple :math:`(p, q)` with estimated branching probability and estimated mutation probability
         """
-        # initialization
-        x_0 = (0.5, 0.5)
-        bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
-
-        def f(x):
-            """negative log likelihood."""
-            ll, grad_ll = self.ll(*x, **kwargs)
-            return -ll, -grad_ll
-
-        grad_check = check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
-        if grad_check > 1e-3:
-            warnings.warn(
-                "gradient mismatches finite difference "
-                f"approximation by {grad_check}",
-                RuntimeWarning,
-            )
-        result = minimize(
-            f,
-            jac=True,
-            x0=x_0,
-            method="L-BFGS-B",
-            options={"ftol": 1e-10},
-            bounds=bounds,
-        )
-        # update params if None and optimization successful
-        if not result.success:
-            warnings.warn(
-                "optimization not sucessful, " + result.message, RuntimeWarning
-            )
-        return result.x[0], result.x[1]
+        return _mle_helper(self.ll)
 
     def simulate(self, p: np.float64, q: np.float64, root: bool = True):
         r"""Simulate a collapsed tree as an infinite type Galton-Watson process
@@ -697,7 +670,7 @@ class CollapsedTree:
         return tuple(sorted([taxa1, taxa2]))
 
     @staticmethod
-    def split_compatibility(split1, split2):
+    def _split_compatibility(split1, split2):
         diff = split1[0].union(split1[1]) ^ split2[0].union(split2[1])
         if diff:
             raise ValueError(
@@ -734,7 +707,7 @@ class CollapsedTree:
                     if (
                         compatibility
                         and compatible
-                        and not self.split_compatibility(split, boot_split)
+                        and not self._split_compatibility(split, boot_split)
                     ):
                         compatible = False
                     if not compatibility and not supported and boot_split == split:
@@ -746,7 +719,7 @@ class CollapsedTree:
             node.support = compatibility_ if compatibility else support
 
 
-class CollapsedForest(CollapsedTree):
+class CollapsedForest():
     r"""A collection of ``CollapsedTree``
 
     We can intialize with a list of trees, each an instance of :class:`branching_processes.CollapsedTree`, or we can simulate the forest later.
@@ -802,10 +775,8 @@ class CollapsedForest(CollapsedTree):
         p: np.float64,
         q: np.float64,
         empirical_bayes_sum: bool = False,
-        build_cache: bool = True,
     ) -> Tuple[np.float64, np.ndarray]:
-        r"""Log likelihood of :math:`p` and :math:`q` and its
-        gradient.
+        r"""Log likelihood :math:`\ell(p, q)` and its gradient :math:`\nabla\ell(p, q)`.
 
         Args:
             p: branching probability
@@ -820,8 +791,7 @@ class CollapsedForest(CollapsedTree):
         """
         if self.forest is None:
             raise ValueError("forest data must be defined to compute likelihood")
-        if build_cache:
-            CollapsedTree._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
+        CollapsedTree._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
         # we don't want to build the cache again in each tree
         terms = [tree.ll(p, q, build_cache=False) for tree in self.forest]
         ls = np.array([term[0] for term in terms])
@@ -845,10 +815,44 @@ class CollapsedForest(CollapsedTree):
         else:
             return ls.sum(), grad_ls.sum(axis=0)
 
-    # NOTE: we get mle() method for free by inheritance/polymorphism magic
+    def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
+        return _mle_helper(self.ll)
+    mle.__doc__ = CollapsedTree.mle.__doc__
 
     def __repr__(self):
         r"""return a string representation for printing."""
         return f"n_trees = {self.n_trees}\n" "\n".join(
             [str(tree) for tree in self.forest]
         )
+
+
+def _mle_helper(ll: Callable[[np.float64, np.float64], Tuple[np.float64, np.ndarray]], **kwargs) -> Tuple[np.float64, np.float64]:
+    # initialization
+    x_0 = (0.5, 0.5)
+    bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
+
+    def f(x):
+        """negative log likelihood."""
+        return tuple(- x for x in ll(*x, **kwargs))
+
+    grad_check = check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
+    if grad_check > 1e-3:
+        warnings.warn(
+            "gradient mismatches finite difference "
+            f"approximation by {grad_check}",
+            RuntimeWarning,
+        )
+    result = minimize(
+        f,
+        jac=True,
+        x0=x_0,
+        method="L-BFGS-B",
+        options={"ftol": 1e-10},
+        bounds=bounds,
+    )
+    # update params if None and optimization successful
+    if not result.success:
+        warnings.warn(
+            "optimization not sucessful, " + result.message, RuntimeWarning
+        )
+    return result.x[0], result.x[1]

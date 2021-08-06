@@ -238,7 +238,7 @@ def infer(args):
             df.loc[i - 1] = p, q
 
         # get likelihoods and sort by them
-        ls = [tree.ll(p, q, build_cache=False)[0] for tree in parsimony_forest.forest]
+        ls = [tree.ll(p, q)[0] for tree in parsimony_forest.forest]
         ls, parsimony_forest.forest = zip(
             *sorted(zip(ls, parsimony_forest.forest), key=lambda x: x[0], reverse=True)
         )
@@ -597,7 +597,7 @@ def get_parser():
         "--root",
         type=str,
         default="root",
-        help="name of root sequence (outgroup root), default 'root'",
+        help=r'name of root sequence (outgroup root), default ``"root"``',
     )
     parser_infer.add_argument(
         "phylipfile",
@@ -619,7 +619,7 @@ def get_parser():
         "--colormapfile",
         type=str,
         default=None,
-        help='File containing color map in the format: "SeqID\tcolor"',
+        help='File containing color map in the tab-separated format: ``"SeqID\tcolor"``',
     )
     parser_infer.add_argument(
         "--chain_split",
@@ -632,7 +632,7 @@ def get_parser():
         type=int,
         default=None,
         choices=(1, 2, 3),
-        help="codon frame for the second chain when using the chain_split option",
+        help=r"codon frame for the second chain when using the ``chain_split`` option",
     )
     parser_infer.add_argument(
         "--positionmapfile",
@@ -644,7 +644,7 @@ def get_parser():
         "--positionmapfile2",
         type=str,
         default=None,
-        help="positionmapfile for the 2nd chain when concatenating heavy and light chains",
+        help="positionmapfile for the 2nd chain when using the ``chain_split`` option",
     )
     parser_infer.set_defaults(func=infer)
 
@@ -736,9 +736,9 @@ def get_parser():
         subparser.add_argument(
             "--idlabel",
             action="store_true",
-            help="flag for labeling the sequence ids of the nodes in the "
+            help=r"flag for labeling the sequence ids of the nodes in the "
             "output tree images, also write associated fasta alignment "
-            "if True",
+            "if ``True``",
         )
 
     return parser
