@@ -719,7 +719,7 @@ class CollapsedTree:
             node.support = compatibility_ if compatibility else support
 
 
-class CollapsedForest():
+class CollapsedForest:
     r"""A collection of :class:`CollapsedTree`
 
     We can intialize with a list of trees, each an instance of :class:`CollapsedTree`, or we can simulate the forest later.
@@ -817,6 +817,7 @@ class CollapsedForest():
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
         return _mle_helper(self.ll)
+
     mle.__doc__ = CollapsedTree.mle.__doc__
 
     def __repr__(self):
@@ -826,20 +827,21 @@ class CollapsedForest():
         )
 
 
-def _mle_helper(ll: Callable[[np.float64, np.float64], Tuple[np.float64, np.ndarray]], **kwargs) -> Tuple[np.float64, np.float64]:
+def _mle_helper(
+    ll: Callable[[np.float64, np.float64], Tuple[np.float64, np.ndarray]], **kwargs
+) -> Tuple[np.float64, np.float64]:
     # initialization
     x_0 = (0.5, 0.5)
     bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
 
     def f(x):
         """negative log likelihood."""
-        return tuple(- x for x in ll(*x, **kwargs))
+        return tuple(-x for x in ll(*x, **kwargs))
 
     grad_check = check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
     if grad_check > 1e-3:
         warnings.warn(
-            "gradient mismatches finite difference "
-            f"approximation by {grad_check}",
+            "gradient mismatches finite difference " f"approximation by {grad_check}",
             RuntimeWarning,
         )
     result = minimize(
@@ -852,7 +854,5 @@ def _mle_helper(ll: Callable[[np.float64, np.float64], Tuple[np.float64, np.ndar
     )
     # update params if None and optimization successful
     if not result.success:
-        warnings.warn(
-            "optimization not sucessful, " + result.message, RuntimeWarning
-        )
+        warnings.warn("optimization not sucessful, " + result.message, RuntimeWarning)
     return result.x[0], result.x[1]
