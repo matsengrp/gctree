@@ -163,9 +163,9 @@ def build_tree(sequences, parents, counts=None, root="root"):
         node.add_feature("sequence", sequences[node.name])
         if counts is not None:
             if node.name in counts:
-                node.add_feature("frequency", counts[node.name])
+                node.add_feature("abundance", counts[node.name])
             else:
-                node.add_feature("frequency", 0)
+                node.add_feature("abundance", 0)
         nodes[name] = node
     for name in sequences:
         if name in parents:

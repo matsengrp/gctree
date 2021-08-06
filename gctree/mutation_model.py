@@ -268,7 +268,7 @@ class MutationModel:
         tree.dist = 0
         tree.add_feature("sequence", sequence)
         tree.add_feature("terminated", False)
-        tree.add_feature("frequency", 0)
+        tree.add_feature("abundance", 0)
         tree.add_feature("time", 0)
 
         t = 0  # <-- time
@@ -314,7 +314,7 @@ class MutationModel:
                             x != y for x, y in zip(mutated_sequence, leaf.sequence)
                         )
                         child.add_feature("sequence", mutated_sequence)
-                        child.add_feature("frequency", 0)
+                        child.add_feature("abundance", 0)
                         child.add_feature("terminated", False)
                         child.add_feature("time", t)
                         leaf.add_child(child)
@@ -326,7 +326,7 @@ class MutationModel:
                 )
             )
 
-        # each leaf in final generation gets an observation frequency of 1, unless downsampled
+        # each leaf in final generation gets an observed abundance of 1, unless downsampled
         if T is not None and len(T) > 1:
             # Iterate the intermediate time steps:
             for Ti in sorted(T)[:-1]:
@@ -347,19 +347,19 @@ class MutationModel:
                 ) in (
                     final_leaves
                 ):  # No need to down-sample, this was already done in the simulation loop
-                    leaf.frequency = 1
+                    leaf.abundance = 1
         # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         # by default, downsample to the target simulation size
         if n is not None and len(final_leaves) >= n:
             for leaf in random.sample(final_leaves, n):
-                leaf.frequency = 1
+                leaf.abundance = 1
         elif n is None and N is not None:
             for leaf in random.sample(final_leaves, N):
-                leaf.frequency = 1
+                leaf.abundance = 1
         elif N is None and T is not None:
             for leaf in final_leaves:
-                leaf.frequency = 1
+                leaf.abundance = 1
         elif n is not None and len(final_leaves) < n:
             raise RuntimeError(
                 "tree terminated with {} leaves, less than what desired after downsampling {}".format(
@@ -371,13 +371,13 @@ class MutationModel:
 
         # prune away lineages that are unobserved
         for node in tree.iter_descendants():
-            if sum(node2.frequency for node2 in node.traverse()) == 0:
+            if sum(node2.abundance for node2 in node.traverse()) == 0:
                 node.detach()
 
         # # remove unobserved unifurcations
         # for node in tree.iter_descendants():
         #     parent = node.up
-        #     if node.frequency == 0 and len(node.children) == 1:
+        #     if node.abundance == 0 and len(node.children) == 1:
         #         node.delete(prevent_nondicotomic=False)
         #         node.children[0].dist = hamming_distance(node.children[0].sequence, parent.sequence)
 

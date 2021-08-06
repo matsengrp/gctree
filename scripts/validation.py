@@ -33,7 +33,7 @@ def find_node_by_seq(tree, sequence):
     nodes = [
         node
         for node in tree.traverse()
-        if node.sequence == sequence and node.frequency > 0
+        if node.sequence == sequence and node.abundance > 0
     ]
     if len(nodes) > 1:
         nodes = [nodes[randint(0, len(nodes) - 1)]]
@@ -44,7 +44,7 @@ def find_node_by_seq(tree, sequence):
         print(nodes)
         print(sequence)
         print(tree)
-        print([(node.frequency, node.name, node.sequence) for node in tree.traverse()])
+        print([(node.abundance, node.name, node.sequence) for node in tree.traverse()])
         print(nodes[0])
         print(nodes[1])
 
@@ -193,7 +193,7 @@ def lineage_dist(
     nlineages = 0
     #    for node in true_tree.tree.traverse():
     for node in true_tree.tree.iter_leaves():  # Iterate only through the leaves
-        if not node.frequency > 0:
+        if not node.abundance > 0:
             continue
 
         aln_res = align_lineages(
@@ -207,8 +207,8 @@ def lineage_dist(
             continue
         align_t, align_i, final_score, max_penalty = aln_res
         if freq_weigthing is True:
-            total_max_penalty = max_penalty * node.frequency
-            total_lineage_dist = final_score * node.frequency
+            total_max_penalty = max_penalty * node.abundance
+            total_lineage_dist = final_score * node.abundance
             # Normalize with the max penalty:
             if total_max_penalty < 0:
                 norm_lineage_dist.append(total_lineage_dist / total_max_penalty)
@@ -232,7 +232,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
     """inferences is a dict mapping inference name, like "gctree" to pickle
     files of CollapsedForest."""
 
-    # With/without frequency weighting:
+    # With/without abundance weighting:
     all_lineage_dist = lambda x, y: [
         lineage_dist(x, y, freq_weigthing=fw) for fw in [False, True]
     ]
@@ -263,7 +263,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
             zip(*lineage_distances)
         )  # Unzip the forest tuple to get lineage_distances[ld0-3][tree_n]
         mean_frequencies = [
-            np.mean([node.frequency for node in tree.tree.traverse()])
+            np.mean([node.abundance for node in tree.tree.traverse()])
             for tree in inferences["gctree"].forest
         ]
         mean_branch_lengths = [
@@ -326,7 +326,7 @@ def validate(true_tree, inferences, true_tree_colormap, outbase):
                 if node.sequence in true_tree_colormap:
                     colormap[node.name] = true_tree_colormap[node.sequence]
                 else:
-                    assert node.frequency == 0
+                    assert node.abundance == 0
                     colormap[node.name] = "lightgray"
             tree.render(
                 outbase + ".gctree.colored_tree.{}.svg".format(i), colormap=colormap

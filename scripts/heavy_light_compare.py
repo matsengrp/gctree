@@ -3,15 +3,15 @@
 
 """comparison of heavy and light trees."""
 
+from collections import defaultdict
+from Bio import AlignIO
+import pickle
 import pandas as pd
 import scipy
 from matplotlib import pyplot as plt
 import seaborn as sns
 
 sns.set(style="white", color_codes=True)
-import pickle
-from Bio import AlignIO
-from collections import defaultdict
 
 
 def main():
@@ -50,12 +50,12 @@ def main():
 
     for heavy_tree in heavy_forest.forest:
         for node in list(heavy_tree.tree.traverse()):
-            assert node.frequency == len(heavy_map[node.sequence.lower()])
+            assert node.abundance == len(heavy_map[node.sequence.lower()])
             for cell_name in heavy_map[node.sequence.lower()]:
                 node.add_child(name=cell_name)
     for light_tree in light_forest.forest:
         for node in list(light_tree.tree.traverse()):
-            assert node.frequency == len(light_map[node.sequence.lower()])
+            assert node.abundance == len(light_map[node.sequence.lower()])
             for cell_name in light_map[node.sequence.lower()]:
                 node.add_child(name=cell_name)
 
