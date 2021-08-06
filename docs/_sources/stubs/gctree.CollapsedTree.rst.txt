@@ -1,7 +1,7 @@
-gctree.branching\_processes.CollapsedTree
-=========================================
+﻿gctree.CollapsedTree
+====================
 
-.. currentmodule:: gctree.branching_processes
+.. currentmodule:: gctree
 
 .. autoclass:: CollapsedTree
    :members:
@@ -16,16 +16,12 @@ gctree.branching\_processes.CollapsedTree
    .. autosummary::
       :nosignatures:
    
-      ~CollapsedTree.build_logf_cache
       ~CollapsedTree.compare
-      ~CollapsedTree.get_split
       ~CollapsedTree.ll
-      ~CollapsedTree.logf
       ~CollapsedTree.mle
       ~CollapsedTree.newick
       ~CollapsedTree.render
       ~CollapsedTree.simulate
-      ~CollapsedTree.split_compatibility
       ~CollapsedTree.support
       ~CollapsedTree.write
    

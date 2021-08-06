@@ -16,11 +16,9 @@ gctree.mutation\_model.MutationModel
    .. autosummary::
       :nosignatures:
    
-      ~MutationModel.disambiguate
       ~MutationModel.mutabilities
       ~MutationModel.mutability
       ~MutationModel.mutate
-      ~MutationModel.one_mutant
       ~MutationModel.simulate
    
    

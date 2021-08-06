@@ -2,13 +2,24 @@
 
 Python API for the ``gctree`` package
 
-Modules
+Classes
+-------
+
+Top level classes.
+
+.. autosummary::
+    :toctree: stubs
+    :template: custom-class-template.rst
+
+    CollapsedTree
+    CollapsedForest
+
+Submodules
 ----------
 
 .. autosummary::
     :toctree: stubs
     :template: custom-module-template.rst
 
-    branching_processes
     mutation_model
     utils
