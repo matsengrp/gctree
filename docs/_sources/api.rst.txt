@@ -14,8 +14,8 @@ Top level classes.
     CollapsedTree
     CollapsedForest
 
-Submodules
-----------
+Modules
+-------
 
 .. autosummary::
     :toctree: stubs
