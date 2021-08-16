@@ -2,11 +2,11 @@
 
 Implements phylogenetic inference for data with repeated sequences, as described in:
 
-DeWitt, Mesin, Victora, Minin and Matsen, *Using genotype abundance to improve phylogenetic inference*, [arXiv:1708.08944](https://arxiv.org/abs/1708.08944).
+DeWitt, Mesin, Victora, Minin and Matsen, **Using genotype abundance to improve phylogenetic inference**, [*Molecular Biology and Evolution*](https://matsengrp.github.io/gctree/cite.html).
 
 **Note: full documentation of the gctree package is available at: https://matsengrp.github.io/gctree**
 
-This readme provides info on use of scons pipelines that wrap the base gctree package.
+This README provides info on use of SCons pipelines that wrap the base gctree package. **Note: SCons pipelines are deprecated. They do not support more recent functionality, and may be removed in a future release.**
 
 ## Installation
 
@@ -14,25 +14,10 @@ This readme provides info on use of scons pipelines that wrap the base gctree pa
 
 #### Base package install
 
-If you only want the base gctree package (without the pipeline infrastructure, see below), you can simply
-```bash
-pip intall gctree
-```
-to install the gctree package and its command line interface.
-Subcommands are described in help
-```bash
-gctree -h
-```
-and each subcommand has its own help, accessed with `-h`.
-The most important subcommand is `gctree infer`.
-
-Additionally, the following command line utilities will be installed (each with help `-h`):
-- `deduplicate`: deduplicate fasta data with repeated genotypes
-- `mkconfig`: generate a config file for the phylip program
-- `phylip_parse`: parse output from phylip
+See the [docs install page](https://matsengrp.github.io/gctree/install.html) to install the gctree Python package and its command line interface. Skip this if you are using the SCons pipelines (see below).
 
 
-#### Pipeline install
+#### SCons pipeline install
 
 `SCons` pipelines can be used to for end-to-end phylogenetic inference from sequence data.
 These must be run from the repo directory after cloning.
