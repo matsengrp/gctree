@@ -334,7 +334,7 @@ class CollapsedTree:
         Returns:
             Tuple :math:`(p, q)` with estimated branching probability and estimated mutation probability
         """
-        return _mle_helper(self.ll)
+        return _mle_helper(self.ll, **kwargs)
 
     def simulate(self, p: np.float64, q: np.float64, root: bool = True):
         r"""Simulate a collapsed tree as an infinite type Galton-Watson process
@@ -826,7 +826,7 @@ class CollapsedForest:
             return ls.sum(), grad_ls.sum(axis=0)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
-        return _mle_helper(self.ll)
+        return _mle_helper(self.ll, **kwargs)
 
     mle.__doc__ = CollapsedTree.mle.__doc__
 
