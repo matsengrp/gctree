@@ -511,7 +511,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Tuple :math:`(p, q)` with estimated branching probability and estimated mutation probability</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">_mle_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">_mle_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedTree.simulate"><a class="viewcode-back" href="../../stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a collapsed tree as an infinite type Galton-Watson process</span>
@@ -627,7 +627,9 @@
             <span class="n">nstyle</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">NodeStyle</span><span class="p">()</span>
             <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;ACGT&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="s2">&quot;sequence&quot;</span> <span class="ow">in</span> <span class="n">tree_copy</span><span class="o">.</span><span class="n">features</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                <span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;ACGT&quot;</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frame2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -699,7 +701,6 @@
         <span class="n">ts</span><span class="o">.</span><span class="n">layout_fn</span> <span class="o">=</span> <span class="n">my_layout</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">show_scale</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">show_branch_support</span> <span class="o">=</span> <span class="n">show_support</span>
-        <span class="n">tree_copy</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">tree_style</span><span class="o">=</span><span class="n">ts</span><span class="p">)</span>
         <span class="c1"># if we labelled seqs, let&#39;s also write the alignment out so we have</span>
         <span class="c1"># the sequences (including of internal nodes)</span>
         <span class="k">if</span> <span class="n">idlabel</span><span class="p">:</span>
@@ -714,7 +715,8 @@
                 <span class="p">)</span>
             <span class="n">AlignIO</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
                 <span class="n">aln</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">outfile</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">),</span> <span class="s2">&quot;fasta&quot;</span>
-            <span class="p">)</span></div>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">tree_copy</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">tree_style</span><span class="o">=</span><span class="n">ts</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedTree.write"><a class="viewcode-back" href="../../stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Serialize to pickle file.</span>
@@ -1003,7 +1005,7 @@
             <span class="k">return</span> <span class="n">ls</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">grad_ls</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.mle"><a class="viewcode-back" href="../../stubs/gctree.CollapsedForest.html#gctree.CollapsedForest.mle">[docs]</a>    <span class="k">def</span> <span class="nf">mle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="n">_mle_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">_mle_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
     <span class="n">mle</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">mle</span><span class="o">.</span><span class="vm">__doc__</span>
 

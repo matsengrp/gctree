@@ -472,7 +472,7 @@
                         <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
                         <span class="n">leaf</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">leaves_unterminated</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">N</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">leaves_unterminated</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="s2">&quot;tree terminated with </span><span class="si">{}</span><span class="s2"> leaves, </span><span class="si">{}</span><span class="s2"> desired&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                     <span class="n">leaves_unterminated</span><span class="p">,</span> <span class="n">N</span>

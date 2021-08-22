@@ -334,7 +334,7 @@ class CollapsedTree:
         Returns:
             Tuple :math:`(p, q)` with estimated branching probability and estimated mutation probability
         """
-        return _mle_helper(self.ll)
+        return _mle_helper(self.ll, **kwargs)
 
     def simulate(self, p: np.float64, q: np.float64, root: bool = True):
         r"""Simulate a collapsed tree as an infinite type Galton-Watson process
@@ -450,7 +450,9 @@ class CollapsedTree:
             nstyle = ete3.NodeStyle()
             nstyle["size"] = 0
             if node.up is not None:
-                if set(node.sequence.upper()) == set("ACGT"):
+                if "sequence" in tree_copy.features and set(
+                    node.sequence.upper()
+                ) == set("ACGT"):
                     if frame is not None:
                         if chain_split is not None and frame2 is None:
                             raise ValueError(
@@ -522,7 +524,6 @@ class CollapsedTree:
         ts.layout_fn = my_layout
         ts.show_scale = False
         ts.show_branch_support = show_support
-        tree_copy.render(outfile, tree_style=ts)
         # if we labelled seqs, let's also write the alignment out so we have
         # the sequences (including of internal nodes)
         if idlabel:
@@ -538,6 +539,7 @@ class CollapsedTree:
             AlignIO.write(
                 aln, open(os.path.splitext(outfile)[0] + ".fasta", "w"), "fasta"
             )
+        return tree_copy.render(outfile, tree_style=ts)
 
     def write(self, file_name: str):
         r"""Serialize to pickle file.
@@ -826,7 +828,7 @@ class CollapsedForest:
             return ls.sum(), grad_ls.sum(axis=0)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
-        return _mle_helper(self.ll)
+        return _mle_helper(self.ll, **kwargs)
 
     mle.__doc__ = CollapsedTree.mle.__doc__
 
