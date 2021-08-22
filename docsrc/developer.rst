@@ -22,7 +22,7 @@ Lint::
 
   make lint
 
-Build docs locally (you can then see the generated documentation in ``docs/_build/index.html``.)::
+Build docs locally (you can then see the generated documentation in ``docsrc/_build/html/index.html``.)::
 
   make docs
 
