@@ -522,7 +522,6 @@ class CollapsedTree:
         ts.layout_fn = my_layout
         ts.show_scale = False
         ts.show_branch_support = show_support
-        tree_copy.render(outfile, tree_style=ts)
         # if we labelled seqs, let's also write the alignment out so we have
         # the sequences (including of internal nodes)
         if idlabel:
@@ -538,6 +537,7 @@ class CollapsedTree:
             AlignIO.write(
                 aln, open(os.path.splitext(outfile)[0] + ".fasta", "w"), "fasta"
             )
+        return tree_copy.render(outfile, tree_style=ts)
 
     def write(self, file_name: str):
         r"""Serialize to pickle file.
