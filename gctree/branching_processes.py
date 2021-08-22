@@ -450,7 +450,7 @@ class CollapsedTree:
             nstyle = ete3.NodeStyle()
             nstyle["size"] = 0
             if node.up is not None:
-                if set(node.sequence.upper()) == set("ACGT"):
+                if "sequence" in tree_copy.features and set(node.sequence.upper()) == set("ACGT"):
                     if frame is not None:
                         if chain_split is not None and frame2 is None:
                             raise ValueError(

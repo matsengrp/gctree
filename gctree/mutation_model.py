@@ -295,7 +295,7 @@ class MutationModel:
                         child.add_feature("time", t)
                         leaf.add_child(child)
 
-        if leaves_unterminated < N:
+        if N is not None and leaves_unterminated < N:
             raise RuntimeError(
                 "tree terminated with {} leaves, {} desired".format(
                     leaves_unterminated, N
