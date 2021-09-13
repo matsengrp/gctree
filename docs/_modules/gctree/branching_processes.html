@@ -550,6 +550,9 @@
 <div class="viewcode-block" id="CollapsedTree.render"><a class="viewcode-back" href="../../stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.render">[docs]</a>    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">outfile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">branch_margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">node_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">idlabel</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">colormap</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">frame</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -563,7 +566,11 @@
 
 <span class="sd">        Args:</span>
 <span class="sd">            outfile: file name to render to, filetype inferred from suffix, .svg for color</span>
+<span class="sd">            scale: branch length scale in pixels (set automatically if ``None``)</span>
+<span class="sd">            branch_margin: additional leaf branch separation margin, in pixels, to scale tree width</span>
+<span class="sd">            node_size: size of nodes in pixels (set according to abundance if ``None``)</span>
 <span class="sd">            idlabel: label nodes with seq ids, and write sequences of all nodes to a fasta file with same base name as ``outfile``</span>
+<span class="sd">            colormap: dictionary mapping node names to color names or to dictionaries of color frequencies</span>
 <span class="sd">            frame: coding frame for annotating amino acid substitutions</span>
 <span class="sd">            position_map: mapping of position names for sequence indices, to be used with substitution annotations and the ``frame`` argument</span>
 <span class="sd">            chain_split: if sequences are a concatenation two gene sequences, this is the index at which the 2nd one starts (requires ``frame`` and ``frame2`` arguments)</span>
@@ -580,36 +587,50 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">circle_color</span> <span class="o">=</span> <span class="n">colormap</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
             <span class="n">text_color</span> <span class="o">=</span> <span class="s2">&quot;black&quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circle_color</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="n">C</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">CircleFace</span><span class="p">(</span>
-                    <span class="n">radius</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">)),</span>
-                    <span class="n">color</span><span class="o">=</span><span class="n">circle_color</span><span class="p">,</span>
-                    <span class="n">label</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">),</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">text_color</span><span class="p">}</span>
-                    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
-                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">C</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
-                <span class="n">C</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">P</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">PieChartFace</span><span class="p">(</span>
-                    <span class="p">[</span><span class="mi">100</span> <span class="o">*</span> <span class="n">x</span> <span class="o">/</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">circle_color</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>
-                    <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">),</span>
-                    <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">),</span>
-                    <span class="n">colors</span><span class="o">=</span><span class="p">[</span>
-                        <span class="p">(</span><span class="n">color</span> <span class="k">if</span> <span class="n">color</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span> <span class="k">else</span> <span class="s2">&quot;lightgray&quot;</span><span class="p">)</span>
-                        <span class="k">for</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">circle_color</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-                    <span class="p">],</span>
-                    <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">T</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TextFace</span><span class="p">(</span>
-                    <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">circle_color</span><span class="o">.</span><span class="n">values</span><span class="p">())]),</span>
-                    <span class="n">tight_text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">T</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">node_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">node_size2</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circle_color</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">C</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">CircleFace</span><span class="p">(</span>
+                        <span class="n">radius</span><span class="o">=</span><span class="n">node_size2</span><span class="p">,</span>
+                        <span class="n">color</span><span class="o">=</span><span class="n">circle_color</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">),</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">text_color</span><span class="p">}</span>
+                        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                        <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">C</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
+                    <span class="n">C</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">P</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">PieChartFace</span><span class="p">(</span>
+                        <span class="p">[</span><span class="mi">100</span> <span class="o">*</span> <span class="n">x</span> <span class="o">/</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">circle_color</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>
+                        <span class="mi">2</span> <span class="o">*</span> <span class="n">node_size2</span><span class="p">,</span>
+                        <span class="mi">2</span> <span class="o">*</span> <span class="n">node_size2</span><span class="p">,</span>
+                        <span class="n">colors</span><span class="o">=</span><span class="p">[</span>
+                            <span class="p">(</span><span class="n">color</span> <span class="k">if</span> <span class="n">color</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span> <span class="k">else</span> <span class="s2">&quot;lightgray&quot;</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">circle_color</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                        <span class="p">],</span>
+                        <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">T</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TextFace</span><span class="p">(</span>
+                        <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">circle_color</span><span class="o">.</span><span class="n">values</span><span class="p">())]),</span>
+                        <span class="n">tight_text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">T</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">T</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
+                    <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-right&quot;</span><span class="p">)</span>
+                    <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-right&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">:</span>
+                <span class="n">T</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TextFace</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
                 <span class="n">T</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
-                <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-right&quot;</span><span class="p">)</span>
-                <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-right&quot;</span><span class="p">)</span>
+                <span class="n">T</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">ete3</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">add_face_to_node</span><span class="p">(</span>
+                    <span class="n">T</span><span class="p">,</span>
+                    <span class="n">node</span><span class="p">,</span>
+                    <span class="mi">0</span><span class="p">,</span>
+                    <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-top&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
             <span class="k">if</span> <span class="n">idlabel</span><span class="p">:</span>
                 <span class="n">T</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TextFace</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">tight_text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fsize</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
                 <span class="n">T</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
@@ -618,14 +639,21 @@
                     <span class="n">T</span><span class="p">,</span>
                     <span class="n">node</span><span class="p">,</span>
                     <span class="mi">1</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circle_color</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="mi">2</span><span class="p">,</span>
-                    <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-right&quot;</span><span class="p">,</span>
+                    <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-bottom&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="c1"># we render on a copy, so faces are not permanent</span>
         <span class="n">tree_copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;deepcopy&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree_copy</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
             <span class="n">nstyle</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">NodeStyle</span><span class="p">()</span>
-            <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">colormap</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">colormap</span><span class="p">:</span>
+                <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;fgcolor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;lightgray&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;fgcolor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">colormap</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">node_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_size</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="s2">&quot;sequence&quot;</span> <span class="ow">in</span> <span class="n">tree_copy</span><span class="o">.</span><span class="n">features</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span>
                     <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
@@ -694,12 +722,14 @@
             <span class="n">node</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="n">nstyle</span><span class="p">)</span>
 
         <span class="n">ts</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeStyle</span><span class="p">()</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">branch_vertical_margin</span> <span class="o">=</span> <span class="n">branch_margin</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">show_leaf_name</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="mi">90</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">draw_aligned_faces_as_table</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">allow_face_overlap</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">layout_fn</span> <span class="o">=</span> <span class="n">my_layout</span>
-        <span class="n">ts</span><span class="o">.</span><span class="n">show_scale</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">show_scale</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">show_branch_support</span> <span class="o">=</span> <span class="n">show_support</span>
         <span class="c1"># if we labelled seqs, let&#39;s also write the alignment out so we have</span>
         <span class="c1"># the sequences (including of internal nodes)</span>

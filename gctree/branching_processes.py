@@ -373,6 +373,9 @@ class CollapsedTree:
     def render(
         self,
         outfile: str,
+        scale: float = None,
+        branch_margin: float = 0,
+        node_size: float = None,
         idlabel: bool = False,
         colormap: Dict = None,
         frame: int = None,
@@ -386,7 +389,11 @@ class CollapsedTree:
 
         Args:
             outfile: file name to render to, filetype inferred from suffix, .svg for color
+            scale: branch length scale in pixels (set automatically if ``None``)
+            branch_margin: additional leaf branch separation margin, in pixels, to scale tree width
+            node_size: size of nodes in pixels (set according to abundance if ``None``)
             idlabel: label nodes with seq ids, and write sequences of all nodes to a fasta file with same base name as ``outfile``
+            colormap: dictionary mapping node names to color names or to dictionaries of color frequencies
             frame: coding frame for annotating amino acid substitutions
             position_map: mapping of position names for sequence indices, to be used with substitution annotations and the ``frame`` argument
             chain_split: if sequences are a concatenation two gene sequences, this is the index at which the 2nd one starts (requires ``frame`` and ``frame2`` arguments)
@@ -403,36 +410,50 @@ class CollapsedTree:
             else:
                 circle_color = colormap[node.name]
             text_color = "black"
-            if isinstance(circle_color, str):
-                C = ete3.CircleFace(
-                    radius=max(3, 10 * np.sqrt(node.abundance)),
-                    color=circle_color,
-                    label={"text": str(node.abundance), "color": text_color}
-                    if node.abundance > 0
-                    else None,
-                )
-                C.rotation = -90
-                C.hz_align = 1
-                ete3.faces.add_face_to_node(C, node, 0)
-            else:
-                P = ete3.PieChartFace(
-                    [100 * x / node.abundance for x in circle_color.values()],
-                    2 * 10 * np.sqrt(node.abundance),
-                    2 * 10 * np.sqrt(node.abundance),
-                    colors=[
-                        (color if color != "None" else "lightgray")
-                        for color in list(circle_color.keys())
-                    ],
-                    line_color=None,
-                )
-                T = ete3.TextFace(
-                    " ".join([str(x) for x in list(circle_color.values())]),
-                    tight_text=True,
-                )
-                T.hz_align = 1
+
+            if node_size is None:
+                node_size2 = max(1, 10 * np.sqrt(node.abundance))
+                if isinstance(circle_color, str):
+                    C = ete3.CircleFace(
+                        radius=node_size2,
+                        color=circle_color,
+                        label={"text": str(node.abundance), "color": text_color}
+                        if node.abundance > 0
+                        else None,
+                    )
+                    C.rotation = -90
+                    C.hz_align = 1
+                    ete3.faces.add_face_to_node(C, node, 0)
+                else:
+                    P = ete3.PieChartFace(
+                        [100 * x / node.abundance for x in circle_color.values()],
+                        2 * node_size2,
+                        2 * node_size2,
+                        colors=[
+                            (color if color != "None" else "lightgray")
+                            for color in list(circle_color.keys())
+                        ],
+                        line_color=None,
+                    )
+                    T = ete3.TextFace(
+                        " ".join([str(x) for x in list(circle_color.values())]),
+                        tight_text=True,
+                    )
+                    T.hz_align = 1
+                    T.rotation = -90
+                    ete3.faces.add_face_to_node(P, node, 0, position="branch-right")
+                    ete3.faces.add_face_to_node(T, node, 1, position="branch-right")
+            elif node.abundance:
+                T = ete3.TextFace(node.abundance)
                 T.rotation = -90
-                ete3.faces.add_face_to_node(P, node, 0, position="branch-right")
-                ete3.faces.add_face_to_node(T, node, 1, position="branch-right")
+                T.hz_align = 1
+                ete3.faces.add_face_to_node(
+                    T,
+                    node,
+                    0,
+                    position="branch-top",
+                )
+
             if idlabel:
                 T = ete3.TextFace(node.name, tight_text=True, fsize=6)
                 T.rotation = -90
@@ -441,14 +462,21 @@ class CollapsedTree:
                     T,
                     node,
                     1 if isinstance(circle_color, str) else 2,
-                    position="branch-right",
+                    position="branch-bottom",
                 )
 
         # we render on a copy, so faces are not permanent
         tree_copy = self.tree.copy(method="deepcopy")
         for node in tree_copy.traverse():
             nstyle = ete3.NodeStyle()
-            nstyle["size"] = 0
+            if colormap is None or node.name not in colormap:
+                nstyle["fgcolor"] = "lightgray"
+            else:
+                nstyle["fgcolor"] = colormap[node.name]
+            if node_size is not None:
+                nstyle["size"] = node_size
+            else:
+                nstyle["size"] = 0
             if node.up is not None:
                 if "sequence" in tree_copy.features and set(
                     node.sequence.upper()
@@ -517,12 +545,14 @@ class CollapsedTree:
             node.set_style(nstyle)
 
         ts = ete3.TreeStyle()
+        ts.scale = scale
+        ts.branch_vertical_margin = branch_margin
         ts.show_leaf_name = False
         ts.rotation = 90
         ts.draw_aligned_faces_as_table = False
         ts.allow_face_overlap = True
         ts.layout_fn = my_layout
-        ts.show_scale = False
+        ts.show_scale = True
         ts.show_branch_support = show_support
         # if we labelled seqs, let's also write the alignment out so we have
         # the sequences (including of internal nodes)
