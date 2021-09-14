@@ -143,7 +143,6 @@ def disambiguate(tree):
             return(not True in
                    [compat_code(new_base, child.sequence[site])
                     for child in node.children])
-        print(f"making a function to test if {new_base} is compatible with site {site}")
         return(f)
     for node in tree.traverse():
         for site in range(sequence_length):
