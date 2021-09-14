@@ -133,16 +133,24 @@ def disambiguate(tree):
     random.seed(tree.write(format=1))
     ambiguous_dna_values["?"] = "GATC-"
     sequence_length = len(tree.sequence)
+    def compat_code(base, code):
+        if code == base:
+            return(False)
+        else:
+            return(base in ambiguous_dna_values[code])
+    def is_leaf(new_base, site):
+        def f(node):
+            return(not True in
+                   [compat_code(new_base, child.sequence[site])
+                    for child in node.children])
+        print(f"making a function to test if {new_base} is compatible with site {site}")
+        return(f)
     for node in tree.traverse():
         for site in range(sequence_length):
             base = node.sequence[site]
             if base not in "ACGT-":
                 new_base = random.choice(ambiguous_dna_values[base])
-                for node2 in node.traverse(
-                    is_leaf_fn=lambda n: False
-                    if base in [n2.sequence[site] for n2 in n.children]
-                    else True
-                ):
+                for node2 in node.traverse(is_leaf_fn=is_leaf(new_base, site)):
                     if node2.sequence[site] == base:
                         node2.sequence = (
                             node2.sequence[:site]
