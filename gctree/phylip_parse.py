@@ -9,6 +9,7 @@ import gctree.phylip_parse as pp
 import gctree.branching_processes as bp
 from gctree.utils import hamming_distance
 
+import numpy as np
 from ete3 import Tree
 import re
 import random
@@ -127,36 +128,55 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
     return trees
 
 
-def disambiguate(tree):
-    """make random choices for ambiguous bases, respecting tree inheritance."""
-    # random seed based on newick string of tree
-    random.seed(tree.write(format=1))
-    ambiguous_dna_values["?"] = "GATC-"
-    sequence_length = len(tree.sequence)
-    def compat_code(base, code):
-        if code == base:
-            return(False)
-        else:
-            return(base in ambiguous_dna_values[code])
-    def is_leaf(new_base, site):
-        def f(node):
-            return(not True in
-                   [compat_code(new_base, child.sequence[site])
-                    for child in node.children])
-        return(f)
+def disambiguate(tree: Tree, random_state=None) -> Tree:
+    """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
+    subtrees of consecutive ambiguity codes"""
+    bases = 'AGCT-'
+    ambiguous_dna_values['?'] = 'GATC-'
+    code_vectors = {code: np.array([0 if base in ambiguous_dna_values[code]
+                                    else np.inf for base in bases])
+                    for code in ambiguous_dna_values}
+    cost_adjust = {base: np.array([int(not i == j) for j in range(5)])
+                   for i, base in enumerate(bases)}
+    
+    if random_state is None:
+        random.seed(tree.write(format=1))
+    else:
+        random.setstate(random_state)
     for node in tree.traverse():
-        for site in range(sequence_length):
+        for site in range(len(tree.sequence)):
             base = node.sequence[site]
-            if base not in "ACGT-":
-                new_base = random.choice(ambiguous_dna_values[base])
-                for node2 in node.traverse(is_leaf_fn=is_leaf(new_base, site)):
-                    if node2.sequence[site] == base:
-                        node2.sequence = (
-                            node2.sequence[:site]
-                            + new_base
-                            + node2.sequence[(site + 1) :]
-                        )
-    return tree
+            if base not in bases:
+                def is_leaf(node):
+                    return( (node.is_leaf()) or (node.sequence[site] in bases))
+                # First pass of Sankoff: compute cost vectors
+                for node2 in node.traverse(strategy="postorder",
+                                           is_leaf_fn=is_leaf):
+                    base2 = node2.sequence[site]
+                    node2.cv = code_vectors[base2]
+                    if not is_leaf(node2):
+                        for i in range(5):
+                            node2.cv[i] += sum([min(child.cv +
+                                                    cost_adjust[bases[i]])
+                                                for child in node2.children])
+                # Second pass: Choose base and adjust cost vector of children
+                # First adjust cost vector of root node
+                if not node.is_root():
+                    node.cv += cost_adjust[node.up.sequence[site]]
+                for node2 in node.traverse(strategy="preorder",
+                                           is_leaf_fn=is_leaf):
+                    if node2.sequence[site] in bases:
+                        continue
+                    min_cost = min(node2.cv)
+                    base_index = random.choice(np.where(node2.cv == min_cost)[0])
+                    new_base = bases[base_index]
+                    node2.sequence = (node2.sequence[:site]
+                                      + new_base
+                                      + node2.sequence[(site + 1) :])
+                    if not is_leaf(node2):
+                        for child in node2.children:
+                            child.cv += cost_adjust[new_base]
+    return(tree)
 
 
 # build a tree from a set of sequences and an adjacency dict.
