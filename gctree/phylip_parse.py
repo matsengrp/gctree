@@ -162,26 +162,27 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                 if not node.is_root():
                     node.cv = [sum(v) for v in zip(node.cv,
                                                    cost_adjust[node.up.sequence[site]])]
-                # Convenient to avoid changing what we're iterating over:
+                # traverse evaluates is_leaf(node) after yielding node.
+                # Resolving base makes is_leaf true; must get order before
+                # making changes.
                 preorder = list(node.traverse(strategy="preorder",
                                               is_leaf_fn=is_leaf))
                 for node2 in preorder:
                     if node2.sequence[site] in bases:
                         continue
-                    # Must check if leaf before changing anything
-                    leaf = is_leaf(node2)
                     min_cost = min(node2.cv)
                     base_index = random.choice([i for i, val in
                                                 enumerate(node2.cv)
                                                 if val == min_cost])
                     new_base = bases[base_index]
-                    node2.sequence = (node2.sequence[:site]
-                                      + new_base
-                                      + node2.sequence[(site + 1) :])
-                    if not leaf:
+                    # Adjust child cost vectors
+                    if not is_leaf(node2):
                         for child in node2.children:
                             child.cv = [sum(v) for v in zip(child.cv,
                                                             cost_adjust[new_base])]
+                    node2.sequence = (node2.sequence[:site]
+                                      + new_base
+                                      + node2.sequence[(site + 1) :])
     return(tree)
 
 
