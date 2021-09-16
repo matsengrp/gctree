@@ -159,19 +159,13 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                     node2.cv = code_vectors[base2].copy()
                     if not is_leaf(node2):
                         for i in range(5):
-                            node2.cv[i] += sum(
-                                [
-                                    min(
-                                        [
-                                            sum(v)
-                                            for v in zip(
-                                                child.cv, cost_adjust[bases[i]]
-                                            )
-                                        ]
-                                    )
-                                    for child in node2.children
-                                ]
-                            )
+                            for child in node2.children:
+                                node2.cv[i] += min(
+                                    [
+                                        sum(v)
+                                        for v in zip(child.cv, cost_adjust[bases[i]])
+                                    ]
+                                )
                 # Second pass: Choose base and adjust children's cost vectors
                 if not node.is_root():
                     node.cv = [
