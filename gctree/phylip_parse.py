@@ -129,14 +129,18 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
 
 def disambiguate(tree: Tree, random_state=None) -> Tree:
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
-    subtrees of consecutive ambiguity codes"""
-    bases = 'AGCT-'
-    ambiguous_dna_values.update({'?': 'GATC-', '-':'-'})
-    code_vectors = {code: [0 if base in ambiguous_dna_values[code]
-                                    else float("inf") for base in bases]
-                    for code in ambiguous_dna_values}
-    cost_adjust = {base: [int(not i == j) for j in range(5)]
-                   for i, base in enumerate(bases)}
+    subtrees of consecutive ambiguity codes."""
+    bases = "AGCT-"
+    ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
+    code_vectors = {
+        code: [
+            0 if base in ambiguous_dna_values[code] else float("inf") for base in bases
+        ]
+        for code in ambiguous_dna_values
+    }
+    cost_adjust = {
+        base: [int(not i == j) for j in range(5)] for i, base in enumerate(bases)
+    }
     if random_state is None:
         random.seed(tree.write(format=1))
     else:
@@ -145,45 +149,57 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
         for site in range(len(tree.sequence)):
             base = node.sequence[site]
             if base not in bases:
+
                 def is_leaf(node):
-                    return((node.is_leaf()) or (node.sequence[site] in bases))
+                    return (node.is_leaf()) or (node.sequence[site] in bases)
+
                 # First pass of Sankoff: compute cost vectors
-                for node2 in node.traverse(strategy="postorder",
-                                           is_leaf_fn=is_leaf):
+                for node2 in node.traverse(strategy="postorder", is_leaf_fn=is_leaf):
                     base2 = node2.sequence[site]
                     node2.cv = code_vectors[base2].copy()
                     if not is_leaf(node2):
                         for i in range(5):
-                            node2.cv[i] += sum([min([sum(v) for v in
-                                                     zip(child.cv,
-                                                         cost_adjust[bases[i]])])
-                                                for child in node2.children])
+                            node2.cv[i] += sum(
+                                [
+                                    min(
+                                        [
+                                            sum(v)
+                                            for v in zip(
+                                                child.cv, cost_adjust[bases[i]]
+                                            )
+                                        ]
+                                    )
+                                    for child in node2.children
+                                ]
+                            )
                 # Second pass: Choose base and adjust children's cost vectors
                 if not node.is_root():
-                    node.cv = [sum(v) for v in zip(node.cv,
-                                                   cost_adjust[node.up.sequence[site]])]
+                    node.cv = [
+                        sum(v)
+                        for v in zip(node.cv, cost_adjust[node.up.sequence[site]])
+                    ]
                 # traverse evaluates is_leaf(node) after yielding node.
                 # Resolving base makes is_leaf true; must get order before
                 # making changes.
-                preorder = list(node.traverse(strategy="preorder",
-                                              is_leaf_fn=is_leaf))
+                preorder = list(node.traverse(strategy="preorder", is_leaf_fn=is_leaf))
                 for node2 in preorder:
                     if node2.sequence[site] in bases:
                         continue
                     min_cost = min(node2.cv)
-                    base_index = random.choice([i for i, val in
-                                                enumerate(node2.cv)
-                                                if val == min_cost])
+                    base_index = random.choice(
+                        [i for i, val in enumerate(node2.cv) if val == min_cost]
+                    )
                     new_base = bases[base_index]
                     # Adjust child cost vectors
                     if not is_leaf(node2):
                         for child in node2.children:
-                            child.cv = [sum(v) for v in zip(child.cv,
-                                                            cost_adjust[new_base])]
-                    node2.sequence = (node2.sequence[:site]
-                                      + new_base
-                                      + node2.sequence[(site + 1) :])
-    return(tree)
+                            child.cv = [
+                                sum(v) for v in zip(child.cv, cost_adjust[new_base])
+                            ]
+                    node2.sequence = (
+                        node2.sequence[:site] + new_base + node2.sequence[(site + 1) :]
+                    )
+    return tree
 
 
 # build a tree from a set of sequences and an adjacency dict.

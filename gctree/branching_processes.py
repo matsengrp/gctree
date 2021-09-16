@@ -227,9 +227,9 @@ class CollapsedTree:
             dlogfdq_result = 2 / q
         else:
             if m >= 1:
-                neighbor_ll_genotype, (
-                    neighbor_dlogfdp,
-                    neighbor_dlogfdq,
+                (
+                    neighbor_ll_genotype,
+                    (neighbor_dlogfdp, neighbor_dlogfdq,),
                 ) = CollapsedTree._ll_genotype(c, m - 1, p, q)
                 logf_result = (
                     np.log(2)
@@ -652,10 +652,7 @@ class CollapsedTree:
                         child.add_feature("sequence", node.sequence)
                         node.add_child(child)
             return tree1_copy.robinson_foulds(
-                tree2_copy,
-                attr_t1="sequence",
-                attr_t2="sequence",
-                unrooted_trees=True,
+                tree2_copy, attr_t1="sequence", attr_t2="sequence", unrooted_trees=True,
             )[0]
         else:
             raise ValueError("invalid distance method: " + method)
@@ -806,10 +803,7 @@ class CollapsedForest:
         )
 
     def ll(
-        self,
-        p: np.float64,
-        q: np.float64,
-        marginal: bool = False,
+        self, p: np.float64, q: np.float64, marginal: bool = False,
     ) -> Tuple[np.float64, np.ndarray]:
         r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topologies :math:`T_1, \dots, T_n` and corresponding genotype abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees in the forest.
 
@@ -887,12 +881,7 @@ def _mle_helper(
             RuntimeWarning,
         )
     result = minimize(
-        f,
-        jac=True,
-        x0=x_0,
-        method="L-BFGS-B",
-        options={"ftol": 1e-10},
-        bounds=bounds,
+        f, jac=True, x0=x_0, method="L-BFGS-B", options={"ftol": 1e-10}, bounds=bounds,
     )
     # update params if None and optimization successful
     if not result.success:
