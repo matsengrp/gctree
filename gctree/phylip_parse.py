@@ -132,7 +132,7 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
     subtrees of consecutive ambiguity codes"""
     bases = 'AGCT-'
-    ambiguous_dna_values['?'] = 'GATC-'
+    ambiguous_dna_values.update({'?': 'GATC-', '-':'-'})
     code_vectors = {code: np.array([0 if base in ambiguous_dna_values[code]
                                     else np.inf for base in bases])
                     for code in ambiguous_dna_values}
@@ -153,27 +153,30 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                 for node2 in node.traverse(strategy="postorder",
                                            is_leaf_fn=is_leaf):
                     base2 = node2.sequence[site]
-                    node2.cv = code_vectors[base2]
+                    node2.cv = code_vectors[base2].copy()
                     if not is_leaf(node2):
                         for i in range(5):
                             node2.cv[i] += sum([min(child.cv +
                                                     cost_adjust[bases[i]])
                                                 for child in node2.children])
-                # Second pass: Choose base and adjust cost vector of children
-                # First adjust cost vector of root node
+                # Second pass: Choose base and adjust children's cost vectors
                 if not node.is_root():
                     node.cv += cost_adjust[node.up.sequence[site]]
-                for node2 in node.traverse(strategy="preorder",
-                                           is_leaf_fn=is_leaf):
+                # Convenient to avoid changing what we're iterating over:
+                nodelist = list(node.traverse(strategy="preorder",
+                                              is_leaf_fn=is_leaf))
+                for node2 in nodelist:
                     if node2.sequence[site] in bases:
                         continue
+                    # Must check if leaf before changing anything
+                    leaf = is_leaf(node2)
                     min_cost = min(node2.cv)
                     base_index = random.choice(np.where(node2.cv == min_cost)[0])
                     new_base = bases[base_index]
                     node2.sequence = (node2.sequence[:site]
                                       + new_base
                                       + node2.sequence[(site + 1) :])
-                    if not is_leaf(node2):
+                    if not leaf:
                         for child in node2.children:
                             child.cv += cost_adjust[new_base]
     return(tree)
