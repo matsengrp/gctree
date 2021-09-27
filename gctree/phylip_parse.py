@@ -145,7 +145,7 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
     else:
         random.setstate(random_state)
     for node in tree.traverse():
-        for site, base in enumerate(tree.sequence):
+        for site, base in enumerate(node.sequence):
             if base not in bases:
 
                 def is_leaf(node):
@@ -154,7 +154,7 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                 # First pass of Sankoff: compute cost vectors
                 for node2 in node.traverse(strategy="postorder", is_leaf_fn=is_leaf):
                     base2 = node2.sequence[site]
-                    node2.cv = code_vectors[base2].copy()
+                    node2.add_feature("cv", code_vectors[base2].copy())
                     if not is_leaf(node2):
                         for i in range(5):
                             for child in node2.children:
@@ -192,7 +192,10 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                         node2.sequence[:site] + new_base + node2.sequence[(site + 1) :]
                     )
     for node in tree.traverse():
-        node.del_feature("cv")
+        try:
+            node.del_feature("cv")
+        except (AttributeError, KeyError):
+            pass
     return tree
 
 
