@@ -18,6 +18,16 @@ from Bio.Data.IUPACData import ambiguous_dna_values
 import pickle
 import argparse
 
+bases = "AGCT-"
+ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
+code_vectors = {
+    code: [0 if base in ambiguous_dna_values[code] else float("inf") for base in bases]
+    for code in ambiguous_dna_values
+}
+cost_adjust = {
+    base: [int(not i == j) for j in range(5)] for i, base in enumerate(bases)
+}
+
 
 # iterate over recognized sections in the phylip output file.
 def sections(fh):
@@ -130,23 +140,12 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
 def disambiguate(tree: Tree, random_state=None) -> Tree:
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
     subtrees of consecutive ambiguity codes."""
-    bases = "AGCT-"
-    ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
-    code_vectors = {
-        code: [
-            0 if base in ambiguous_dna_values[code] else float("inf") for base in bases
-        ]
-        for code in ambiguous_dna_values
-    }
-    cost_adjust = {
-        base: [int(not i == j) for j in range(5)] for i, base in enumerate(bases)
-    }
     if random_state is None:
         random.seed(tree.write(format=1))
     else:
         random.setstate(random_state)
     for node in tree.traverse():
-        for site, base in enumerate(tree.sequence)):
+        for site, base in enumerate(tree.sequence):
             if base not in bases:
 
                 def is_leaf(node):
@@ -192,6 +191,8 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                     node2.sequence = (
                         node2.sequence[:site] + new_base + node2.sequence[(site + 1) :]
                     )
+    for node in tree.traverse():
+        node.del_feature("cv")
     return tree
 
 
