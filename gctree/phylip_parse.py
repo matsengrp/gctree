@@ -146,8 +146,7 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
     else:
         random.setstate(random_state)
     for node in tree.traverse():
-        for site in range(len(tree.sequence)):
-            base = node.sequence[site]
+        for site, base in enumerate(tree.sequence)):
             if base not in bases:
 
                 def is_leaf(node):
