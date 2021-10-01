@@ -1,76 +1,35 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Quickstart &mdash; gctree  documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="gctree" href="cli.html" />
     <link rel="prev" title="Citing gctree" href="cite.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="index.html">
-          
-
-          
-            
             <img src="_static/logo.png" class="logo" alt="Logo"/>
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -78,18 +37,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
@@ -119,77 +67,37 @@
 <li class="toctree-l1"><a class="reference internal" href="developer.html#todo-list">Todo list</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">gctree</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
       <li>Quickstart</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
-  <div class="section" id="quickstart">
-<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
+             
+  <section id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline"></a></h1>
 <p>In this minimal example we show how to use gctree commands to rank parsimony trees from PHYLIP’s dnapars program.
 See the CLI and API docs for complete documentation of command options, included many not used here.</p>
 <p>The data in this example were published in <a class="reference external" href="http://science.sciencemag.org/content/351/6277/1048">Tas et al. 2016. Visualizing Antibody Affinity Maturation in Germinal Centers. Science 351 (6277)</a> and shown in Fig. 4 (lymph node 2, germinal center 1).</p>
 <a class="reference internal image-reference" href="_images/gc1.png"><img alt="_images/gc1.png" src="_images/gc1.png" style="width: 200px;" /></a>
-<div class="section" id="input-data">
-<h2>Input data<a class="headerlink" href="#input-data" title="Permalink to this headline">¶</a></h2>
+<section id="input-data">
+<h2>Input data<a class="headerlink" href="#input-data" title="Permalink to this headline"></a></h2>
 <p>We start with a fasta alignment file.
 The file <code class="docutils literal notranslate"><span class="pre">../example/150228_Clone_3-8.fasta</span></code> contains heavy chain V gene sequences from
 germinal B cells sorted from a brainbow mouse using multicolor fate mapping.</p>
@@ -230,9 +138,9 @@ gaggacacagccacatattactgt
 It does not refer to an observed sequence, but is included to outgroup root the tree!
 Generally this input fasta file should also contain all observed sequences with duplication (some of which may be identical to the root/outgroup sequence).
 It is also possible to provide some observed sequences with integers ids to be interpreted as abundances, as in the sequence named <code class="docutils literal notranslate"><span class="pre">17</span></code> above.</p>
-</div>
-<div class="section" id="deduplication-and-sequence-abundances">
-<h2>Deduplication and sequence abundances<a class="headerlink" href="#deduplication-and-sequence-abundances" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="deduplication-and-sequence-abundances">
+<h2>Deduplication and sequence abundances<a class="headerlink" href="#deduplication-and-sequence-abundances" title="Permalink to this headline"></a></h2>
 <p>First we deduplicate the sequences and convert to phylip alignment format, and also determine sequence abundances.
 The <code class="docutils literal notranslate"><span class="pre">deduplicate</span></code> command writes the phylip alignment of unique sequences to stdout (which we redirect to a file here).
 The argument <code class="docutils literal notranslate"><span class="pre">--root</span></code> indicates the root id.
@@ -268,9 +176,9 @@ seq8,1
 seq9,3
 </pre></div>
 </div>
-</div>
-<div class="section" id="parsimony-trees">
-<h2>Parsimony trees<a class="headerlink" href="#parsimony-trees" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="parsimony-trees">
+<h2>Parsimony trees<a class="headerlink" href="#parsimony-trees" title="Permalink to this headline"></a></h2>
 <p>We use PHYLIP’s <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> program (see install docs page) to generate a set of maximum parsimony trees for the deduplicated sequences.
 PHYLIP is an interactive command line tool, so we will automatically generate a config file to feed it input, instead of using it interactively.</p>
 <p>We generate a config file for <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> based on our deduplicated alignment using the <code class="docutils literal notranslate"><span class="pre">mkconfig</span></code> command.</p>
@@ -283,73 +191,66 @@ PHYLIP is an interactive command line tool, so we will automatically generate a 
 </div>
 <p>You now have two new files, <code class="docutils literal notranslate"><span class="pre">outfile</span></code> and <code class="docutils literal notranslate"><span class="pre">outtree</span></code>.
 Note: if you want to rerun the above <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> command, you must delete these two files first!</p>
-</div>
-<div class="section" id="gctree">
-<h2>gctree<a class="headerlink" href="#gctree" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="gctree">
+<h2>gctree<a class="headerlink" href="#gctree" title="Permalink to this headline"></a></h2>
 <p>We’re now ready to run <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> to use abundance data (in <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>) to rank the equally parsimonious trees (in <code class="docutils literal notranslate"><span class="pre">outfile</span></code>).
 We can use the optional argument <code class="docutils literal notranslate"><span class="pre">--frame</span></code> to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1
+Traceback (most recent call last):
+  File &quot;/home/wdumm/.conda/envs/gctree/bin/gctree&quot;, line 33, in &lt;module&gt;
+    sys.exit(load_entry_point(&#39;gctree&#39;, &#39;console_scripts&#39;, &#39;gctree&#39;)())
+  File &quot;/home/wdumm/gctree/gctree/gctree/cli.py&quot;, line 749, in main
+    args.func(args)
+  File &quot;/home/wdumm/gctree/gctree/gctree/cli.py&quot;, line 295, in infer
+    position_map2=position_map2,
+  File &quot;/home/wdumm/gctree/gctree/gctree/branching_processes.py&quot;, line 474, in render
+    nstyle = ete3.NodeStyle()
+AttributeError: module &#39;ete3&#39; has no attribute &#39;NodeStyle&#39;
 ...
 </pre></div>
 </div>
 <p>A large number of output files with the basename <code class="docutils literal notranslate"><span class="pre">gctree.out.*</span></code> are also created.
 The SVG image file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.abundance_rank.svg</span></code> shows a distribution of genotype abundances in the original data:</p>
-<a class="reference internal image-reference" href="_images/gctree.out.inference.abundance_rank.svg"><img alt="_images/gctree.out.inference.abundance_rank.svg" src="_images/gctree.out.inference.abundance_rank.svg" width="600" /></a>
+<a class="reference internal image-reference" href="gctree.out.inference.abundance_rank.svg"><img alt="gctree.out.inference.abundance_rank.svg" src="gctree.out.inference.abundance_rank.svg" width="600" /></a>
 <p>The SVG image file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.likelihood_rank.svg</span></code> is a rank plot of likelihood over the set of maximum parsimony trees:</p>
-<a class="reference internal image-reference" href="_images/gctree.out.inference.likelihood_rank.svg"><img alt="_images/gctree.out.inference.likelihood_rank.svg" src="_images/gctree.out.inference.likelihood_rank.svg" width="600" /></a>
+<a class="reference internal image-reference" href="gctree.out.inference.likelihood_rank.svg"><img alt="gctree.out.inference.likelihood_rank.svg" src="gctree.out.inference.likelihood_rank.svg" width="600" /></a>
 <p>Then there are files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].svg</span></code> and <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].nk</span></code> containing an SVG tree image and newick tree file for each of the parsimony trees (numbered according to likelihood rank).
 For example here is the top ranked tree <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.svg</span></code>:</p>
-<a class="reference internal image-reference" href="_images/gctree.out.inference.1.svg"><img alt="_images/gctree.out.inference.1.svg" src="_images/gctree.out.inference.1.svg" width="1000" /></a>
+<a class="reference internal image-reference" href="gctree.out.inference.1.svg"><img alt="gctree.out.inference.1.svg" src="gctree.out.inference.1.svg" width="1000" /></a>
 <p>You will also see Python pickle files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].p</span></code> containing a <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gctree.CollapsedTree</span></code></a> object for each tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.render" title="gctree.CollapsedTree.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gctree.CollapsedTree.render()</span></code></a>).</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="cli.html" class="btn btn-neutral float-right" title="gctree" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="cite.html" class="btn btn-neutral float-left" title="Citing gctree" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cli.html" class="btn btn-neutral float-right" title="gctree" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2020, William DeWitt.
-
-    </p>
+    <p>&#169; Copyright 2020, William DeWitt.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
