@@ -227,9 +227,12 @@ class CollapsedTree:
             dlogfdq_result = 2 / q
         else:
             if m >= 1:
-                neighbor_ll_genotype, (
-                    neighbor_dlogfdp,
-                    neighbor_dlogfdq,
+                (
+                    neighbor_ll_genotype,
+                    (
+                        neighbor_dlogfdp,
+                        neighbor_dlogfdq,
+                    ),
                 ) = CollapsedTree._ll_genotype(c, m - 1, p, q)
                 logf_result = (
                     np.log(2)

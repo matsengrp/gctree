@@ -5,7 +5,7 @@ install:
 	pip install -e .
 
 test:
-	# pytest
+	pytest
 	gctree test
 
 format:
