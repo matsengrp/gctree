@@ -137,63 +137,137 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
     return trees
 
 
-def disambiguate(tree: Tree, random_state=None) -> Tree:
+def disambiguate(
+    tree: Tree, random_state=None, distance_func=hamming_distance, distance_dependence=0
+) -> Tree:
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
     subtrees of consecutive ambiguity codes."""
+
+    def sequences(sequence, accum=""):
+        """Iterates through possible disambiguations of sequence, recursively.
+
+        Recursion-depth-limited by number of ambiguity codes in
+        sequence, not sequence length.
+        """
+        if sequence:
+            for index, base in enumerate(sequence):
+                if base in bases:
+                    accum += base
+                else:
+                    for newbase in ambiguous_dna_values[base]:
+                        yield from sequences(
+                            sequence[index + 1 :], accum=(accum + newbase)
+                        )
+                    return
+        yield accum
+
+    def iterate_independent_indices(sequencelist, dependence_window):
+        """Sequencelist must contain sequences of the same length.
+
+        dependence_window is max distance a motif extends past focused
+        base, so a centered motif of length 5 has dependence_window 2.
+        """
+        # contains True at indices for columns which have an ambiguity, False otherwise.
+        is_ambiguous_collapsed = [
+            any((sequence[index] not in bases for sequence in sequencelist))
+            for index in range(len(sequencelist[0]))
+        ]
+        ambiguous_indices = [
+            index for index, val in enumerate(is_ambiguous_collapsed) if val is True
+        ]
+
+        def is_window_beginning(ambig_index):
+            before_index = max([0, ambig_index - dependence_window])
+            return not any(is_ambiguous_collapsed[before_index:ambig_index])
+
+        def is_window_end(ambig_index):
+            return not any(
+                is_ambiguous_collapsed[
+                    ambig_index + 1 : ambig_index + dependence_window + 1
+                ]
+            )
+
+        window_beginnings = (
+            index for index in ambiguous_indices if is_window_beginning(index)
+        )
+        window_ends = (index for index in ambiguous_indices if is_window_end(index))
+        return (
+            (max([0, a - dependence_window]), b + dependence_window + 1)
+            for a, b in zip(window_beginnings, window_ends)
+        )
+
+    def is_ambiguous(sequence):
+        return any((code not in bases for code in sequence))
+
     if random_state is None:
         random.seed(tree.write(format=1))
     else:
         random.setstate(random_state)
+
+    seqlist = [node.sequence for node in tree.traverse()]
+    windows_to_disambiguate = list(iterate_independent_indices(seqlist, distance_dependence))
     for node in tree.traverse():
-        for site, base in enumerate(node.sequence):
-            if base not in bases:
+        for startidx, endidx in windows_to_disambiguate:
+            if any((base not in bases for base in node.sequence[startidx:endidx])):
 
                 def is_leaf(node):
-                    return (node.is_leaf()) or (node.sequence[site] in bases)
+                    return (node.is_leaf()) or not is_ambiguous(
+                        node.sequence[startidx:endidx]
+                    )
 
                 # First pass of Sankoff: compute cost vectors
                 for node2 in node.traverse(strategy="postorder", is_leaf_fn=is_leaf):
-                    base2 = node2.sequence[site]
-                    node2.add_feature("cv", code_vectors[base2].copy())
+                    seq_fragment = node2.sequence[startidx:endidx]
+                    node2.add_feature(
+                        "costs", [[seq, 0] for seq in sequences(seq_fragment)]
+                    )
                     if not is_leaf(node2):
-                        for i in range(5):
+                        for seq_cost in node2.costs:
                             for child in node2.children:
-                                node2.cv[i] += min(
+                                seq_cost[1] += min(
                                     [
-                                        sum(v)
-                                        for v in zip(child.cv, cost_adjust[bases[i]])
+                                        distance_func(child_seq, seq_cost[0])
+                                        + child_cost
+                                        for child_seq, child_cost in child.costs
                                     ]
                                 )
                 # Second pass: Choose base and adjust children's cost vectors
+                # first adjust costs by above-node sequence
                 if not node.is_root():
-                    node.cv = [
-                        sum(v)
-                        for v in zip(node.cv, cost_adjust[node.up.sequence[site]])
+                    upseq_frag = node.up.sequence[startidx:endidx]
+                    node.costs = [
+                        [sequence, cost + distance_func(upseq_frag, sequence)]
+                        for sequence, cost in node.costs
                     ]
                 # traverse evaluates is_leaf(node) after yielding node.
                 # Resolving base makes is_leaf true; must get order before
                 # making changes.
                 preorder = list(node.traverse(strategy="preorder", is_leaf_fn=is_leaf))
                 for node2 in preorder:
-                    if node2.sequence[site] in bases:
+                    if not is_ambiguous(node2.sequence[startidx:endidx]):
                         continue
-                    min_cost = min(node2.cv)
-                    base_index = random.choice(
-                        [i for i, val in enumerate(node2.cv) if val == min_cost]
+                    min_cost = min([cost for _, cost in node2.costs])
+                    resolved_fragment = random.choice(
+                        [sequence for sequence, cost in node2.costs if cost == min_cost]
                     )
-                    new_base = bases[base_index]
                     # Adjust child cost vectors
                     if not is_leaf(node2):
                         for child in node2.children:
-                            child.cv = [
-                                sum(v) for v in zip(child.cv, cost_adjust[new_base])
+                            child.costs = [
+                                [
+                                    sequence,
+                                    cost + distance_func(resolved_fragment, sequence),
+                                ]
+                                for sequence, cost in child.costs
                             ]
                     node2.sequence = (
-                        node2.sequence[:site] + new_base + node2.sequence[(site + 1) :]
+                        node2.sequence[:startidx]
+                        + resolved_fragment
+                        + node2.sequence[endidx:]
                     )
     for node in tree.traverse():
         try:
-            node.del_feature("cv")
+            node.del_feature("costs")
         except (AttributeError, KeyError):
             pass
     return tree
@@ -234,13 +308,13 @@ def build_tree(sequences, parents, counts=None, root="root"):
             )
         tree = nodes[root_id]
 
-    # make random choices for ambiguous bases
-    tree = disambiguate(tree)
+    # # make random choices for ambiguous bases
+    # tree = disambiguate(tree)
 
-    # compute branch lengths
-    tree.dist = 0  # no branch above root
-    for node in tree.iter_descendants():
-        node.dist = hamming_distance(node.sequence, node.up.sequence)
+    # # compute branch lengths
+    # tree.dist = 0  # no branch above root
+    # for node in tree.iter_descendants():
+    #     node.dist = hamming_distance(node.sequence, node.up.sequence)
 
     return tree
 

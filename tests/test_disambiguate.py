@@ -18,6 +18,15 @@ newick_tree2 = ("((((12[&&NHX:name=12:sequence=T])4[&&NHX:name=4:sequence=C],"
                 "9[&&NHX:name=9:sequence=?])2[&&NHX:name=2:sequence=?])"
                 "1[&&NHX:name=1:sequence=G];")
 
+tree1 = ete3.TreeNode(newick=newick_tree1, format=1)
+for node in tree1.traverse():
+    node.sequence += node.sequence
+tree2 = ete3.TreeNode(newick=newick_tree2, format=1)
+tree3 = ete3.TreeNode(newick=newick_tree1, format=1)
+for node in tree3.traverse():
+    node.sequence += "A" * 5
+tree3.sequence = "GAAAAR"
+
 
 def treeprint(tree: ete3.TreeNode):
     tree = tree.copy()
@@ -26,20 +35,19 @@ def treeprint(tree: ete3.TreeNode):
     return(tree.write(format=8))
 
 
-def sample(treestring, n=20):
-    ogt = ete3.TreeNode(newick=newick_tree2, format=1)
-    print(ogt.sequence)
+def sample(tree, n=20, distance_dependence=0):
+    print(tree.sequence)
     newickset = set()
     for i in range(n):
-        t = ogt.copy()
+        t = tree.copy()
         random.seed(i)
-        t = pps.disambiguate(t, random_state=random.getstate())
+        t = pps.disambiguate(t, random_state=random.getstate(), distance_dependence=distance_dependence)
         newickset.add(treeprint(t))
     return(newickset)
 
 
 def test_full_ambiguity():
-    newickset = sample(newick_tree2)
+    newickset = sample(tree2)
     correctset = {"((((T)C,(C,A)C)C,A,(A,G)G)G);",
                   "((((T)C,(C,A)A)A,A,(A,G)A)A);",
                   "((((T)C,(C,A)C)C,A,(A,G)A)A);"}
@@ -52,10 +60,34 @@ def test_full_ambiguity():
 
 
 def test_restricted_ambiguity():
-    newickset = sample(newick_tree1)
-    correctset = {"((((T)C,(C,A)C)C,A,(A,G)G)G);",
-                  "((((T)C,(C,A)A)A,A,(A,G)A)A);",
-                  "((((T)C,(C,A)C)C,A,(A,G)A)A);"}
+    newickset = sample(tree1)
+    correctset = {'((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)GG)GG);',
+                  '((((TT)CC,(CC,AA)AC)AC,AA,(AA,GG)AG)AG);',
+                  '((((TT)CC,(CC,AA)AC)AC,AA,(AA,GG)AA)AA);',
+                  '((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)AA)AA);',
+                  '((((TT)CC,(CC,AA)CA)CA,AA,(AA,GG)GA)GA);',
+                  '((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)GA)GA);',
+                  '((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)AG)AG);',
+                  '((((TT)CC,(CC,AA)AA)AA,AA,(AA,GG)AA)AA);',
+                  '((((TT)CC,(CC,AA)CA)CA,AA,(AA,GG)AA)AA);'}
+    if not newickset == correctset:
+        missing = correctset - newickset
+        wrong = newickset - correctset
+        print(f"\nDisambiguate function is missing {missing}\n"
+              f"and came up with these incorrect trees: {wrong}")
+        raise ValueError("Invalid Disambiguation")
+    
+def test_restricted_ambiguity_widewindow():
+    newickset = sample(tree1, n=100, distance_dependence=3)
+    correctset = {'((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)GG)GG);',
+                  '((((TT)CC,(CC,AA)AC)AC,AA,(AA,GG)AG)AG);',
+                  '((((TT)CC,(CC,AA)AC)AC,AA,(AA,GG)AA)AA);',
+                  '((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)AA)AA);',
+                  '((((TT)CC,(CC,AA)CA)CA,AA,(AA,GG)GA)GA);',
+                  '((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)GA)GA);',
+                  '((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)AG)AG);',
+                  '((((TT)CC,(CC,AA)AA)AA,AA,(AA,GG)AA)AA);',
+                  '((((TT)CC,(CC,AA)CA)CA,AA,(AA,GG)AA)AA);'}
     if not newickset == correctset:
         missing = correctset - newickset
         wrong = newickset - correctset
