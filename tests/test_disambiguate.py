@@ -76,7 +76,8 @@ def test_restricted_ambiguity():
         print(f"\nDisambiguate function is missing {missing}\n"
               f"and came up with these incorrect trees: {wrong}")
         raise ValueError("Invalid Disambiguation")
-    
+
+
 def test_restricted_ambiguity_widewindow():
     newickset = sample(tree1, n=100, distance_dependence=3)
     correctset = {'((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)GG)GG);',

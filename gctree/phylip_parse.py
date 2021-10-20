@@ -99,7 +99,7 @@ def parse_seqdict(fh, mode="dnaml"):
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
-def parse_outfile(outfile, abundance_file=None, root="root"):
+def parse_outfile(outfile, abundance_file=None, root="root", **kwargs):
     """parse phylip outfile."""
     if abundance_file is not None:
         counts = {
@@ -126,9 +126,9 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
                         )
                     )
                 if bootstrap:
-                    trees[-1].append(build_tree(sequences, parents, counts, root))
+                    trees[-1].append(build_tree(sequences, parents, counts, root, **kwargs ))
                 else:
-                    trees.append(build_tree(sequences, parents, counts, root))
+                    trees.append(build_tree(sequences, parents, counts, root, **kwargs))
             elif sect == "seqboot_dataset":
                 bootstrap = True
                 trees.append([])
@@ -138,7 +138,7 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
 
 
 def disambiguate(
-    tree: Tree, random_state=None, distance_func=hamming_distance, distance_dependence=0
+    tree: Tree, random_state=None, dist_func=hamming_distance, distance_dependence=0
 ) -> Tree:
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
     subtrees of consecutive ambiguity codes."""
@@ -205,7 +205,9 @@ def disambiguate(
         random.setstate(random_state)
 
     seqlist = [node.sequence for node in tree.traverse()]
-    windows_to_disambiguate = list(iterate_independent_indices(seqlist, distance_dependence))
+    windows_to_disambiguate = list(
+        iterate_independent_indices(seqlist, distance_dependence)
+    )
     for node in tree.traverse():
         for startidx, endidx in windows_to_disambiguate:
             if any((base not in bases for base in node.sequence[startidx:endidx])):
@@ -226,7 +228,7 @@ def disambiguate(
                             for child in node2.children:
                                 seq_cost[1] += min(
                                     [
-                                        distance_func(child_seq, seq_cost[0])
+                                        dist_func(child_seq, seq_cost[0])
                                         + child_cost
                                         for child_seq, child_cost in child.costs
                                     ]
@@ -236,7 +238,7 @@ def disambiguate(
                 if not node.is_root():
                     upseq_frag = node.up.sequence[startidx:endidx]
                     node.costs = [
-                        [sequence, cost + distance_func(upseq_frag, sequence)]
+                        [sequence, cost + dist_func(upseq_frag, sequence)]
                         for sequence, cost in node.costs
                     ]
                 # traverse evaluates is_leaf(node) after yielding node.
@@ -256,7 +258,7 @@ def disambiguate(
                             child.costs = [
                                 [
                                     sequence,
-                                    cost + distance_func(resolved_fragment, sequence),
+                                    cost + dist_func(resolved_fragment, sequence),
                                 ]
                                 for sequence, cost in child.costs
                             ]
@@ -274,7 +276,7 @@ def disambiguate(
 
 
 # build a tree from a set of sequences and an adjacency dict.
-def build_tree(sequences, parents, counts=None, root="root"):
+def build_tree(sequences, parents, counts=None, root="root", dist_func=hamming_distance, **kwargs):
     # build an ete tree
     # first a dictionary of disconnected nodes
     nodes = {}
@@ -303,18 +305,18 @@ def build_tree(sequences, parents, counts=None, root="root"):
         # remove possible unecessary unifurcation after rerooting
         if len(root_parent.children) == 1:
             root_parent.delete(prevent_nondicotomic=False)
-            root_parent.children[0].dist = hamming_distance(
+            root_parent.children[0].dist = dist_func(
                 root_parent.children[0].sequence, nodes[root_id].sequence
             )
         tree = nodes[root_id]
 
-    # # make random choices for ambiguous bases
-    # tree = disambiguate(tree)
+    # make random choices for ambiguous bases
+    tree = disambiguate(tree, dist_func=dist_func, **kwargs)
 
-    # # compute branch lengths
-    # tree.dist = 0  # no branch above root
-    # for node in tree.iter_descendants():
-    #     node.dist = hamming_distance(node.sequence, node.up.sequence)
+    # compute branch lengths
+    tree.dist = 0  # no branch above root
+    for node in tree.iter_descendants():
+        node.dist = dist_func(node.sequence, node.up.sequence)
 
     return tree
 
