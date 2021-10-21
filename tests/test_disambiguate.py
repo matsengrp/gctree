@@ -1,3 +1,4 @@
+from gctree import mutation_model, utils
 import random
 import ete3
 import gctree.phylip_parse as pps
@@ -35,13 +36,14 @@ def treeprint(tree: ete3.TreeNode):
     return(tree.write(format=8))
 
 
-def sample(tree, n=20, distance_dependence=0):
+def sample(tree, n=20, **kwargs):
     print(tree.sequence)
     newickset = set()
     for i in range(n):
         t = tree.copy()
         random.seed(i)
-        t = pps.disambiguate(t, random_state=random.getstate(), distance_dependence=distance_dependence)
+        t = pps.disambiguate(t, random_state=random.getstate(), **kwargs)
+        print(treeprint(t))
         newickset.add(treeprint(t))
     return(newickset)
 
@@ -77,6 +79,17 @@ def test_restricted_ambiguity():
               f"and came up with these incorrect trees: {wrong}")
         raise ValueError("Invalid Disambiguation")
 
+
+def test_restricted_ambiguity_widewindow_mutability():
+    mmodel = mutation_model.MutationModel(mutability_file="S5F/Mutability.csv", substitution_file="S5F/Substitution.csv")
+    newickset = sample(tree1, n=5, dist_func=utils.mutability_distance(mmodel), distance_dependence=2)
+    correctset = {'((((TT)CC,(CC,AA)CA)CA,AA,(AA,GG)GA)GA);'}
+    if not newickset == correctset:
+        missing = correctset - newickset
+        wrong = newickset - correctset
+        print(f"\nDisambiguate function is missing {missing}\n"
+              f"and came up with these incorrect trees: {wrong}")
+        raise ValueError("Invalid Disambiguation")
 
 def test_restricted_ambiguity_widewindow():
     newickset = sample(tree1, n=100, distance_dependence=3)

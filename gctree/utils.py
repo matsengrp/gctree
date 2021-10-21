@@ -28,22 +28,25 @@ def hamming_distance(seq1: str, seq2: str) -> int:
 def mutability_distance(mutation_model):
     """Returns a fast distance function based on mutability_model.
     First, caches computed mutabilities for k-mers with k // 2 N's on either
-    end. This is fast for k=5, but the distance function should be created
+    end. This is pretty fast for k=5, but the distance function should be created
     once and reused."""
     # Caching could be moved to the MutationModel class instead.
     context_model = mutation_model.context_model.copy()
     k = mutation_model.k
     h = k // 2
     # Build all sequences with (when k=5) one or two Ns on either end
-    templates = [("N" * (k - i), "N" * i) for i in range(1, k // 2)]
+    templates = [("N"* left, "N" * (k - left - right), "N" * right)
+                 for left in range(h + 1)
+                 for right in range(h + 1)
+                 if left != 0 or right != 0]
+
     kmers_to_compute = [
-        kmer
-        for ambig_stub, ns in templates
+        leftns + stub + rightns
+        for leftns, ambig_stub, rightns in templates
         for stub in mutation_model._disambiguate(ambig_stub)
-        for kmer in [stub + ns, ns + stub]
     ]
     # Cache all these mutabilities in context_model also
-    context_model.update({mutation_model.mutability(kmer) for kmer in kmers_to_compute})
+    context_model.update({kmer: mutation_model.mutability(kmer) for kmer in kmers_to_compute})
 
     def mutabilities(seq):
         newseq = "N" * h + seq + "N" * h
