@@ -228,7 +228,7 @@ def disambiguate(
                             for child in node2.children:
                                 seq_cost[1] += min(
                                     [
-                                        dist_func(child_seq, seq_cost[0])
+                                        dist_func(seq_cost[0], child_seq)
                                         + child_cost
                                         for child_seq, child_cost in child.costs
                                     ]
@@ -306,7 +306,7 @@ def build_tree(sequences, parents, counts=None, root="root", dist_func=hamming_d
         if len(root_parent.children) == 1:
             root_parent.delete(prevent_nondicotomic=False)
             root_parent.children[0].dist = dist_func(
-                root_parent.children[0].sequence, nodes[root_id].sequence
+                nodes[root_id].sequence, root_parent.children[0].sequence
             )
         tree = nodes[root_id]
 
@@ -316,7 +316,7 @@ def build_tree(sequences, parents, counts=None, root="root", dist_func=hamming_d
     # compute branch lengths
     tree.dist = 0  # no branch above root
     for node in tree.iter_descendants():
-        node.dist = dist_func(node.sequence, node.up.sequence)
+        node.dist = dist_func(node.up.sequence, node.sequence)
 
     return tree
 
