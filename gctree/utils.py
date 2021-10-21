@@ -25,21 +25,45 @@ def hamming_distance(seq1: str, seq2: str) -> int:
     return sum(x != y for x, y in zip(seq1, seq2))
 
 
-@check_distance_arguments
-def mutability_distance(seq1: str, seq2: str, mutability_model) -> float:
-    """Assume that sequences being compared are already padded, so this will be
-    a sum of negative log biases over bases within the padding margin...but
-    that will be a problem when there's an ambiguity at the beginning of the
-    sequence."""
-    mutabilities = mutability_model.mutabilities(seq1)
-    normalizing_constant = sum(mut for mut, _ in mutabilities)
-    normalized_mutabilities = [
-        (mut / normalizing_constant, biases) for mut, biases in mutabilities
+def mutability_distance(mutation_model):
+    """Returns a fast distance function based on mutability_model.
+    First, caches computed mutabilities for k-mers with k // 2 N's on either
+    end. This is fast for k=5, but the distance function should be created
+    once and reused."""
+    # Caching could be moved to the MutationModel class instead.
+    context_model = mutation_model.context_model.copy()
+    k = mutation_model.k
+    h = k // 2
+    # Build all sequences with (when k=5) one or two Ns on either end
+    templates = [("N" * (k - i), "N" * i) for i in range(1, k // 2)]
+    kmers_to_compute = [
+        kmer
+        for ambig_stub, ns in templates
+        for stub in mutation_model._disambiguate(ambig_stub)
+        for kmer in [stub + ns, ns + stub]
     ]
-    transition_costs = [
-        -log(mut[0] * mut[1][seq2[index]])
-        if seq1[index] == seq2[index]
-        else -log(1 - mut[0])
-        for index, mut in enumerate(normalized_mutabilities)
-    ]
-    return sum(transition_costs)
+    # Cache all these mutabilities in context_model also
+    context_model.update({mutation_model.mutability(kmer) for kmer in kmers_to_compute})
+
+    def mutabilities(seq):
+        newseq = "N" * h + seq + "N" * h
+        return [
+            context_model[newseq[i - h : i + h + 1]] for i in range(h, len(seq) + h)
+        ]
+
+    @check_distance_arguments
+    def distance(seq1: str, seq2: str) -> float:
+        """Assume that sequences being compared are already padded, so this will be
+        a sum of negative log biases over bases within the padding margin...but
+        that will be a problem when there's an ambiguity at the beginning of the
+        sequence."""
+        muts = mutabilities(seq1)
+        nc = sum(mut for mut, _ in muts)
+        return sum(
+            -log((mut[0] / nc) * mut[1][seq2[index]])
+            if seq1[index] != seq2[index]
+            else -log(1 - (mut[0] / nc))
+            for index, mut in enumerate(muts)
+        )
+
+    return distance

@@ -126,7 +126,9 @@ def parse_outfile(outfile, abundance_file=None, root="root", **kwargs):
                         )
                     )
                 if bootstrap:
-                    trees[-1].append(build_tree(sequences, parents, counts, root, **kwargs ))
+                    trees[-1].append(
+                        build_tree(sequences, parents, counts, root, **kwargs)
+                    )
                 else:
                     trees.append(build_tree(sequences, parents, counts, root, **kwargs))
             elif sect == "seqboot_dataset":
@@ -228,8 +230,7 @@ def disambiguate(
                             for child in node2.children:
                                 seq_cost[1] += min(
                                     [
-                                        dist_func(seq_cost[0], child_seq)
-                                        + child_cost
+                                        dist_func(seq_cost[0], child_seq) + child_cost
                                         for child_seq, child_cost in child.costs
                                     ]
                                 )
@@ -276,7 +277,9 @@ def disambiguate(
 
 
 # build a tree from a set of sequences and an adjacency dict.
-def build_tree(sequences, parents, counts=None, root="root", dist_func=hamming_distance, **kwargs):
+def build_tree(
+    sequences, parents, counts=None, root="root", dist_func=hamming_distance, **kwargs
+):
     # build an ete tree
     # first a dictionary of disconnected nodes
     nodes = {}
