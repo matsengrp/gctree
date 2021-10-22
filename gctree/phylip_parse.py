@@ -249,7 +249,13 @@ def disambiguate(
 
 # build a tree from a set of sequences and an adjacency dict.
 def build_tree(
-    sequences, parents, counts=None, root="root", dist_func=hamming_distance, disambiguate=True, **kwargs
+    sequences,
+    parents,
+    counts=None,
+    root="root",
+    dist_func=hamming_distance,
+    disambiguate=True,
+    **kwargs
 ):
     # build an ete tree
     # first a dictionary of disconnected nodes
