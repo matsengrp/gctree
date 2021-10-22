@@ -97,7 +97,7 @@ def test_restricted_ambiguity_widewindow_mutability():
         mutability_file="S5F/Mutability.csv", substitution_file="S5F/Substitution.csv"
     )
     newickset = sample(
-        tree1, n=5, dist_func=utils.mutability_distance(mmodel), distance_dependence=2
+        tree1, n=5, dist_func=utils.mutability_distance(mmodel), dependence_window=2
     )
     correctset = {"((((TT)CC,(CC,AA)CA)CA,AA,(AA,GG)GA)GA);"}
     if not newickset == correctset:
@@ -111,7 +111,7 @@ def test_restricted_ambiguity_widewindow_mutability():
 
 
 def test_restricted_ambiguity_widewindow():
-    newickset = sample(tree1, n=100, distance_dependence=-1)
+    newickset = sample(tree1, n=100, dependence_window=-1)
     correctset = {
         "((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)GG)GG);",
         "((((TT)CC,(CC,AA)AC)AC,AA,(AA,GG)AG)AG);",
