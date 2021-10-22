@@ -7,6 +7,7 @@ import random
 import scipy
 from Bio.Seq import Seq
 from typing import Tuple, List
+from gctree.utils import disambiguations
 
 
 class MutationModel:
@@ -58,23 +59,6 @@ class MutationModel:
         else:
             self.context_model = None
 
-    @staticmethod
-    def _disambiguate(sequence):
-        r"""generator of all possible nt sequences implied by a sequence
-        containing Ns."""
-        # find the first N nucleotide
-        N_index = sequence.find("N")
-        # if there is no N nucleotide, yield the input sequence
-        if N_index == -1:
-            yield sequence
-        else:
-            for n_replace in "ACGT":
-                # ooooh, recursion
-                # NOTE: in python3 we could simply use "yield from..." instead of this loop
-                for sequence_recurse in MutationModel._disambiguate(
-                    sequence[:N_index] + n_replace + sequence[N_index + 1 :]
-                ):
-                    yield sequence_recurse
 
     def mutability(self, kmer: str) -> Tuple[np.float64, np.float64]:
         r"""Returns the mutability of a central base of :math:`k`-mer, along with
@@ -97,7 +81,7 @@ class MutationModel:
             )
 
         mutabilities_to_average, substitutions_to_average = zip(
-            *[self.context_model[x] for x in MutationModel._disambiguate(kmer)]
+            *[self.context_model[x] for x in disambiguations(kmer)]
         )
 
         average_mutability = scipy.mean(mutabilities_to_average)

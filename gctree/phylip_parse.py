@@ -7,26 +7,15 @@ ancestral sequences), a newick tree (with matching internal node lables), and an
 
 import gctree.phylip_parse as pp
 import gctree.branching_processes as bp
-from gctree.utils import hamming_distance
+from gctree.utils import hamming_distance, bases, disambiguations
 
 from ete3 import Tree
 import re
 import random
 from collections import defaultdict
-from Bio.Data.IUPACData import ambiguous_dna_values
 
 import pickle
 import argparse
-
-bases = "AGCT-"
-ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
-code_vectors = {
-    code: [0 if base in ambiguous_dna_values[code] else float("inf") for base in bases]
-    for code in ambiguous_dna_values
-}
-cost_adjust = {
-    base: [int(not i == j) for j in range(5)] for i, base in enumerate(bases)
-}
 
 
 # iterate over recognized sections in the phylip output file.
@@ -145,27 +134,12 @@ def disambiguate(
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
     subtrees of consecutive ambiguity codes."""
 
-    def sequences(sequence, accum=""):
-        """Iterates through possible disambiguations of sequence, recursively.
-
-        Recursion-depth-limited by number of ambiguity codes in
-        sequence, not sequence length.
-        """
-        if sequence:
-            for index, base in enumerate(sequence):
-                if base in bases:
-                    accum += base
-                else:
-                    for newbase in ambiguous_dna_values[base]:
-                        yield from sequences(
-                            sequence[index + 1 :], accum=(accum + newbase)
-                        )
-                    return
-        yield accum
 
     def iterate_independent_indices(sequencelist, dependence_window):
         """Sequencelist must contain sequences of the same length.
-
+        Returns a generator of tuples of starting and stopping indices
+        which contain ambiguities in any of the sequences in sequencelist,
+        including non-ambiguous padding around the ambiguities.
         dependence_window is max distance a motif extends past focused
         base, so a centered motif of length 5 has dependence_window 2.
         """
@@ -199,7 +173,7 @@ def disambiguate(
         )
 
     def is_ambiguous(sequence):
-        return any((code not in bases for code in sequence))
+        return any(code not in bases for code in sequence)
 
     if random_state is None:
         random.seed(tree.write(format=1))
@@ -223,7 +197,7 @@ def disambiguate(
                 for node2 in node.traverse(strategy="postorder", is_leaf_fn=is_leaf):
                     seq_fragment = node2.sequence[startidx:endidx]
                     node2.add_feature(
-                        "costs", [[seq, 0] for seq in sequences(seq_fragment)]
+                        "costs", [[seq, 0] for seq in disambiguations(seq_fragment)]
                     )
                     if not is_leaf(node2):
                         for seq_cost in node2.costs:

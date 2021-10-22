@@ -1,7 +1,27 @@
 from math import log
+from Bio.Data.IUPACData import ambiguous_dna_values
 
 r"""Utility functions."""
 
+bases = "AGCT-"
+ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
+
+def disambiguations(sequence, accum=""):
+    """Iterates through possible disambiguations of sequence, recursively.
+    Recursion-depth-limited by number of ambiguity codes in
+    sequence, not sequence length.
+    """
+    if sequence:
+        for index, base in enumerate(sequence):
+            if base in bases:
+                accum += base
+            else:
+                for newbase in ambiguous_dna_values[base]:
+                    yield from disambiguations(
+                        sequence[index + 1 :], accum=(accum + newbase)
+                    )
+                return
+    yield accum
 
 def check_distance_arguments(distance):
     def new_distance(seq1: str, seq2: str, *args, **kwargs):
@@ -43,7 +63,7 @@ def mutability_distance(mutation_model):
     kmers_to_compute = [
         leftns + stub + rightns
         for leftns, ambig_stub, rightns in templates
-        for stub in mutation_model._disambiguate(ambig_stub)
+        for stub in disambiguations(ambig_stub)
     ]
     # Cache all these mutabilities in context_model also
     context_model.update({kmer: mutation_model.mutability(kmer) for kmer in kmers_to_compute})
