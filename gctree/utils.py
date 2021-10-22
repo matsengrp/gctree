@@ -6,6 +6,7 @@ r"""Utility functions."""
 bases = "AGCT-"
 ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
 
+
 def disambiguations(sequence, accum=""):
     """Iterates through possible disambiguations of sequence, recursively.
     Recursion-depth-limited by number of ambiguity codes in
@@ -22,6 +23,7 @@ def disambiguations(sequence, accum=""):
                     )
                 return
     yield accum
+
 
 def check_distance_arguments(distance):
     def new_distance(seq1: str, seq2: str, *args, **kwargs):
@@ -55,10 +57,12 @@ def mutability_distance(mutation_model):
     k = mutation_model.k
     h = k // 2
     # Build all sequences with (when k=5) one or two Ns on either end
-    templates = [("N"* left, "N" * (k - left - right), "N" * right)
-                 for left in range(h + 1)
-                 for right in range(h + 1)
-                 if left != 0 or right != 0]
+    templates = [
+        ("N" * left, "N" * (k - left - right), "N" * right)
+        for left in range(h + 1)
+        for right in range(h + 1)
+        if left != 0 or right != 0
+    ]
 
     kmers_to_compute = [
         leftns + stub + rightns
@@ -66,7 +70,9 @@ def mutability_distance(mutation_model):
         for stub in disambiguations(ambig_stub)
     ]
     # Cache all these mutabilities in context_model also
-    context_model.update({kmer: mutation_model.mutability(kmer) for kmer in kmers_to_compute})
+    context_model.update(
+        {kmer: mutation_model.mutability(kmer) for kmer in kmers_to_compute}
+    )
 
     def mutabilities(seq):
         newseq = "N" * h + seq + "N" * h

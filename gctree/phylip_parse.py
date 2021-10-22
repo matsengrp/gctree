@@ -132,45 +132,12 @@ def disambiguate(
     tree: Tree, random_state=None, dist_func=hamming_distance, distance_dependence=0
 ) -> Tree:
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
-    subtrees of consecutive ambiguity codes."""
-
-
-    def iterate_independent_indices(sequencelist, dependence_window):
-        """Sequencelist must contain sequences of the same length.
-        Returns a generator of tuples of starting and stopping indices
-        which contain ambiguities in any of the sequences in sequencelist,
-        including non-ambiguous padding around the ambiguities.
-        dependence_window is max distance a motif extends past focused
-        base, so a centered motif of length 5 has dependence_window 2.
-        """
-        # contains True at indices for columns which have an ambiguity, False otherwise.
-        is_ambiguous_collapsed = [
-            any((sequence[index] not in bases for sequence in sequencelist))
-            for index in range(len(sequencelist[0]))
-        ]
-        ambiguous_indices = [
-            index for index, val in enumerate(is_ambiguous_collapsed) if val is True
-        ]
-
-        def is_window_beginning(ambig_index):
-            before_index = max([0, ambig_index - dependence_window])
-            return not any(is_ambiguous_collapsed[before_index:ambig_index])
-
-        def is_window_end(ambig_index):
-            return not any(
-                is_ambiguous_collapsed[
-                    ambig_index + 1 : ambig_index + dependence_window + 1
-                ]
-            )
-
-        window_beginnings = (
-            index for index in ambiguous_indices if is_window_beginning(index)
-        )
-        window_ends = (index for index in ambiguous_indices if is_window_end(index))
-        return (
-            (max([0, a - dependence_window]), b + dependence_window + 1)
-            for a, b in zip(window_beginnings, window_ends)
-        )
+    subtrees of consecutive ambiguity codes.
+    If passing a nonstandard distance function, the user must specify how many bases on either side of a focused base must be considered.
+    Distance_dependence is max distance a motif extends past focused
+    base, so a centered motif of length 5 has distance_dependence 2.
+    If the entire sequence should be disambiguated at once, use distance_dependence -1.
+    """
 
     def is_ambiguous(sequence):
         return any(code not in bases for code in sequence)
@@ -180,10 +147,40 @@ def disambiguate(
     else:
         random.setstate(random_state)
 
-    seqlist = [node.sequence for node in tree.traverse()]
-    windows_to_disambiguate = list(
-        iterate_independent_indices(seqlist, distance_dependence)
-    )
+    if distance_dependence == -1:
+        windows_to_disambiguate = [(0, len(tree.sequence))]
+    else:
+        # smash all sequences in tree into one, find windows containing
+        # ambiguities, padded by at least distance_dependence unambiguous bases
+        sequencelist = [node.sequence for node in tree.traverse()]
+        is_ambiguous_collapsed = [
+            any((sequence[index] not in bases for sequence in sequencelist))
+            for index in range(len(sequencelist[0]))
+        ]
+        ambiguous_indices = [
+            index for index, val in enumerate(is_ambiguous_collapsed) if val is True
+        ]
+
+        def is_window_beginning(ambig_index):
+            before_index = max([0, ambig_index - distance_dependence])
+            return not any(is_ambiguous_collapsed[before_index:ambig_index])
+
+        def is_window_end(ambig_index):
+            return not any(
+                is_ambiguous_collapsed[
+                    ambig_index + 1 : ambig_index + distance_dependence + 1
+                ]
+            )
+
+        window_beginnings = (
+            index for index in ambiguous_indices if is_window_beginning(index)
+        )
+        window_ends = (index for index in ambiguous_indices if is_window_end(index))
+        # tuples of starting and stopping indices which contain ambiguities in any of the sequences in sequencelist, including non-ambiguous padding around the ambiguities.
+        windows_to_disambiguate = [
+            (max([0, a - distance_dependence]), b + distance_dependence + 1)
+            for a, b in zip(window_beginnings, window_ends)
+        ]
     for node in tree.traverse():
         for startidx, endidx in windows_to_disambiguate:
             if any((base not in bases for base in node.sequence[startidx:endidx])):

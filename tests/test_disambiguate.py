@@ -92,7 +92,7 @@ def test_restricted_ambiguity_widewindow_mutability():
         raise ValueError("Invalid Disambiguation")
 
 def test_restricted_ambiguity_widewindow():
-    newickset = sample(tree1, n=100, distance_dependence=3)
+    newickset = sample(tree1, n=100, distance_dependence=-1)
     correctset = {'((((TT)CC,(CC,AA)CC)CC,AA,(AA,GG)GG)GG);',
                   '((((TT)CC,(CC,AA)AC)AC,AA,(AA,GG)AG)AG);',
                   '((((TT)CC,(CC,AA)AC)AC,AA,(AA,GG)AA)AA);',
