@@ -7,7 +7,7 @@ bases = "AGCT-"
 ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
 
 
-def disambiguations(sequence, accum=""):
+def disambiguations(sequence, _accum=""):
     """Iterates through possible disambiguations of sequence, recursively.
     Recursion-depth-limited by number of ambiguity codes in
     sequence, not sequence length.
@@ -15,14 +15,14 @@ def disambiguations(sequence, accum=""):
     if sequence:
         for index, base in enumerate(sequence):
             if base in bases:
-                accum += base
+                _accum += base
             else:
                 for newbase in ambiguous_dna_values[base]:
                     yield from disambiguations(
-                        sequence[index + 1 :], accum=(accum + newbase)
+                        sequence[index + 1 :], _accum=(_accum + newbase)
                     )
                 return
-    yield accum
+    yield _accum
 
 
 def check_distance_arguments(distance):

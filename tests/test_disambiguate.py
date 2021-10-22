@@ -108,3 +108,37 @@ def test_restricted_ambiguity_widewindow():
         print(f"\nDisambiguate function is missing {missing}\n"
               f"and came up with these incorrect trees: {wrong}")
         raise ValueError("Invalid Disambiguation")
+
+def test_sequence_disambiguate():
+    sequences = ["GVNT", "?TCM"]
+    lsts = [list(utils.disambiguations(sequence)) for sequence in sequences]
+    correctsets = [
+        {"GAAT",
+         "GACT",
+         "GAGT",
+         "GATT",
+         "GCAT",
+         "GCCT",
+         "GCGT",
+         "GCTT",
+         "GGAT",
+         "GGCT",
+         "GGGT",
+         "GGTT"},
+        {"ATCA",
+         "ATCC",
+         "GTCA",
+         "GTCC",
+         "CTCA",
+         "CTCC",
+         "TTCA",
+         "TTCC",
+         "-TCA",
+         "-TCC"}
+    ]
+    for seq, lst, correctset in zip(sequences, lsts, correctsets):
+        if not len(lst) == len(set(lst)):
+            raise ValueError("Non-unique sequence disambiguation")
+        if not set(lst) == correctset:
+            raise ValueError(f"Incorrect disambiguation of sequence {seq}:\n{lst}")
+
