@@ -249,7 +249,7 @@ def disambiguate(
 
 # build a tree from a set of sequences and an adjacency dict.
 def build_tree(
-    sequences, parents, counts=None, root="root", dist_func=hamming_distance, **kwargs
+    sequences, parents, counts=None, root="root", dist_func=hamming_distance, disambiguate=True, **kwargs
 ):
     # build an ete tree
     # first a dictionary of disconnected nodes
@@ -284,13 +284,14 @@ def build_tree(
             )
         tree = nodes[root_id]
 
-    # make random choices for ambiguous bases
-    tree = disambiguate(tree, dist_func=dist_func, **kwargs)
+    if disambiguate:
+        # make random choices for ambiguous bases
+        tree = disambiguate(tree, dist_func=dist_func, **kwargs)
 
-    # compute branch lengths
-    tree.dist = 0  # no branch above root
-    for node in tree.iter_descendants():
-        node.dist = dist_func(node.up.sequence, node.sequence)
+        # compute branch lengths
+        tree.dist = 0  # no branch above root
+        for node in tree.iter_descendants():
+            node.dist = dist_func(node.up.sequence, node.sequence)
 
     return tree
 
