@@ -254,7 +254,7 @@ def build_tree(
     counts=None,
     root="root",
     dist_func=hamming_distance,
-    disambiguate=True,
+    resolve_ambiguities=True,
     **kwargs
 ):
     # build an ete tree
@@ -285,19 +285,22 @@ def build_tree(
         # remove possible unecessary unifurcation after rerooting
         if len(root_parent.children) == 1:
             root_parent.delete(prevent_nondicotomic=False)
-            root_parent.children[0].dist = dist_func(
+            # this must stay hamming_distance, not dist_func
+            # used for collapsing logic.
+            root_parent.children[0].dist = hamming_distance(
                 nodes[root_id].sequence, root_parent.children[0].sequence
             )
         tree = nodes[root_id]
 
-    if disambiguate:
+    if resolve_ambiguities:
         # make random choices for ambiguous bases
         tree = disambiguate(tree, dist_func=dist_func, **kwargs)
 
         # compute branch lengths
         tree.dist = 0  # no branch above root
         for node in tree.iter_descendants():
-            node.dist = dist_func(node.up.sequence, node.sequence)
+            # This must stay hamming_distance, not dist_func
+            node.dist = hamming_distance(node.up.sequence, node.sequence)
 
     return tree
 

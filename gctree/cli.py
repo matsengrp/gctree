@@ -156,10 +156,33 @@ def test(args):
 
 def infer(args):
     """inference subprogram."""
-    outfiles = [pp.parse_outfile(args.phylipfile, args.abundance_file, args.root)]
+    if args.disambiguate_with_mutability:
+        model = mm.MutationModel(
+            mutability_file=args.mutability, substitution_file=args.substitution
+        )
+        dist_func = utils.mutability_distance(model)
+        dependence_window = 2
+    else:
+        dist_func = utils.hamming_distance
+        dependence_window = 0
+    outfiles = [
+        pp.parse_outfile(
+            args.phylipfile,
+            args.abundance_file,
+            args.root,
+            dist_func=dist_func,
+            dependence_window=dependence_window,
+        )
+    ]
     if args.bootstrap_phylipfile is not None:
         outfiles.extend(
-            pp.parse_outfile(args.bootstrap_phylipfile, args.abundance_file, args.root)
+            pp.parse_outfile(
+                args.bootstrap_phylipfile,
+                args.abundance_file,
+                args.root,
+                dist_func=dist_func,
+                dependence_window=dependence_window,
+            )
         )
     bootstrap = len(outfiles) > 1
     if bootstrap:
@@ -645,6 +668,23 @@ def get_parser():
         type=str,
         default=None,
         help="positionmapfile for the 2nd chain when using the ``chain_split`` option",
+    )
+    parser_infer.add_argument(
+        "--disambiguate_with_mutability",
+        action="store_true",
+        help="use mutability model provided using ``mutability'' and ``substitution'' arguments to attempt to optimally resolve ambiguities in dnapars output trees",
+    )
+    parser_infer.add_argument(
+        "--mutability",
+        type=str,
+        default=None,
+        help="path to mutability model file to be used with option ``disambiguate_with_mutability''",
+    )
+    parser_infer.add_argument(
+        "--substitution",
+        type=str,
+        default=None,
+        help="path to substitution model file to be used with option ``disambiguate_with_mutability''",
     )
     parser_infer.set_defaults(func=infer)
 

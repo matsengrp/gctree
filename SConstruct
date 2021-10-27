@@ -61,6 +61,28 @@ AddOption(
     action="store_true",
     help="use stdbuf to prevent line buffering on linux",
 )
+AddOption(
+    "--disambiguate_with_mutability",
+    action="store_true",
+    help="use mutability model provided using ``mutability'' and ``substitution'' arguments to attempt to optimally resolve ambiguities in dnapars output trees"
+)
+disambiguate_with_mutability = GetOption("disambiguate_with_mutability")
+AddOption(
+    "--mutability",
+    type="string",
+    metavar="PATH",
+    default="S5F/Mutability.csv",
+    help="path to S5F mutability data",
+)
+mutability = GetOption("mutability")
+AddOption(
+    "--substitution",
+    type="string",
+    metavar="PATH",
+    default="S5F/Substitution.csv",
+    help="path to S5F substitution data",
+)
+substitution = GetOption("substitution")
 buffarg = "stdbuf -oL " if GetOption("nobuff") else ""
 
 
@@ -86,22 +108,6 @@ if simulate:
         help="sequence of root from which to simulate",
     )
     root = GetOption("root")
-    AddOption(
-        "--mutability",
-        type="string",
-        metavar="PATH",
-        default="S5F/Mutability.csv",
-        help="path to S5F mutability data",
-    )
-    mutability = GetOption("mutability")
-    AddOption(
-        "--substitution",
-        type="string",
-        metavar="PATH",
-        default="S5F/Substitution.csv",
-        help="path to S5F substitution data",
-    )
-    substitution = GetOption("substitution")
     AddOption(
         "--lambda",
         type="float",
@@ -217,5 +223,5 @@ elif inference and not GetOption("help"):
         raise InputError("input fasta or phylip and outdir must be specified")
     SConscript(
         "SConscript.inference",
-        exports="env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile",
+        exports="env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile mutability substitution disambiguate_with_mutability",
     )

@@ -86,6 +86,10 @@ def mutability_distance(mutation_model):
         a sum of negative log biases over bases within the padding margin...but
         that will be a problem when there's an ambiguity at the beginning of the
         sequence."""
+        if len(seq1) < 2:
+            raise ValueError(
+                "mutability distance function can only compare sequences of more than one base"
+            )
         muts = mutabilities(seq1)
         nc = sum(mut for mut, _ in muts)
         return sum(

@@ -18,7 +18,7 @@ def which(executable):
 
 # the following must be exported by parent SConstruct/SConscript
 Import(
-    "env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile"
+    "env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile mutability substitution disambiguate_with_mutability"
 )
 
 
@@ -209,6 +209,8 @@ if bootstrap:
 gctree_outbase = os.path.join(outdir, "gctree")
 frame_arg = " --frame {} ".format(frame) if frame is not None else ""
 idlabel_arg = " --idlabel" if idlabel else ""
+mutabilitymodel = " --mutability {}".format(mutability) if mutability else ""
+substitutionmodel = " --substitution {}".format(substitution) if substitution else ""
 gctree_infer = CommandRunner(
     [
         gctree_outbase + ".inference.parsimony_forest.p",
@@ -227,6 +229,9 @@ gctree_infer = CommandRunner(
     + idlabel_arg
     + (" --colormap ${SOURCES[-1]} " if colorfile is not None else "")
     + (" --bootstrap_phylipfile ${SOURCES[2]}" if bootstrap else "")
+    + (" --disambiguate_with_mutability" if disambiguate_with_mutability else "")
+    + mutabilitymodel
+    + substitutionmodel
     + " | tee ${TARGETS[1]}",
 )
 return_list.append(gctree_infer)
