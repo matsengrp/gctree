@@ -172,6 +172,7 @@ def infer(args):
             args.root,
             dist_func=dist_func,
             dependence_window=dependence_window,
+            extended_parsimony_search=args.extended_parsimony_search
         )
     ]
     if args.bootstrap_phylipfile is not None:
@@ -182,6 +183,7 @@ def infer(args):
                 args.root,
                 dist_func=dist_func,
                 dependence_window=dependence_window,
+                extended_parsimony_search=args.extended_parsimony_search
             )
         )
     bootstrap = len(outfiles) > 1
@@ -685,6 +687,10 @@ def get_parser():
         type=str,
         default=None,
         help="path to substitution model file to be used with option ``disambiguate_with_mutability''",
+    parser_infer.add_argument(
+        "--extended_parsimony_search",
+        action="store_true"
+        help="search for more maximum parsimony trees using history DAG"
     )
     parser_infer.set_defaults(func=infer)
 
