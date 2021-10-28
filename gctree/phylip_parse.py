@@ -90,7 +90,9 @@ def parse_seqdict(fh, mode="dnaml"):
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
-def parse_outfile(outfile, abundance_file=None, root="root", extended_parsimony_search=False, **kwargs):
+def parse_outfile(
+    outfile, abundance_file=None, root="root", extended_parsimony_search=False, **kwargs
+):
     """parse phylip outfile."""
     if abundance_file is not None:
         counts = {
@@ -118,10 +120,26 @@ def parse_outfile(outfile, abundance_file=None, root="root", extended_parsimony_
                     )
                 if bootstrap:
                     trees[-1].extend(
-                        build_tree(sequences, parents, counts, root, disambiguate_all=extended_parsimony_search, **kwargs)
+                        build_tree(
+                            sequences,
+                            parents,
+                            counts,
+                            root,
+                            disambiguate_all=extended_parsimony_search,
+                            **kwargs,
+                        )
                     )
                 else:
-                    trees.extend(build_tree(sequences, parents, counts, root, disambiguate_all=extended_parsimony_search, **kwargs))
+                    trees.extend(
+                        build_tree(
+                            sequences,
+                            parents,
+                            counts,
+                            root,
+                            disambiguate_all=extended_parsimony_search,
+                            **kwargs,
+                        )
+                    )
             elif sect == "seqboot_dataset":
                 bootstrap = True
                 trees.append([])
@@ -287,7 +305,7 @@ def build_tree(
     dist_func=hamming_distance,
     resolve_ambiguities=True,
     disambiguate_all=False,
-    **kwargs
+    **kwargs,
 ):
     # build an ete tree
     # first a dictionary of disconnected nodes
