@@ -208,6 +208,12 @@ elif inference:
         help="boostrap resampling, and inference on each (default no bootstrap)",
     )
     bootstrap = GetOption("bootstrap")
+    AddOption(
+        "--extended_parsimony_search",
+        action="store_true",
+        help="search for more maximum parsimony trees using history DAG",
+    )
+    extended_parsimony_search = GetOption("extended_parsimony_search")
 
 # First call after all arguments have been parsed
 # to enable correct command line help.
@@ -223,5 +229,5 @@ elif inference and not GetOption("help"):
         raise InputError("input fasta or phylip and outdir must be specified")
     SConscript(
         "SConscript.inference",
-        exports="env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile mutability substitution disambiguate_with_mutability",
+        exports="env dnaml quick idlabel frame input_file input_file2 outdir root_id id_abundances CommandRunner bootstrap xarg buffarg colorfile mutability substitution disambiguate_with_mutability extended_parsimony_search",
     )

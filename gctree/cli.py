@@ -687,9 +687,10 @@ def get_parser():
         type=str,
         default=None,
         help="path to substitution model file to be used with option ``disambiguate_with_mutability''",
+    )
     parser_infer.add_argument(
         "--extended_parsimony_search",
-        action="store_true"
+        action="store_true",
         help="search for more maximum parsimony trees using history DAG"
     )
     parser_infer.set_defaults(func=infer)

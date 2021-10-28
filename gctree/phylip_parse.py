@@ -128,21 +128,30 @@ def parse_outfile(outfile, abundance_file=None, root="root", extended_parsimony_
             else:
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
     if extended_parsimony_search:
+        # This will be used to name nodes in exported ete trees, but any
+        # disambiguated sequence will be named "unnamed_seq"
+        # Will this mess with observed counts in MLE later?
+        namedict = {sequence: name for name, sequence in sequences.items()}
         dag = historydag.dag.history_dag_from_etes(trees)
         dag.add_all_allowed_edges(new_from_root=False, adjacent_labels=True)
         dag = dag.prune_min_weight()
         dag.convert_to_collapsed()
         if len(dag.get_weight_counts()) > 1:
+            # This could happen if something's wrong with history DAG theory,
+            # or convert_to_collapsed has a bug
             raise RuntimeError(
                 f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.get_weight_counts()}"
             )
-        trees = [fulltree.to_ete() for fulltree in dag.get_trees()]
+        trees = [fulltree.to_ete(namedict=namedict) for fulltree in dag.get_trees()]
         if counts is not None:
             for tree in trees:
                 for node in tree.traverse():
                     if not node.is_root():
                         node.dist = hamming_distance(node.sequence, node.up.sequence)
-                    if node.name in counts:
+                    # Can only add nonzero abundance to leaves, because
+                    # CollapsedTree init adds abundances when collapsing
+                    # adjacent nodes with same sequence
+                    if node.name in counts and node.is_leaf():
                         node.add_feature("abundance", counts[node.name])
                     else:
                         node.add_feature("abundance", 0)
@@ -318,7 +327,7 @@ def build_tree(
     if resolve_ambiguities:
         # make random choices for ambiguous bases
         if disambiguate_all:
-            trees = historydag.utils.disambiguate(tree, dist_func=dist_func)
+            trees = historydag.utils.disambiguate(tree)
         else:
             trees = [disambiguate(tree, dist_func=dist_func, **kwargs)]
         for tree in trees:
@@ -327,6 +336,8 @@ def build_tree(
             for node in tree.iter_descendants():
                 # This must stay hamming_distance, not dist_func
                 node.dist = hamming_distance(node.up.sequence, node.sequence)
+    else:
+        trees = [tree]
     return trees
 
 
