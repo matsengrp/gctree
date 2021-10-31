@@ -155,7 +155,7 @@ def parse_outfile(
         dag.expand_ambiguities()
         # Look for (even) more trees:
         dag.add_all_allowed_edges(new_from_root=False, adjacent_labels=True)
-        dag = dag.prune_min_weight()
+        dag.trim_min_weight()
         # collapse zero-length edges so that all trees in dag are unique
         # CollapsedTrees (reduces number that need to be exported from dag)
         dag.convert_to_collapsed()
