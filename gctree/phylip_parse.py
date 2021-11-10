@@ -94,6 +94,9 @@ def parse_outfile(
     outfile, abundance_file=None, root="root", extended_parsimony_search=False, **kwargs
 ):
     """parse phylip outfile."""
+    if 'resolve_ambiguities' in kwargs:
+        if 'resolve_ambiguities' == True:
+            kwargs.update(resolve_ambiguities=(not extended_parsimony_search))
     if abundance_file is not None:
         counts = {
             line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)
@@ -125,7 +128,6 @@ def parse_outfile(
                             parents,
                             counts,
                             root,
-                            resolve_ambiguities=(not extended_parsimony_search),
                             **kwargs,
                         )
                     )
@@ -136,7 +138,6 @@ def parse_outfile(
                             parents,
                             counts,
                             root,
-                            resolve_ambiguities=(not extended_parsimony_search),
                             **kwargs,
                         )
                     )
@@ -150,6 +151,7 @@ def parse_outfile(
         # disambiguated sequence will be named "unnamed_seq"
         # Will this mess with observed counts in MLE later?
         namedict = {sequence: name for name, sequence in sequences.items()}
+        print(f"Starting with {len(trees)} trees")
         dag = historydag.dag.history_dag_from_etes(trees)
         # Disambiguate (with later trimming step):
         dag.expand_ambiguities()
@@ -159,6 +161,7 @@ def parse_outfile(
         # collapse zero-length edges so that all trees in dag are unique
         # CollapsedTrees (reduces number that need to be exported from dag)
         dag.convert_to_collapsed()
+        print(f"DAG contains {dag.count_trees()} collapsed trees")
         if len(dag.get_weight_counts()) > 1:
             # This could happen if something's wrong with history DAG theory,
             # or convert_to_collapsed has a bug
