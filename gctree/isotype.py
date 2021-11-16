@@ -7,6 +7,7 @@ import ete3
 import pickle
 import argparse
 from pathlib import Path
+import warnings
 
 
 class IsotypeTemplate:
@@ -124,7 +125,16 @@ def disambiguate_isotype(
 def make_newidmap(idmap: dict, isotype_map: dict):
     newidmap = {}
     for id, cell_ids in idmap.items():
-        isotypeset = {isotype_map[cell_id] for cell_id in cell_ids}
+        isotypeset = set()
+        for cell_id in cell_ids:
+            try:
+                isotypeset.add(isotype_map[cell_id])
+            except KeyError as e:
+                warnings.warn(f"Sequence ID {id} has original sequence id {cell_id} "
+                              "for which no observed isotype was provided. "
+                              "Isotype will be assumed ambiguous if observed.")
+                isotype_map[cell_id] = '?'
+                isotypeset.add('?')
         newidmap[id] = {
             isotype: {
                 cell_id for cell_id in cell_ids if isotype_map[cell_id] == isotype
@@ -150,7 +160,16 @@ def add_observed_isotypes(tree: ete3.Tree, newidmap: dict, isotype_order: list):
         if node.abundance == 0:
             node.add_feature("isotype", newisotype("?"))
         else:
-            thisnode_isotypemap = newidmap[node.name]
+            try:
+                thisnode_isotypemap = newidmap[node.name]
+            except KeyError as e:
+                warn.warn(f"The sequence name {e} labels an observed node, but no mapping to an original sequence ID was found."
+                          " Isotype will be assumed ambiguous.")
+                thisnode_isotypemap = {'?': {f"Unknown_id_{n+1}" for n in range(node.abundance)}}
+            if '?' in thisnode_isotypemap:
+                warnings.warn(f"The sequence name {node.name} labels an observed node, and corresponds to sequence IDs for "
+                              "which no observed isotype was provided. "
+                              f" Isotype will be assumed ambiguous for: {', '.join(thisnode_isotypemap['?'])}")
             # node.name had better be in newidmap, since this is an observed node
             if len(thisnode_isotypemap) > 1:
                 for isotype, cell_ids in thisnode_isotypemap.items():
@@ -265,7 +284,7 @@ def main(arg_list=None):
         for line in fh:
             seqid, cell_ids = line.rstrip().split(",")
             cell_idset = {
-                cell_id for cell_id in cell_ids.split(":") if cell_id in isotypemap
+                cell_id for cell_id in cell_ids.split(":") if cell_id
             }
             if len(cell_idset) > 0:
                 idmap[seqid] = cell_idset
