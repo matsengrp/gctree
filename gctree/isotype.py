@@ -4,6 +4,7 @@
 import re
 import random
 import ete3
+from gctree.utils import hamming_distance
 import pickle
 import argparse
 from pathlib import Path
@@ -130,11 +131,13 @@ def make_newidmap(idmap: dict, isotype_map: dict):
             try:
                 isotypeset.add(isotype_map[cell_id])
             except KeyError as e:
-                warnings.warn(f"Sequence ID {id} has original sequence id {cell_id} "
-                              "for which no observed isotype was provided. "
-                              "Isotype will be assumed ambiguous if observed.")
-                isotype_map[cell_id] = '?'
-                isotypeset.add('?')
+                warnings.warn(
+                    f"Sequence ID {id} has original sequence id {cell_id} "
+                    "for which no observed isotype was provided. "
+                    "Isotype will be assumed ambiguous if observed."
+                )
+                isotype_map[cell_id] = "?"
+                isotypeset.add("?")
         newidmap[id] = {
             isotype: {
                 cell_id for cell_id in cell_ids if isotype_map[cell_id] == isotype
@@ -163,13 +166,19 @@ def add_observed_isotypes(tree: ete3.Tree, newidmap: dict, isotype_order: list):
             try:
                 thisnode_isotypemap = newidmap[node.name]
             except KeyError as e:
-                warn.warn(f"The sequence name {e} labels an observed node, but no mapping to an original sequence ID was found."
-                          " Isotype will be assumed ambiguous.")
-                thisnode_isotypemap = {'?': {f"Unknown_id_{n+1}" for n in range(node.abundance)}}
-            if '?' in thisnode_isotypemap:
-                warnings.warn(f"The sequence name {node.name} labels an observed node, and corresponds to sequence IDs for "
-                              "which no observed isotype was provided. "
-                              f" Isotype will be assumed ambiguous for: {', '.join(thisnode_isotypemap['?'])}")
+                warnings.warn(
+                    f"The sequence name {e} labels an observed node, but no mapping to an original sequence ID was found."
+                    " Isotype will be assumed ambiguous."
+                )
+                thisnode_isotypemap = {
+                    "?": {f"Unknown_id_{n+1}" for n in range(node.abundance)}
+                }
+            if "?" in thisnode_isotypemap:
+                warnings.warn(
+                    f"The sequence name {node.name} labels an observed node, and corresponds to sequence IDs for "
+                    "which no observed isotype was provided. "
+                    f" Isotype will be assumed ambiguous for: {', '.join(thisnode_isotypemap['?'])}"
+                )
             # node.name had better be in newidmap, since this is an observed node
             if len(thisnode_isotypemap) > 1:
                 for isotype, cell_ids in thisnode_isotypemap.items():
@@ -200,7 +209,7 @@ def collapse_tree_by_sequence_and_isotype(tree):
         if node.dist == 0:
             node.up.abundance += node.abundance
             node.up.name = node.name
-            node.delete()
+            node.delete(prevent_nondicotomic=False)
 
 
 def get_parser():
@@ -283,9 +292,7 @@ def main(arg_list=None):
         idmap = {}
         for line in fh:
             seqid, cell_ids = line.rstrip().split(",")
-            cell_idset = {
-                cell_id for cell_id in cell_ids.split(":") if cell_id
-            }
+            cell_idset = {cell_id for cell_id in cell_ids.split(":") if cell_id}
             if len(cell_idset) > 0:
                 idmap[seqid] = cell_idset
 
@@ -302,11 +309,16 @@ def main(arg_list=None):
     # parse the idmap file and the isotypemap file
     forest.forest = tuple(
         sorted(
-            forest.forest, key=lambda tree: tree.ll(*parameters, build_cache=False)[0]
+            forest.forest, key=lambda tree: -tree.ll(*parameters, build_cache=False)[0]
         )
     )
     tree_stats = [
-        [ctree, ctree.ll(*parameters, build_cache=False), idx]
+        [
+            ctree,
+            ctree.ll(*parameters, build_cache=False)[0],
+            idx,
+            sum(1 for _ in ctree.tree.traverse()),
+        ]
         for idx, ctree in enumerate(forest.forest)
     ]
     if not args.isotype_names:
@@ -321,6 +333,8 @@ def main(arg_list=None):
         collapse_tree_by_sequence_and_isotype(ctree.tree)
         for node in ctree.tree.traverse():
             node.name = node.name + " " + str(node.isotype)
+        for node in ctree.tree.iter_descendants():
+            node.dist = hamming_distance(node.up.sequence, node.sequence)
 
     flattened_newidmap = {
         name + " " + str(isotype): cell_idset
@@ -343,7 +357,21 @@ def main(arg_list=None):
     with open(out_directory + "parsimonyforest.isotyped.p", "wb") as fh:
         fh.write(pickle.dumps(forest))
 
-    for ctree, likelihood, likelihood_idx, parsimony, parsimony_idx in tree_stats:
+    print(
+        f"Parameters:\t{parameters}\n"
+        "index\t ll\t\t\t original node count\t isotype parsimony\t new node count"
+    )
+    for (
+        ctree,
+        likelihood,
+        likelihood_idx,
+        original_numnodes,
+        parsimony,
+        parsimony_idx,
+    ) in tree_stats:
+        print(
+            f"{likelihood_idx + 1}\t {likelihood}\t {original_numnodes}\t\t\t {parsimony}\t\t\t {sum(1 for _ in ctree.tree.traverse())}"
+        )
         colormap = {
             node.name: isotype_palette[node.isotype.isotype]
             for node in ctree.tree.traverse()
