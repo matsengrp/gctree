@@ -1,30 +1,44 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
 import random
 import ete3
 import pickle
 import argparse
+from pathlib import Path
+
+
+class IsotypeTemplate:
+    def __init__(self, isotype_order):
+        self.order = isotype_order
+
+    def new(self, isotype_name):
+        return Isotype(self.order, isotype_name)
 
 
 class Isotype:
     # From https://doi.org/10.7554/eLife.16578.012, for humans:
-    order = ["M", "G3", "A1", "G2", "G4", "E", "A2"]
+    # order = ["M", "G3", "A1", "G2", "G4", "E", "A2"]
 
-    def __init__(self, isotype_name):
+    def __init__(self, order, isotype_name):
+        self.order = order
         if isotype_name == "?":
             self.isotype = None
         else:
-            self.isotype = Isotype.order.index(isotype_name)
+            self.isotype = self.order.index(isotype_name)
 
     def isbefore(self, t):
         return self.isotype <= t.isotype
 
     def __repr__(self):
-        return f"Isotype({Isotype.order[self.isotype]})"
+        return f"Isotype('{self.order[self.isotype]}')"
+
+    def __str__(self):
+        return f"Ig{self.order[self.isotype]}"
 
     def copy(self):
-        return Isotype(Isotype.order[self.isotype])
+        return Isotype(self.order, self.order[self.isotype])
 
     def __eq__(self, other):
         return self.isotype == other.isotype
@@ -32,15 +46,14 @@ class Isotype:
     def __hash__(self):
         return hash(self.__repr__())
 
-
-def resolutions(t: Isotype):
-    """Returns list of all possible isotypes if passed an ambiguous isotype.
-    Otherwise, returns a list containing a copy of the passed isotype.
-    """
-    if t.isotype is None:
-        return [Isotype(name) for name in Isotype.order]
-    else:
-        return [t.copy()]
+    def resolutions(self):
+        """Returns list of all possible isotypes if passed an ambiguous isotype.
+        Otherwise, returns a list containing a copy of the passed isotype.
+        """
+        if self.isotype is None:
+            return [Isotype(self.order, name) for name in self.order]
+        else:
+            return [self.copy()]
 
 
 def isotype_distance(t1, t2):
@@ -51,9 +64,16 @@ def isotype_distance(t1, t2):
         return float(t1.isotype != t2.isotype)
 
 
+def isotype_parsimony(tree: ete3.TreeNode):
+    return sum(
+        isotype_distance(node.up.isotype, node.isotype)
+        for node in tree.iter_descendants()
+    )
+
+
 def disambiguate_isotype(
     tree: ete3.Tree, random_state=None, dist_func=isotype_distance
-) -> ete3.Tree:
+):
     def is_ambiguous(isotype):
         return isotype.isotype is None
 
@@ -64,7 +84,7 @@ def disambiguate_isotype(
 
     # First pass of Sankoff: compute cost vectors
     for node2 in tree.traverse(strategy="postorder"):
-        node2.add_feature("costs", [[seq, 0] for seq in resolutions(node2.isotype)])
+        node2.add_feature("costs", [[seq, 0] for seq in node2.isotype.resolutions()])
         if not node2.is_leaf():
             for seq_cost in node2.costs:
                 for child in node2.children:
@@ -99,21 +119,25 @@ def disambiguate_isotype(
             node.del_feature("costs")
         except (AttributeError, KeyError):
             pass
-    return tree
 
 
-def make_newidmap(idmap, isotype_map):
+def make_newidmap(idmap: dict, isotype_map: dict):
     newidmap = {}
     for id, cell_ids in idmap.items():
-        newidmap[id] = {isotype_map[cell_id]: set() for cell_id in isotype_map}
-        for cell_id in isotype_map:
-            newidmap[id][isotype_map[cell_id]].add(cell_id)
+        isotypeset = {isotype_map[cell_id] for cell_id in cell_ids}
+        newidmap[id] = {
+            isotype: {
+                cell_id for cell_id in cell_ids if isotype_map[cell_id] == isotype
+            }
+            for isotype in isotypeset
+        }
     return newidmap
 
 
-def add_observed_isotypes(tree: ete3.Tree, newidmap):
+def add_observed_isotypes(tree: ete3.Tree, newidmap: dict, isotype_order: list):
     # Drop observed nodes as leaves and explode by observed isotype:
     # Descend internal observed nodes as leaves:
+    newisotype = IsotypeTemplate(isotype_order).new
     for node in list(tree.iter_descendants()):
         if node.abundance > 0 and not node.is_leaf():
             newchild = ete3.TreeNode(name=node.name)
@@ -124,7 +148,7 @@ def add_observed_isotypes(tree: ete3.Tree, newidmap):
     # Now duplicate nodes which represent multiple isotypes
     for node in list(tree.get_leaves()):
         if node.abundance == 0:
-            node.add_feature("isotype", Isotype("?"))
+            node.add_feature("isotype", newisotype("?"))
         else:
             thisnode_isotypemap = newidmap[node.name]
             # node.name had better be in newidmap, since this is an observed node
@@ -133,20 +157,19 @@ def add_observed_isotypes(tree: ete3.Tree, newidmap):
                     # add new node below this leaf node. Must be below, and not child
                     # of parent, to preserve max parsimony in case that node.up has
                     # different sequence from node.
-                    newlabel = node.name + "Ig" + isotype.order[isotype.isotype]
-                    newchild = ete3.TreeNode(name=newlabel)
+                    newchild = ete3.TreeNode(name=node.name)
                     newchild.add_feature("abundance", len(cell_ids))
                     newchild.add_feature("sequence", node.sequence)
-                    newchild.add_feature("isotype", isotype)
+                    newchild.add_feature("isotype", newisotype(isotype))
                     node.add_child(child=newchild)
                 node.abundance = 0
             else:
-                node.isotype = next(thisnode_isotypemap.keys())
+                node.isotype = newisotype(list(thisnode_isotypemap.keys())[0])
     # Now add root and internal ambiguous isotypes
-    tree.isotype = Isotype("M")
+    tree.add_feature("isotype", newisotype("M"))
     for node in tree.iter_descendants():
         if not node.is_leaf():
-            node.add_feature("isotype", Isotype("?"))
+            node.add_feature("isotype", newisotype("?"))
 
 
 def collapse_tree_by_sequence_and_isotype(tree):
@@ -162,74 +185,153 @@ def collapse_tree_by_sequence_and_isotype(tree):
 
 
 def get_parser():
-    # TODO Rework all this
     parser = argparse.ArgumentParser(
-        description="Deduplicate sequences in a fasta file, write to stdout in phylip format, and creates a few other files (see arguments). Headers must be a unique ID of less than "
-        "or equal to 10 ASCII characters."
-        "An additional sequence representing the outgroup/root must be included (even if one or more observed sequences are identical to it)."
+        description=(
+            "To be run on a directory containing gctree inference results."
+            "Observed isotypes will be added to trees previously output by gctree,"
+            "with unobserved isotypes inferred so as to minimize isotype switching"
+            "while adhering to switching order."
+        )
     )
     parser.add_argument(
-        "infile",
+        "--parsimony_forest",
         type=str,
-        nargs="+",
-        help="Fasta file with less than or equal to 10 characters unique header ID. "
-        "Because dnapars will name internal nodes by integers a node name must include"
-        "at least one non number character (unless using the id_abundances option).",
+        required=True,
+        help="filename for parsimony_forest pickle file output by gctree inference",
     )
     parser.add_argument(
-        "--abundance_file",
+        "--inference_log",
         type=str,
-        default=None,
-        help="filename for the output file containing the counts.",
+        required=True,
+        help="filename for gctree inference log file which contains branching process parameters",
+    )
+    parser.add_argument(
+        "--isotype_mapfile",
+        type=str,
+        required=True,
+        help="filename for a csv file mapping original sequence ids to observed isotypes"
+        ". For example, each line should have the format 'somesequence_id, some_isotype'.",
     )
     parser.add_argument(
         "--idmapfile",
         type=str,
-        default=None,
-        help="filename for the output file containing the map of new unique ids to original seq ids.",
+        required=True,
+        help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.",
     )
     parser.add_argument(
-        "--id_abundances",
-        action="store_true",
-        help="flag to interpret integer ids in input as abundances",
-    )
-    parser.add_argument("--root", type=str, default="root", help="root sequence id")
-    parser.add_argument(
-        "--frame", type=int, default=None, help="codon frame", choices=(1, 2, 3)
-    )
-    parser.add_argument(
-        "--colorfile",
+        "--isotype_names",
         type=str,
         default=None,
-        help="optional input csv filename for colors of each cell.",
+        help="A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated."
+        """ Default is equivalent to passing 'M,G3,A1,G2,G4,E,A2'. """,
     )
     parser.add_argument(
-        "--colormap",
+        "--out_directory",
         type=str,
         default=None,
-        help="optional output filename for colors map.",
+        help="Directory in which to place output. Default is working directory.",
     )
     return parser
 
 
 def main(arg_list=None):
-    with open(idmapfile, 'r') as fh:
+    isotype_palette = [
+        "#a6cee3",
+        "#1f78b4",
+        "#b2df8a",
+        "#33a02c",
+        "#fb9a99",
+        "#e31a1c",
+        "#fdbf6f",
+        "#ff7f00",
+        "#cab2d6",
+        "#6a3d9a",
+        "#ffff99",
+        "#b15928",
+    ]
+    args = get_parser().parse_args(arg_list)
+    if args.out_directory:
+        out_directory = args.out_directory + "/"
+        p = Path(out_directory)
+        if not p.exists():
+            p.mkdir()
+    else:
+        out_directory = ""
+    with open(args.isotype_mapfile, "r") as fh:
+        isotypemap = dict(map(lambda x: x.strip(), line.split(",")) for line in fh)
+
+    with open(args.idmapfile, "r") as fh:
         idmap = {}
         for line in fh:
             seqid, cell_ids = line.rstrip().split(",")
             cell_idset = {
-                    cell_id for cell_id in cell_ids.split(":")
-                    }
+                cell_id for cell_id in cell_ids.split(":") if cell_id in isotypemap
+            }
+            if len(cell_idset) > 0:
                 idmap[seqid] = cell_idset
-                }
-    with open(isotypemap_file, 'r') as fh:
-        isotypemap = {cell_id: isotype for line in fh for cell_id, isotype in line.split(",")}
-    idmap = None
-    isotypemap = None
-    with open("parsimonyforest.p", "rb") as fh:
+
+    with open(args.inference_log, "r") as fh:
+        for line in fh:
+            if re.match(r"params:", line):
+                p = float(re.search(r"(?<=[\(])\S+(?=\,)", line).group())
+                q = float(re.search(r"(?<=\,\s)\S+(?=[\)])", line).group())
+                parameters = (p, q)
+                break
+
+    with open(args.parsimony_forest, "rb") as fh:
         forest = pickle.load(fh)
     # parse the idmap file and the isotypemap file
+    forest.forest = tuple(
+        sorted(
+            forest.forest, key=lambda tree: tree.ll(*parameters, build_cache=False)[0]
+        )
+    )
+    tree_stats = [
+        [ctree, ctree.ll(*parameters, build_cache=False), idx]
+        for idx, ctree in enumerate(forest.forest)
+    ]
+    if not args.isotype_names:
+        isotype_names = ["M", "G3", "A1", "G2", "G4", "E", "A2"]
+    else:
+        isotype_names = str(args.isotype_names).split(",")
+
+    newidmap = make_newidmap(idmap, isotypemap)
     for ctree in forest.forest:
-        add_observed_isotypes(ctree.tree, idmap, isotypemap)
+        add_observed_isotypes(ctree.tree, newidmap, isotype_names)
+        disambiguate_isotype(ctree.tree)
         collapse_tree_by_sequence_and_isotype(ctree.tree)
-    # Do some isotype parsimony ranking and plotting.
+        for node in ctree.tree.traverse():
+            node.name = node.name + " " + str(node.isotype)
+
+    flattened_newidmap = {
+        name + " " + str(isotype): cell_idset
+        for name, cellid_map in newidmap.items()
+        for isotype, cell_idset in cellid_map.items()
+    }
+
+    with open(out_directory + "isotyped.idmap", "w") as fh:
+        for name, cellidset in flattened_newidmap.items():
+            print(f"{name},{':'.join(cellidset)}", file=fh)
+
+    for sublist in tree_stats:
+        sublist.append(isotype_parsimony(sublist[0].tree))
+
+    # Compute parsimony indices
+    for index, sublist in enumerate(sorted(tree_stats, key=lambda slist: slist[2])):
+        sublist.append(index)
+
+    # Pickle forest (still sorted by likelihood)
+    with open(out_directory + "parsimonyforest.isotyped.p", "wb") as fh:
+        fh.write(pickle.dumps(forest))
+
+    for ctree, likelihood, likelihood_idx, parsimony, parsimony_idx in tree_stats:
+        colormap = {
+            node.name: isotype_palette[node.isotype.isotype]
+            for node in ctree.tree.traverse()
+        }
+        ctree.render(
+            outfile=out_directory
+            + f"gctree.out.{likelihood_idx + 1}.isotype_parsimony.{int(parsimony)}.svg",
+            colormap=colormap,
+            idlabel=True,
+        )

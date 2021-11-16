@@ -18,6 +18,7 @@ setuptools.setup(
     entry_points={"console_scripts": ["gctree=gctree.cli:main",
                                       "deduplicate=gctree.deduplicate:main",
                                       "mkconfig=gctree.mkconfig:main",
+                                      "isotype=gctree.isotype:main",
                                       "phylip_parse=gctree.phylip_parse:main"]},
     packages=['gctree'],
     classifiers=[

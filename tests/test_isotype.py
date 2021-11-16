@@ -9,9 +9,10 @@ testtrees = [
              ]
 
 def test_isotype_disambiguate():
-	for newick, weight in testtrees:
-		tree = ete3.Tree(newick, format=8)
-		for node in tree.traverse():
-			node.isotype = iso.Isotype(node.name)
-		iso.disambiguate_isotype(tree)
-		assert sum(iso.isotype_distance(node.up.isotype, node.isotype) for node in tree.iter_descendants()) == weight
+    newisotype = iso.IsotypeTemplate(["M", "G3", "A1", "G2", "G4", "E", "A2"]).new
+    for newick, weight in testtrees:
+        tree = ete3.Tree(newick, format=8)
+        for node in tree.traverse():
+            node.isotype = newisotype(node.name)
+        iso.disambiguate_isotype(tree)
+        assert sum(iso.isotype_distance(node.up.isotype, node.isotype) for node in tree.iter_descendants()) == weight
