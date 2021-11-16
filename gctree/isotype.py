@@ -130,7 +130,7 @@ def make_newidmap(idmap: dict, isotype_map: dict):
         for cell_id in cell_ids:
             try:
                 isotypeset.add(isotype_map[cell_id])
-            except KeyError as e:
+            except KeyError:
                 warnings.warn(
                     f"Sequence ID {id} has original sequence id {cell_id} "
                     "for which no observed isotype was provided. "
