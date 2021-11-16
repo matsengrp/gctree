@@ -1,0 +1,9 @@
+Starting with 423 maximum parsimony trees
+number of trees with integer branch lengths: 267
+267 trees exhibit unobserved unifurcation from root. Adding psuedocounts to these roots
+params: (0.4961832069459249, 0.3658705215787903)
+tree	alleles	logLikelihood
+1	48	-78.00681822960664
+2	48	-79.82126523910149
+3	48	-79.82126523910149
+4	48	-79.8212652391015
