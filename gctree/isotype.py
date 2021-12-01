@@ -37,7 +37,7 @@ class Isotype:
         return f"Isotype('{self.order[self.isotype]}')"
 
     def __str__(self):
-        return f"Ig{self.order[self.isotype]}"
+        return f"{self.order[self.isotype]}"
 
     def copy(self):
         return Isotype(self.order, self.order[self.isotype])
@@ -193,9 +193,8 @@ def add_observed_isotypes(tree: ete3.Tree, newidmap: dict, isotype_order: list):
                 node.abundance = 0
             else:
                 node.isotype = newisotype(list(thisnode_isotypemap.keys())[0])
-    # Now add root and internal ambiguous isotypes
-    tree.add_feature("isotype", newisotype("M"))
-    for node in tree.iter_descendants():
+    # Now add ancestral ambiguous isotypes
+    for node in tree.traverse():
         if not node.is_leaf():
             node.add_feature("isotype", newisotype("?"))
 
@@ -215,10 +214,10 @@ def collapse_tree_by_sequence_and_isotype(tree):
 def get_parser():
     parser = argparse.ArgumentParser(
         description=(
-            "To be run on a directory containing gctree inference results."
-            "Observed isotypes will be added to trees previously output by gctree,"
-            "with unobserved isotypes inferred so as to minimize isotype switching"
-            "while adhering to switching order."
+            "To be run on a directory containing gctree inference results. "
+            "Observed isotypes will be added to trees previously output by gctree, "
+            "with unobserved isotypes inferred so as to minimize isotype switching "
+            "while adhering to switching order. "
         )
     )
     parser.add_argument(
@@ -322,7 +321,7 @@ def main(arg_list=None):
         for idx, ctree in enumerate(forest.forest)
     ]
     if not args.isotype_names:
-        isotype_names = ["M", "G3", "A1", "G2", "G4", "E", "A2"]
+        isotype_names = ["IgM", "IgG3", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
     else:
         isotype_names = str(args.isotype_names).split(",")
 
@@ -376,9 +375,10 @@ def main(arg_list=None):
             node.name: isotype_palette[node.isotype.isotype]
             for node in ctree.tree.traverse()
         }
+        filename = f"gctree.out.{likelihood_idx + 1}.isotype_parsimony.{int(parsimony)}"
         ctree.render(
-            outfile=out_directory
-            + f"gctree.out.{likelihood_idx + 1}.isotype_parsimony.{int(parsimony)}.svg",
+            outfile=out_directory + filename + ".svg",
             colormap=colormap,
             idlabel=True,
         )
+        ctree.newick(out_directory + filename + ".nk")
