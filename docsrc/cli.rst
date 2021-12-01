@@ -43,3 +43,12 @@ phylip_parse
     :func: get_parser
     :prog: phylip_parse
     :nodefault:
+
+isotype
+=======
+
+.. argparse::
+   :module: gctree.isotype
+   :func: get_parser
+   :prog: isotype
+   :nodefault:
