@@ -31,10 +31,13 @@ Deduplication and sequence abundances
 First we deduplicate the sequences and convert to phylip alignment format, and also determine sequence abundances.
 The ``deduplicate`` command writes the phylip alignment of unique sequences to stdout (which we redirect to a file here).
 The argument ``--root`` indicates the root id.
-The flag ``--id_abundances`` indicates that integer sequence ids should be interepreted as abundances (our ``17`` sequence).
+The flag ``--id_abundances`` can be used to indicate that integer sequence ids should be interepreted as abundances.
 The argument ``--abundance_file`` indicates that sequence abundance information should be written to the specified ``csv`` file.
+The argument ``--idmapfile`` allows us to specify a filename for the output
+file containing a mapping of new, unique sequence IDs to original sequence IDs
+from the fasta file.
 
-.. command-output:: deduplicate ../example/150228_Clone_3-8.fasta --root GL --id_abundances --abundance_file abundances.csv > deduplicated.phylip
+.. command-output:: deduplicate ../example/150228_Clone_3-8.fasta --root GL --abundance_file abundances.csv --idmapfile idmap.txt > deduplicated.phylip
   :shell:
 
 We now have files ``deduplicated.phylip`` and ``abundances.csv``:
