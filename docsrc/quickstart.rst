@@ -72,7 +72,7 @@ gctree
 We're now ready to run ``gctree infer`` to use abundance data (in ``abundances.csv``) to rank the equally parsimonious trees (in ``outfile``).
 We can use the optional argument ``--frame`` to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.
 
-.. command-output:: gctree infer outfile abundances.csv --root GL --frame 1
+.. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 | tee gctree.inference.log
   :shell:
   :ellipsis: 10
 
@@ -110,6 +110,7 @@ sequences to their observed isotypes is required.
 
 Trees originally output by gctree are re-rendered with revised labels and node
 colors corresponding to observed or inferred isotypes.
+For example, here is the top ranked tree above, with isotypes added:
 
 .. image:: isotyped/gctree.out.inference.1.isotype_parsimony.20.svg
   :width: 1000
