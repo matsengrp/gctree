@@ -64,6 +64,7 @@ Run ``dnapars`` using this config file, redirecting stdout to a log file.
 
 .. command-output:: dnapars < dnapars.cfg > dnapars.log
   :shell:
+  :ellipsis: 0
 
 You now have two new files, ``outfile`` and ``outtree``.
 Note: if you want to rerun the above ``dnapars`` command, you must delete these two files first!
@@ -74,8 +75,10 @@ gctree
 
 We're now ready to run ``gctree infer`` to use abundance data (in ``abundances.csv``) to rank the equally parsimonious trees (in ``outfile``).
 We can use the optional argument ``--frame`` to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.
+If working in a headless environment, ``gctree infer`` must be run with a tool
+like ``xvfb-run`` to provide an X server for rendering the output trees.
 
-.. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 | tee gctree.inference.log
+.. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 --verbose | tee gctree.inference.log
   :shell:
   :ellipsis: 10
 
@@ -105,9 +108,9 @@ isotype
 If we would like to add observed isotype data to trees output by gctree
 inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
-sequences to their observed isotypes is required.
+sequences to their observed isotypes (like ``example/isotypemap.txt``) is required.
 
-.. command-output:: isotype --parsimony_forest gctree.out.inference.parsimony_forest.p --inference_log gctree.inference.log --isotype_mapfile ../example/isotypemap.txt --idmapfile idmap.txt --isotype_names IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2 --out_directory isotyped
+.. command-output:: isotype --parsimony_forest gctree.out.inference.parsimony_forest.p --inference_log gctree.inference.log --isotype_mapfile ../example/isotypemap.txt --idmapfile idmap.txt --out_directory isotyped
   :shell:
   :ellipsis: 10
 
@@ -115,5 +118,5 @@ Trees originally output by gctree are re-rendered with revised labels and node
 colors corresponding to observed or inferred isotypes.
 For example, here is the top ranked tree above, with isotypes added:
 
-.. image:: isotyped/gctree.out.inference.1.isotype_parsimony.20.svg
+.. image:: isotyped/gctree.out.1.isotype_parsimony.28.svg
   :width: 1000

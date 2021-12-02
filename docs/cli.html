@@ -84,6 +84,10 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="#isotype">isotype</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
@@ -221,10 +225,10 @@
 <h3>simulate<a class="headerlink" href="#simulate" title="Permalink to this headline"></a></h3>
 <p>Neutral, and target selective, model gctree simulation</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">simulate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sequence2</span> <span class="n">SEQUENCE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="k">lambda</span> <span class="n">LAMBDA_</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">lambda0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="o">...</span><span class="p">]]]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">T</span> <span class="n">T</span> <span class="p">[</span><span class="n">T</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">target_dist</span> <span class="n">TARGET_DIST</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">plotAA</span> <span class="n">PLOTAA</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">lambda0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">T</span> <span class="n">T</span> <span class="p">[</span><span class="n">T</span> <span class="o">...</span><span class="p">]]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">target_dist</span> <span class="n">TARGET_DIST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">plotAA</span> <span class="n">PLOTAA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
                 <span class="n">sequence</span> <span class="n">mutability</span> <span class="n">substitution</span>
 </pre></div>
 </div>
@@ -302,10 +306,9 @@ with gctree.</p>
 <h2>deduplicate<a class="headerlink" href="#deduplicate" title="Permalink to this headline"></a></h2>
 <p><p>Deduplicate sequences in a fasta file, write to stdout in phylip format, and creates a few other files (see arguments). Headers must be a unique ID of less than or equal to 10 ASCII characters.An additional sequence representing the outgroup/root must be included (even if one or more observed sequences are identical to it).</p>
 </p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">deduplicate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">abundance_file</span> <span class="n">ABUNDANCE_FILE</span><span class="p">]</span>
-                   <span class="p">[</span><span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">id_abundances</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span>
-                   <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">colorfile</span> <span class="n">COLORFILE</span><span class="p">]</span>
-                   <span class="p">[</span><span class="o">--</span><span class="n">colormap</span> <span class="n">COLORMAP</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">deduplicate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">abundance_file</span> <span class="n">ABUNDANCE_FILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span><span class="p">]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">id_abundances</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">colorfile</span> <span class="n">COLORFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">colormap</span> <span class="n">COLORMAP</span><span class="p">]</span>
                    <span class="n">infile</span> <span class="p">[</span><span class="n">infile</span> <span class="o">...</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -416,6 +419,78 @@ ancestral sequences), a newick tree (with matching internal node lables), and an
 </dd>
 </dl>
 </section>
+</section>
+</section>
+<section id="isotype">
+<h1>isotype<a class="headerlink" href="#isotype" title="Permalink to this headline"></a></h1>
+<p><p>Given gctree inference outputs, and a file mapping original
+sequence names (the original sequence ids referenced as values in
+<cite>idmapfile</cite>) with format “Original SeqID, Isotype”, this utility</p>
+<ul class="simple">
+<li><p>Adds observed isotypes to each observed node in the collapsed
+trees output by gctree inference. If cells with the same sequence
+but different isotypes are observed, then collapsed tree nodes
+must be ‘exploded’ into new nodes with the appropriate isotypes
+and abundances. Each unique sequence ID generated by gctree is
+prepended to its observed isotype, and a new <cite>isotyped.idmap</cite>
+mapping these new sequence IDs to original sequence IDs is 
+written in the output directory.</p></li>
+<li><p>Resolves isotypes of unobserved ancestral genotypes in a way
+that minimizes isotype switching and obeys isotype switching
+order. If observed isotypes of an observed internal node and its
+children violate switching order, then the observed internal node
+is replaced with an unobserved node with the same sequence, and
+the observed internal node is placed as a child leaf. This
+procedure always allows switching order conflicts to be resolved,
+and should usually increase isotype transitions required in the
+resulting tree.</p></li>
+<li><p>Renders each new collapsed tree with colors and labels
+reflecting observed or inferred isotypes, and writes a fasta and
+newick file just like the gctree inference pipeline.</p></li>
+<li><p>Prints for each collapsed tree, the original branching process
+log likelihood, the original node count, the isotype parsimony
+score, and the new node count after isotype additions. The
+isotype parsimony score is just a count of how many isotype
+transitions are required along tree edges. Changes in node count
+after isotype additions indicate that either observed nodes had
+to be exploded based on observed isotypes, or isotype switching
+order violations required internal nodes to be expanded as leaf
+nodes.</p></li>
+</ul>
+<p>This tool doesn’t make any judgements about which tree is best.
+Tree output order is the same as in gctree inference: ranking is
+by log likelihood before isotype additions. A determination of
+which is the best tree is left to the user, based on likelihoods,
+isotype parsimony score, and changes in the number of nodes after
+isotype additions.</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">isotype</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">parsimony_forest</span> <span class="n">PARSIMONY_FOREST</span> <span class="o">--</span><span class="n">inference_log</span> <span class="n">INFERENCE_LOG</span>
+               <span class="o">--</span><span class="n">isotype_mapfile</span> <span class="n">ISOTYPE_MAPFILE</span> <span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">isotype_names</span> <span class="n">ISOTYPE_NAMES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">out_directory</span> <span class="n">OUT_DIRECTORY</span><span class="p">]</span>
+</pre></div>
+</div>
+<section id="Named Arguments">
+<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline"></a></h2>
+<dl class="option-list">
+<dt><kbd>--parsimony_forest</kbd></dt>
+<dd><p>filename for parsimony_forest pickle file output by gctree inference</p>
+</dd>
+<dt><kbd>--inference_log</kbd></dt>
+<dd><p>filename for gctree inference log file which contains branching process parameters</p>
+</dd>
+<dt><kbd>--isotype_mapfile</kbd></dt>
+<dd><p>filename for a csv file mapping original sequence ids to observed isotypes. For example, each line should have the format ‘somesequence_id, some_isotype’.</p>
+</dd>
+<dt><kbd>--idmapfile</kbd></dt>
+<dd><p>filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.</p>
+</dd>
+<dt><kbd>--isotype_names</kbd></dt>
+<dd><p>A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated. Default is equivalent to providing the argument <code class="docutils literal notranslate"><span class="pre">--isotype_names</span> <span class="pre">IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2</span></code></p>
+</dd>
+<dt><kbd>--out_directory</kbd></dt>
+<dd><p>Directory in which to place output. Default is working directory.</p>
+</dd>
+</dl>
 </section>
 </section>
 

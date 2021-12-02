@@ -9,6 +9,7 @@ import pickle
 import argparse
 from pathlib import Path
 import warnings
+from typing import Dict, List
 
 
 class IsotypeTemplate:
@@ -23,34 +24,44 @@ class Isotype:
     # From https://doi.org/10.7554/eLife.16578.012, for humans:
     # order = ["M", "G3", "A1", "G2", "G4", "E", "A2"]
 
-    def __init__(self, order, isotype_name):
+    def __init__(self, order: List[str], isotype_name: str):
         self.order = order
         if isotype_name == "?":
             self.isotype = None
         else:
-            self.isotype = self.order.index(isotype_name)
+            try:
+                self.isotype = self.order.index(isotype_name)
+            except ValueError as e:
+                raise ValueError(
+                    "Unrecognized isotype name. Check that default"
+                    " or provided isotype name list contains all"
+                    " observed isotypes\n" + str(e)
+                )
 
-    def isbefore(self, t):
+    def isbefore(self, t: 'Isotype') -> bool:
         return self.isotype <= t.isotype
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Isotype('{self.order[self.isotype]}')"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.order[self.isotype]}"
 
-    def copy(self):
+    def copy(self) -> 'Isotype':
         return Isotype(self.order, self.order[self.isotype])
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'Isotype') -> bool:
         return self.isotype == other.isotype
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.__repr__())
 
-    def resolutions(self):
-        """Returns list of all possible isotypes if passed an ambiguous isotype.
-        Otherwise, returns a list containing a copy of the passed isotype.
+    def resolutions(self) -> List['Isotype']:
+        """Returns list of all possible isotypes if passed an ambiguous
+        isotype.
+
+        Otherwise, returns a list containing a copy of the passed
+        isotype.
         """
         if self.isotype is None:
             return [Isotype(self.order, name) for name in self.order]
@@ -58,15 +69,15 @@ class Isotype:
             return [self.copy()]
 
 
-def isotype_distance(t1, t2):
-    """This function is not symmetric on its arguments"""
+def isotype_distance(t1: Isotype, t2: Isotype) -> float:
+    """This function is not symmetric on its arguments."""
     if not t1.isbefore(t2):
         return float("inf")
     else:
         return float(t1.isotype != t2.isotype)
 
 
-def isotype_parsimony(tree: ete3.TreeNode):
+def isotype_parsimony(tree: ete3.TreeNode) -> float:
     return sum(
         isotype_distance(node.up.isotype, node.isotype)
         for node in tree.iter_descendants()
@@ -123,7 +134,7 @@ def disambiguate_isotype(
             pass
 
 
-def make_newidmap(idmap: dict, isotype_map: dict):
+def make_newidmap(idmap: Dict[str, str], isotype_map: Dict[str, str]) -> Dict[str, str]:
     newidmap = {}
     for id, cell_ids in idmap.items():
         isotypeset = set()
@@ -147,7 +158,9 @@ def make_newidmap(idmap: dict, isotype_map: dict):
     return newidmap
 
 
-def add_observed_isotypes(tree: ete3.Tree, newidmap: dict, isotype_order: list):
+def add_observed_isotypes(
+    tree: ete3.Tree, newidmap: Dict[str, str], isotype_order: List[str]
+):
     # Drop observed nodes as leaves and explode by observed isotype:
     # Descend internal observed nodes as leaves:
     newisotype = IsotypeTemplate(isotype_order).new
@@ -199,9 +212,9 @@ def add_observed_isotypes(tree: ete3.Tree, newidmap: dict, isotype_order: list):
             node.add_feature("isotype", newisotype("?"))
 
 
-def collapse_tree_by_sequence_and_isotype(tree):
-    """May be able to combine this function in utils with the collapsing infrastructure in
-    CollapsedTree."""
+def collapse_tree_by_sequence_and_isotype(tree: ete3.TreeNode):
+    """May be able to combine this function in utils with the collapsing
+    infrastructure in CollapsedTree."""
     for node in tree.iter_descendants():
         node.dist = node.up.sequence != node.sequence or node.up.isotype != node.isotype
     for node in tree.iter_descendants():
@@ -211,12 +224,12 @@ def collapse_tree_by_sequence_and_isotype(tree):
             node.delete(prevent_nondicotomic=False)
 
 
-def get_parser():
+def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Given gctree inference outputs, and a file mapping original\n"
             "sequence names (the original sequence ids referenced as values in\n"
-            "`idmapfile`) with format \"Original SeqID, Isotype\", this utility\n\n"
+            '`idmapfile`) with format "Original SeqID, Isotype", this utility\n\n'
             "* Adds observed isotypes to each observed node in the collapsed\n"
             "  trees output by gctree inference. If cells with the same sequence\n"
             "  but different isotypes are observed, then collapsed tree nodes\n"
@@ -285,7 +298,7 @@ def get_parser():
         type=str,
         default=None,
         help="A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated."
-        """ Default is equivalent to passing 'IgM,IgG3,IgA1,IgG2,IgG4,IgE,IgA2'""",
+        """ Default is equivalent to providing the argument ``--isotype_names IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2``""",
     )
     parser.add_argument(
         "--out_directory",
@@ -356,7 +369,7 @@ def main(arg_list=None):
         for idx, ctree in enumerate(forest.forest)
     ]
     if not args.isotype_names:
-        isotype_names = ["IgM", "IgG3", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
+        isotype_names = ["IgM", "IgG3", "IgG1", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
     else:
         isotype_names = str(args.isotype_names).split(",")
 
@@ -407,7 +420,7 @@ def main(arg_list=None):
             f"{likelihood_idx + 1}\t {likelihood}\t {original_numnodes}\t\t\t {parsimony}\t\t\t {sum(1 for _ in ctree.tree.traverse())}"
         )
         colormap = {
-            node.name: isotype_palette[node.isotype.isotype]
+            node.name: isotype_palette[node.isotype.isotype % len(isotype_palette)]
             for node in ctree.tree.traverse()
         }
         filename = f"gctree.out.{likelihood_idx + 1}.isotype_parsimony.{int(parsimony)}"
