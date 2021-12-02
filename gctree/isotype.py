@@ -38,7 +38,7 @@ class Isotype:
                     " observed isotypes\n" + str(e)
                 )
 
-    def isbefore(self, t: 'Isotype') -> bool:
+    def isbefore(self, t: "Isotype") -> bool:
         return self.isotype <= t.isotype
 
     def __repr__(self) -> str:
@@ -47,16 +47,16 @@ class Isotype:
     def __str__(self) -> str:
         return f"{self.order[self.isotype]}"
 
-    def copy(self) -> 'Isotype':
+    def copy(self) -> "Isotype":
         return Isotype(self.order, self.order[self.isotype])
 
-    def __eq__(self, other: 'Isotype') -> bool:
+    def __eq__(self, other: "Isotype") -> bool:
         return self.isotype == other.isotype
 
     def __hash__(self) -> int:
         return hash(self.__repr__())
 
-    def resolutions(self) -> List['Isotype']:
+    def resolutions(self) -> List["Isotype"]:
         """Returns list of all possible isotypes if passed an ambiguous
         isotype.
 
