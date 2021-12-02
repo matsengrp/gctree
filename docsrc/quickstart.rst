@@ -94,3 +94,22 @@ For example here is the top ranked tree ``gctree.out.inference.1.svg``:
   :width: 1000
 
 You will also see Python pickle files ``gctree.out.inference.[1,2,...].p`` containing a :obj:`gctree.CollapsedTree` object for each tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using :meth:`gctree.CollapsedTree.render`).
+
+
+isotype
+=======
+
+If we would like to add observed isotype data to trees output by gctree
+inference, we can now do so.
+In addition to the outputs from gctree, a file mapping original IDs of observed
+sequences to their observed isotypes is required.
+
+.. command-output:: isotype --parsimony_forest gctree.out.inference.parsimony_forest.p --inference_log gctree.inference.log --isotype_mapfile ../example/isotypemap.txt --idmapfile idmap.txt --isotype_names IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2 --out_directory isotyped
+  :shell:
+  :ellipsis: 10
+
+Trees originally output by gctree are re-rendered with revised labels and node
+colors corresponding to observed or inferred isotypes.
+
+.. image:: isotyped/gctree.out.inference.1.isotype_parsimony.20.svg
+  :width: 1000
