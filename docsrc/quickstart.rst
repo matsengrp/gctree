@@ -110,7 +110,7 @@ inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
 sequences to their observed isotypes (like ``example/isotypemap.txt``) is required.
 
-.. command-output:: isotype --parsimony_forest gctree.out.inference.parsimony_forest.p --inference_log gctree.inference.log --isotype_mapfile ../example/isotypemap.txt --idmapfile idmap.txt --out_directory isotyped
+.. command-output:: isotype gctree.out.inference.parsimony_forest.p gctree.inference.log idmap.txt ../example/isotypemap.txt --out_directory isotyped
   :shell:
   :ellipsis: 10
 

@@ -1,4 +1,4 @@
-import gctree.isotype as iso
+import gctree.isotyping as iso
 import ete3
 
 testtrees = [
@@ -15,7 +15,7 @@ def test_isotype_disambiguate():
         tree = ete3.Tree(newick, format=8)
         for node in tree.traverse():
             node.isotype = newisotype(node.name)
-        iso.disambiguate_isotype(tree)
+        iso._disambiguate_isotype(tree)
         assert (
             sum(
                 iso.isotype_distance(node.up.isotype, node.isotype)

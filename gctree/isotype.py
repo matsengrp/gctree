@@ -1,246 +1,8 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import re
-import random
-import ete3
-from gctree.utils import hamming_distance
 import pickle
 import argparse
 from pathlib import Path
-import warnings
-from typing import Dict, List, Callable
-from functools import wraps
-
-
-class IsotypeTemplate:
-    def __init__(self, isotype_order):
-        self.order = isotype_order
-
-    def new(self, isotype_name):
-        return Isotype(self.order, isotype_name)
-
-
-def assert_switching_order_match(fn: Callable[['Isotype', 'Isotype'], bool]) -> Callable
-
-    @wraps(fn)
-    def newfunc(t1: 'Isotype', t2: 'Isotype') -> bool:
-        if t1.order != t2.order:
-            raise TypeError("Comparison attempted between isotypes"
-                            " with different assumed class switching order"
-                            f" self has order {self.order}"
-                            f" other has order {t.order}")
-        else:
-            return fn(t1, t2)
-    
-    return newfunc
-
-
-class Isotype:
-    # From https://doi.org/10.7554/eLife.16578.012, for humans:
-    # order = ["M", "G3", "A1", "G2", "G4", "E", "A2"]
-
-    def __init__(self, order: List[str], isotype_name: str):
-        self.order = order
-        if isotype_name == "?":
-            self.isotype = None
-        else:
-            try:
-                self.isotype = self.order.index(isotype_name)
-            except ValueError as e:
-                raise ValueError(
-                    "Unrecognized isotype name. Check that default"
-                    " or provided isotype name list contains all"
-                    " observed isotypes\n" + str(e)
-                )
-
-    @assert_switching_order_match
-    def isbefore(self, t: "Isotype") -> bool:
-        return self.isotype <= t.isotype
-
-    def __repr__(self) -> str:
-        return f"Isotype('{self.order[self.isotype]}')"
-
-    def __str__(self) -> str:
-        return f"{self.order[self.isotype]}"
-
-    def copy(self) -> "Isotype":
-        return Isotype(self.order, self.order[self.isotype])
-
-    @assert_switching_order_match
-    def __eq__(self, other: "Isotype") -> bool:
-        return self.isotype == other.isotype
-
-    def __hash__(self) -> int:
-        return hash(self.__repr__())
-
-    def resolutions(self) -> List["Isotype"]:
-        """Returns list of all possible isotypes if passed an ambiguous
-        isotype.
-
-        Otherwise, returns a list containing a copy of the passed
-        isotype.
-        """
-        if self.isotype is None:
-            return [Isotype(self.order, name) for name in self.order]
-        else:
-            return [self.copy()]
-
-
-@assert_switching_order_match
-def isotype_distance(t1: Isotype, t2: Isotype) -> float:
-    """This function is not symmetric on its arguments."""
-    if not t1.isbefore(t2):
-        return float("inf")
-    else:
-        return float(t1.isotype != t2.isotype)
-
-
-def isotype_parsimony(tree: ete3.TreeNode) -> float:
-    return sum(
-        isotype_distance(node.up.isotype, node.isotype)
-        for node in tree.iter_descendants()
-    )
-
-
-def disambiguate_isotype(
-    tree: ete3.Tree, random_state=None, dist_func=isotype_distance
-):
-    def is_ambiguous(isotype):
-        return isotype.isotype is None
-
-    if random_state is None:
-        random.seed(tree.write(format=1))
-    else:
-        random.setstate(random_state)
-
-    # First pass of Sankoff: compute cost vectors
-    for node2 in tree.traverse(strategy="postorder"):
-        node2.add_feature("costs", [[seq, 0] for seq in node2.isotype.resolutions()])
-        if not node2.is_leaf():
-            for seq_cost in node2.costs:
-                for child in node2.children:
-                    seq_cost[1] += min(
-                        [
-                            dist_func(seq_cost[0], child_seq) + child_cost
-                            for child_seq, child_cost in child.costs
-                        ]
-                    )
-    # Second pass: Choose base and adjust children's cost vectors.
-    # Not necessary if we only want the minimum weight:
-    for node2 in tree.traverse(strategy="preorder"):
-        if not is_ambiguous(node2.isotype):
-            continue
-        min_cost = min([cost for _, cost in node2.costs])
-        resolved_isotype = random.choice(
-            [isotype for isotype, cost in node2.costs if cost == min_cost]
-        )
-        # Adjust child cost vectors
-        if not node2.is_leaf():
-            for child in node2.children:
-                child.costs = [
-                    [
-                        isotype,
-                        cost + dist_func(resolved_isotype, isotype),
-                    ]
-                    for isotype, cost in child.costs
-                ]
-        node2.isotype = resolved_isotype
-    for node in tree.traverse():
-        try:
-            node.del_feature("costs")
-        except (AttributeError, KeyError):
-            pass
-
-
-def make_newidmap(idmap: Dict[str, str], isotype_map: Dict[str, str]) -> Dict[str, str]:
-    newidmap = {}
-    for id, cell_ids in idmap.items():
-        isotypeset = set()
-        for cell_id in cell_ids:
-            try:
-                isotypeset.add(isotype_map[cell_id])
-            except KeyError:
-                warnings.warn(
-                    f"Sequence ID {id} has original sequence id {cell_id} "
-                    "for which no observed isotype was provided. "
-                    "Isotype will be assumed ambiguous if observed."
-                )
-                isotype_map[cell_id] = "?"
-                isotypeset.add("?")
-        newidmap[id] = {
-            isotype: {
-                cell_id for cell_id in cell_ids if isotype_map[cell_id] == isotype
-            }
-            for isotype in isotypeset
-        }
-    return newidmap
-
-
-def add_observed_isotypes(
-    tree: ete3.Tree, newidmap: Dict[str, str], isotype_order: List[str]
-):
-    # Drop observed nodes as leaves and explode by observed isotype:
-    # Descend internal observed nodes as leaves:
-    newisotype = IsotypeTemplate(isotype_order).new
-    for node in list(tree.iter_descendants()):
-        if node.abundance > 0 and not node.is_leaf():
-            newchild = ete3.TreeNode(name=node.name)
-            newchild.add_feature("sequence", node.sequence)
-            newchild.add_feature("abundance", node.abundance)
-            node.abundance = 0
-            node.add_child(child=newchild)
-    # Now duplicate nodes which represent multiple isotypes
-    for node in list(tree.get_leaves()):
-        if node.abundance == 0:
-            node.add_feature("isotype", newisotype("?"))
-        else:
-            try:
-                thisnode_isotypemap = newidmap[node.name]
-            except KeyError as e:
-                warnings.warn(
-                    f"The sequence name {e} labels an observed node, but no mapping to an original sequence ID was found."
-                    " Isotype will be assumed ambiguous."
-                )
-                thisnode_isotypemap = {
-                    "?": {f"Unknown_id_{n+1}" for n in range(node.abundance)}
-                }
-            if "?" in thisnode_isotypemap:
-                warnings.warn(
-                    f"The sequence name {node.name} labels an observed node, and corresponds to sequence IDs for "
-                    "which no observed isotype was provided. "
-                    f" Isotype will be assumed ambiguous for: {', '.join(thisnode_isotypemap['?'])}"
-                )
-            # node.name had better be in newidmap, since this is an observed node
-            if len(thisnode_isotypemap) > 1:
-                for isotype, cell_ids in thisnode_isotypemap.items():
-                    # add new node below this leaf node. Must be below, and not child
-                    # of parent, to preserve max parsimony in case that node.up has
-                    # different sequence from node.
-                    newchild = ete3.TreeNode(name=node.name)
-                    newchild.add_feature("abundance", len(cell_ids))
-                    newchild.add_feature("sequence", node.sequence)
-                    newchild.add_feature("isotype", newisotype(isotype))
-                    node.add_child(child=newchild)
-                node.abundance = 0
-            else:
-                node.isotype = newisotype(list(thisnode_isotypemap.keys())[0])
-    # Now add ancestral ambiguous isotypes
-    for node in tree.traverse():
-        if not node.is_leaf():
-            node.add_feature("isotype", newisotype("?"))
-
-
-def collapse_tree_by_sequence_and_isotype(tree: ete3.TreeNode):
-    """May be able to combine this function in utils with the collapsing
-    infrastructure in CollapsedTree."""
-    for node in tree.iter_descendants():
-        node.dist = node.up.sequence != node.sequence or node.up.isotype != node.isotype
-    for node in tree.iter_descendants():
-        if node.dist == 0:
-            node.up.abundance += node.abundance
-            node.up.name = node.name
-            node.delete(prevent_nondicotomic=False)
+from gctree.isotyping import explode_idmap, isotype_tree, isotype_parsimony
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -288,29 +50,25 @@ def get_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--parsimony_forest",
+        "parsimony_forest",
         type=str,
-        required=True,
         help="filename for parsimony_forest pickle file output by gctree inference",
     )
     parser.add_argument(
-        "--inference_log",
+        "inference_log",
         type=str,
-        required=True,
         help="filename for gctree inference log file which contains branching process parameters",
     )
     parser.add_argument(
-        "--isotype_mapfile",
+        "idmapfile",
         type=str,
-        required=True,
-        help="filename for a csv file mapping original sequence ids to observed isotypes"
-        ". For example, each line should have the format 'somesequence_id, some_isotype'.",
+        help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.",
     )
     parser.add_argument(
-        "--idmapfile",
+        "isotype_mapfile",
         type=str,
-        required=True,
-        help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.",
+        help="filename for a csv file mapping original sequence ids to observed isotypes"
+        ". For example, each line should have the format 'somesequence_id, some_isotype'.",
     )
     parser.add_argument(
         "--isotype_names",
@@ -392,15 +150,9 @@ def main(arg_list=None):
     else:
         isotype_names = str(args.isotype_names).split(",")
 
-    newidmap = make_newidmap(idmap, isotypemap)
+    newidmap = explode_idmap(idmap, isotypemap)
     for ctree in forest.forest:
-        add_observed_isotypes(ctree.tree, newidmap, isotype_names)
-        disambiguate_isotype(ctree.tree)
-        collapse_tree_by_sequence_and_isotype(ctree.tree)
-        for node in ctree.tree.traverse():
-            node.name = node.name + " " + str(node.isotype)
-        for node in ctree.tree.iter_descendants():
-            node.dist = hamming_distance(node.up.sequence, node.sequence)
+        ctree.tree = isotype_tree(ctree.tree, newidmap, isotype_names)
 
     flattened_newidmap = {
         name + " " + str(isotype): cell_idset
