@@ -9,7 +9,8 @@ import pickle
 import argparse
 from pathlib import Path
 import warnings
-from typing import Dict, List
+from typing import Dict, List, Callable
+from functools import wraps
 
 
 class IsotypeTemplate:
@@ -18,6 +19,21 @@ class IsotypeTemplate:
 
     def new(self, isotype_name):
         return Isotype(self.order, isotype_name)
+
+
+def assert_switching_order_match(fn: Callable[['Isotype', 'Isotype'], bool]) -> Callable
+
+    @wraps(fn)
+    def newfunc(t1: 'Isotype', t2: 'Isotype') -> bool:
+        if t1.order != t2.order:
+            raise TypeError("Comparison attempted between isotypes"
+                            " with different assumed class switching order"
+                            f" self has order {self.order}"
+                            f" other has order {t.order}")
+        else:
+            return fn(t1, t2)
+    
+    return newfunc
 
 
 class Isotype:
@@ -38,6 +54,7 @@ class Isotype:
                     " observed isotypes\n" + str(e)
                 )
 
+    @assert_switching_order_match
     def isbefore(self, t: "Isotype") -> bool:
         return self.isotype <= t.isotype
 
@@ -50,6 +67,7 @@ class Isotype:
     def copy(self) -> "Isotype":
         return Isotype(self.order, self.order[self.isotype])
 
+    @assert_switching_order_match
     def __eq__(self, other: "Isotype") -> bool:
         return self.isotype == other.isotype
 
@@ -69,6 +87,7 @@ class Isotype:
             return [self.copy()]
 
 
+@assert_switching_order_match
 def isotype_distance(t1: Isotype, t2: Isotype) -> float:
     """This function is not symmetric on its arguments."""
     if not t1.isbefore(t2):
