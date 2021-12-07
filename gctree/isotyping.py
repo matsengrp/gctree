@@ -8,6 +8,7 @@ from typing import Dict, Callable, Optional, Set
 from collections.abc import Sequence
 from functools import wraps
 
+
 def _assert_switching_order_match(
     fn: Callable[["Isotype", "Isotype"], bool]
 ) -> Callable:
@@ -32,10 +33,11 @@ def _assert_switching_order_match(
 
 class IsotypeTemplate:
     """A template constructor class for :meth:`Isotype`
-    
+
     Args:
         isotype_order: A list or other Sequence of isotype names, in the allowed class switching order
         weight_matrix: An optional matrix containing transition weights between isotypes. Default weight is 1 for all allowed isotype transitions."""
+
     def __init__(
         self,
         isotype_order: Sequence[str],
@@ -74,16 +76,16 @@ class IsotypeTemplate:
         return Isotype(self.order, self.weight_matrix, isotype_name)
 
 
-
 class Isotype:
     """An isotype, and associated information about class switching order and transition weights.
-    
+
     Attributes:
         order: A list or other sequence of isotype names, in their allowed class switching order
         weight_matrix: Transition weights between isotypes, with first index the original isotype index, and second index the new isotype index.
         isotype: Index of isotype name in ``self.order``
 
     Objects of this class shall be instantiated using :meth:`IsotypeTemplate.new`."""
+
     # From https://doi.org/10.7554/eLife.16578.012, for humans:
     # order = ["M", "G3", "A1", "G2", "G4", "E", "A2"]
 
@@ -146,7 +148,7 @@ def isotype_tree(
     tree: ete3.TreeNode,
     newidmap: Dict[str, Dict[str, str]],
     isotype_names: Sequence[str],
-    distance_matrix: Optional[Sequence[Sequence[float]]] = None,
+    weight_matrix: Optional[Sequence[Sequence[float]]] = None,
 ) -> ete3.TreeNode:
     """Method adds isotypes to ``tree``, minimizing isotype switching and
     obeying switching order.
@@ -179,9 +181,7 @@ def isotype_tree(
         Node names in this tree also contain isotype names.
     """
     tree = tree.copy()
-    _add_observed_isotypes(
-        tree, newidmap, isotype_names, distance_matrix=distance_matrix
-    )
+    _add_observed_isotypes(tree, newidmap, isotype_names, weight_matrix=weight_matrix)
     _disambiguate_isotype(tree)
     _collapse_tree_by_sequence_and_isotype(tree)
     for node in tree.traverse():
@@ -307,11 +307,11 @@ def _add_observed_isotypes(
     tree: ete3.Tree,
     newidmap: Dict[str, str],
     isotype_order: Sequence[str],
-    distance_matrix: Optional[Sequence[Sequence[float]]] = None,
+    weight_matrix: Optional[Sequence[Sequence[float]]] = None,
 ):
     # Drop observed nodes as leaves and explode by observed isotype:
     # Descend internal observed nodes as leaves:
-    newisotype = IsotypeTemplate(isotype_order, distance_matrix=distance_matrix).new
+    newisotype = IsotypeTemplate(isotype_order, weight_matrix=weight_matrix).new
     for node in list(tree.iter_descendants()):
         if node.abundance > 0 and not node.is_leaf():
             newchild = ete3.TreeNode(name=node.name)

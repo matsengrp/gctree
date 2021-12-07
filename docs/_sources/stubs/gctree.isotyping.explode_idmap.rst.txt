@@ -1,0 +1,6 @@
+gctree.isotyping.explode\_idmap
+===============================
+
+.. currentmodule:: gctree.isotyping
+
+.. autofunction:: explode_idmap

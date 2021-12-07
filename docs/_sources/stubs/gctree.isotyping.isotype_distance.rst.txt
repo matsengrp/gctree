@@ -1,0 +1,6 @@
+gctree.isotyping.isotype\_distance
+==================================
+
+.. currentmodule:: gctree.isotyping
+
+.. autofunction:: isotype_distance

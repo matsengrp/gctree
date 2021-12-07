@@ -205,7 +205,6 @@ We can use the optional argument <code class="docutils literal notranslate"><spa
 If working in a headless environment, <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> must be run with a tool
 like <code class="docutils literal notranslate"><span class="pre">xvfb-run</span></code> to provide an X server for rendering the output trees.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose | tee gctree.inference.log
-qt.qpa.fonts: Populating font family aliases took 282 ms. Replace uses of missing font family &quot;Courier&quot; with one that exists to avoid this cost. 
 number of trees with integer branch lengths: 203
 203 trees exhibit unobserved unifurcation from root. Adding psuedocounts to these roots
 params: (0.49618320697160867, 0.36553372906145104)
@@ -215,6 +214,7 @@ tree	alleles	logLikelihood
 3	48	-79.82047935305101
 4	48	-79.82047935305101
 5	48	-80.0898122868346
+6	48	-80.0898122868346
 ...
 </pre></div>
 </div>
@@ -234,7 +234,7 @@ For example here is the top ranked tree <code class="docutils literal notranslat
 inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
 sequences to their observed isotypes (like <code class="docutils literal notranslate"><span class="pre">example/isotypemap.txt</span></code>) is required.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ isotype --parsimony_forest gctree.out.inference.parsimony_forest.p --inference_log gctree.inference.log --isotype_mapfile ../example/isotypemap.txt --idmapfile idmap.txt --out_directory isotyped
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ isotype gctree.out.inference.parsimony_forest.p gctree.inference.log idmap.txt ../example/isotypemap.txt --out_directory isotyped
 Parameters:	(0.49618320697160867, 0.36553372906145104)
 index	 ll			 original node count	 isotype parsimony	 new node count
 1	 -78.00603234355617	 48			 28.0			 50

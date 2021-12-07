@@ -85,6 +85,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#isotype">isotype</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
 </ul>
 </li>
@@ -159,10 +160,9 @@
 <h3>infer<a class="headerlink" href="#infer" title="Permalink to this headline"></a></h3>
 <p>likelihood ranking of parsimony trees</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">infer</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap_phylipfile</span> <span class="n">BOOTSTRAP_PHYLIPFILE</span><span class="p">]</span>
-             <span class="p">[</span><span class="o">--</span><span class="n">colormapfile</span> <span class="n">COLORMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">chain_split</span> <span class="n">CHAIN_SPLIT</span><span class="p">]</span>
-             <span class="p">[</span><span class="o">--</span><span class="n">frame2</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">positionmapfile</span> <span class="n">POSITIONMAPFILE</span><span class="p">]</span>
-             <span class="p">[</span><span class="o">--</span><span class="n">positionmapfile2</span> <span class="n">POSITIONMAPFILE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span>
-             <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">colormapfile</span> <span class="n">COLORMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">chain_split</span> <span class="n">CHAIN_SPLIT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame2</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">positionmapfile</span> <span class="n">POSITIONMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">positionmapfile2</span> <span class="n">POSITIONMAPFILE2</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
              <span class="n">phylipfile</span> <span class="n">abundance_file</span>
 </pre></div>
 </div>
@@ -224,11 +224,9 @@
 <section id="simulate">
 <h3>simulate<a class="headerlink" href="#simulate" title="Permalink to this headline"></a></h3>
 <p>Neutral, and target selective, model gctree simulation</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">simulate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sequence2</span> <span class="n">SEQUENCE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="k">lambda</span> <span class="n">LAMBDA_</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">lambda0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">T</span> <span class="n">T</span> <span class="p">[</span><span class="n">T</span> <span class="o">...</span><span class="p">]]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">target_dist</span> <span class="n">TARGET_DIST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">plotAA</span> <span class="n">PLOTAA</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
-                <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">simulate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sequence2</span> <span class="n">SEQUENCE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="k">lambda</span> <span class="n">LAMBDA_</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">lambda0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span> <span class="n">N</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">T</span> <span class="n">T</span> <span class="p">[</span><span class="n">T</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">target_dist</span> <span class="n">TARGET_DIST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">plotAA</span> <span class="n">PLOTAA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
                 <span class="n">sequence</span> <span class="n">mutability</span> <span class="n">substitution</span>
 </pre></div>
 </div>
@@ -306,9 +304,8 @@ with gctree.</p>
 <h2>deduplicate<a class="headerlink" href="#deduplicate" title="Permalink to this headline"></a></h2>
 <p><p>Deduplicate sequences in a fasta file, write to stdout in phylip format, and creates a few other files (see arguments). Headers must be a unique ID of less than or equal to 10 ASCII characters.An additional sequence representing the outgroup/root must be included (even if one or more observed sequences are identical to it).</p>
 </p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">deduplicate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">abundance_file</span> <span class="n">ABUNDANCE_FILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span><span class="p">]</span>
-                   <span class="p">[</span><span class="o">--</span><span class="n">id_abundances</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span>
-                   <span class="p">[</span><span class="o">--</span><span class="n">colorfile</span> <span class="n">COLORFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">colormap</span> <span class="n">COLORMAP</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">deduplicate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">abundance_file</span> <span class="n">ABUNDANCE_FILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">id_abundances</span><span class="p">]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">colorfile</span> <span class="n">COLORFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">colormap</span> <span class="n">COLORMAP</span><span class="p">]</span>
                    <span class="n">infile</span> <span class="p">[</span><span class="n">infile</span> <span class="o">...</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -393,8 +390,7 @@ $ dnapars &lt; dnapars.cfg</p>
 <p><p>Given an outputfile from one of the PHYLIP tools - <cite>dnaml</cite> or <cite>dnapars</cite> - produce an alignment (including
 ancestral sequences), a newick tree (with matching internal node lables), and an svg rendering of said tree.</p>
 </p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">phylip_parse</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outputfile</span> <span class="n">OUTPUTFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span>
-                    <span class="n">phylip_outfile</span> <span class="n">abundance_file</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">phylip_parse</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outputfile</span> <span class="n">OUTPUTFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="n">phylip_outfile</span> <span class="n">abundance_file</span>
 </pre></div>
 </div>
 <section id="Positional Arguments">
@@ -464,26 +460,30 @@ which is the best tree is left to the user, based on likelihoods,
 isotype parsimony score, and changes in the number of nodes after
 isotype additions.</p>
 </p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">isotype</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">parsimony_forest</span> <span class="n">PARSIMONY_FOREST</span> <span class="o">--</span><span class="n">inference_log</span> <span class="n">INFERENCE_LOG</span>
-               <span class="o">--</span><span class="n">isotype_mapfile</span> <span class="n">ISOTYPE_MAPFILE</span> <span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span>
-               <span class="p">[</span><span class="o">--</span><span class="n">isotype_names</span> <span class="n">ISOTYPE_NAMES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">out_directory</span> <span class="n">OUT_DIRECTORY</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">isotype</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">isotype_names</span> <span class="n">ISOTYPE_NAMES</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">out_directory</span> <span class="n">OUT_DIRECTORY</span><span class="p">]</span>
+               <span class="n">parsimony_forest</span> <span class="n">inference_log</span> <span class="n">idmapfile</span> <span class="n">isotype_mapfile</span>
 </pre></div>
 </div>
+<section id="Positional Arguments">
+<h2>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline"></a></h2>
+<dl class="option-list">
+<dt><kbd>parsimony_forest</kbd></dt>
+<dd><p>filename for parsimony_forest pickle file output by gctree inference</p>
+</dd>
+<dt><kbd>inference_log</kbd></dt>
+<dd><p>filename for gctree inference log file which contains branching process parameters</p>
+</dd>
+<dt><kbd>idmapfile</kbd></dt>
+<dd><p>filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.</p>
+</dd>
+<dt><kbd>isotype_mapfile</kbd></dt>
+<dd><p>filename for a csv file mapping original sequence ids to observed isotypes. For example, each line should have the format ‘somesequence_id, some_isotype’.</p>
+</dd>
+</dl>
+</section>
 <section id="Named Arguments">
 <h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline"></a></h2>
 <dl class="option-list">
-<dt><kbd>--parsimony_forest</kbd></dt>
-<dd><p>filename for parsimony_forest pickle file output by gctree inference</p>
-</dd>
-<dt><kbd>--inference_log</kbd></dt>
-<dd><p>filename for gctree inference log file which contains branching process parameters</p>
-</dd>
-<dt><kbd>--isotype_mapfile</kbd></dt>
-<dd><p>filename for a csv file mapping original sequence ids to observed isotypes. For example, each line should have the format ‘somesequence_id, some_isotype’.</p>
-</dd>
-<dt><kbd>--idmapfile</kbd></dt>
-<dd><p>filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.</p>
-</dd>
 <dt><kbd>--isotype_names</kbd></dt>
 <dd><p>A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated. Default is equivalent to providing the argument <code class="docutils literal notranslate"><span class="pre">--isotype_names</span> <span class="pre">IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2</span></code></p>
 </dd>
