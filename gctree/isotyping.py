@@ -4,8 +4,7 @@ import random
 import ete3
 from gctree.utils import hamming_distance
 import warnings
-from typing import Dict, Callable, Optional, Set
-from collections.abc import Sequence
+from typing import Dict, Callable, Optional, Set, Sequence
 from functools import wraps
 
 
