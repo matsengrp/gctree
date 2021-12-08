@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gctree.isotyping &mdash; gctree  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html">
+            <img src="../../_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cite.html">Citing gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html#parsimony-utilities">Parsimony utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html#isotype">isotype</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html#modules">Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html">Open source code repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html#developer-tools">Developer tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html#todo-list">Todo list</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gctree</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>gctree.isotyping</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gctree.isotyping</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A module for incorporating isotype information in gctree inference.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">ete3</span>
+<span class="kn">from</span> <span class="nn">gctree.utils</span> <span class="kn">import</span> <span class="n">hamming_distance</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
+
+
+<span class="k">def</span> <span class="nf">_assert_switching_order_match</span><span class="p">(</span>
+    <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">&quot;Isotype&quot;</span><span class="p">,</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">newfunc</span><span class="p">(</span><span class="n">t1</span><span class="p">:</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">,</span> <span class="n">t2</span><span class="p">:</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">t1</span><span class="o">.</span><span class="n">order</span> <span class="o">!=</span> <span class="n">t2</span><span class="o">.</span><span class="n">order</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;Comparison attempted between isotypes&quot;</span>
+                <span class="s2">&quot; with different assumed class switching order&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; first argument has order </span><span class="si">{</span><span class="n">t1</span><span class="o">.</span><span class="n">order</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; second argument has order </span><span class="si">{</span><span class="n">t2</span><span class="o">.</span><span class="n">order</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">t1</span><span class="o">.</span><span class="n">weight_matrix</span> <span class="o">!=</span> <span class="n">t2</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;Comparison attempted between isotypes with different weight matrices&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">newfunc</span>
+
+
+<div class="viewcode-block" id="IsotypeTemplate"><a class="viewcode-back" href="../../stubs/gctree.isotyping.IsotypeTemplate.html#gctree.isotyping.IsotypeTemplate">[docs]</a><span class="k">class</span> <span class="nc">IsotypeTemplate</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A template constructor class for :meth:`Isotype`</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        isotype_order: A list or other Sequence of isotype names, in the allowed class switching order</span>
+<span class="sd">        weight_matrix: An optional matrix containing transition weights between isotypes. Default weight is 1 for all allowed isotype transitions.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IsotypeTemplate.__init__"><a class="viewcode-back" href="../../stubs/gctree.isotyping.html#gctree.isotyping.IsotypeTemplate.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">isotype_order</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">weight_matrix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">isotype_order</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">weight_matrix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">weight_matrix</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[</span>
+                    <span class="mf">0.0</span>
+                    <span class="k">if</span> <span class="n">target</span> <span class="o">==</span> <span class="n">origin</span>
+                    <span class="k">else</span> <span class="mf">1.0</span>
+                    <span class="k">if</span> <span class="n">target</span> <span class="o">&gt;</span> <span class="n">origin</span>
+                    <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="k">for</span> <span class="n">origin</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">weight_matrix</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">weight_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Weight matrix should be an n by n matrix, with n equal to the length of isotype_order.&quot;</span>
+                <span class="p">)</span>
+            <span class="c1"># Ensure that illegal transitions are encoded as &#39;inf&#39; in weight_matrix</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">j</span><span class="p">:</span>
+                        <span class="n">weight_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="n">j</span><span class="p">:</span>
+                        <span class="n">weight_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="n">isotype_order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span> <span class="o">=</span> <span class="n">weight_matrix</span></div>
+
+<div class="viewcode-block" id="IsotypeTemplate.new"><a class="viewcode-back" href="../../stubs/gctree.isotyping.IsotypeTemplate.html#gctree.isotyping.IsotypeTemplate.new">[docs]</a>    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isotype_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return an :meth:`Isotype` object with the isotype order and weight matrix provided to this class&#39;s constructor.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Isotype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">,</span> <span class="n">isotype_name</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Isotype"><a class="viewcode-back" href="../../stubs/gctree.isotyping.Isotype.html#gctree.isotyping.Isotype">[docs]</a><span class="k">class</span> <span class="nc">Isotype</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;An isotype, and associated information about class switching order and transition weights.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        order: A list or other sequence of isotype names, in their allowed class switching order</span>
+<span class="sd">        weight_matrix: Transition weights between isotypes, with first index the original isotype index, and second index the new isotype index.</span>
+<span class="sd">        isotype: Index of isotype name in ``self.order``</span>
+
+<span class="sd">    Objects of this class shall be instantiated using :meth:`IsotypeTemplate.new`.&quot;&quot;&quot;</span>
+
+    <span class="c1"># From https://doi.org/10.7554/eLife.16578.012, for humans:</span>
+    <span class="c1"># order = [&quot;M&quot;, &quot;G3&quot;, &quot;A1&quot;, &quot;G2&quot;, &quot;G4&quot;, &quot;E&quot;, &quot;A2&quot;]</span>
+
+<div class="viewcode-block" id="Isotype.__init__"><a class="viewcode-back" href="../../stubs/gctree.isotyping.html#gctree.isotyping.Isotype.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">weight_matrix</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span>
+        <span class="n">isotype_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="n">order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span> <span class="o">=</span> <span class="n">weight_matrix</span>
+        <span class="k">if</span> <span class="n">isotype_name</span> <span class="o">==</span> <span class="s2">&quot;?&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">isotype_name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Unrecognized isotype name. Check that default&quot;</span>
+                    <span class="s2">&quot; or provided isotype name list contains all&quot;</span>
+                    <span class="s2">&quot; observed isotypes</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="p">)</span></div>
+
+    <span class="nd">@_assert_switching_order_match</span>
+    <span class="k">def</span> <span class="nf">isbefore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="o">.</span><span class="n">isotype</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Isotype(&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">isotype</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">isotype</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Isotype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">isotype</span><span class="p">])</span>
+
+    <span class="nd">@_assert_switching_order_match</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">isotype</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">())</span>
+
+<div class="viewcode-block" id="Isotype.resolutions"><a class="viewcode-back" href="../../stubs/gctree.isotyping.Isotype.html#gctree.isotyping.Isotype.resolutions">[docs]</a>    <span class="k">def</span> <span class="nf">resolutions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;Isotype&quot;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns list of all possible isotypes if passed an ambiguous</span>
+<span class="sd">        isotype.</span>
+
+<span class="sd">        Otherwise, returns a list containing a copy of the passed</span>
+<span class="sd">        isotype.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="n">Isotype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()]</span></div></div>
+
+
+<div class="viewcode-block" id="isotype_tree"><a class="viewcode-back" href="../../stubs/gctree.isotyping.isotype_tree.html#gctree.isotyping.isotype_tree">[docs]</a><span class="k">def</span> <span class="nf">isotype_tree</span><span class="p">(</span>
+    <span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">,</span>
+    <span class="n">newidmap</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+    <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">weight_matrix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Method adds isotypes to ``tree``, minimizing isotype switching and</span>
+<span class="sd">    obeying switching order.</span>
+
+<span class="sd">    * Adds observed isotypes to each observed node in the collapsed</span>
+<span class="sd">      trees output by gctree inference. If cells with the same sequence</span>
+<span class="sd">      but different isotypes are observed, then collapsed tree nodes</span>
+<span class="sd">      must be ‘exploded’ into new nodes with the appropriate isotypes</span>
+<span class="sd">      and abundances. Each unique sequence ID generated by gctree is</span>
+<span class="sd">      prepended to its observed isotype, and a new `isotyped.idmap`</span>
+<span class="sd">      mapping these new sequence IDs to original sequence IDs is</span>
+<span class="sd">      written in the output directory.</span>
+<span class="sd">    * Resolves isotypes of unobserved ancestral genotypes in a way</span>
+<span class="sd">      that minimizes isotype switching and obeys isotype switching</span>
+<span class="sd">      order. If observed isotypes of an observed internal node and its</span>
+<span class="sd">      children violate switching order, then the observed internal node</span>
+<span class="sd">      is replaced with an unobserved node with the same sequence, and</span>
+<span class="sd">      the observed internal node is placed as a child leaf. This</span>
+<span class="sd">      procedure always allows switching order conflicts to be resolved,</span>
+<span class="sd">      and should usually increase isotype transitions required in the</span>
+<span class="sd">      resulting tree.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tree: ete3 Tree</span>
+<span class="sd">        newidmap: mapping of sequence IDs to isotypes, such as that output by :meth:`explode_idmap`.</span>
+<span class="sd">        isotype_names: list or other sequence of isotype names observed, in correct switching order.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A new ete3 Tree whose nodes have isotype annotations in the attribute ``isotype``.</span>
+<span class="sd">        Node names in this tree also contain isotype names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">_add_observed_isotypes</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">newidmap</span><span class="p">,</span> <span class="n">isotype_names</span><span class="p">,</span> <span class="n">weight_matrix</span><span class="o">=</span><span class="n">weight_matrix</span><span class="p">)</span>
+    <span class="n">_disambiguate_isotype</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+    <span class="n">_collapse_tree_by_sequence_and_isotype</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">isotype</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tree</span></div>
+
+
+<div class="viewcode-block" id="isotype_distance"><a class="viewcode-back" href="../../stubs/gctree.isotyping.isotype_distance.html#gctree.isotyping.isotype_distance">[docs]</a><span class="nd">@_assert_switching_order_match</span>
+<span class="k">def</span> <span class="nf">isotype_distance</span><span class="p">(</span><span class="n">t1</span><span class="p">:</span> <span class="n">Isotype</span><span class="p">,</span> <span class="n">t2</span><span class="p">:</span> <span class="n">Isotype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the weight of the transition from isotype ``t1`` to isotype</span>
+<span class="sd">    ``t2``.</span>
+
+<span class="sd">    This function is not symmetric on its arguments, so isn&#39;t a true</span>
+<span class="sd">    distance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">t1</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">[</span><span class="n">t1</span><span class="o">.</span><span class="n">isotype</span><span class="p">][</span><span class="n">t2</span><span class="o">.</span><span class="n">isotype</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="isotype_parsimony"><a class="viewcode-back" href="../../stubs/gctree.isotyping.isotype_parsimony.html#gctree.isotyping.isotype_parsimony">[docs]</a><span class="k">def</span> <span class="nf">isotype_parsimony</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Computes the sum of :meth:`isotype_distance` along each edge in an</span>
+<span class="sd">    isotyped tree.</span>
+
+<span class="sd">    If no weight matrix was provided during isotyping of the tree, then</span>
+<span class="sd">    the return value of this function is the number of isotype</span>
+<span class="sd">    transitions along edges in the tree.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="n">isotype_distance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">isotype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">()</span>
+    <span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_disambiguate_isotype</span><span class="p">(</span>
+    <span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">Tree</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dist_func</span><span class="o">=</span><span class="n">isotype_distance</span>
+<span class="p">):</span>
+    <span class="k">def</span> <span class="nf">is_ambiguous</span><span class="p">(</span><span class="n">isotype</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">isotype</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">random_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">random</span><span class="o">.</span><span class="n">setstate</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
+
+    <span class="c1"># First pass of Sankoff: compute cost vectors</span>
+    <span class="k">for</span> <span class="n">node2</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
+        <span class="n">node2</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;costs&quot;</span><span class="p">,</span> <span class="p">[[</span><span class="n">seq</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">node2</span><span class="o">.</span><span class="n">isotype</span><span class="o">.</span><span class="n">resolutions</span><span class="p">()])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">node2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">seq_cost</span> <span class="ow">in</span> <span class="n">node2</span><span class="o">.</span><span class="n">costs</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node2</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                    <span class="n">seq_cost</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">min</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="n">dist_func</span><span class="p">(</span><span class="n">seq_cost</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">child_seq</span><span class="p">)</span> <span class="o">+</span> <span class="n">child_cost</span>
+                            <span class="k">for</span> <span class="n">child_seq</span><span class="p">,</span> <span class="n">child_cost</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">costs</span>
+                        <span class="p">]</span>
+                    <span class="p">)</span>
+    <span class="c1"># Second pass: Choose base and adjust children&#39;s cost vectors.</span>
+    <span class="c1"># Not necessary if we only want the minimum weight:</span>
+    <span class="k">for</span> <span class="n">node2</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;preorder&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_ambiguous</span><span class="p">(</span><span class="n">node2</span><span class="o">.</span><span class="n">isotype</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">min_cost</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">cost</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">cost</span> <span class="ow">in</span> <span class="n">node2</span><span class="o">.</span><span class="n">costs</span><span class="p">])</span>
+        <span class="n">resolved_isotype</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">isotype</span> <span class="k">for</span> <span class="n">isotype</span><span class="p">,</span> <span class="n">cost</span> <span class="ow">in</span> <span class="n">node2</span><span class="o">.</span><span class="n">costs</span> <span class="k">if</span> <span class="n">cost</span> <span class="o">==</span> <span class="n">min_cost</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="c1"># Adjust child cost vectors</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">node2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node2</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">costs</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="p">[</span>
+                        <span class="n">isotype</span><span class="p">,</span>
+                        <span class="n">cost</span> <span class="o">+</span> <span class="n">dist_func</span><span class="p">(</span><span class="n">resolved_isotype</span><span class="p">,</span> <span class="n">isotype</span><span class="p">),</span>
+                    <span class="p">]</span>
+                    <span class="k">for</span> <span class="n">isotype</span><span class="p">,</span> <span class="n">cost</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">costs</span>
+                <span class="p">]</span>
+        <span class="n">node2</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="n">resolved_isotype</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">del_feature</span><span class="p">(</span><span class="s2">&quot;costs&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span>
+            <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="explode_idmap"><a class="viewcode-back" href="../../stubs/gctree.isotyping.explode_idmap.html#gctree.isotyping.explode_idmap">[docs]</a><span class="k">def</span> <span class="nf">explode_idmap</span><span class="p">(</span>
+    <span class="n">idmap</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">isotype_map</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]:</span>
+    <span class="sd">&quot;&quot;&quot;Uses provided mapping of original sequence IDs to observed isotypes to</span>
+<span class="sd">    &#39;explode&#39; the provided mapping of unique sequence IDs to original sequence</span>
+<span class="sd">    IDs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences</span>
+<span class="sd">        isotype_map: A dictionary mapping original IDs to observed isotype names</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary mapping unique sequence IDs to dictionaries, mapping isotype names to sets of original sequence IDs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">newidmap</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="nb">id</span><span class="p">,</span> <span class="n">cell_ids</span> <span class="ow">in</span> <span class="n">idmap</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">isotypeset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">cell_id</span> <span class="ow">in</span> <span class="n">cell_ids</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">isotypeset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">isotype_map</span><span class="p">[</span><span class="n">cell_id</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Sequence ID </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2"> has original sequence id </span><span class="si">{</span><span class="n">cell_id</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="s2">&quot;for which no observed isotype was provided. &quot;</span>
+                    <span class="s2">&quot;Isotype will be assumed ambiguous if observed.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">isotype_map</span><span class="p">[</span><span class="n">cell_id</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;?&quot;</span>
+                <span class="n">isotypeset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;?&quot;</span><span class="p">)</span>
+        <span class="n">newidmap</span><span class="p">[</span><span class="nb">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">isotype</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">cell_id</span> <span class="k">for</span> <span class="n">cell_id</span> <span class="ow">in</span> <span class="n">cell_ids</span> <span class="k">if</span> <span class="n">isotype_map</span><span class="p">[</span><span class="n">cell_id</span><span class="p">]</span> <span class="o">==</span> <span class="n">isotype</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">isotype</span> <span class="ow">in</span> <span class="n">isotypeset</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="n">newidmap</span></div>
+
+
+<span class="k">def</span> <span class="nf">_add_observed_isotypes</span><span class="p">(</span>
+    <span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">Tree</span><span class="p">,</span>
+    <span class="n">newidmap</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">isotype_order</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">weight_matrix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="c1"># Drop observed nodes as leaves and explode by observed isotype:</span>
+    <span class="c1"># Descend internal observed nodes as leaves:</span>
+    <span class="n">newisotype</span> <span class="o">=</span> <span class="n">IsotypeTemplate</span><span class="p">(</span><span class="n">isotype_order</span><span class="p">,</span> <span class="n">weight_matrix</span><span class="o">=</span><span class="n">weight_matrix</span><span class="p">)</span><span class="o">.</span><span class="n">new</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+            <span class="n">newchild</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">newchild</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+            <span class="n">newchild</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;abundance&quot;</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">newchild</span><span class="p">)</span>
+    <span class="c1"># Now duplicate nodes which represent multiple isotypes</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">get_leaves</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;isotype&quot;</span><span class="p">,</span> <span class="n">newisotype</span><span class="p">(</span><span class="s2">&quot;?&quot;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">thisnode_isotypemap</span> <span class="o">=</span> <span class="n">newidmap</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The sequence name </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2"> labels an observed node, but no mapping to an original sequence ID was found.&quot;</span>
+                    <span class="s2">&quot; Isotype will be assumed ambiguous.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">thisnode_isotypemap</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;?&quot;</span><span class="p">:</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;Unknown_id_</span><span class="si">{</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">)}</span>
+                <span class="p">}</span>
+            <span class="k">if</span> <span class="s2">&quot;?&quot;</span> <span class="ow">in</span> <span class="n">thisnode_isotypemap</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The sequence name </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> labels an observed node, and corresponds to sequence IDs for &quot;</span>
+                    <span class="s2">&quot;which no observed isotype was provided. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; Isotype will be assumed ambiguous for: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">thisnode_isotypemap</span><span class="p">[</span><span class="s1">&#39;?&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="c1"># node.name had better be in newidmap, since this is an observed node</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">thisnode_isotypemap</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">isotype</span><span class="p">,</span> <span class="n">cell_ids</span> <span class="ow">in</span> <span class="n">thisnode_isotypemap</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="c1"># add new node below this leaf node. Must be below, and not child</span>
+                    <span class="c1"># of parent, to preserve max parsimony in case that node.up has</span>
+                    <span class="c1"># different sequence from node.</span>
+                    <span class="n">newchild</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">newchild</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;abundance&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cell_ids</span><span class="p">))</span>
+                    <span class="n">newchild</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+                    <span class="n">newchild</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;isotype&quot;</span><span class="p">,</span> <span class="n">newisotype</span><span class="p">(</span><span class="n">isotype</span><span class="p">))</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">newchild</span><span class="p">)</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="n">newisotype</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">thisnode_isotypemap</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="c1"># Now add ancestral ambiguous isotypes</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;isotype&quot;</span><span class="p">,</span> <span class="n">newisotype</span><span class="p">(</span><span class="s2">&quot;?&quot;</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_collapse_tree_by_sequence_and_isotype</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span> <span class="o">!=</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span> <span class="ow">or</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span> <span class="o">!=</span> <span class="n">node</span><span class="o">.</span><span class="n">isotype</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span> <span class="o">+=</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, William DeWitt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

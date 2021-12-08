@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gctree.isotyping.Isotype &mdash; gctree  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gctree.isotyping.IsotypeTemplate" href="gctree.isotyping.IsotypeTemplate.html" />
+    <link rel="prev" title="gctree.isotyping.isotype_tree" href="gctree.isotyping.isotype_tree.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html">
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cite.html">Citing gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html#parsimony-utilities">Parsimony utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html#isotype">isotype</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../api.html">Classes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html#modules">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gctree.mutation_model.html">gctree.mutation_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.utils.html">gctree.utils</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gctree.isotyping.html">gctree.isotyping</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.explode_idmap.html">gctree.isotyping.explode_idmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.isotype_distance.html">gctree.isotyping.isotype_distance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.isotype_parsimony.html">gctree.isotyping.isotype_parsimony</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.isotype_tree.html">gctree.isotyping.isotype_tree</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gctree.isotyping.Isotype</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.IsotypeTemplate.html">gctree.isotyping.IsotypeTemplate</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html">Open source code repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html#developer-tools">Developer tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html#todo-list">Todo list</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gctree</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../api.html">Classes</a> &raquo;</li>
+          <li><a href="gctree.isotyping.html">gctree.isotyping</a> &raquo;</li>
+      <li>gctree.isotyping.Isotype</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gctree-isotyping-isotype">
+<h1>gctree.isotyping.Isotype<a class="headerlink" href="#gctree-isotyping-isotype" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="gctree.isotyping.Isotype">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.isotyping.</span></span><span class="sig-name descname"><span class="pre">Isotype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotype_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/isotyping.html#Isotype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.isotyping.Isotype" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>An isotype, and associated information about class switching order and transition weights.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gctree.isotyping.Isotype.order">
+<span class="sig-name descname"><span class="pre">order</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.order" title="Permalink to this definition"></a></dt>
+<dd><p>A list or other sequence of isotype names, in their allowed class switching order</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gctree.isotyping.Isotype.weight_matrix">
+<span class="sig-name descname"><span class="pre">weight_matrix</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.weight_matrix" title="Permalink to this definition"></a></dt>
+<dd><p>Transition weights between isotypes, with first index the original isotype index, and second index the new isotype index.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gctree.isotyping.Isotype.isotype">
+<span class="sig-name descname"><span class="pre">isotype</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.isotype" title="Permalink to this definition"></a></dt>
+<dd><p>Index of isotype name in <code class="docutils literal notranslate"><span class="pre">self.order</span></code></p>
+</dd></dl>
+
+<p>Objects of this class shall be instantiated using <a class="reference internal" href="gctree.isotyping.IsotypeTemplate.html#gctree.isotyping.IsotypeTemplate.new" title="gctree.isotyping.IsotypeTemplate.new"><code class="xref py py-meth docutils literal notranslate"><span class="pre">IsotypeTemplate.new()</span></code></a>.</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">copy</span></code></p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">rtype</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#gctree.isotyping.Isotype" title="gctree.isotyping.Isotype"><code class="xref py py-class docutils literal notranslate"><span class="pre">Isotype</span></code></a></p>
+</dd>
+</dl>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">isbefore</span></code></p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">rtype</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.isotyping.Isotype.resolutions" title="gctree.isotyping.Isotype.resolutions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolutions</span></code></a></p></td>
+<td><p>Returns list of all possible isotypes if passed an ambiguous isotype.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.isotyping.Isotype.resolutions">
+<span class="sig-name descname"><span class="pre">resolutions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/isotyping.html#Isotype.resolutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.isotyping.Isotype.resolutions" title="Permalink to this definition"></a></dt>
+<dd><p>Returns list of all possible isotypes if passed an ambiguous
+isotype.</p>
+<p>Otherwise, returns a list containing a copy of the passed
+isotype.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[Isotype]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gctree.isotyping.isotype_tree.html" class="btn btn-neutral float-left" title="gctree.isotyping.isotype_tree" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gctree.isotyping.IsotypeTemplate.html" class="btn btn-neutral float-right" title="gctree.isotyping.IsotypeTemplate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, William DeWitt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

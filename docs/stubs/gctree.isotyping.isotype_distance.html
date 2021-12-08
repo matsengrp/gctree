@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview: module code &mdash; gctree  documentation</title>
+  <title>gctree.isotyping.isotype_distance &mdash; gctree  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -16,7 +17,9 @@
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gctree.isotyping.isotype_parsimony" href="gctree.isotyping.isotype_parsimony.html" />
+    <link rel="prev" title="gctree.isotyping.explode_idmap" href="gctree.isotyping.explode_idmap.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -48,9 +51,22 @@
 <li class="toctree-l1"><a class="reference internal" href="../cli.html#isotype">isotype</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../api.html">Classes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../api.html#modules">Modules</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html#modules">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gctree.mutation_model.html">gctree.mutation_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.utils.html">gctree.utils</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gctree.isotyping.html">gctree.isotyping</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.explode_idmap.html">gctree.isotyping.explode_idmap</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gctree.isotyping.isotype_distance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.isotype_parsimony.html">gctree.isotyping.isotype_parsimony</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.isotype_tree.html">gctree.isotyping.isotype_tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.Isotype.html">gctree.isotyping.Isotype</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.IsotypeTemplate.html">gctree.isotyping.IsotypeTemplate</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -73,7 +89,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Overview: module code</li>
+          <li><a href="../api.html">Classes</a> &raquo;</li>
+          <li><a href="gctree.isotyping.html">gctree.isotyping</a> &raquo;</li>
+      <li>gctree.isotyping.isotype_distance</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -82,16 +100,31 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <h1>All modules for which code is available</h1>
-<ul><li><a href="gctree/branching_processes.html">gctree.branching_processes</a></li>
-<li><a href="gctree/isotyping.html">gctree.isotyping</a></li>
-<li><a href="gctree/mutation_model.html">gctree.mutation_model</a></li>
-<li><a href="gctree/utils.html">gctree.utils</a></li>
-</ul>
+  <section id="gctree-isotyping-isotype-distance">
+<h1>gctree.isotyping.isotype_distance<a class="headerlink" href="#gctree-isotyping-isotype-distance" title="Permalink to this headline"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="gctree.isotyping.isotype_distance">
+<span class="sig-prename descclassname"><span class="pre">gctree.isotyping.</span></span><span class="sig-name descname"><span class="pre">isotype_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/isotyping.html#isotype_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.isotyping.isotype_distance" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the weight of the transition from isotype <code class="docutils literal notranslate"><span class="pre">t1</span></code> to isotype
+<code class="docutils literal notranslate"><span class="pre">t2</span></code>.</p>
+<p>This function is not symmetric on its arguments, so isn’t a true
+distance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gctree.isotyping.explode_idmap.html" class="btn btn-neutral float-left" title="gctree.isotyping.explode_idmap" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gctree.isotyping.isotype_parsimony.html" class="btn btn-neutral float-right" title="gctree.isotyping.isotype_parsimony" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

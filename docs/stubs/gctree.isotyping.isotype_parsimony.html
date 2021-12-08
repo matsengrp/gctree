@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>gctree.utils &mdash; gctree  documentation</title>
+  <title>gctree.isotyping.isotype_parsimony &mdash; gctree  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,8 +18,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="gctree.utils.hamming_distance" href="gctree.utils.hamming_distance.html" />
-    <link rel="prev" title="gctree.mutation_model.MutationModel" href="gctree.mutation_model.MutationModel.html" /> 
+    <link rel="next" title="gctree.isotyping.isotype_tree" href="gctree.isotyping.isotype_tree.html" />
+    <link rel="prev" title="gctree.isotyping.isotype_distance" href="gctree.isotyping.isotype_distance.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -55,11 +55,16 @@
 <li class="toctree-l1"><a class="reference internal" href="../api.html">Classes</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html#modules">Modules</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="gctree.mutation_model.html">gctree.mutation_model</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">gctree.utils</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="gctree.utils.hamming_distance.html">gctree.utils.hamming_distance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.utils.html">gctree.utils</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gctree.isotyping.html">gctree.isotyping</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.explode_idmap.html">gctree.isotyping.explode_idmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.isotype_distance.html">gctree.isotyping.isotype_distance</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gctree.isotyping.isotype_parsimony</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.isotype_tree.html">gctree.isotyping.isotype_tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.Isotype.html">gctree.isotyping.Isotype</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.isotyping.IsotypeTemplate.html">gctree.isotyping.IsotypeTemplate</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="gctree.isotyping.html">gctree.isotyping</a></li>
 </ul>
 </li>
 </ul>
@@ -85,7 +90,8 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../api.html">Classes</a> &raquo;</li>
-      <li>gctree.utils</li>
+          <li><a href="gctree.isotyping.html">gctree.isotyping</a> &raquo;</li>
+      <li>gctree.isotyping.isotype_parsimony</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -94,34 +100,19 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-gctree.utils">
-<span id="gctree-utils"></span><h1>gctree.utils<a class="headerlink" href="#module-gctree.utils" title="Permalink to this headline"></a></h1>
-<p>Utility functions.</p>
-<p class="rubric">Functions</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="gctree.utils.hamming_distance.html#gctree.utils.hamming_distance" title="gctree.utils.hamming_distance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hamming_distance</span></code></a></p></td>
-<td><p>Hamming distance between two sequences of equal length.</p></td>
-</tr>
-</tbody>
-</table>
+  <section id="gctree-isotyping-isotype-parsimony">
+<h1>gctree.isotyping.isotype_parsimony<a class="headerlink" href="#gctree-isotyping-isotype-parsimony" title="Permalink to this headline"></a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="gctree.utils.hamming_distance">
-<span class="sig-prename descclassname"><span class="pre">gctree.utils.</span></span><span class="sig-name descname"><span class="pre">hamming_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/utils.html#hamming_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.utils.hamming_distance" title="Permalink to this definition"></a></dt>
-<dd><p>Hamming distance between two sequences of equal length.</p>
+<dt class="sig sig-object py" id="gctree.isotyping.isotype_parsimony">
+<span class="sig-prename descclassname"><span class="pre">gctree.isotyping.</span></span><span class="sig-name descname"><span class="pre">isotype_parsimony</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/isotyping.html#isotype_parsimony"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.isotyping.isotype_parsimony" title="Permalink to this definition"></a></dt>
+<dd><p>Computes the sum of <a class="reference internal" href="gctree.isotyping.isotype_distance.html#gctree.isotyping.isotype_distance" title="gctree.isotyping.isotype_distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isotype_distance()</span></code></a> along each edge in an
+isotyped tree.</p>
+<p>If no weight matrix was provided during isotyping of the tree, then
+the return value of this function is the number of isotype
+transitions along edges in the tree.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>seq1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – sequence 1</p></li>
-<li><p><strong>seq2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – sequence 2</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -132,8 +123,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="gctree.mutation_model.MutationModel.html" class="btn btn-neutral float-left" title="gctree.mutation_model.MutationModel" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="gctree.utils.hamming_distance.html" class="btn btn-neutral float-right" title="gctree.utils.hamming_distance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="gctree.isotyping.isotype_distance.html" class="btn btn-neutral float-left" title="gctree.isotyping.isotype_distance" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gctree.isotyping.isotype_tree.html" class="btn btn-neutral float-right" title="gctree.isotyping.isotype_tree" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
