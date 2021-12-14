@@ -901,3 +901,75 @@ def _mle_helper(
     if not result.success:
         warnings.warn("optimization not sucessful, " + result.message, RuntimeWarning)
     return result.x[0], result.x[1]
+
+
+def lltree(cm_list, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndarray]:
+    r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.
+    .. math::
+        \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)
+    Args:
+        p: branching probability
+        q: mutation probability
+        build_cache: build cache from the bottom up. Normally this should be left to its default ``True``.
+    Returns:
+        Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
+    """
+    if (
+        cm_list[0][0] == 0
+        and cm_list[0][1] == 1
+        and CollapsedTree._ll_genotype(cm_list[0][0], cm_list[0][1], p, q)[0]
+        == -np.inf
+    ):
+        # if unifurcation not possible under current model, add a
+        # psuedocount for the root
+        cm_list[0] = (1, cm_list[0][1])
+    # extract vector of function values and gradient components
+    logf_data = [CollapsedTree._ll_genotype(c, m, p, q) for c, m in cm_list]
+    logf = np.array([[x[0]] for x in logf_data]).sum()
+    grad_ll_genotype = np.array([x[1] for x in logf_data]).sum(axis=0)
+    return logf, grad_ll_genotype
+
+
+def llforest(
+    cm_list_list,
+    p: np.float64,
+    q: np.float64,
+    marginal: bool = False,
+) -> Tuple[np.float64, np.ndarray]:
+    r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topologies :math:`T_1, \dots, T_n` and corresponding genotype abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees in the forest.
+    If ``marginal=False`` (the default), compute the joint log likelihood
+    .. math::
+        \ell(p, q; T, A) = \sum_{i=1}^n\log\mathbb{P}(T_i, A_i \mid p, q),
+    otherwise compute the marginal log likelihood
+    .. math::
+        \ell(p, q; T, A) = \log\left(\sum_{i=1}^n\mathbb{P}(T_i, A_i \mid p, q)\right).
+    Args:
+        p: branching probability
+        q: mutation probability
+        marginal: compute the marginal likelihood over trees, otherwise compute the joint likelihood of trees
+    Returns:
+        Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
+    """
+    c_max = max([t[0] for sublist in cm_list_list for t in sublist])
+    m_max = max([t[1] for sublist in cm_list_list for t in sublist])
+    CollapsedTree._build_ll_genotype_cache(c_max, m_max, p, q)
+    # we don't want to build the cache again in each tree
+    terms = [lltree(cm_list, p, q) for cm_list in cm_list_list]
+    ls = np.array([term[0] for term in terms])
+    grad_ls = np.array([term[1] for term in terms])
+    if marginal:
+        # we need to find the smallest derivative component for each
+        # coordinate, then subtract off to get positive things to logsumexp
+        grad_l = []
+        for j in range(len((p, q))):
+            i_prime = grad_ls[:, j].argmin()
+            grad_l.append(
+                grad_ls[i_prime, j]
+                + np.exp(
+                    logsumexp(ls - ls[i_prime], b=grad_ls[:, j] - grad_ls[i_prime, j])
+                    - logsumexp(ls - ls[i_prime])
+                )
+            )
+        return (-np.log(len(ls)) + logsumexp(ls)), np.array(grad_l)
+    else:
+        return ls.sum(), grad_ls.sum(axis=0)

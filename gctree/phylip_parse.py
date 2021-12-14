@@ -94,8 +94,8 @@ def parse_outfile(
     outfile, abundance_file=None, root="root", extended_parsimony_search=False, **kwargs
 ):
     """parse phylip outfile."""
-    if 'resolve_ambiguities' in kwargs:
-        if 'resolve_ambiguities' == True:
+    if "resolve_ambiguities" in kwargs:
+        if "resolve_ambiguities" == True:
             kwargs.update(resolve_ambiguities=(not extended_parsimony_search))
     if abundance_file is not None:
         counts = {
@@ -146,44 +146,35 @@ def parse_outfile(
                 trees.append([])
             else:
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
-    if extended_parsimony_search:
-        # This will be used to name nodes in exported ete trees, but any
-        # disambiguated sequence will be named "unnamed_seq"
-        # Will this mess with observed counts in MLE later?
-        namedict = {sequence: name for name, sequence in sequences.items()}
-        print(f"Starting with {len(trees)} trees")
-        dag = historydag.dag.history_dag_from_etes(trees)
-        # Disambiguate (with later trimming step):
-        dag.expand_ambiguities()
-        # Look for (even) more trees:
-        dag.add_all_allowed_edges(new_from_root=False, adjacent_labels=True)
-        dag.trim_min_weight()
-        # collapse zero-length edges so that all trees in dag are unique
-        # CollapsedTrees (reduces number that need to be exported from dag)
-        dag.convert_to_collapsed()
-        print(f"DAG contains {dag.count_trees()} collapsed trees")
-        if len(dag.get_weight_counts()) > 1:
-            # This could happen if something's wrong with history DAG theory,
-            # or convert_to_collapsed has a bug
-            raise RuntimeError(
-                f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.get_weight_counts()}"
-            )
-        trees = [fulltree.to_ete(namedict=namedict) for fulltree in dag.get_trees()]
-        if counts is not None:
-            for tree in trees:
-                tree.name = root
-                for node in tree.traverse():
-                    if not node.is_root():
-                        node.dist = hamming_distance(node.sequence, node.up.sequence)
-                    # Can only add nonzero abundance to leaves, because
-                    # CollapsedTree init adds abundances when collapsing
-                    # adjacent nodes with same sequence
-                    if node.name in counts and node.is_leaf():
-                        node.add_feature("abundance", counts[node.name])
-                    else:
-                        node.add_feature("abundance", 0)
-    print(f"Starting with {len(trees)} maximum parsimony trees")
-    return trees
+    # This will be used to name nodes in exported ete trees, but any
+    # disambiguated sequence will be named "unnamed_seq"
+    # Will this mess with observed counts in MLE later?
+    namedict = {sequence: name for name, sequence in sequences.items()}
+    print(f"Starting with {len(trees)} trees")
+    dag = historydag.dag.history_dag_from_etes(trees)
+    # Disambiguate (with later trimming step):
+    dag.expand_ambiguities()
+    # Look for (even) more trees:
+    dag.add_all_allowed_edges(new_from_root=False, adjacent_labels=True)
+    dag.trim_min_weight()
+    # collapse zero-length edges so that all trees in dag are unique
+    # CollapsedTrees (reduces number that need to be exported from dag)
+    dag.convert_to_collapsed()
+    print(f"DAG contains {dag.count_trees()} collapsed trees")
+    if len(dag.get_weight_counts()) > 1:
+        # This could happen if something's wrong with history DAG theory,
+        # or convert_to_collapsed has a bug
+        raise RuntimeError(
+            f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.get_weight_counts()}"
+        )
+    if counts is not None:
+        sequence_abundance = {
+            sequence: (counts[seqid] if seqid in counts else 0) for sequence, seqid in namedict.items()
+        }
+    historydag.dag.add_abundances(dag, sequence_abundance)
+    dag.seqidnamedict = namedict
+    dag.seqidcounts = counts
+    return dag
 
 
 def disambiguate(
