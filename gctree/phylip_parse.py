@@ -8,6 +8,7 @@ ancestral sequences), a newick tree (with matching internal node lables), and an
 import gctree.phylip_parse as pp
 import gctree.branching_processes as bp
 from gctree.utils import hamming_distance
+import historydag.dag
 
 from ete3 import Tree
 import re
@@ -100,7 +101,7 @@ def parse_seqdict(fh, mode="dnaml"):
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
 def parse_outfile(outfile, abundance_file=None, root="root"):
-    """parse phylip outfile."""
+    """parse phylip outfile, and construct a history DAG with disambiguated dnapars trees."""
     if abundance_file is not None:
         counts = {
             line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)
@@ -134,7 +135,38 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
                 trees.append([])
             else:
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
-    return trees
+    # This will be used to name nodes in exported ete trees, but any
+    # disambiguated sequence will be named "unnamed_seq"
+    # Will this mess with observed counts in MLE later?
+    namedict = {sequence: name for name, sequence in sequences.items()}
+    print(f"Starting with {len(trees)} trees")
+    dag = historydag.dag.history_dag_from_etes(trees)
+    # Disambiguate (with later trimming step):
+    # TODO If there are too many ambiguities at too many nodes, this will hang.
+    # Need to have an alternative (disambiguate each tree before putting in dag)
+    dag.expand_ambiguities()
+    # Look for (even) more trees:
+    dag.add_all_allowed_edges(new_from_root=False, adjacent_labels=True)
+    dag.trim_min_weight()
+    # collapse zero-length edges so that all trees in dag are unique
+    # CollapsedTrees (reduces number that need to be exported from dag)
+    dag.convert_to_collapsed()
+    print(f"DAG contains {dag.count_trees()} collapsed trees")
+    if len(dag.get_weight_counts()) > 1:
+        # This could happen if something's wrong with history DAG theory,
+        # or convert_to_collapsed has a bug
+        raise RuntimeError(
+            f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.get_weight_counts()}"
+        )
+    if counts is not None:
+        sequence_abundance = {
+            sequence: (counts[seqid] if seqid in counts else 0)
+            for sequence, seqid in namedict.items()
+        }
+    historydag.dag.add_abundances(dag, sequence_abundance)
+    dag.seqidnamedict = namedict
+    dag.seqidcounts = counts
+    return dag
 
 
 def disambiguate(tree: Tree, random_state=None) -> Tree:
@@ -233,14 +265,6 @@ def build_tree(sequences, parents, counts=None, root="root"):
                 root_parent.children[0].sequence, nodes[root_id].sequence
             )
         tree = nodes[root_id]
-
-    # make random choices for ambiguous bases
-    tree = disambiguate(tree)
-
-    # compute branch lengths
-    tree.dist = 0  # no branch above root
-    for node in tree.iter_descendants():
-        node.dist = hamming_distance(node.sequence, node.up.sequence)
 
     return tree
 
