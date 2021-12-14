@@ -309,7 +309,7 @@ class CollapsedTree:
         # TODO figure out build_cache logic, and move this to lltree
         if build_cache:
             self._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
-        return lltree(self._cm_list, p, q, build_cache=build_cache)
+        return lltree(self._cm_list, p, q)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
         r"""Maximum likelihood estimate of :math:`(p, q)`.
@@ -940,3 +940,44 @@ def llforest(
         return (-np.log(len(ls)) + logsumexp(ls)), np.array(grad_l)
     else:
         return ls.sum(), grad_ls.sum(axis=0)
+
+
+def fit_branching_process(dag, verbose=True):
+    r"""fit p and q using all trees in the dag. DAG should be abundance_annotated, like that output by phylip_parse.
+    if we get floating point errors, try a few more times
+    (starting params aren't random right now, but they could be in the future?)"""
+    cmcounters = dag.cmcounters()
+    cmlist = [[cm for cm in list(mset)] for mset in list(cmcounters.elements())]
+
+    max_tries = 10
+    for tries in range(max_tries):
+        try:
+            p, q = _mle_helper(lambda p, q: llforest(cmlist, p, q, marginal=True))
+            break
+        except FloatingPointError as e:
+            if tries + 1 < max_tries and verbose:
+                print(
+                    f"floating point error in MLE: {e}. "
+                    f"Attempt {tries + 1} of {max_tries}. "
+                    "Rerunning with new random start."
+                )
+            else:
+                raise
+        else:
+            raise
+    return (p, q)
+
+
+def clade_tree_to_ctree(clade_tree, namedict, counts, root="naive"):
+    etetree = clade_tree.to_ete(namedict=namedict)
+    etetree.name = root
+    for node in etetree.traverse():
+        if not node.is_root():
+            node.dist = hamming_distance(node.sequence, node.up.sequence)
+        # Can only add nonzero abundance to leaves, because
+        # CollapsedTree init adds abundances when collapsing
+        # adjacent nodes with same sequence
+        if node.name in counts and node.is_leaf():
+            node.add_feature("abundance", counts[node.name])
+        else:
+            node.add_feature("abundance", 0)
