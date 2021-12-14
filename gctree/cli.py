@@ -184,14 +184,11 @@ def infer(args):
         if args.verbose:
             print("number of trees with integer branch lengths:", n_trees)
 
-        if n_trees == 1:
-            warnings.warn("only one parsimony tree reported from dnapars")
-
-        if args.verbose:
-            print("number of trees with integer branch lengths:", n_trees)
-
         with open(outbase + f".out.serialized_dag_{i}.p", "wb") as fh:
             fh.write(dag.serialize())
+
+        if args.verbose:
+            print(f"history DAG found {n_trees} trees")
 
         # fit p and q using all trees
         p, q = bp.fit_branching_process(dag, verbose=args.verbose)
@@ -254,11 +251,9 @@ def infer(args):
 
             dag.trim_optimal_weight(edge_weight_func=edge_weight_func, optimal_func=max)
 
-        etetrees = [bp.clade_tree_to_ctree(tree, namedict, counts, root=args.root) for tree in dag.get_trees()]
+        ctrees = [bp.clade_tree_to_ctree(tree, namedict, counts, root=args.root) for tree in dag.get_trees()]
 
-        parsimony_forest = bp.CollapsedForest(
-            forest=[bp.CollapsedTree(tree) for tree in etetrees]
-        )
+        parsimony_forest = bp.CollapsedForest(forest=ctrees)
 
         if args.verbose:
             print(f"params: {(p, q)}")
