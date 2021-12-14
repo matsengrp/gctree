@@ -981,3 +981,4 @@ def clade_tree_to_ctree(clade_tree, namedict, counts, root="naive"):
             node.add_feature("abundance", counts[node.name])
         else:
             node.add_feature("abundance", 0)
+    return(CollapsedTree(etetree))
