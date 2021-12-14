@@ -168,7 +168,7 @@ def infer(args):
         # we'll store the mle gctrees here for computing support later
         gctrees = []
 
-    for i, content in enumerate(outfiles):
+    for i, dag in enumerate(outfiles):
         if i > 0:
             if args.verbose:
                 print(f"bootstrap sample {i}")
@@ -176,40 +176,25 @@ def infer(args):
             outbase = args.outbase + f".bootstrap_{i}"
         else:
             outbase = args.outbase
-        phylip_collapsed = [
-            bp.CollapsedTree(tree=tree, allow_repeats=(i > 0)) for tree in content
-        ]
-        phylip_collapsed_unique = []
-        for tree in phylip_collapsed:
-            if (
-                sum(
-                    tree.compare(tree2, method="identity")
-                    for tree2 in phylip_collapsed_unique
-                )
-                == 0
-            ):
-                phylip_collapsed_unique.append(tree)
 
-        parsimony_forest = bp.CollapsedForest(forest=phylip_collapsed_unique)
-
-        if parsimony_forest.n_trees == 1:
+        n_trees = dag.count_trees()
+        if n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
 
         if args.verbose:
-            print(
-                "number of trees with integer branch lengths:", parsimony_forest.n_trees
-            )
+            print("number of trees with integer branch lengths:", n_trees)
 
-        # check for unifurcations at root
-        unifurcations = sum(
-            tree.tree.abundance == 0 and len(tree.tree.children) == 1
-            for tree in parsimony_forest.forest
-        )
-        if unifurcations and args.verbose:
-            print(
-                f"{unifurcations} trees exhibit unobserved unifurcation from"
-                " root. Adding psuedocounts to these roots"
-            )
+        cmcounters = dag.cmcounters()
+        cmlist = [[cm for cm in list(mset)] for mset in list(cmcounters.elements())]
+
+        if n_trees == 1:
+            warnings.warn("only one parsimony tree reported from dnapars")
+
+        if args.verbose:
+            print("number of trees with integer branch lengths:", n_trees)
+
+        with open(outbase + f".out.serialized_dag_{i}.p", "wb") as fh:
+            fh.write(dag.serialize())
 
         # fit p and q using all trees
         # if we get floating point errors, try a few more times
@@ -217,7 +202,9 @@ def infer(args):
         max_tries = 10
         for tries in range(max_tries):
             try:
-                p, q = parsimony_forest.mle(marginal=True)
+                p, q = bp._mle_helper(
+                    lambda p, q: bp.llforest(cmlist, p, q, marginal=True)
+                )
                 break
             except FloatingPointError as e:
                 if tries + 1 < max_tries and args.verbose:
@@ -230,6 +217,78 @@ def infer(args):
                     raise
             else:
                 raise
+
+        if n_trees > 100:
+            if args.verbose:
+                print(
+                    f"History DAG contains more than 100 trees. "
+                    "Rendering only trees with highest branching process likelihood."
+                )
+
+            def edge_weight_func(n1, n2):
+                """The _ll_genotype weight of the target node, unless it should be collapsed, then 0"""
+                if n2.is_leaf() and n2.label == n1.label:
+                    return 0.0
+                else:
+                    m = len(n2.clades)
+                    # Check if this edge should be collapsed, and reduce mutant descendants
+                    if frozenset({n2.label}) in n2.clades:
+                        m -= 1
+                    return bp.CollapsedTree._ll_genotype(n2.abundance, m, p, q)[0]
+
+            dag.trim_optimal_weight(edge_weight_func=edge_weight_func, optimal_func=max)
+        namedict = dag.seqidnamedict
+        counts = dag.seqidcounts
+
+        # Also want a log file of the same format as the printed verbose
+        # output, containing likelihoods and alleles for all trees in the DAG.
+        def edge_weight_func(n1, n2):
+            """The _ll_genotype weight of the target node, unless it should be collapsed, then 0"""
+            if n2.is_leaf() and n2.label == n1.label:
+                return 0.0
+            else:
+                m = len(n2.clades)
+                # Check if this edge should be collapsed, and reduce mutant descendants
+                if frozenset({n2.label}) in n2.clades:
+                    m -= 1
+                return bp.CollapsedTree._ll_genotype(n2.abundance, m, p, q)[0]
+
+        def distance_func(n1, n2):
+            return (edge_weight_func(n1, n2), n1.label != n2.label)
+
+        def addweights(w1, w2):
+            return (w1[0] + w2[0], w1[1] + w2[1])
+
+        dag_ls = dag.get_weight_counts(
+            start_val=(0, 0), distance_func=distance_func, addfunc=addweights
+        )
+        dag_ls.sort(key=lambda l: -l[0])
+
+        with open(outbase + "dag_summary.log", "w") as fh:
+            fh.write("tree\talleles\tlogLikelihood")
+            for j, (l, alleles) in enumerate(dag_ls, 1):
+                fh.write(f"{j}\t{alleles}\t{l}")
+
+        dag_l = [l for l, a in dag_ls]
+
+        # Now make ctrees, cforest, and render (possibly just some of) the
+        # trees
+        etetrees = [tree.to_ete(namedict=namedict) for tree in dag.get_trees()]
+        for tree in etetrees:
+            tree.name = args.root
+            for node in tree.traverse():
+                if not node.is_root():
+                    node.dist = utils.hamming_distance(node.sequence, node.up.sequence)
+                # Can only add nonzero abundance to leaves, because
+                # CollapsedTree init adds abundances when collapsing
+                # adjacent nodes with same sequence
+                if node.name in counts and node.is_leaf():
+                    node.add_feature("abundance", counts[node.name])
+                else:
+                    node.add_feature("abundance", 0)
+        parsimony_forest = bp.CollapsedForest(
+            forest=[bp.CollapsedTree(tree) for tree in etetrees]
+        )
 
         if args.verbose:
             print(f"params: {(p, q)}")
@@ -297,20 +356,19 @@ def infer(args):
             collapsed_tree.newick(f"{outbase}.inference.{j}.nk")
             with open(f"{outbase}.inference.{j}.p", "wb") as f:
                 pickle.dump(collapsed_tree, f)
-
         # rank plot of likelihoods
         plt.figure(figsize=(6.5, 2))
         try:
-            plt.plot(np.exp(ls), "ko", clip_on=False, markersize=4)
+            plt.plot(np.exp(dag_l), "ko", clip_on=False, markersize=4)
             plt.ylabel("gctree likelihood")
             plt.yscale("log")
-            plt.ylim([None, 1.1 * max(np.exp(ls))])
+            plt.ylim([None, 1.1 * max(np.exp(dag_l))])
         except FloatingPointError:
-            plt.plot(ls, "ko", clip_on=False, markersize=4)
+            plt.plot(dag_l, "ko", clip_on=False, markersize=4)
             plt.ylabel("gctree log-likelihood")
-            plt.ylim([None, 1.1 * max(ls)])
+            plt.ylim([None, 1.1 * max(dag_l)])
         plt.xlabel("parsimony tree")
-        plt.xlim([-1, len(ls)])
+        plt.xlim([-1, len(dag_l)])
         plt.tick_params(axis="y", direction="out", which="both")
         plt.tick_params(
             axis="x", which="both", bottom="off", top="off", labelbottom="off"
