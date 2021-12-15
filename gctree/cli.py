@@ -15,6 +15,7 @@ import random
 import scipy.stats
 import ete3
 import itertools
+import random
 
 
 def test(args):
@@ -187,11 +188,8 @@ def infer(args):
         with open(outbase + f".out.serialized_dag_{i}.p", "wb") as fh:
             fh.write(dag.serialize())
 
-        if args.verbose:
-            print(f"history DAG found {n_trees} trees")
-
         # fit p and q using all trees
-        p, q = bp.fit_branching_process(dag, verbose=args.verbose)
+        p, q = bp.fit_branching_process(dag, verbose=args.verbose, marginal=True)
 
         namedict = dag.seqidnamedict
         counts = dag.seqidcounts
@@ -223,6 +221,7 @@ def infer(args):
         dag_ls.sort(key=lambda l: -l[0])
 
         with open(outbase + "dag_summary.log", "w") as fh:
+            fh.write(f"Parameters: {(p, q)}\n")
             fh.write("tree\talleles\tlogLikelihood\n")
             for j, (l, alleles) in enumerate(dag_ls, 1):
                 fh.write(f"{j}\t{alleles}\t{l}\n")
@@ -251,7 +250,25 @@ def infer(args):
 
             dag.trim_optimal_weight(edge_weight_func=edge_weight_func, optimal_func=max)
 
-        ctrees = [bp.clade_tree_to_ctree(tree, namedict, counts, root=args.root) for tree in dag.get_trees()]
+        if dag.count_trees() > 100:
+            if args.verbose:
+                print(
+                    "Trimmed history DAG still contains more than 100 trees. "
+                    "Rendering only trees with minimum alleles."
+                )
+            dag.trim_optimal_weight(edge_weight_func=lambda n1, n2: n1.label != n2.label, optimal_func=min)
+
+        if dag.count_trees() > 100:
+            if args.verbose:
+                print(
+                    "Trimmed history DAG still contains more than 100 trees. "
+                    "10 trees will be sampled randomly (with replacement) for rendering."
+                )
+            #TODO verify this produces reproducible samples
+            random.seed(n_trees)
+            ctrees = [bp.clade_tree_to_ctree(dag.sample(), namedict, counts, root=args.root) for _ in range(10)]
+        else:
+            ctrees = [bp.clade_tree_to_ctree(tree, namedict, counts, root=args.root) for tree in dag.get_trees()]
 
         parsimony_forest = bp.CollapsedForest(forest=ctrees)
 
