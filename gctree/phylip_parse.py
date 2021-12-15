@@ -151,7 +151,6 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
     # collapse zero-length edges so that all trees in dag are unique
     # CollapsedTrees (reduces number that need to be exported from dag)
     dag.convert_to_collapsed()
-    print(f"DAG contains {dag.count_trees()} collapsed trees")
     if len(dag.get_weight_counts()) > 1:
         # This could happen if something's wrong with history DAG theory,
         # or convert_to_collapsed has a bug
