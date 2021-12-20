@@ -169,7 +169,17 @@ def infer(args):
         # we'll store the mle gctrees here for computing support later
         gctrees = []
 
-    for i, dag in enumerate(outfiles):
+    for i, (trees, sequences, counts) in enumerate(outfiles):
+        # Collect stats for validation, in clade_tree_to_ctree method
+        model_tree = pp.disambiguate(trees[0].copy())
+        validation_stats = {
+            'parsimony_score': sum([node.dist for node in model_tree.traverse()]),
+            'root_seq': model_tree.sequence,
+            'leaf_seqs': {node.sequence for node in model_tree.get_leaves()},
+            'leaf_names': {node.name: node.sequence for node in model_tree.get_leaves()}
+        }
+        # Begin inference
+        dag = pp.make_dag(trees, sequences, counts)
         if i > 0:
             if args.verbose:
                 print(f"bootstrap sample {i}")
@@ -192,7 +202,8 @@ def infer(args):
         p, q = bp.fit_branching_process(dag, verbose=args.verbose, marginal=True)
 
         namedict = dag.seqidnamedict
-        counts = dag.seqidcounts
+        
+
 
         # Also want a log file of the same format as the printed verbose
         # output, containing likelihoods and alleles for all trees in the DAG.
@@ -266,9 +277,10 @@ def infer(args):
                 )
             #TODO verify this produces reproducible samples
             random.seed(n_trees)
-            ctrees = [bp.clade_tree_to_ctree(dag.sample(), namedict, counts, root=args.root) for _ in range(10)]
+            dag.make_uniform()
+            ctrees = [bp.clade_tree_to_ctree(dag.sample(), namedict, counts, root=args.root, **validation_stats) for _ in range(10)]
         else:
-            ctrees = [bp.clade_tree_to_ctree(tree, namedict, counts, root=args.root) for tree in dag.get_trees()]
+            ctrees = [bp.clade_tree_to_ctree(tree, namedict, counts, root=args.root, **validation_stats) for tree in dag.get_trees()]
 
         parsimony_forest = bp.CollapsedForest(forest=ctrees)
 

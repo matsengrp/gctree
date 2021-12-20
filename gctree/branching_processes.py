@@ -916,11 +916,12 @@ def llforest(
     Returns:
         Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
     """
-    # Need to fix this inefficiency TODO
+    # Need to fix this inefficiency TODO don't want to do this in each call of
+    # llforest.
     c_max = max([t[0] for sublist in cm_list_list for t in sublist])
     m_max = max([t[1] for sublist in cm_list_list for t in sublist])
     CollapsedTree._build_ll_genotype_cache(c_max, m_max, p, q)
-    # we don't want to build the cache again in each tree
+
     terms = [lltree(cm_list, p, q) for cm_list in cm_list_list]
     ls = np.array([term[0] for term in terms])
     grad_ls = np.array([term[1] for term in terms])
@@ -942,7 +943,7 @@ def llforest(
         return ls.sum(), grad_ls.sum(axis=0)
 
 
-def fit_branching_process(dag, verbose=True):
+def fit_branching_process(dag, verbose=True, marginal=True):
     r"""fit p and q using all trees in the dag. DAG should be abundance_annotated, like that output by phylip_parse.
     if we get floating point errors, try a few more times
     (starting params aren't random right now, but they could be in the future?)"""
@@ -952,7 +953,7 @@ def fit_branching_process(dag, verbose=True):
     max_tries = 10
     for tries in range(max_tries):
         try:
-            p, q = _mle_helper(lambda p, q: llforest(cmlist, p, q, marginal=True))
+            p, q = _mle_helper(lambda p, q: llforest(cmlist, p, q, marginal=marginal))
             break
         except FloatingPointError as e:
             if tries + 1 < max_tries and verbose:
@@ -968,9 +969,10 @@ def fit_branching_process(dag, verbose=True):
     return (p, q)
 
 
-def clade_tree_to_ctree(clade_tree, namedict, counts, root="naive"):
+def clade_tree_to_ctree(clade_tree, namedict, counts, root="naive", parsimony_score=None, root_seq=None, leaf_seqs=None, leaf_names=None):
     etetree = clade_tree.to_ete(namedict=namedict)
     etetree.name = root
+    etetree.dist = 0
     for node in etetree.traverse():
         if not node.is_root():
             node.dist = hamming_distance(node.sequence, node.up.sequence)
@@ -981,4 +983,28 @@ def clade_tree_to_ctree(clade_tree, namedict, counts, root="naive"):
             node.add_feature("abundance", counts[node.name])
         else:
             node.add_feature("abundance", 0)
+
+    # Here can do some validation on the tree:
+    # unnamed_seq issue:
+    for node in etetree.traverse():
+        if node.name == "unnamed_seq":
+            raise RuntimeError("Some sequence names were not provided in 'namedict'")
+    # Parsimony:
+    if parsimony_score is not None:
+        if parsimony_score != sum([node.dist for node in etetree.traverse()]):
+            raise RuntimeError("History DAG tree parsimony score does not match parsimony score provided")
+    # Root sequence:
+    if root_seq is not None:
+        if etetree.sequence != root_seq:
+            raise RuntimeError("History DAG root node sequence does not match root sequence provided")
+    # Leaf sequences and number of leaves:
+    if leaf_seqs is not None:
+        if (leaf_seqs != {node.sequence for node in etetree.get_leaves()}
+            or len(leaf_seqs) != len(list(etetree.get_leaves()))):
+            raise RuntimeError("History DAG tree has a different set of leaf sequences than provided")
+    # Leaf names:
+    if leaf_names is not None:
+        for node in etetree.get_leaves():
+            if leaf_names[node.name] != node.sequence:
+                raise RuntimeError("History DAG tree leaf names don't match sequences")
     return(CollapsedTree(etetree))
