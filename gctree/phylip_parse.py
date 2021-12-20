@@ -100,8 +100,9 @@ def parse_seqdict(fh, mode="dnaml"):
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
-def parse_outfile(outfile, abundance_file=None, root="root"):
-    """parse phylip outfile, and construct a history DAG with disambiguated dnapars trees."""
+def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False):
+    """parse phylip outfile, and return dnapars trees, a dictionary mapping node names to sequences,
+    and a dictionary mapping node names to observed abundances."""
     if abundance_file is not None:
         counts = {
             line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)
@@ -135,6 +136,13 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
                 trees.append([])
             else:
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
+    if disambiguate:
+        # Disambiguate sets node.dist for all nodes in disambiguated trees
+        trees = [disambiguate(tree) for tree in trees]
+    return (trees, sequences, counts)
+
+def make_dag(trees, sequences, counts):
+    """Build a history DAG from ambiguous or disambiguated trees, and a dictionary mapping node names to sequences, and a dictionary mapping node names to observed abundances."""
     # This will be used to name nodes in exported ete trees, but any
     # disambiguated sequence will be named "unnamed_seq"
     # Will this mess with observed counts in MLE later?
@@ -162,9 +170,14 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
             sequence: (counts[seqid] if seqid in counts else 0)
             for sequence, seqid in namedict.items()
         }
-    historydag.dag.add_abundances(dag, sequence_abundance)
+        historydag.dag.add_abundances(dag, sequence_abundance)
+    # name disambiguated sequences
+    n_max = max([int(name) for name in namedict.values() if name.isdigit()])
+    for node in historydag.dag.postorder(dag):
+        if node.label not in namedict:
+            n_max += 1
+            namedict[node.label] = str(n_max)
     dag.seqidnamedict = namedict
-    dag.seqidcounts = counts
     return dag
 
 
@@ -227,6 +240,9 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
             node.del_feature("cv")
         except (AttributeError, KeyError):
             pass
+    tree.dist = 0
+    for node in tree.iter_descendants():
+        node.dist = hamming_distance(node.up.sequence, node.sequence)
     return tree
 
 
