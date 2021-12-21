@@ -7,6 +7,8 @@ import warnings
 from typing import Dict, Callable, Optional, Set, Sequence
 from functools import wraps
 
+default_order = ["IgM", "IgG3", "IgG1", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
+
 
 def _assert_switching_order_match(
     fn: Callable[["Isotype", "Isotype"], bool]
@@ -124,6 +126,14 @@ class Isotype:
     @_assert_switching_order_match
     def __eq__(self, other: "Isotype") -> bool:
         return self.isotype == other.isotype
+
+    @_assert_switching_order_match
+    def __lt__(self, other: "Isotype") -> bool:
+        return self.isotype < other.isotype
+
+    @_assert_switching_order_match
+    def __gt__(self, other: "Isotype") -> bool:
+        return self.isotype > other.isotype
 
     def __hash__(self) -> int:
         return hash(self.__repr__())

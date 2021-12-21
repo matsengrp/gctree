@@ -4,6 +4,7 @@ import gctree.branching_processes as bp
 import gctree.phylip_parse as pp
 import gctree.mutation_model as mm
 import gctree.utils as utils
+import gctree.isotyping as itp
 
 import argparse
 import pandas as pd
@@ -173,10 +174,12 @@ def infer(args):
         # Collect stats for validation, in clade_tree_to_ctree method
         model_tree = pp.disambiguate(trees[0].copy())
         validation_stats = {
-            'parsimony_score': sum([node.dist for node in model_tree.traverse()]),
-            'root_seq': model_tree.sequence,
-            'leaf_seqs': {node.sequence for node in model_tree.get_leaves()},
-            'leaf_names': {node.name: node.sequence for node in model_tree.get_leaves()}
+            "parsimony_score": sum([node.dist for node in model_tree.traverse()]),
+            "root_seq": model_tree.sequence,
+            "leaf_seqs": {node.sequence for node in model_tree.get_leaves()},
+            "leaf_names": {
+                node.name: node.sequence for node in model_tree.get_leaves()
+            },
         }
         # Begin inference
         dag = pp.make_dag(trees, sequences, counts)
@@ -202,11 +205,32 @@ def infer(args):
         p, q = bp.fit_branching_process(dag, verbose=args.verbose, marginal=True)
 
         namedict = dag.seqidnamedict
-        
 
+        if args.isotype_mapfile:
+            with open(args.isotype_mapfile, "r") as fh:
+                isotypemap = dict(
+                    map(lambda x: x.strip(), line.split(",")) for line in fh
+                )
+
+            with open(args.idmapfile, "r") as fh:
+                idmap = {}
+                for line in fh:
+                    seqid, cell_ids = line.rstrip().split(",")
+                    cell_idset = {cell_id for cell_id in cell_ids.split(":") if cell_id}
+                    if len(cell_idset) > 0:
+                        idmap[seqid] = cell_idset
+            newidmap = itp.explode_idmap(idmap, isotypemap)
+            if args.isotype_names:
+                isotype_names = str(args.isotype_names).split(",")
+            else:
+                isotype_names = itp.default_order
+            newisotype = itp.IsotypeTemplate(isotype_names, weight_matrix=None).new
+        else:
+            newidmap = {}
 
         # Also want a log file of the same format as the printed verbose
-        # output, containing likelihoods and alleles for all trees in the DAG.
+        # output, containing likelihoods and alleles for all trees in the DAG,
+        # and isotype parsimony score if possible.
         def edge_weight_func(n1, n2):
             """The _ll_genotype weight of the target node, unless it should be collapsed, then 0"""
             if n2.is_leaf() and n2.label == n1.label:
@@ -219,25 +243,48 @@ def infer(args):
                 return bp.CollapsedTree._ll_genotype(n2.abundance, m, p, q)[0]
 
         def distance_func(n1, n2):
-            return (edge_weight_func(n1, n2), n1.label != n2.label)
+            if n2.is_leaf():
+                seqid = namedict[n2.label]
+                if seqid in newidmap:
+                    isoset = frozenset(
+                        newisotype(name) for name in newidmap[namedict[n2.label]].keys()
+                    )
+                else:
+                    isoset = frozenset()
+            else:
+                isoset = frozenset()
+            return (edge_weight_func(n1, n2), n1.label != n2.label, 0, isoset)
 
-        def addweights(w1, w2):
-            return (w1[0] + w2[0], w1[1] + w2[1])
+        def sumweights(weights):
+            ps = [i[2] for i in weights]
+            ts = [item for i in weights for item in i[3]]
+            if ts:
+                newt = frozenset({min(ts)})
+            else:
+                newt = frozenset()
+            return (
+                sum(weight[0] for weight in weights),
+                sum(weight[1] for weight in weights),
+                sum(itp.isotype_distance(list(newt)[0], el) for el in ts) + sum(ps),
+                newt,
+            )
 
         dag_ls = list(
             dag.get_weight_counts(
-                start_val=(0, 0), distance_func=distance_func, addfunc=addweights
+                start_val=(0, 0, 0, frozenset()),
+                distance_func=distance_func,
+                addfunc=sumweights,
             ).elements()
         )
         dag_ls.sort(key=lambda l: -l[0])
 
-        with open(outbase + "dag_summary.log", "w") as fh:
+        with open(outbase + ".dag_summary.log", "w") as fh:
             fh.write(f"Parameters: {(p, q)}\n")
-            fh.write("tree\talleles\tlogLikelihood\n")
-            for j, (l, alleles) in enumerate(dag_ls, 1):
-                fh.write(f"{j}\t{alleles}\t{l}\n")
+            fh.write("tree\talleles\tlogLikelihood\tisotype_parsimony\n")
+            for j, (l, alleles, isotypepars, _) in enumerate(dag_ls, 1):
+                fh.write(f"{j}\t{alleles}\t{l}\t{isotypepars}\n")
 
-        dag_l = [l for l, a in dag_ls]
+        dag_l = [l for l, _, _, _ in dag_ls]
 
         # Now make ctrees, cforest, and render (possibly just some of) the
         # trees
@@ -267,7 +314,9 @@ def infer(args):
                     "Trimmed history DAG still contains more than 100 trees. "
                     "Rendering only trees with minimum alleles."
                 )
-            dag.trim_optimal_weight(edge_weight_func=lambda n1, n2: n1.label != n2.label, optimal_func=min)
+            dag.trim_optimal_weight(
+                edge_weight_func=lambda n1, n2: n1.label != n2.label, optimal_func=min
+            )
 
         if dag.count_trees() > 100:
             if args.verbose:
@@ -275,12 +324,22 @@ def infer(args):
                     "Trimmed history DAG still contains more than 100 trees. "
                     "10 trees will be sampled randomly (with replacement) for rendering."
                 )
-            #TODO verify this produces reproducible samples
+            # TODO verify this produces reproducible samples
             random.seed(n_trees)
             dag.make_uniform()
-            ctrees = [bp.clade_tree_to_ctree(dag.sample(), namedict, counts, root=args.root, **validation_stats) for _ in range(10)]
+            ctrees = [
+                bp.clade_tree_to_ctree(
+                    dag.sample(), namedict, counts, root=args.root, **validation_stats
+                )
+                for _ in range(10)
+            ]
         else:
-            ctrees = [bp.clade_tree_to_ctree(tree, namedict, counts, root=args.root, **validation_stats) for tree in dag.get_trees()]
+            ctrees = [
+                bp.clade_tree_to_ctree(
+                    tree, namedict, counts, root=args.root, **validation_stats
+                )
+                for tree in dag.get_trees()
+            ]
 
         parsimony_forest = bp.CollapsedForest(forest=ctrees)
 
@@ -699,6 +758,26 @@ def get_parser():
         help="positionmapfile for the 2nd chain when using the ``chain_split`` option",
     )
     parser_infer.set_defaults(func=infer)
+    parser_infer.add_argument(
+        "--idmapfile",
+        default=None,
+        type=str,
+        help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.",
+    )
+    parser_infer.add_argument(
+        "--isotype_mapfile",
+        default=None,
+        type=str,
+        help="filename for a csv file mapping original sequence ids to observed isotypes"
+        ". For example, each line should have the format 'somesequence_id, some_isotype'.",
+    )
+    parser_infer.add_argument(
+        "--isotype_names",
+        type=str,
+        default=None,
+        help="A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated."
+        """ Default is equivalent to providing the argument ``--isotype_names IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2``""",
+    )
 
     # parser for simulation subprogram
     parser_sim = subparsers.add_parser(

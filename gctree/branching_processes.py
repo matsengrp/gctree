@@ -969,7 +969,16 @@ def fit_branching_process(dag, verbose=True, marginal=True):
     return (p, q)
 
 
-def clade_tree_to_ctree(clade_tree, namedict, counts, root="naive", parsimony_score=None, root_seq=None, leaf_seqs=None, leaf_names=None):
+def clade_tree_to_ctree(
+    clade_tree,
+    namedict,
+    counts,
+    root="naive",
+    parsimony_score=None,
+    root_seq=None,
+    leaf_seqs=None,
+    leaf_names=None,
+):
     etetree = clade_tree.to_ete(namedict=namedict)
     etetree.name = root
     etetree.dist = 0
@@ -992,19 +1001,26 @@ def clade_tree_to_ctree(clade_tree, namedict, counts, root="naive", parsimony_sc
     # Parsimony:
     if parsimony_score is not None:
         if parsimony_score != sum([node.dist for node in etetree.traverse()]):
-            raise RuntimeError("History DAG tree parsimony score does not match parsimony score provided")
+            raise RuntimeError(
+                "History DAG tree parsimony score does not match parsimony score provided"
+            )
     # Root sequence:
     if root_seq is not None:
         if etetree.sequence != root_seq:
-            raise RuntimeError("History DAG root node sequence does not match root sequence provided")
+            raise RuntimeError(
+                "History DAG root node sequence does not match root sequence provided"
+            )
     # Leaf sequences and number of leaves:
     if leaf_seqs is not None:
-        if (leaf_seqs != {node.sequence for node in etetree.get_leaves()}
-            or len(leaf_seqs) != len(list(etetree.get_leaves()))):
-            raise RuntimeError("History DAG tree has a different set of leaf sequences than provided")
+        if leaf_seqs != {node.sequence for node in etetree.get_leaves()} or len(
+            leaf_seqs
+        ) != len(list(etetree.get_leaves())):
+            raise RuntimeError(
+                "History DAG tree has a different set of leaf sequences than provided"
+            )
     # Leaf names:
     if leaf_names is not None:
         for node in etetree.get_leaves():
             if leaf_names[node.name] != node.sequence:
                 raise RuntimeError("History DAG tree leaf names don't match sequences")
-    return(CollapsedTree(etetree))
+    return CollapsedTree(etetree)

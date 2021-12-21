@@ -141,6 +141,7 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
         trees = [disambiguate(tree) for tree in trees]
     return (trees, sequences, counts)
 
+
 def make_dag(trees, sequences, counts):
     """Build a history DAG from ambiguous or disambiguated trees, and a dictionary mapping node names to sequences, and a dictionary mapping node names to observed abundances."""
     # This will be used to name nodes in exported ete trees, but any
