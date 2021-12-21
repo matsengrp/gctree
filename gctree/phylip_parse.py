@@ -144,11 +144,6 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
 
 def make_dag(trees, sequences, counts):
     """Build a history DAG from ambiguous or disambiguated trees, and a dictionary mapping node names to sequences, and a dictionary mapping node names to observed abundances."""
-    # This will be used to name nodes in exported ete trees, but any
-    # disambiguated sequence will be named "unnamed_seq"
-    # Will this mess with observed counts in MLE later?
-    namedict = {sequence: name for name, sequence in sequences.items()}
-    print(f"Starting with {len(trees)} trees")
     dag = historydag.dag.history_dag_from_etes(trees)
     # Disambiguate (with later trimming step):
     # TODO If there are too many ambiguities at too many nodes, this will hang.
@@ -169,16 +164,17 @@ def make_dag(trees, sequences, counts):
     if counts is not None:
         sequence_abundance = {
             sequence: (counts[seqid] if seqid in counts else 0)
-            for sequence, seqid in namedict.items()
+            for seqid, sequence in sequences.items()
         }
         historydag.dag.add_abundances(dag, sequence_abundance)
     # name disambiguated sequences
-    n_max = max([int(name) for name in namedict.values() if name.isdigit()])
+    n_max = max([int(name) for name in sequences.keys() if name.isdigit()])
+    namedict = {sequence: name for name, sequence in sequences.items()}
     for node in historydag.dag.postorder(dag):
         if node.label not in namedict:
             n_max += 1
-            namedict[node.label] = str(n_max)
-    dag.seqidnamedict = namedict
+            sequences[str(n_max)] = node.label
+    dag.seqiddict = sequences
     return dag
 
 

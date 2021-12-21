@@ -183,6 +183,12 @@ def infer(args):
         }
         # Begin inference
         dag = pp.make_dag(trees, sequences, counts)
+        sequences = dag.seqiddict
+        # Accommodate case where root sequence is sampled
+        namedict = {sequence: name for name, sequence in sequences.items() if name != args.root}
+        if validation_stats['root_seq'] not in namedict:
+            namedict[validation_stats['root_seq']] = args.root
+
         if i > 0:
             if args.verbose:
                 print(f"bootstrap sample {i}")
@@ -204,7 +210,6 @@ def infer(args):
         # fit p and q using all trees
         p, q = bp.fit_branching_process(dag, verbose=args.verbose, marginal=True)
 
-        namedict = dag.seqidnamedict
 
         if args.isotype_mapfile:
             with open(args.isotype_mapfile, "r") as fh:
@@ -228,7 +233,7 @@ def infer(args):
         else:
             newidmap = {}
 
-        # Also want a log file of the same format as the printed verbose
+        # Query the DAG to construct log file of the same format as the printed verbose
         # output, containing likelihoods and alleles for all trees in the DAG,
         # and isotype parsimony score if possible.
         def edge_weight_func(n1, n2):
