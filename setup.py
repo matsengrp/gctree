@@ -35,5 +35,7 @@ setuptools.setup(
         "pandas",
         "scipy",
         "seaborn",
+        "historydag"
     ],
+    dependency_links=['https://github.com/matsengrp/historydag/archive/afc71f76d541430793975e0c982675ac23ea8b20.zip#egg=historydag-0.1']
 )

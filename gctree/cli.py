@@ -6,6 +6,8 @@ import gctree.mutation_model as mm
 import gctree.utils as utils
 import gctree.isotyping as itp
 
+
+import historydag as hdag
 import argparse
 import pandas as pd
 import numpy as np
@@ -170,24 +172,27 @@ def infer(args):
         # we'll store the mle gctrees here for computing support later
         gctrees = []
 
-    for i, (trees, sequences, counts) in enumerate(outfiles):
+    if args.priority_weights:
+        priority_weights = str(args.priority_weights).split(",")
+        priority_weights = [float(weight) for weight in priority_weights]
+    else:
+        priority_weights = None
+
+    for i, (trees, sequence_counts) in enumerate(outfiles):
         # Collect stats for validation, in clade_tree_to_ctree method
         model_tree = pp.disambiguate(trees[0].copy())
+        counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
         validation_stats = {
+            "counts": counts,
+            "root": args.root,
             "parsimony_score": sum([node.dist for node in model_tree.traverse()]),
             "root_seq": model_tree.sequence,
-            "leaf_seqs": {node.sequence for node in model_tree.get_leaves()},
-            "leaf_names": {
-                node.name: node.sequence for node in model_tree.get_leaves()
+            "leaf_seqs": {
+                node.sequence: node.name for node in model_tree.get_leaves()
             },
         }
         # Begin inference
-        dag = pp.make_dag(trees, sequences, counts)
-        sequences = dag.seqiddict
-        # Accommodate case where root sequence is sampled
-        namedict = {sequence: name for name, sequence in sequences.items() if name != args.root}
-        if validation_stats['root_seq'] not in namedict:
-            namedict[validation_stats['root_seq']] = args.root
+        dag = pp.make_dag(trees, sequence_counts=sequence_counts)
 
         if i > 0:
             if args.verbose:
@@ -203,6 +208,7 @@ def infer(args):
 
         if args.verbose:
             print("number of trees with integer branch lengths:", n_trees)
+            print("number of unique collapsed topologies, ignoring inferred ancestral sequences:", dag.count_topologies(collapse_leaves=True))
 
         with open(outbase + f".out.serialized_dag_{i}.p", "wb") as fh:
             fh.write(dag.serialize())
@@ -210,141 +216,123 @@ def infer(args):
         # fit p and q using all trees
         p, q = bp.fit_branching_process(dag, verbose=args.verbose, marginal=True)
 
-
-        if args.isotype_mapfile:
-            with open(args.isotype_mapfile, "r") as fh:
-                isotypemap = dict(
-                    map(lambda x: x.strip(), line.split(",")) for line in fh
-                )
-
-            with open(args.idmapfile, "r") as fh:
-                idmap = {}
-                for line in fh:
-                    seqid, cell_ids = line.rstrip().split(",")
-                    cell_idset = {cell_id for cell_id in cell_ids.split(":") if cell_id}
-                    if len(cell_idset) > 0:
-                        idmap[seqid] = cell_idset
-            newidmap = itp.explode_idmap(idmap, isotypemap)
-            if args.isotype_names:
-                isotype_names = str(args.isotype_names).split(",")
-            else:
-                isotype_names = itp.default_order
-            newisotype = itp.IsotypeTemplate(isotype_names, weight_matrix=None).new
-        else:
-            newidmap = {}
-
         # Query the DAG to construct log file of the same format as the printed verbose
         # output, containing likelihoods and alleles for all trees in the DAG,
         # and isotype parsimony score if possible.
-        def edge_weight_func(n1, n2):
-            """The _ll_genotype weight of the target node, unless it should be collapsed, then 0"""
-            if n2.is_leaf() and n2.label == n1.label:
-                return 0.0
-            else:
-                m = len(n2.clades)
-                # Check if this edge should be collapsed, and reduce mutant descendants
-                if frozenset({n2.label}) in n2.clades:
-                    m -= 1
-                return bp.CollapsedTree._ll_genotype(n2.abundance, m, p, q)[0]
 
-        def distance_func(n1, n2):
-            if n2.is_leaf():
-                seqid = namedict[n2.label]
-                if seqid in newidmap:
-                    isoset = frozenset(
-                        newisotype(name) for name in newidmap[namedict[n2.label]].keys()
-                    )
-                else:
-                    isoset = frozenset()
-            else:
-                isoset = frozenset()
-            return (edge_weight_func(n1, n2), n1.label != n2.label, 0, isoset)
-
-        def sumweights(weights):
-            ps = [i[2] for i in weights]
-            ts = [item for i in weights for item in i[3]]
-            if ts:
-                newt = frozenset({min(ts)})
-            else:
-                newt = frozenset()
-            return (
-                sum(weight[0] for weight in weights),
-                sum(weight[1] for weight in weights),
-                sum(itp.isotype_distance(list(newt)[0], el) for el in ts) + sum(ps),
-                newt,
+        placeholder_dagfuncs = hdag.utils.AddFuncDict({"start_func": lambda n: 0, "edge_weight_func": lambda n1, n2: 0, "accum_func": sum}, names="PlaceholderWeight")
+        topology_dagfuncs = hdag.utils.make_newickcountfuncs(internal_labels=False, collapse_leaves=True)
+        if args.isotype_mapfile and args.idmapfile:
+            if args.verbose:
+                print("Isotype parsimony will be used as a ranking criterion")
+            isotype_dagfuncs = itp.isotype_dagfuncs(
+                isotypemap_file=args.isotype_mapfile,
+                idmap_file=args.idmapfile,
+                isotype_names=args.isotype_names,
             )
-
-        dag_ls = list(
-            dag.get_weight_counts(
-                start_val=(0, 0, 0, frozenset()),
-                distance_func=distance_func,
-                addfunc=sumweights,
-            ).elements()
+        else:
+            isotype_dagfuncs = placeholder_dagfuncs
+        cmcount_dagfuncs = bp.cmcounter_dagfuncs()
+        ll_dagfuncs = bp.ll_cmcount_dagfuncs(p, q)
+        if args.mutability and args.substitution:
+            if args.verbose:
+                print("Mutation model parsimony will be used as a ranking criterion")
+            mutability_dagfuncs = mm.make_mutability_dagfuncs(mutability_file=args.mutability, substitution_file=args.substitution)
+        else:
+            mutability_dagfuncs = placeholder_dagfuncs
+        allele_dagfuncs = hdag.utils.AddFuncDict(
+            {
+                "start_func": lambda n: 0,
+                "edge_weight_func": lambda n1, n2: n1.label != n2.label,
+                "accum_func": sum,
+            },
+            names="NodeCount",
         )
-        dag_ls.sort(key=lambda l: -l[0])
+
+
+        if priority_weights:
+            # a vector of relative weights, for ll, isotype pars, mutability_pars, alleles
+            # This is possible because all weights are additive up the tree,
+            # and the transformations are strictly increasing/decreasing.
+            kwargls = [ll_dagfuncs, isotype_dagfuncs, mutability_dagfuncs, allele_dagfuncs]
+            minmaxls = [(dag.optimal_weight_annotate(**kwargs, optimal_func=min),
+                         dag.optimal_weight_annotate(**kwargs, optimal_func=max))
+                        for kwargs in kwargls]
+            minmaxls = [(mn, mx) if isinstance(kwargs.names, str) else (mn[0], mx[0])
+                        for (mn, mx), kwargs in zip(minmaxls, kwargls)]
+            def transformation(mn, mx):
+                if mx - mn < 0.0001:
+                    def func(n):
+                        return n - mn
+                else:
+                    def func(n):
+                        return (n - mn) / (mx - mn)
+                return func
+
+            transformations = [transformation(*minmax) for minmax in minmaxls]
+            # switch first transformation so that we maximize ls, not minimize:
+            f = transformations[0]
+            transformations[0] = lambda n: -f(n) + 1
+            def minfunckey(weighttuple):
+                ll, _, isotypepars, _, mutabilitypars, alleles = weighttuple
+                weightlist = [ll, isotypepars, mutabilitypars, alleles]
+                return sum([priority * transform(weight) for priority, transform, weight in zip(priority_weights, transformations, weightlist)])
+        else:
+            def minfunckey(weighttuple):
+                ll, _, isotypepars, _, mutabilitypars, alleles = weighttuple
+                weightlist = [ll, isotypepars, mutabilitypars, alleles]
+                # Sort output by likelihood, then isotype parsimony, then mutability score
+                return (-ll, isotypepars, mutabilitypars)
+
+        dagweight_kwargs = (
+            ll_dagfuncs +
+            isotype_dagfuncs +
+            mutability_dagfuncs +
+            allele_dagfuncs
+        )
+        dag_ls = list(
+            dag.weight_count(**dagweight_kwargs).elements()
+        )
+        # To clear _dp_data fields of their large cargo
+        dag.optimal_weight_annotate(**placeholder_dagfuncs)
+        dag_ls.sort(key=minfunckey)
 
         with open(outbase + ".dag_summary.log", "w") as fh:
             fh.write(f"Parameters: {(p, q)}\n")
-            fh.write("tree\talleles\tlogLikelihood\tisotype_parsimony\n")
-            for j, (l, alleles, isotypepars, _) in enumerate(dag_ls, 1):
-                fh.write(f"{j}\t{alleles}\t{l}\t{isotypepars}\n")
-
-        dag_l = [l for l, _, _, _ in dag_ls]
-
-        # Now make ctrees, cforest, and render (possibly just some of) the
-        # trees
-        if n_trees > 100:
-            if args.verbose:
-                print(
-                    f"History DAG contains more than 100 trees. "
-                    "Rendering only trees with highest branching process likelihood."
-                )
-
-            def edge_weight_func(n1, n2):
-                """The _ll_genotype weight of the target node, unless it should be collapsed, then 0"""
-                if n2.is_leaf() and n2.label == n1.label:
-                    return 0.0
+            fh.write("tree\talleles\tlogLikelihood\t\tisotype_parsimony\tmutability_parsimony"
+                     + ("\ttree score" if priority_weights else "") + "\n")
+            for j, (l, _, isotypepars, _, mutabilitypars, alleles) in enumerate(dag_ls, 1):
+                if priority_weights:
+                    treescore = str(minfunckey((l, 0, isotypepars, 0, mutabilitypars, alleles)))
                 else:
-                    m = len(n2.clades)
-                    # Check if this edge should be collapsed, and reduce mutant descendants
-                    if frozenset({n2.label}) in n2.clades:
-                        m -= 1
-                    return bp.CollapsedTree._ll_genotype(n2.abundance, m, p, q)[0]
+                    treescore = ''
+                fh.write(f"{j}\t{alleles}\t{l}\t{isotypepars}\t\t\t{mutabilitypars}\t{treescore}\n")
 
-            dag.trim_optimal_weight(edge_weight_func=edge_weight_func, optimal_func=max)
+        # For use in later plots
+        dag_l = [ls[0] for ls in dag_ls]
 
-        if dag.count_trees() > 100:
-            if args.verbose:
-                print(
-                    "Trimmed history DAG still contains more than 100 trees. "
-                    "Rendering only trees with minimum alleles."
-                )
-            dag.trim_optimal_weight(
-                edge_weight_func=lambda n1, n2: n1.label != n2.label, optimal_func=min
-            )
-
-        if dag.count_trees() > 100:
-            if args.verbose:
-                print(
-                    "Trimmed history DAG still contains more than 100 trees. "
-                    "10 trees will be sampled randomly (with replacement) for rendering."
-                )
-            # TODO verify this produces reproducible samples
-            random.seed(n_trees)
-            dag.make_uniform()
-            ctrees = [
-                bp.clade_tree_to_ctree(
-                    dag.sample(), namedict, counts, root=args.root, **validation_stats
-                )
-                for _ in range(10)
-            ]
-        else:
-            ctrees = [
-                bp.clade_tree_to_ctree(
-                    tree, namedict, counts, root=args.root, **validation_stats
-                )
-                for tree in dag.get_trees()
-            ]
+        # Filter by likelihood, isotype parsimony, mutability,
+        # and make ctrees, cforest, and render trees
+        dag.trim_optimal_weight(**dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey))
+        ctopologies = list(dag.weight_count(**topology_dagfuncs).items())
+        # Render most represented topologies first
+        random.seed(n_trees)
+        random.shuffle(ctopologies)
+        ctopologies.sort(key=lambda t: -t[1])
+        if args.verbose:
+            print(f"Trimmed history DAG contains {len(ctopologies)} unique collapsed topologies.")
+            if len(ctopologies) > 10:
+                print(f"A representative from each of the ten most abundant topologies will be sampled randomly for rendering.")
+        ctrees = []
+        ctreedata = []
+        for index, (ctopology, count) in zip(range(10), ctopologies):
+            tdag = dag.copy()
+            tdag.trim_topology(ctopology, collapse_leaves=True)
+            tdag.make_uniform()
+            cladetree = tdag.sample()
+            ctreeinfo = cladetree.optimal_weight_annotate(**dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey))
+            ctreedata.append(ctreeinfo + (minfunckey(ctreeinfo),))
+            ctrees.append(bp.clade_tree_to_ctree(tdag.sample(), **validation_stats))
 
         parsimony_forest = bp.CollapsedForest(forest=ctrees)
 
@@ -354,11 +342,7 @@ def infer(args):
         if i > 0:
             df.loc[i - 1] = p, q
 
-        # get likelihoods and sort by them
         ls = [tree.ll(p, q)[0] for tree in parsimony_forest.forest]
-        ls, parsimony_forest.forest = zip(
-            *sorted(zip(ls, parsimony_forest.forest), key=lambda x: x[0], reverse=True)
-        )
 
         if bootstrap:
             gctrees.append(parsimony_forest.forest[0])
@@ -396,11 +380,11 @@ def infer(args):
             position_map2 = None
 
         if args.verbose:
-            print("tree\talleles\tlogLikelihood")
-        for j, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
+            print("tree\talleles\tlogLikelihood\t\tisotype_parsimony\tmutability_parsimony" + ("\ttreescore" if priority_weights else ''))
+        for j, (l, collapsed_tree, (l, _, isotypepars, _, mutabilitypars, alleles, score))  in enumerate(zip(ls, parsimony_forest.forest, ctreedata), 1):
             alleles = sum(1 for _ in collapsed_tree.tree.traverse())
             if args.verbose:
-                print(f"{j}\t{alleles}\t{l}")
+                print(f"{j}\t{alleles}\t{l}\t{isotypepars}\t\t\t{mutabilitypars}\t" + (str(score) if priority_weights else ''))
             collapsed_tree.render(
                 f"{outbase}.inference.{j}.svg",
                 idlabel=args.idlabel,
@@ -782,6 +766,28 @@ def get_parser():
         default=None,
         help="A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated."
         """ Default is equivalent to providing the argument ``--isotype_names IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2``""",
+    )
+    parser_infer.add_argument(
+        "--mutability",
+        type=str,
+        default=None,
+        help=("Path to mutability model file. If --mutability and --substitution are both provided, "
+              "they will be used to rank trees after likelihood and isotype parsimony.")
+    )
+    parser_infer.add_argument(
+        "--substitution",
+        type=str,
+        default=None,
+        help=("Path to substitution model file. If --mutability and --substitution are both provided, "
+              "they will be used to rank trees after likelihood and isotype parsimony.")
+    )
+    parser_infer.add_argument(
+        "--priority_weights",
+        type=str,
+        default=None,
+        help=("List of weights to assign tree traits when ranking trees. "
+              "Weights are in order likelihood, isotype parsimony, mutation model parsimony, number of alleles "
+              "If not provided, trees will be ranked hierarchically by traits in that order.")
     )
 
     # parser for simulation subprogram

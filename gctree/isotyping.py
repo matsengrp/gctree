@@ -1,13 +1,15 @@
 r"""A module for incorporating isotype information in gctree inference."""
 
+from gctree.utils import hamming_distance
+from historydag.utils import AddFuncDict
+
 import random
 import ete3
-from gctree.utils import hamming_distance
 import warnings
 from typing import Dict, Callable, Optional, Set, Sequence
 from functools import wraps
 
-default_order = ["IgM", "IgG3", "IgG1", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
+default_isotype_order = ["IgM", "IgG3", "IgG1", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
 
 
 def _assert_switching_order_match(
@@ -182,7 +184,7 @@ def isotype_tree(
 
     Args:
         tree: ete3 Tree
-        newidmap: mapping of sequence IDs to isotypes, such as that output by :meth:`explode_idmap`.
+        newidmap: mapping of sequence IDs to isotypes, such as that output by :meth:`utils.explode_idmap`.
         isotype_names: list or other sequence of isotype names observed, in correct switching order.
 
     Returns:
@@ -194,7 +196,7 @@ def isotype_tree(
     _disambiguate_isotype(tree)
     _collapse_tree_by_sequence_and_isotype(tree)
     for node in tree.traverse():
-        node.name = node.name + " " + str(node.isotype)
+        node.name = str(node.name) + " " + str(node.isotype)
     for node in tree.iter_descendants():
         node.dist = hamming_distance(node.up.sequence, node.sequence)
     return tree
@@ -275,43 +277,6 @@ def _disambiguate_isotype(
             pass
 
 
-def explode_idmap(
-    idmap: Dict[str, Set[str]], isotype_map: Dict[str, str]
-) -> Dict[str, Dict[str, Set[str]]]:
-    """Uses provided mapping of original sequence IDs to observed isotypes to
-    'explode' the provided mapping of unique sequence IDs to original sequence
-    IDs.
-
-    Args:
-        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
-        isotype_map: A dictionary mapping original IDs to observed isotype names
-
-    Returns:
-        A dictionary mapping unique sequence IDs to dictionaries, mapping isotype names to sets of original sequence IDs.
-    """
-    newidmap = {}
-    for id, cell_ids in idmap.items():
-        isotypeset = set()
-        for cell_id in cell_ids:
-            try:
-                isotypeset.add(isotype_map[cell_id])
-            except KeyError:
-                warnings.warn(
-                    f"Sequence ID {id} has original sequence id {cell_id} "
-                    "for which no observed isotype was provided. "
-                    "Isotype will be assumed ambiguous if observed."
-                )
-                isotype_map[cell_id] = "?"
-                isotypeset.add("?")
-        newidmap[id] = {
-            isotype: {
-                cell_id for cell_id in cell_ids if isotype_map[cell_id] == isotype
-            }
-            for isotype in isotypeset
-        }
-    return newidmap
-
-
 def _add_observed_isotypes(
     tree: ete3.Tree,
     newidmap: Dict[str, str],
@@ -377,3 +342,105 @@ def _collapse_tree_by_sequence_and_isotype(tree: ete3.TreeNode):
             node.up.abundance += node.abundance
             node.up.name = node.name
             node.delete(prevent_nondicotomic=False)
+
+def isotype_dagfuncs(
+    isotypemap=None,
+    isotypemap_file=None,
+    idmap=None,
+    idmap_file=None,
+    isotype_names=None,
+):
+    """Returns a historydag.utils.AddFuncDict which contains functions necessary for filtering
+    by isotype parsimony score. These functions return weights which are a tuple containing
+    a progressive isotype score, and a frozenset containing isotypes used internally to compute
+    isotype scores."""
+    if isotypemap_file and isotypemap is None:
+        with open(isotypemap_file, "r") as fh:
+            isotypemap = dict(map(lambda x: x.strip(), line.split(",")) for line in fh)
+    elif isotypemap_file is None:
+        raise TypeError("Either isotypemap or isotypemap_file is required")
+
+    if idmap_file and idmap is None:
+        with open(idmap_file, "r") as fh:
+            idmap = {}
+            for line in fh:
+                seqid, cell_ids = line.rstrip().split(",")
+                cell_idset = {cell_id for cell_id in cell_ids.split(":") if cell_id}
+                if len(cell_idset) > 0:
+                    idmap[seqid] = cell_idset
+        newidmap = explode_idmap(idmap, isotypemap)
+        if isotype_names:
+            isotype_names = str(isotype_names).split(",")
+        else:
+            isotype_names = default_isotype_order
+        newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
+    elif idmap is None:
+        raise TypeError("Either idmap or idmap_file is required")
+
+    def distance_func(n1, n2):
+        if n2.is_leaf():
+            seqid = n2.attr['name']
+            if seqid in newidmap:
+                isoset = frozenset(
+                    newisotype(name) for name in newidmap[seqid].keys()
+                )
+            else:
+                isoset = frozenset()
+        else:
+            isoset = frozenset()
+        return (0, isoset)
+
+    def sumweights(weights):
+        ps = [i[0] for i in weights]
+        ts = [item for i in weights for item in i[1]]
+        if ts:
+            newt = frozenset({min(ts)})
+        else:
+            newt = frozenset()
+        return (sum(isotype_distance(list(newt)[0], el) for el in ts) + sum(ps), newt)
+
+    return AddFuncDict(
+        {
+            "start_func": lambda n: (0, frozenset()),
+            "edge_weight_func": distance_func,
+            "accum_func": sumweights,
+        },
+        names=("IsotypeParsimony", "Isotype_state")
+    )
+
+
+def explode_idmap(
+    idmap: Dict[str, Set[str]], isotype_map: Dict[str, str]
+) -> Dict[str, Dict[str, Set[str]]]:
+    """Uses provided mapping of original sequence IDs to observed isotypes to
+    'explode' the provided mapping of unique sequence IDs to original sequence
+    IDs.
+
+    Args:
+        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
+        isotype_map: A dictionary mapping original IDs to observed isotype names
+
+    Returns:
+        A dictionary mapping unique sequence IDs to dictionaries, mapping isotype names to sets of original sequence IDs.
+    """
+    newidmap = {}
+    for id, cell_ids in idmap.items():
+        isotypeset = set()
+        for cell_id in cell_ids:
+            try:
+                isotypeset.add(isotype_map[cell_id])
+            except KeyError:
+                warnings.warn(
+                    f"Sequence ID {id} has original sequence id {cell_id} "
+                    "for which no observed isotype was provided. "
+                    "Isotype will be assumed ambiguous if observed."
+                )
+                isotype_map[cell_id] = "?"
+                isotypeset.add("?")
+        newidmap[id] = {
+            isotype: {
+                cell_id for cell_id in cell_ids if isotype_map[cell_id] == isotype
+            }
+            for isotype in isotypeset
+        }
+    return newidmap

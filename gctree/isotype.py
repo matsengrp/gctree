@@ -146,7 +146,7 @@ def main(arg_list=None):
         for idx, ctree in enumerate(forest.forest)
     ]
     if not args.isotype_names:
-        isotype_names = ["IgM", "IgG3", "IgG1", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
+        isotype_names = isotyping.default_order
     else:
         isotype_names = str(args.isotype_names).split(",")
 

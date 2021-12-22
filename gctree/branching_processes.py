@@ -23,6 +23,9 @@ from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 import pickle
 from functools import lru_cache
 from typing import Tuple, Dict, List, Union, Set, Callable
+from collections import Counter
+import historydag as hdag
+from multiset import FrozenMultiset
 
 np.seterr(all="raise")
 
@@ -35,21 +38,24 @@ class CollapsedTree:
         tree: :class:`ete3.TreeNode` object with ``abundance`` node features
 
     Args:
-        tree: ete3 tree with ``abundance`` node features. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves, and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
         allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.
     """
 
     def __init__(self, tree: ete3.TreeNode = None, allow_repeats: bool = False):
         if tree is not None:
             self.tree = tree.copy()
+            self.tree.dist = 0
+
             # remove unobserved internal unifurcations
             for node in self.tree.iter_descendants():
                 parent = node.up
                 if node.abundance == 0 and len(node.children) == 1:
                     node.delete(prevent_nondicotomic=False)
-                    node.children[0].dist = hamming_distance(
-                        node.children[0].sequence, parent.sequence
-                    )
+
+            # ensure distances are correct before collapse
+            for node in self.tree.iter_descendants():
+                node.dist = hamming_distance(node.sequence, node.up.sequence)
 
             # iterate over the tree below root and collapse edges of zero
             # length if the node is a leaf and it's parent has nonzero
@@ -59,7 +65,8 @@ class CollapsedTree:
             observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy="postorder"):
                 if node.dist == 0:
-                    node.up.abundance += node.abundance
+                    # See note in docsrc/implementation_details/notes.rst for discussion
+                    node.up.abundance = max(node.abundance, node.up.abundance)
                     if isinstance(node.name, str):
                         node_set = set([node.name])
                     else:
@@ -94,9 +101,6 @@ class CollapsedTree:
                     "symmetric diff: "
                     f"{observed_genotypes ^ final_observed_genotypes}"
                 )
-            assert sum(node.abundance for node in tree.traverse()) == sum(
-                node.abundance for node in self.tree.traverse()
-            )
 
             rep_seq = sum(node.abundance > 0 for node in self.tree.traverse()) - len(
                 set(
@@ -139,10 +143,16 @@ class CollapsedTree:
                 # sort children of this node based on partion and sequence
                 node.children.sort(key=lambda node: (node.partition, node.sequence))
 
-            # create list of (c, m) for each node
-            self._cm_list = [
-                (node.abundance, len(node.children)) for node in self.tree.traverse()
-            ]
+            # create tuple (c, m) for each node, and store in a tuple of
+            # ((c, m), n)'s, where n is the multiplicity of (c, m) seen in the tree.
+            self._cm_counts = tuple(
+                Counter(
+                    [
+                        (node.abundance, len(node.children))
+                        for node in self.tree.traverse()
+                    ]
+                ).items()
+            )
             # store max c and m
             self._c_max = max(node.abundance for node in self.tree.traverse())
             self._m_max = max(len(node.children) for node in self.tree.traverse())
@@ -289,7 +299,7 @@ class CollapsedTree:
                 CollapsedTree._ll_genotype(c, m, p, q)
 
     def ll(
-        self, p: np.float64, q: np.float64, build_cache: bool = True
+        self, p: np.float64, q: np.float64, build_cache: bool = False
     ) -> Tuple[np.float64, np.ndarray]:
         r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.
 
@@ -306,10 +316,9 @@ class CollapsedTree:
         """
         if self.tree is None:
             raise ValueError("tree data must be defined to compute likelihood")
-        # TODO figure out build_cache logic, and move this to lltree
         if build_cache:
             self._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
-        return lltree(self._cm_list, p, q)
+        return lltree(self._cm_counts, p, q)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
         r"""Maximum likelihood estimate of :math:`(p, q)`.
@@ -348,9 +357,14 @@ class CollapsedTree:
 
         if root:
             # create list of (c, m) for each node
-            self._cm_list = [
-                (node.abundance, len(node.children)) for node in self.tree.traverse()
-            ]
+            self._cm_counts = tuple(
+                Counter(
+                    [
+                        (node.abundance, len(node.children))
+                        for node in self.tree.traverse()
+                    ]
+                ).items()
+            )
             # store max c and m
             self._c_max = max(node.abundance for node in self.tree.traverse())
             self._m_max = max(len(node.children) for node in self.tree.traverse())
@@ -823,9 +837,12 @@ class CollapsedForest:
         if self.forest is None:
             raise ValueError("forest data must be defined to compute likelihood")
         CollapsedTree._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
-        # we don't want to build the cache again in each tree
-        terms = [tree._cm_list for tree in self.forest]
-        return llforest(terms, p, q, marginal=marginal)
+        # This doesn't take full advantage of storing tree genotype
+        # multiplicities. Two trees with same cm multiplicities could have them
+        # ordered differently in _cm_counts tuple. Easy fix would require
+        # frozenmultiset import.
+        cm_countlist = tuple(Counter([tree._cm_counts for tree in self.forest]).items())
+        return llforest(cm_countlist, p, q, marginal=marginal)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
         return _mle_helper(self.ll, **kwargs)
@@ -870,17 +887,20 @@ def _mle_helper(
     return result.x[0], result.x[1]
 
 
-def lltree(cm_list, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndarray]:
-    r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.
+def lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndarray]:
+    r"""Log likelihood of branching process parameters :math:`(p, q)`
     .. math::
         \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)
     Args:
+        cm_counts: an iterable containing tuples `((c, m), n)` where `n` is the number of nodes
+            in the tree with abundance `c` and `m` mutant clades
         p: branching probability
         q: mutation probability
-        build_cache: build cache from the bottom up. Normally this should be left to its default ``True``.
     Returns:
         Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
     """
+    count_ls = [n for cm, n in cm_counts]
+    cm_list = [cm for cm, n in cm_counts]
     if (
         cm_list[0][0] == 0
         and cm_list[0][1] == 1
@@ -888,21 +908,28 @@ def lltree(cm_list, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndarra
     ):
         # if unifurcation not possible under current model, add a
         # psuedocount for the root
-        cm_list[0] = (1, cm_list[0][1])
+        cm_list[0] = (1, 1)
     # extract vector of function values and gradient components
     logf_data = [CollapsedTree._ll_genotype(c, m, p, q) for c, m in cm_list]
-    logf = np.array([[x[0]] for x in logf_data]).sum()
-    grad_ll_genotype = np.array([x[1] for x in logf_data]).sum(axis=0)
+    logf = np.array([[x[0] * count_ls[i]] for i, x in enumerate(logf_data)]).sum()
+    grad_ll_genotype = np.array(
+        [x[1] * count_ls[i] for i, x in enumerate(logf_data)]
+    ).sum(axis=0)
     return logf, grad_ll_genotype
 
 
 def llforest(
-    cm_list_list,
+    cm_countlist,
     p: np.float64,
     q: np.float64,
     marginal: bool = False,
 ) -> Tuple[np.float64, np.ndarray]:
-    r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topologies :math:`T_1, \dots, T_n` and corresponding genotype abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees in the forest.
+    r"""Log likelihood of branching process parameters :math:`(p, q)` given `cm_countlist`, an iterable
+    containing tuples `(cm_counts, mult)`, where `cm_counts` is an iterable describing a tree, and `mult`
+    is the number of trees in the forest which can be described with the iterable `cm_counts`.
+
+    `cm_counts` is in the format expected as an argument to :meth:`lltree`.
+
     If ``marginal=False`` (the default), compute the joint log likelihood
     .. math::
         \ell(p, q; T, A) = \sum_{i=1}^n\log\mathbb{P}(T_i, A_i \mid p, q),
@@ -916,15 +943,11 @@ def llforest(
     Returns:
         Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
     """
-    # Need to fix this inefficiency TODO don't want to do this in each call of
-    # llforest.
-    c_max = max([t[0] for sublist in cm_list_list for t in sublist])
-    m_max = max([t[1] for sublist in cm_list_list for t in sublist])
-    CollapsedTree._build_ll_genotype_cache(c_max, m_max, p, q)
-
-    terms = [lltree(cm_list, p, q) for cm_list in cm_list_list]
-    ls = np.array([term[0] for term in terms])
-    grad_ls = np.array([term[1] for term in terms])
+    terms = [[lltree(cmcounts, p, q), count] for cmcounts, count in cm_countlist]
+    ls = np.array([term[0][0] for term in terms])
+    grad_ls = np.array([term[0][1] for term in terms])
+    # This can be done ahead of time
+    count_ls = np.array([term[1] for term in terms])
     if marginal:
         # we need to find the smallest derivative component for each
         # coordinate, then subtract off to get positive things to logsumexp
@@ -934,26 +957,41 @@ def llforest(
             grad_l.append(
                 grad_ls[i_prime, j]
                 + np.exp(
-                    logsumexp(ls - ls[i_prime], b=grad_ls[:, j] - grad_ls[i_prime, j])
-                    - logsumexp(ls - ls[i_prime])
+                    logsumexp(
+                        ls - ls[i_prime],
+                        b=(grad_ls[:, j] - grad_ls[i_prime, j]) * count_ls,
+                    )
+                    - logsumexp(ls - ls[i_prime], b=count_ls)
                 )
             )
-        return (-np.log(len(ls)) + logsumexp(ls)), np.array(grad_l)
+        return (-np.log(count_ls.sum()) + logsumexp(ls, b=count_ls)), np.array(grad_l)
     else:
-        return ls.sum(), grad_ls.sum(axis=0)
+        return (ls * count_ls).sum(), np.array(
+            [(grad_ls[:, 0] * count_ls).sum(), (grad_ls[:, 1] * count_ls).sum()]
+        )
 
 
 def fit_branching_process(dag, verbose=True, marginal=True):
     r"""fit p and q using all trees in the dag. DAG should be abundance_annotated, like that output by phylip_parse.
     if we get floating point errors, try a few more times
     (starting params aren't random right now, but they could be in the future?)"""
-    cmcounters = dag.cmcounters()
-    cmlist = [[cm for cm in list(mset)] for mset in list(cmcounters.elements())]
+    cmcount_dagfuncs = cmcounter_dagfuncs()
+    cmcounters = dag.weight_count(**cmcount_dagfuncs)
+    def to_tuple(mset):
+        # lltree checks first item in list for unobserved root unifurcation,
+        # but here it could end up not being first.
+        if (0, 1) in mset:
+            assert mset[(0, 1)] == 1
+            mset = mset - {(0, 1)} + {(1, 1)}
+        return tuple(mset.items())
+    cmcountlist = [(to_tuple(mset), mult) for mset, mult in cmcounters.items()]
 
     max_tries = 10
     for tries in range(max_tries):
         try:
-            p, q = _mle_helper(lambda p, q: llforest(cmlist, p, q, marginal=marginal))
+            p, q = _mle_helper(
+                lambda p, q: llforest(cmcountlist, p, q, marginal=marginal)
+            )
             break
         except FloatingPointError as e:
             if tries + 1 < max_tries and verbose:
@@ -971,56 +1009,158 @@ def fit_branching_process(dag, verbose=True, marginal=True):
 
 def clade_tree_to_ctree(
     clade_tree,
-    namedict,
-    counts,
-    root="naive",
+    root=None,
+    counts=None,
     parsimony_score=None,
     root_seq=None,
     leaf_seqs=None,
-    leaf_names=None,
 ):
-    etetree = clade_tree.to_ete(namedict=namedict)
-    etetree.name = root
-    etetree.dist = 0
-    for node in etetree.traverse():
-        if not node.is_root():
-            node.dist = hamming_distance(node.sequence, node.up.sequence)
-        # Can only add nonzero abundance to leaves, because
-        # CollapsedTree init adds abundances when collapsing
-        # adjacent nodes with same sequence
-        if node.name in counts and node.is_leaf():
-            node.add_feature("abundance", counts[node.name])
-        else:
-            node.add_feature("abundance", 0)
+    etetree = clade_tree.to_ete(name_func=lambda n: n.attr['name'],
+                                features=['sequence'],
+                                feature_funcs={'abundance': lambda n: n.attr['abundance']})
 
+    ctree = CollapsedTree(etetree)
     # Here can do some validation on the tree:
+    # root name:
+    if root is not None:
+        if root not in ctree.tree.name:
+            raise RuntimeError(f"collapsed tree should have root name '{root}' but has instead {ctree.tree.name}")
+    # counts:
+    if counts is not None:
+        for node in etetree.iter_leaves():
+            if node.name:
+                assert counts[node.name] == node.abundance
+        for node in ctree.tree.traverse():
+            if isinstance(node.name, tuple):
+                for name in node.name:
+                    if name in counts:
+                        assert node.abundance == counts[name]
+            else:
+                if node.name in counts:
+                    assert counts[node.name] == node.abundance
+                else:
+                    assert node.abundance == 0
+
     # unnamed_seq issue:
-    for node in etetree.traverse():
+    for node in ctree.tree.traverse():
         if node.name == "unnamed_seq":
-            raise RuntimeError("Some sequence names were not provided in 'namedict'")
+            raise RuntimeError("Some node names are missing")
+
     # Parsimony:
     if parsimony_score is not None:
-        if parsimony_score != sum([node.dist for node in etetree.traverse()]):
+        if parsimony_score != sum([node.dist for node in ctree.tree.traverse()]):
             raise RuntimeError(
                 "History DAG tree parsimony score does not match parsimony score provided"
             )
     # Root sequence:
     if root_seq is not None:
-        if etetree.sequence != root_seq:
+        if ctree.tree.sequence != root_seq:
             raise RuntimeError(
                 "History DAG root node sequence does not match root sequence provided"
             )
-    # Leaf sequences and number of leaves:
-    if leaf_seqs is not None:
-        if leaf_seqs != {node.sequence for node in etetree.get_leaves()} or len(
-            leaf_seqs
-        ) != len(list(etetree.get_leaves())):
-            raise RuntimeError(
-                "History DAG tree has a different set of leaf sequences than provided"
-            )
     # Leaf names:
-    if leaf_names is not None:
-        for node in etetree.get_leaves():
-            if leaf_names[node.name] != node.sequence:
+    if leaf_seqs is not None:
+        # A dictionary of leaf sequences to leaf names
+        observed_set = {node for node in ctree.tree.iter_descendants() if node.abundance > 0}
+        for node in observed_set:
+            if not node.is_root() and leaf_seqs[node.sequence] != node.name:
                 raise RuntimeError("History DAG tree leaf names don't match sequences")
-    return CollapsedTree(etetree)
+        observed_seqs = {node.sequence for node in observed_set}
+        nonroot_observed_seqs = observed_seqs - {ctree.tree.sequence}
+        nonroot_leaf_seqs = set(leaf_seqs.keys()) - {ctree.tree.sequence}
+        if nonroot_leaf_seqs != nonroot_observed_seqs:
+            raise RuntimeError("Observed nonroot sequences in history DAG tree don't match "
+                               "observed nonroot sequences passed in leaf_seqs.")
+    return ctree
+
+
+def ll_cmcount_dagfuncs(p, q):
+    """A slower but more numerically stable equivalent to ll_genotype_dagfuncs.
+    To use these functions for DAG trimming, use an optimal function like
+    `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too."""
+
+    @lru_cache(maxsize=None)
+    def ll(cmcounter: FrozenMultiset) -> float:
+        if cmcounter:
+            if (0, 1) in cmcounter:
+                cmcounter = cmcounter - {(0, 1)} + {(1, 1)}
+            return lltree(tuple(cmcounter.items()), p, q)[0]
+        else:
+            return 0.0
+
+    def edge_weight_func(n1, n2):
+        if n1.label == n2.label and n2.is_leaf():
+            # Then this is a leaf-adjacent node with nonzero abundance
+            return (0, FrozenMultiset())
+        else:
+            m = len(n2.clades)
+            if frozenset({n2.label}) in n2.clades:
+                m -= 1
+            st = FrozenMultiset([(n2.attr['abundance'], m)])
+            return (ll(st), st)
+
+    def accum_func(cmsetlist: List[Tuple[float, FrozenMultiset]]):
+        st = FrozenMultiset()
+        for _, cmset in cmsetlist:
+            st += cmset
+        return (ll(st), st)
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: (0, FrozenMultiset()),
+            "edge_weight_func": edge_weight_func,
+            "accum_func": accum_func,
+        },
+        names=("LogLikelihood", "cmcounters")
+    )
+
+
+def cmcounter_dagfuncs():
+
+    def edge_weight_func(n1, n2):
+        if n1.label == n2.label and n2.is_leaf():
+            # Then this is a leaf-adjacent node with nonzero abundance
+            return FrozenMultiset()
+        else:
+            m = len(n2.clades)
+            if frozenset({n2.label}) in n2.clades:
+                m -= 1
+            return FrozenMultiset([(n2.attr['abundance'], m)])
+
+    def accum_func(cmsetlist: List[FrozenMultiset]):
+        st = FrozenMultiset()
+        for cmset in cmsetlist:
+            st += cmset
+        return st
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: FrozenMultiset(),
+            "edge_weight_func": edge_weight_func,
+            "accum_func": accum_func,
+        },
+        names="cmcounters"
+    )
+
+
+def ll_genotype_dagfuncs(p, q):
+    """Functions for counting tree log likelihood on the history DAG. Although these
+    functions are fast, for numerical consistency use :meth:`ll_cmcount_dagfuncs` instead."""
+    def edge_weight_ll_genotype(n1, n2):
+        """The _ll_genotype weight of the target node, unless it should be collapsed, then 0.
+        Expects DAG to have abundances added with :meth:`dag.add_abundances`."""
+        if n2.is_leaf() and n2.label == n1.label:
+            return 0.0
+        else:
+            m = len(n2.clades)
+            # Check if this edge should be collapsed, and reduce mutant descendants
+            if frozenset({n2.label}) in n2.clades:
+                m -= 1
+            return CollapsedTree._ll_genotype(n2.attr['abundance'], m, p, q)[0]
+
+    return hdag.utils.AddFuncDict(
+        {"start_func": lambda n: 0,
+         "edge_weight_func": edge_weight_ll_genotype,
+         "accum_func": sum
+         }
+    )
