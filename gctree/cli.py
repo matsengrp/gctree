@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import warnings
 import pickle
 import random
-import scipy.stats
 import ete3
 import itertools
 
@@ -436,7 +435,7 @@ def simulate(args):
             tree = mutation_model.simulate(
                 args.sequence,
                 seq_bounds=seq_bounds,
-                progeny=scipy.stats.poisson(args.lambda_),
+                progeny=lambda seq: args.lambda_,
                 lambda0=args.lambda0,
                 n=args.n,
                 N=args.N,

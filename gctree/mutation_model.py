@@ -2,11 +2,12 @@ r"""Mutation models."""
 
 from ete3 import TreeNode
 import numpy as np
-from scipy.stats import poisson, rv_discrete
+from scipy.stats import poisson
 import random
 import scipy
 from Bio.Seq import Seq
-from typing import Tuple, List
+from gctree.utils import hamming_distance
+from typing import Tuple, List, Callable
 
 
 class MutationModel:
@@ -210,9 +211,10 @@ class MutationModel:
         self,
         sequence: str,
         seq_bounds: Tuple[Tuple[int, int], Tuple[int, int]] = None,
-        progeny: rv_discrete = poisson(0.9),
+        fitness_function: Callable = lambda seq: 0.9,
         lambda0: List[np.float64] = [1],
         frame: int = None,
+        N_init: int = 1,
         N: int = None,
         T: int = None,
         n: int = None,
@@ -223,9 +225,10 @@ class MutationModel:
         Args:
             sequence: root nucleotide sequence
             seq_bounds: ranges for two subsequences used as two parallel genes
-            progeny: offspring distribution
+            fitness_function: mean number offspring as a function of sequence
             lambda0: baseline mutation rate(s)
             frame: coding frame of starting position(s)
+            N_init: initial naive abundnace
             N: maximum population size
             T: maximum generation time
             n: sample size
@@ -246,9 +249,23 @@ class MutationModel:
         tree.add_feature("terminated", False)
         tree.add_feature("abundance", 0)
         tree.add_feature("time", 0)
+        # add fitness attribute, interpreted as mean of offspring distribution
+        tree.add_feature("fitness", fitness_function(tree.sequence))
+
+        if N_init > 1:
+            for _ in range(N_init):
+                child = TreeNode()
+                child.dist = 0
+                child.add_feature("sequence", sequence)
+                child.add_feature("abundance", 0)
+                child.add_feature("terminated", False)
+                child.add_feature("time", 0)
+                # add fitness attribute, interpreted as mean of offspring distribution
+                child.add_feature("fitness", fitness_function(child.sequence))
+                tree.add_child(child)
 
         t = 0  # <-- time
-        leaves_unterminated = 1
+        leaves_unterminated = N_init
         while (
             leaves_unterminated > 0
             and (leaves_unterminated < N if N is not None else True)
@@ -260,8 +277,10 @@ class MutationModel:
             list_of_leaves = list(tree.iter_leaves())
             random.shuffle(list_of_leaves)
             for leaf in list_of_leaves:
+                # add fitness attribute, interpreted as mean of offspring distribution
+                leaf.add_feature("fitness", fitness_function(leaf.sequence))
                 if not leaf.terminated:
-                    n_children = progeny.rvs()
+                    n_children = poisson(leaf.fitness).rvs()
                     leaves_unterminated += (
                         n_children - 1
                     )  # <-- this kills the parent if we drew a zero
@@ -286,9 +305,7 @@ class MutationModel:
                                 leaf.sequence, lambda0=lambda0[0], frame=frame
                             )
                         child = TreeNode()
-                        child.dist = sum(
-                            x != y for x, y in zip(mutated_sequence, leaf.sequence)
-                        )
+                        child.dist = hamming_distance(mutated_sequence, leaf.sequence)
                         child.add_feature("sequence", mutated_sequence)
                         child.add_feature("abundance", 0)
                         child.add_feature("terminated", False)

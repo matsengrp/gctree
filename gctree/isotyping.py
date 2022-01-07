@@ -35,7 +35,8 @@ class IsotypeTemplate:
 
     Args:
         isotype_order: A list or other Sequence of isotype names, in the allowed class switching order
-        weight_matrix: An optional matrix containing transition weights between isotypes. Default weight is 1 for all allowed isotype transitions."""
+        weight_matrix: An optional matrix containing transition weights between isotypes. Default weight is 1 for all allowed isotype transitions.
+    """
 
     def __init__(
         self,
@@ -71,19 +72,22 @@ class IsotypeTemplate:
         self.weight_matrix = weight_matrix
 
     def new(self, isotype_name):
-        """Return an :meth:`Isotype` object with the isotype order and weight matrix provided to this class's constructor."""
+        """Return an :meth:`Isotype` object with the isotype order and weight
+        matrix provided to this class's constructor."""
         return Isotype(self.order, self.weight_matrix, isotype_name)
 
 
 class Isotype:
-    """An isotype, and associated information about class switching order and transition weights.
+    """An isotype, and associated information about class switching order and
+    transition weights.
 
     Attributes:
         order: A list or other sequence of isotype names, in their allowed class switching order
         weight_matrix: Transition weights between isotypes, with first index the original isotype index, and second index the new isotype index.
         isotype: Index of isotype name in ``self.order``
 
-    Objects of this class shall be instantiated using :meth:`IsotypeTemplate.new`."""
+    Objects of this class shall be instantiated using :meth:`IsotypeTemplate.new`.
+    """
 
     # From https://doi.org/10.7554/eLife.16578.012, for humans:
     # order = ["M", "G3", "A1", "G2", "G4", "E", "A2"]

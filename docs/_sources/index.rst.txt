@@ -10,6 +10,7 @@ gctree documentation
   install
   cite
   quickstart
+  rendering-demo
 
 .. toctree::
    :maxdepth: 2
