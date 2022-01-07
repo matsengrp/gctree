@@ -24,6 +24,9 @@ import pickle
 from functools import lru_cache
 from typing import Tuple, Dict, List, Union, Set, Callable
 
+from matplotlib import cm
+from matplotlib.colors import Normalize, to_hex
+
 np.seterr(all="raise")
 
 
@@ -573,6 +576,39 @@ class CollapsedTree:
                 aln, open(os.path.splitext(outfile)[0] + ".fasta", "w"), "fasta"
             )
         return tree_copy.render(outfile, tree_style=ts)
+
+    def feature_colormap(
+        self,
+        feature: str,
+        cmap: str = "viridis",
+        vmin: float = None,
+        vmax: float = None,
+    ) -> Dict[str, str]:
+        r"""Generate a colormap based on a continuous tree feature.
+
+        Args:
+            feature: feature name (all nodes in tree attribute must have this feature)
+            cmap: any matplotlib color palette: https://matplotlib.org/stable/gallery/color/colormap_reference.html
+            vmin: minimum value for colormap (default to minimum of the feature over the tree)
+            vmax: maximum value for colormap (default to maximum of the feature over the tree)
+
+        Returns:
+            Dictionary of node names to hex color strings, which may be used as the colormap in :meth:`gctree.CollapsedTree.render`
+        """
+        cmap = cm.get_cmap(cmap)
+
+        if vmin is None:
+            vmin = np.nanmin([getattr(node, feature) for node in self.tree.traverse()])
+        if vmax is None:
+            vmax = np.nanmax([getattr(node, feature) for node in self.tree.traverse()])
+
+        # define the minimum and maximum values for our colormap
+        norm = Normalize(vmin=vmin, vmax=vmax)
+
+        return {
+            node.name: to_hex(cmap(norm(getattr(node, feature))))
+            for node in self.tree.traverse()
+        }
 
     def write(self, file_name: str):
         r"""Serialize to pickle file.
