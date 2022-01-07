@@ -1,36 +1,79 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>gctree.mutation_model.MutationModel &mdash; gctree  documentation</title>
-      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="../_static/js/theme.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="gctree.utils" href="gctree.utils.html" />
     <link rel="prev" title="gctree.mutation_model" href="gctree.mutation_model.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../index.html">
+          
+
+          
+            
             <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -38,12 +81,24 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cite.html">Citing gctree</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rendering-demo.html">Custom tree visualization</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
 <ul>
@@ -71,36 +126,102 @@
 <li class="toctree-l1"><a class="reference internal" href="../developer.html#todo-list">Todo list</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">gctree</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
+    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
           <li><a href="../api.html">Classes</a> &raquo;</li>
+        
           <li><a href="gctree.mutation_model.html">gctree.mutation_model</a> &raquo;</li>
+        
       <li>gctree.mutation_model.MutationModel</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
-  <section id="gctree-mutation-model-mutationmodel">
-<h1>gctree.mutation_model.MutationModel<a class="headerlink" href="#gctree-mutation-model-mutationmodel" title="Permalink to this headline"></a></h1>
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="gctree-mutation-model-mutationmodel">
+<h1>gctree.mutation_model.MutationModel<a class="headerlink" href="#gctree-mutation-model-mutationmodel" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="gctree.mutation_model.MutationModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.mutation_model.</span></span><span class="sig-name descname"><span class="pre">MutationModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mutability_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitution_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutation_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_replacement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">gctree.mutation_model.</span></span><span class="sig-name descname"><span class="pre">MutationModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mutability_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitution_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutation_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_replacement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>A class for a mutation model, and functions to mutate sequences.</p>
 <dl class="field-list simple">
@@ -137,7 +258,7 @@ where mutation order matters</p></li>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.mutability">
-<span class="sig-name descname"><span class="pre">mutability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kmer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutability" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">mutability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kmer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutability" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the mutability of a central base of <span class="math notranslate nohighlight">\(k\)</span>-mer, along with
 nucleotide bias averages over ambiguous <code class="docutils literal notranslate"><span class="pre">&quot;N&quot;</span></code> nucleotide identities.</p>
 <dl class="field-list simple">
@@ -152,7 +273,7 @@ nucleotide bias averages over ambiguous <code class="docutils literal notranslat
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.mutabilities">
-<span class="sig-name descname"><span class="pre">mutabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutabilities" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">mutabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutabilities" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the mutability of a sequence at each site, along with
 nucleotide biases.</p>
 <dl class="field-list simple">
@@ -167,7 +288,7 @@ nucleotide biases.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.mutate">
-<span class="sig-name descname"><span class="pre">mutate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutate" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">mutate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.mutate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.mutate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Mutate a sequence, with lamdba0 the baseline mutability. Cannot
 mutate the same position multiple times.</p>
 <dl class="field-list simple">
@@ -186,16 +307,17 @@ mutate the same position multiple times.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.mutation_model.MutationModel.simulate">
-<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">sequence,</span> <span class="pre">seq_bounds=None,</span> <span class="pre">progeny=&lt;scipy.stats._distn_infrastructure.rv_frozen</span> <span class="pre">object&gt;,</span> <span class="pre">lambda0=[1],</span> <span class="pre">frame=None,</span> <span class="pre">N=None,</span> <span class="pre">T=None,</span> <span class="pre">n=None,</span> <span class="pre">verbose=False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.simulate" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">sequence,</span> <span class="pre">seq_bounds=None,</span> <span class="pre">fitness_function=&lt;function</span> <span class="pre">MutationModel.&lt;lambda&gt;&gt;,</span> <span class="pre">lambda0=[1],</span> <span class="pre">frame=None,</span> <span class="pre">N_init=1,</span> <span class="pre">N=None,</span> <span class="pre">T=None,</span> <span class="pre">n=None,</span> <span class="pre">verbose=False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#MutationModel.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.MutationModel.simulate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simulate a neutral binary branching process with the mutation model, returning a <code class="xref py py-class docutils literal notranslate"><span class="pre">ete3.Treenode</span></code> object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>sequence</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – root nucleotide sequence</p></li>
 <li><p><strong>seq_bounds</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]]]) – ranges for two subsequences used as two parallel genes</p></li>
-<li><p><strong>progeny</strong> (<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/reference/generated/scipy.stats.rv_discrete.html#scipy.stats.rv_discrete" title="(in SciPy v1.7.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">rv_discrete</span></code></a>) – offspring distribution</p></li>
+<li><p><strong>fitness_function</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>) – mean number offspring as a function of sequence</p></li>
 <li><p><strong>lambda0</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]) – baseline mutation rate(s)</p></li>
 <li><p><strong>frame</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – coding frame of starting position(s)</p></li>
+<li><p><strong>N_init</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – initial naive abundnace</p></li>
 <li><p><strong>N</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – maximum population size</p></li>
 <li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – maximum generation time</p></li>
 <li><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – sample size</p></li>
@@ -210,37 +332,54 @@ mutate the same position multiple times.</p>
 
 </dd></dl>
 
-</section>
+</div>
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="gctree.mutation_model.html" class="btn btn-neutral float-left" title="gctree.mutation_model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="gctree.utils.html" class="btn btn-neutral float-right" title="gctree.utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="gctree.mutation_model.html" class="btn btn-neutral float-left" title="gctree.mutation_model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2020, William DeWitt.</p>
-  </div>
+    <p>
+        &#169; Copyright 2020, William DeWitt.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
