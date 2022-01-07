@@ -49,6 +49,8 @@ extensions = [
     "sphinxarg.ext",
     # render command line output
     "sphinxcontrib.programoutput",
+    # jupyter notebooks
+    "nbsphinx",
 ]
 
 # show todos in output
