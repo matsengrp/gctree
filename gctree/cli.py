@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import warnings
 import pickle
 import random
-import scipy.stats
 import ete3
 import itertools
 

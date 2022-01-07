@@ -2,7 +2,7 @@ r"""Mutation models."""
 
 from ete3 import TreeNode
 import numpy as np
-from scipy.stats import poisson, rv_discrete
+from scipy.stats import poisson
 import random
 import scipy
 from Bio.Seq import Seq

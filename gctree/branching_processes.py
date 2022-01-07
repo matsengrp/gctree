@@ -770,31 +770,38 @@ class CollapsedTree:
         # post-order traversal to populate downward integral for each node
         for node in self.tree.traverse(strategy="postorder"):
             if node.is_leaf():
-                node.add_feature("LB_down", node.abundance * clone_contribution
-                                 if node.abundance > 1 else 0
-                                 )
+                node.add_feature(
+                    "LB_down",
+                    node.abundance * clone_contribution if node.abundance > 1 else 0,
+                )
             else:
-                node.add_feature("LB_down",
-                                 node.abundance * clone_contribution
-                                 + sum(tau * (1 - np.exp(-child.dist / tau))
-                                       + np.exp(-child.dist / tau) * child.LB_down
-                                       for child in node.children)
-                                 )
+                node.add_feature(
+                    "LB_down",
+                    node.abundance * clone_contribution
+                    + sum(
+                        tau * (1 - np.exp(-child.dist / tau))
+                        + np.exp(-child.dist / tau) * child.LB_down
+                        for child in node.children
+                    ),
+                )
 
         # pre-order traversal to populate upward integral for each node
         for node in self.tree.traverse(strategy="preorder"):
             if node.is_root():
                 node.add_feature("LB_up", 0)
             else:
-                node.add_feature("LB_up",
-                                 tau * (1 - np.exp(-node.dist / tau))
-                                 + np.exp(-node.dist / tau) * (node.up.LB_up + node.up.LB_down)
-                                 )
+                node.add_feature(
+                    "LB_up",
+                    tau * (1 - np.exp(-node.dist / tau))
+                    + np.exp(-node.dist / tau) * (node.up.LB_up + node.up.LB_down),
+                )
 
         # finally, compute LBI (LBR) as the sum (ratio) of upward and downward integrals at each node
         for node in self.tree.traverse():
             node.add_feature("LBI", node.LB_down + node.LB_up)
-            node.add_feature("LBR", node.LB_down / node.LB_up if not node.is_root() else np.nan)
+            node.add_feature(
+                "LBR", node.LB_down / node.LB_up if not node.is_root() else np.nan
+            )
 
 
 class CollapsedForest:
