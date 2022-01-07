@@ -756,6 +756,46 @@ class CollapsedTree:
                     compatibility_ += weights[i] if weights is not None else 1
             node.support = compatibility_ if compatibility else support
 
+    def local_branching(self, τ=1, τ0=0.1):
+        r"""Add local branching statistics (Neher et al. 2014) as tree node
+        features to the ETE tree attribute.
+
+        Args:
+            τ: decay timescale
+            τ0: effective branch length for branches with zero mutations
+        """
+        # the fixed integral contribution for clonal cells indicated by abundance annotations
+        clone_contribution = τ * (1 - np.exp(-τ0 / τ))
+
+        # post-order traversal to populate downward integral for each node
+        for node in self.tree.traverse(strategy="postorder"):
+            if node.is_leaf():
+                node.add_feature("LB_down", node.abundance * clone_contribution
+                                            if node.abundance > 1 else 0
+                                )
+            else:
+                node.add_feature("LB_down",
+                                 node.abundance * clone_contribution
+                                 + sum(τ * (1 - np.exp(-child.dist / τ))
+                                       + np.exp(-child.dist / τ) * child.LB_down
+                                       for child in node.children)
+                                )
+
+        # pre-order traversal to populate upward integral for each node
+        for node in self.tree.traverse(strategy="preorder"):
+            if node.is_root():
+                node.add_feature("LB_up", 0)
+            else:
+                node.add_feature("LB_up",
+                                 τ * (1 - np.exp(-node.dist / τ))
+                                 + np.exp(-node.dist / τ) * (node.up.LB_up + node.up.LB_down)
+                                )
+
+        # finally, compute LBI (LBR) as the sum (ratio) of upward and downward integrals at each node
+        for node in self.tree.traverse():
+            node.add_feature("LBI", node.LB_down + node.LB_up)
+            node.add_feature("LBR", node.LB_down / node.LB_up if not node.is_root() else np.nan)
+
 
 class CollapsedForest:
     r"""A collection of :class:`CollapsedTree`
