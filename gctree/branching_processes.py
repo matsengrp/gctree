@@ -796,7 +796,7 @@ class CollapsedTree:
         r"""Add local branching statistics (Neher et al. 2014) as tree node
         features to the ETE tree attribute.
         After execution, all nodes will have new features ``LBI``
-        (local branching index) and ``LBR`` (local branching ratio below Vs
+        (local branching index) and ``LBR`` (local branching ratio, below Vs
         above the node)
 
         Args:
