@@ -795,9 +795,12 @@ class CollapsedTree:
     def local_branching(self, tau=1, tau0=0.1):
         r"""Add local branching statistics (Neher et al. 2014) as tree node
         features to the ETE tree attribute.
+        After execution, all nodes will have new features ``LBI``
+        (local branching index) and ``LBR`` (local branching ratio below Vs
+        above the node)
 
         Args:
-            tau: decay timescale
+            tau: decay timescale for exponential filter
             tau0: effective branch length for branches with zero mutations
         """
         # the fixed integral contribution for clonal cells indicated by abundance annotations
