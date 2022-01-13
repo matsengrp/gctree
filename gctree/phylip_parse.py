@@ -154,33 +154,51 @@ def make_dag(trees, sequence_counts={}, from_copy=True):
     if from_copy:
         trees = [tree.copy() for tree in trees]
     if all(len(tree.children) > 1 for tree in trees):
-        pass # We're all good!
+        pass  # We're all good!
     elif trees[0].sequence not in leaf_seqs:
         if trees[0].sequence not in sequence_counts:
             sequence_counts[trees[0].sequence] = 0
         for tree in trees:
-            newleaf = tree.add_child(name='', dist=0)
-            newleaf.add_feature('sequence', trees[0].sequence)
+            newleaf = tree.add_child(name="", dist=0)
+            newleaf.add_feature("sequence", trees[0].sequence)
             if tree.sequence != newleaf.sequence:
-                raise ValueError("At least some trees unifurcate at root, but root sequence is not fixed.")
+                raise ValueError(
+                    "At least some trees unifurcate at root, but root sequence is not fixed."
+                )
     else:
         # This should never happen in parsimony setting, when internal edges
         # are collapsed by sequence
-        raise RuntimeError("Root sequence observed, but the corresponding leaf is not a child of the root node. "
-                      "Gctree inference may give nonsensical results. Are you sure these are parsimony trees?")
+        raise RuntimeError(
+            "Root sequence observed, but the corresponding leaf is not a child of the root node. "
+            "Gctree inference may give nonsensical results. Are you sure these are parsimony trees?"
+        )
 
-    dag = hdag.history_dag_from_etes(trees,
-                                     ['sequence'],
-                                     attr_func=lambda n: {'name': n.name,})
+    dag = hdag.history_dag_from_etes(
+        trees,
+        ["sequence"],
+        attr_func=lambda n: {
+            "name": n.name,
+        },
+    )
     # If there are too many ambiguities at too many nodes, disambiguation will
     # hang. Need to have an alternative (disambiguate each tree before putting in dag):
-    if dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count) / dag.count_trees() > 500000000:
-        warnings.warn("Parsimony trees have too many ambiguities for disambiguation in history DAG. "
-                      "Disambiguating trees individually. History DAG may find fewer new parsimony trees.")
+    if (
+        dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
+        / dag.count_trees()
+        > 500000000
+    ):
+        warnings.warn(
+            "Parsimony trees have too many ambiguities for disambiguation in history DAG. "
+            "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
+        )
         trees = [disambiguate(tree) for tree in trees]
-        dag = hdag.history_dag_from_etes(trees,
-                                         ['sequence'],
-                                         attr_func=lambda n: {'name': n.name,})
+        dag = hdag.history_dag_from_etes(
+            trees,
+            ["sequence"],
+            attr_func=lambda n: {
+                "name": n.name,
+            },
+        )
     dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
     # Look for (even) more trees:
     dag.add_all_allowed_edges(adjacent_labels=True)
@@ -188,30 +206,38 @@ def make_dag(trees, sequence_counts={}, from_copy=True):
     dag.convert_to_collapsed()
     # Add abundances to attrs:
     for node in dag.preorder(skip_root=True):
-        if node.label.sequence in sequence_counts: # and (node.is_leaf() or frozenset({node.label}) in node.clades):
-            node.attr['abundance'] = sequence_counts[node.label.sequence]
+        if (
+            node.label.sequence in sequence_counts
+        ):  # and (node.is_leaf() or frozenset({node.label}) in node.clades):
+            node.attr["abundance"] = sequence_counts[node.label.sequence]
         else:
-            node.attr['abundance'] = 0
+            node.attr["abundance"] = 0
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
             f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.hamming_parsimony_count()}"
         )
     for node in dag.preorder(skip_root=True):
-        if node.attr['abundance'] != 0 and not node.is_leaf() and frozenset({node.label}) not in node.clades:
+        if (
+            node.attr["abundance"] != 0
+            and not node.is_leaf()
+            and frozenset({node.label}) not in node.clades
+        ):
             raise RuntimeError(
                 "An internal node not adjacent to a leaf with the same label was found with nonzero abundance."
             )
 
     # give disambiguated sequences unique names
-    sequences = {node.attr['name']: node.label.sequence for node in dag.preorder(skip_root=True)}
+    sequences = {
+        node.attr["name"]: node.label.sequence for node in dag.preorder(skip_root=True)
+    }
     n_max = max([int(name) for name in sequences.keys() if name.isdigit()])
     namedict = {sequence: name for name, sequence in sequences.items()}
     for node in dag.preorder(skip_root=True):
         if node.label.sequence not in namedict:
             n_max += 1
             namedict[node.label.sequence] = str(n_max)
-            node.attr['name'] = str(n_max)
+            node.attr["name"] = str(n_max)
     return dag
 
 
@@ -281,7 +307,9 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
 
 
 # build a tree from a set of sequences and an adjacency dict.
-def build_tree(sequences: Dict[str, str], parents: Dict[str, str], counts=None, root="root"):
+def build_tree(
+    sequences: Dict[str, str], parents: Dict[str, str], counts=None, root="root"
+):
     """Build an ete tree from sequences and parents dictionaries
 
     Args:

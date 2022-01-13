@@ -1,6 +1,7 @@
 r"""Utility functions."""
 from functools import wraps
 
+
 def check_distance_arguments(distance):
     @wraps(distance)
     def new_distance(seq1: str, seq2: str, *args, **kwargs):
@@ -22,4 +23,3 @@ def hamming_distance(seq1: str, seq2: str) -> int:
         seq2: sequence 2
     """
     return sum(x != y for x, y in zip(seq1, seq2))
-

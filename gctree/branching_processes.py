@@ -1063,6 +1063,7 @@ def fit_branching_process(dag, verbose=True, marginal=True):
     (starting params aren't random right now, but they could be in the future?)"""
     cmcount_dagfuncs = cmcounter_dagfuncs()
     cmcounters = dag.weight_count(**cmcount_dagfuncs)
+
     def to_tuple(mset):
         # lltree checks first item in list for unobserved root unifurcation,
         # but here it could end up not being first.
@@ -1070,6 +1071,7 @@ def fit_branching_process(dag, verbose=True, marginal=True):
             assert mset[(0, 1)] == 1
             mset = mset - {(0, 1)} + {(1, 1)}
         return tuple(mset.items())
+
     cmcountlist = [(to_tuple(mset), mult) for mset, mult in cmcounters.items()]
 
     max_tries = 10
@@ -1101,16 +1103,20 @@ def clade_tree_to_ctree(
     root_seq=None,
     leaf_seqs=None,
 ):
-    etetree = clade_tree.to_ete(name_func=lambda n: n.attr['name'],
-                                features=['sequence'],
-                                feature_funcs={'abundance': lambda n: n.attr['abundance']})
+    etetree = clade_tree.to_ete(
+        name_func=lambda n: n.attr["name"],
+        features=["sequence"],
+        feature_funcs={"abundance": lambda n: n.attr["abundance"]},
+    )
 
     ctree = CollapsedTree(etetree)
     # Here can do some validation on the tree:
     # root name:
     if root is not None:
         if root not in ctree.tree.name:
-            raise RuntimeError(f"collapsed tree should have root name '{root}' but has instead {ctree.tree.name}")
+            raise RuntimeError(
+                f"collapsed tree should have root name '{root}' but has instead {ctree.tree.name}"
+            )
     # counts:
     if counts is not None:
         for node in etetree.iter_leaves():
@@ -1147,7 +1153,9 @@ def clade_tree_to_ctree(
     # Leaf names:
     if leaf_seqs is not None:
         # A dictionary of leaf sequences to leaf names
-        observed_set = {node for node in ctree.tree.iter_descendants() if node.abundance > 0}
+        observed_set = {
+            node for node in ctree.tree.iter_descendants() if node.abundance > 0
+        }
         for node in observed_set:
             if not node.is_root() and leaf_seqs[node.sequence] != node.name:
                 raise RuntimeError("History DAG tree leaf names don't match sequences")
@@ -1155,53 +1163,15 @@ def clade_tree_to_ctree(
         nonroot_observed_seqs = observed_seqs - {ctree.tree.sequence}
         nonroot_leaf_seqs = set(leaf_seqs.keys()) - {ctree.tree.sequence}
         if nonroot_leaf_seqs != nonroot_observed_seqs:
-            raise RuntimeError("Observed nonroot sequences in history DAG tree don't match "
-                               "observed nonroot sequences passed in leaf_seqs.")
+            raise RuntimeError(
+                "Observed nonroot sequences in history DAG tree don't match "
+                "observed nonroot sequences passed in leaf_seqs."
+            )
     return ctree
 
 
-def ll_cmcount_dagfuncs(p, q):
-    """A slower but more numerically stable equivalent to ll_genotype_dagfuncs.
-    To use these functions for DAG trimming, use an optimal function like
-    `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too."""
-
-    @lru_cache(maxsize=None)
-    def ll(cmcounter: FrozenMultiset) -> float:
-        if cmcounter:
-            if (0, 1) in cmcounter:
-                cmcounter = cmcounter - {(0, 1)} + {(1, 1)}
-            return lltree(tuple(cmcounter.items()), p, q)[0]
-        else:
-            return 0.0
-
-    def edge_weight_func(n1, n2):
-        if n1.label == n2.label and n2.is_leaf():
-            # Then this is a leaf-adjacent node with nonzero abundance
-            return (0, FrozenMultiset())
-        else:
-            m = len(n2.clades)
-            if frozenset({n2.label}) in n2.clades:
-                m -= 1
-            st = FrozenMultiset([(n2.attr['abundance'], m)])
-            return (ll(st), st)
-
-    def accum_func(cmsetlist: List[Tuple[float, FrozenMultiset]]):
-        st = FrozenMultiset()
-        for _, cmset in cmsetlist:
-            st += cmset
-        return (ll(st), st)
-
-    return hdag.utils.AddFuncDict(
-        {
-            "start_func": lambda n: (0, FrozenMultiset()),
-            "edge_weight_func": edge_weight_func,
-            "accum_func": accum_func,
-        },
-        names=("LogLikelihood", "cmcounters")
-    )
-
-
 def cmcounter_dagfuncs():
+    """Functions for accumulating frozen multisets of (c, m) pairs in trees in the DAG."""
 
     def edge_weight_func(n1, n2):
         if n1.label == n2.label and n2.is_leaf():
@@ -1211,7 +1181,7 @@ def cmcounter_dagfuncs():
             m = len(n2.clades)
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            return FrozenMultiset([(n2.attr['abundance'], m)])
+            return FrozenMultiset([(n2.attr["abundance"], m)])
 
     def accum_func(cmsetlist: List[FrozenMultiset]):
         st = FrozenMultiset()
@@ -1225,28 +1195,5 @@ def cmcounter_dagfuncs():
             "edge_weight_func": edge_weight_func,
             "accum_func": accum_func,
         },
-        names="cmcounters"
-    )
-
-
-def ll_genotype_dagfuncs(p, q):
-    """Functions for counting tree log likelihood on the history DAG. Although these
-    functions are fast, for numerical consistency use :meth:`ll_cmcount_dagfuncs` instead."""
-    def edge_weight_ll_genotype(n1, n2):
-        """The _ll_genotype weight of the target node, unless it should be collapsed, then 0.
-        Expects DAG to have abundances added with :meth:`dag.add_abundances`."""
-        if n2.is_leaf() and n2.label == n1.label:
-            return 0.0
-        else:
-            m = len(n2.clades)
-            # Check if this edge should be collapsed, and reduce mutant descendants
-            if frozenset({n2.label}) in n2.clades:
-                m -= 1
-            return CollapsedTree._ll_genotype(n2.attr['abundance'], m, p, q)[0]
-
-    return hdag.utils.AddFuncDict(
-        {"start_func": lambda n: 0,
-         "edge_weight_func": edge_weight_ll_genotype,
-         "accum_func": sum
-         }
+        names="cmcounters",
     )

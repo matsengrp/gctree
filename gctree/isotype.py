@@ -2,7 +2,12 @@ import re
 import pickle
 import argparse
 from pathlib import Path
-from gctree.isotyping import explode_idmap, isotype_tree, isotype_parsimony
+from gctree.isotyping import (
+    explode_idmap,
+    isotype_tree,
+    isotype_parsimony,
+    default_isotype_order,
+)
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -146,7 +151,7 @@ def main(arg_list=None):
         for idx, ctree in enumerate(forest.forest)
     ]
     if not args.isotype_names:
-        isotype_names = isotyping.default_order
+        isotype_names = default_isotype_order
     else:
         isotype_names = str(args.isotype_names).split(",")
 

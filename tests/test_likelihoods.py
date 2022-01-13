@@ -4,6 +4,7 @@ import gctree.utils as utils
 import gctree.isotyping as itp
 
 
+import warnings
 from collections import Counter
 import numpy as np
 from scipy.special import logsumexp, softmax

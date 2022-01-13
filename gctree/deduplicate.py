@@ -104,9 +104,13 @@ def check_header(header):
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        description="Deduplicate sequences in a fasta file, write to stdout in phylip format, and creates a few other files (see arguments). Headers must be a unique ID of less than "
-        "or equal to 10 ASCII characters."
-        "An additional sequence representing the outgroup/root must be included (even if one or more observed sequences are identical to it)."
+        description=(
+            "Deduplicate sequences in a fasta file, write to stdout in phylip format,"
+            " and create a few other files (see arguments). Headers must be a unique"
+            " ID of less than or equal to 10 ASCII characters. An additional sequence"
+            " representing the outgroup/root must be included"
+            " (even if one or more observed sequences are identical to it)."
+        )
     )
     parser.add_argument(
         "infile",
@@ -133,7 +137,16 @@ def get_parser():
         action="store_true",
         help="flag to interpret integer ids in input as abundances",
     )
-    parser.add_argument("--root", type=str, default="root", help="root sequence id")
+    parser.add_argument(
+        "--root",
+        type=str,
+        default="root",
+        help=(
+            "ID of the root sequence in fasta file. This ID will be"
+            " used as the unique id for the root sequence, and any"
+            " observed sequences matching the root sequence."
+        ),
+    )
     parser.add_argument(
         "--frame", type=int, default=None, help="codon frame", choices=(1, 2, 3)
     )
