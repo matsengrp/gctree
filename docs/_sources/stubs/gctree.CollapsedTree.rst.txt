@@ -17,7 +17,9 @@
       :nosignatures:
    
       ~CollapsedTree.compare
+      ~CollapsedTree.feature_colormap
       ~CollapsedTree.ll
+      ~CollapsedTree.local_branching
       ~CollapsedTree.mle
       ~CollapsedTree.newick
       ~CollapsedTree.render
