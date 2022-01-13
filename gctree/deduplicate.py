@@ -54,7 +54,7 @@ def fasta_parse(aln_file, root, frame=None, aln_file2=None, id_abundances=False)
             raise ValueError("Sequence ID found multiple times:", seq.id)
         else:
             id_set.add(seq.id)
-        seqstr = str(seq.seq)[start:end]
+        seqstr = str(seq.seq)[start:end].upper()
         if seq.id == root:
             root_seq = seqstr
             if seqstr not in seqs_unique_counts:
