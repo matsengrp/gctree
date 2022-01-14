@@ -102,6 +102,11 @@ def dag_likelihood(dag, p, q, marginal=True):
     return bp.llforest(cmcountlist, p, q, marginal=marginal)
 
 
+def test_numpy_underflow():
+    assert np.exp(-np.inf) == 0.0
+    assert np.exp(-float('inf')) == 0.0
+
+
 def test_newcounters():
     # Make sure the cmcounts found by new CollapsedTree init agree with old
     # CollapsedTree init:
