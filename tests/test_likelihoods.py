@@ -1,8 +1,6 @@
 import gctree.branching_processes as bp
 import gctree.phylip_parse as pp
 import gctree.utils as utils
-import gctree.isotyping as itp
-
 
 import warnings
 from collections import Counter
@@ -10,11 +8,9 @@ import numpy as np
 from scipy.special import logsumexp, softmax
 from scipy.optimize import minimize, check_grad
 import ete3
-import historydag as hdag
 from multiset import FrozenMultiset
 from typing import Tuple, List, Callable
 from functools import lru_cache
-
 
 
 def make_ctree(cladetree):
@@ -99,6 +95,7 @@ def cmset_to_tuple(mset):
         mset = mset - {(0, 1)} + {(1, 1)}
     return tuple(mset.items())
 
+
 def dag_likelihood(dag, p, q, marginal=True):
     cmcounters = dag.weight_count(**cmcount_dagfuncs)
     cmcountlist = [(cmset_to_tuple(mset), mult) for mset, mult in cmcounters.items()]
@@ -182,13 +179,11 @@ def test_newlikelihoods_singletree_after_dag():
 def test_newcounters_singletree_in_dag():
     # old cmcounters are the same as new cmcounters computed in DAG
     # for single trees...
-    p, q = 0.4, 0.6
     for trees, seqcount in [
         (trees1dis, trees_seqcounts1[1]),
         (trees2dis, trees_seqcounts2[1]),
     ]:
         for tree in trees:
-            leaf_seqs = {node.sequence for node in tree.get_leaves()}
             tree.dist = 0
             for node in tree.iter_descendants():
                 node.dist = utils.hamming_distance(node.up.sequence, node.sequence)
@@ -199,12 +194,12 @@ def test_newcounters_singletree_in_dag():
             newtreecounters = FrozenMultiset(dict(newctree._cm_counts))
             dag = pp.make_dag([tree], seqcount)
             dag.convert_to_collapsed()
-            dagroot_treeroot = list(dag.dagroot.children())[0]
             cmcounters = dag.weight_count(**cmcount_dagfuncs)
             assert len(cmcounters) == 1  # there's just one tree in the dag
             cmcounts = list(cmcounters.keys())[0]
             assert cmcounts == oldtreecounters
             assert cmcounts == newtreecounters
+
 
 def test_problem():
     tree = trees2dis[0]
@@ -227,7 +222,6 @@ def test_problem():
     dag = pp.make_dag([tree], seqcounts)
     cmcounters = dag.weight_count(**cmcount_dagfuncs)
     assert list(cmcounters.keys())[0] == oldtreecounters
-
 
 
 def test_newlikelihoods_singletree_in_dag():
@@ -253,8 +247,6 @@ def test_newlikelihoods_singletree_in_dag():
 
 def test_newcounters_in_dag():
     # old cm counters are the same as new likelihoods computed in DAG
-    p, q = 0.4, 0.6
-
     oldcforests = [make_oldcforest(dag) for dag in dags]
     for dag, forest, oldforest in zip(dags, cforests, oldcforests):
         cmcounters = dag.weight_count(**cmcount_dagfuncs)
@@ -283,7 +275,7 @@ def test_newll_in_dag():
                 assert np.isclose(dagll[0], other[0])
                 assert np.isclose(dagll[1][0], other[1][0])
                 assert np.isclose(dagll[1][1], other[1][1])
-    
+
 
 def test_fit():
     # mle is the same from old code and computed directly using the DAG.
@@ -501,7 +493,9 @@ class OldCollapsedTree:
 
         return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
 
+
 print(OldCollapsedTree)
+
 
 class OldCollapsedForest:
     r"""A collection of :class:`CollapsedTree`
@@ -575,6 +569,7 @@ class OldCollapsedForest:
             return (-np.log(len(ls)) + logsumexp(ls)), np.array(grad_l)
         else:
             return ls.sum(), grad_ls.sum(axis=0)
+
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
         r"""Maximum likelihood estimate of :math:`(p, q)`.
         .. math::
@@ -586,8 +581,9 @@ class OldCollapsedForest:
         """
         return _mle_helper(self.ll, **kwargs)
 
+
 def _mle_helper(
-ll: Callable[[np.float64, np.float64], Tuple[np.float64, np.ndarray]], **kwargs
+    ll: Callable[[np.float64, np.float64], Tuple[np.float64, np.ndarray]], **kwargs
 ) -> Tuple[np.float64, np.float64]:
     # initialization
     x_0 = (0.5, 0.5)

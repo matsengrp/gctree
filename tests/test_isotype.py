@@ -18,6 +18,7 @@ trees_seqcounts1 = pp.parse_outfile(
 
 dag = pp.make_dag(*trees_seqcounts1)
 
+
 def test_isotype_disambiguate():
     newisotype = iso.IsotypeTemplate(["M", "G3", "A1", "G2", "G4", "E", "A2"]).new
     for newick, weight in testtrees:
@@ -33,8 +34,12 @@ def test_isotype_disambiguate():
             == weight
         )
 
+
 def test_trim_byisotype():
-    kwargs = make_isotype_dagfuncs(isotypemap_file='example/isotypemap.txt', idmap_file='tests/example_output/original/idmap.txt')
+    kwargs = make_isotype_dagfuncs(
+        isotypemap_file="example/isotypemap.txt",
+        idmap_file="tests/example_output/original/idmap.txt",
+    )
     # isotypemap_file=None,
     # idmap=None,
     # idmap_file=None,
@@ -43,6 +48,7 @@ def test_trim_byisotype():
     c = tdag.weight_count(**kwargs)
     key = min(c)
     count = c[key]
-    tdag.trim_optimal_weight(**kwargs, optimal_func=min, eq_func=lambda t1, t2: t1[0] == t2[0])
+    tdag.trim_optimal_weight(
+        **kwargs, optimal_func=min, eq_func=lambda t1, t2: t1[0] == t2[0]
+    )
     assert tdag.weight_count(**kwargs) == {key: count}
-    

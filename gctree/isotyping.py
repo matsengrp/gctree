@@ -1,7 +1,6 @@
 r"""A module for incorporating isotype information in gctree inference."""
 
 from gctree.utils import hamming_distance
-from historydag.utils import AddFuncDict
 
 import random
 import ete3

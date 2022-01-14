@@ -52,7 +52,6 @@ class CollapsedTree:
 
             # remove unobserved internal unifurcations
             for node in self.tree.iter_descendants():
-                parent = node.up
                 if node.abundance == 0 and len(node.children) == 1:
                     node.delete(prevent_nondicotomic=False)
 

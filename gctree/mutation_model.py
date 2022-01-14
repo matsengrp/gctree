@@ -10,9 +10,6 @@ import scipy
 from Bio.Seq import Seq
 from Bio.Data.IUPACData import ambiguous_dna_values
 from typing import Tuple, List, Callable
-import historydag as hdag
-from multiset import FrozenMultiset
-from functools import lru_cache
 
 
 bases = "AGCT-"
