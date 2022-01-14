@@ -1,3 +1,3 @@
 import numpy as np
-import gctree
+import historydag
 print(np.exp(-np.inf))
