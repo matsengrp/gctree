@@ -6,29 +6,23 @@ count the number of clonal leaves of each type.
 
 from __future__ import annotations
 
-from gctree.utils import hamming_distance
+import gctree.utils
 
 import numpy as np
 import warnings
 import random
 import os
-from scipy.special import logsumexp
-from scipy.special import softmax
-from scipy.optimize import minimize, check_grad
+import scipy.special as scs
+import scipy.optimize as sco
 import ete3
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio import AlignIO
-from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
+import Bio
 import pickle
-from functools import lru_cache
-from typing import Tuple, Dict, List, Union, Set, Callable
-from collections import Counter
+import functools
+import collections as coll
 import historydag as hdag
-from multiset import FrozenMultiset
-
-from matplotlib import cm
-from matplotlib.colors import Normalize, to_hex
+import multiset
+import matplotlib as mp
+from typing import Tuple, Dict, List, Union, Set, Callable
 
 np.seterr(all="raise")
 
@@ -57,7 +51,7 @@ class CollapsedTree:
 
             # ensure distances are correct before collapse
             for node in self.tree.iter_descendants():
-                node.dist = hamming_distance(node.sequence, node.up.sequence)
+                node.dist = gctree.utils.hamming_distance(node.sequence, node.up.sequence)
 
             # iterate over the tree below root and collapse edges of zero
             # length if the node is a leaf and it's parent has nonzero
@@ -148,7 +142,7 @@ class CollapsedTree:
             # create tuple (c, m) for each node, and store in a tuple of
             # ((c, m), n)'s, where n is the multiplicity of (c, m) seen in the tree.
             self._cm_counts = tuple(
-                Counter(
+                coll.Counter(
                     [
                         (node.abundance, len(node.children))
                         for node in self.tree.traverse()
@@ -205,7 +199,7 @@ class CollapsedTree:
         return c, m
 
     @staticmethod
-    @lru_cache(maxsize=None)
+    @functools.lru_cache(maxsize=None)
     def _ll_genotype(
         c: int, m: int, p: np.float64, q: np.float64
     ) -> Tuple[np.float64, np.ndarray]:
@@ -284,8 +278,8 @@ class CollapsedTree:
                         logg_array.append(logg)
                         dloggdp_array.append(dloggdp)
                         dloggdq_array.append(dloggdq)
-            logf_result = logsumexp(logg_array)
-            softmax_logg_array = softmax(logg_array)
+            logf_result = scs.logsumexp(logg_array)
+            softmax_logg_array = scs.softmax(logg_array)
             dlogfdp_result = np.multiply(softmax_logg_array, dloggdp_array).sum()
             dlogfdq_result = np.multiply(softmax_logg_array, dloggdq_array).sum()
 
@@ -360,7 +354,7 @@ class CollapsedTree:
         if root:
             # create list of (c, m) for each node
             self._cm_counts = tuple(
-                Counter(
+                coll.Counter(
                     [
                         (node.abundance, len(node.children))
                         for node in self.tree.traverse()
@@ -502,7 +496,7 @@ class CollapsedTree:
                         ):
                             if start is not None:
                                 seq = node.sequence[start:end]
-                                aa = Seq(
+                                aa = Bio.Seq.Seq(
                                     seq[
                                         (framex - 1) : (
                                             framex
@@ -512,7 +506,7 @@ class CollapsedTree:
                                     ]
                                 ).translate()
                                 seq = node.up.sequence[start:end]
-                                aa_parent = Seq(
+                                aa_parent = Bio.Seq.Seq(
                                     seq[
                                         (framex - 1) : (
                                             framex
@@ -562,16 +556,16 @@ class CollapsedTree:
         # if we labelled seqs, let's also write the alignment out so we have
         # the sequences (including of internal nodes)
         if idlabel:
-            aln = MultipleSeqAlignment([])
+            aln = Bio.Phylo.TreeConstruction.MultipleSeqAlignment([])
             for node in tree_copy.traverse():
                 aln.append(
-                    SeqRecord(
-                        Seq(str(node.sequence)),
+                    Bio.SeqRecordSeqRecord(
+                        Bio.Seq.Seq(str(node.sequence)),
                         id=str(node.name),
                         description=f"abundance={node.abundance}",
                     )
                 )
-            AlignIO.write(
+            Bio.AlignIO.write(
                 aln, open(os.path.splitext(outfile)[0] + ".fasta", "w"), "fasta"
             )
         return tree_copy.render(outfile, tree_style=ts)
@@ -594,7 +588,7 @@ class CollapsedTree:
         Returns:
             Dictionary of node names to hex color strings, which may be used as the colormap in :meth:`gctree.CollapsedTree.render`
         """
-        cmap = cm.get_cmap(cmap)
+        cmap = mp.cm.get_cmap(cmap)
 
         if vmin is None:
             vmin = np.nanmin([getattr(node, feature) for node in self.tree.traverse()])
@@ -602,10 +596,10 @@ class CollapsedTree:
             vmax = np.nanmax([getattr(node, feature) for node in self.tree.traverse()])
 
         # define the minimum and maximum values for our colormap
-        norm = Normalize(vmin=vmin, vmax=vmax)
+        norm = mp.colors.Normalize(vmin=vmin, vmax=vmax)
 
         return {
-            node.name: to_hex(cmap(norm(getattr(node, feature))))
+            node.name: mp.colors.to_hex(cmap(norm(getattr(node, feature))))
             for node in self.tree.traverse()
         }
 
@@ -677,7 +671,7 @@ class CollapsedTree:
                         (nodei_true, nodej_true)
                     ).sequence
                     MRCA = tree2.tree.get_common_ancestor((nodei, nodej)).sequence
-                    d[i, j] = hamming_distance(MRCA_true, MRCA)
+                    d[i, j] = gctree.utils.hamming_distance(MRCA_true, MRCA)
                     sum_sites[i, j] = len(MRCA_true)
             return d.sum() / sum_sites.sum()
         elif method == "RF":
@@ -926,7 +920,7 @@ class CollapsedForest:
         # multiplicities. Two trees with same cm multiplicities could have them
         # ordered differently in _cm_counts tuple. Easy fix would require
         # frozenmultiset import.
-        cm_countlist = tuple(Counter([tree._cm_counts for tree in self.forest]).items())
+        cm_countlist = tuple(coll.Counter([tree._cm_counts for tree in self.forest]).items())
         return llforest(cm_countlist, p, q, marginal=marginal)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
@@ -952,13 +946,13 @@ def _mle_helper(
         """negative log likelihood."""
         return tuple(-x for x in ll(*x, **kwargs))
 
-    grad_check = check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
+    grad_check = sco.check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
     if grad_check > 1e-3:
         warnings.warn(
             "gradient mismatches finite difference " f"approximation by {grad_check}",
             RuntimeWarning,
         )
-    result = minimize(
+    result = sco.minimize(
         f,
         jac=True,
         x0=x_0,
@@ -1042,14 +1036,14 @@ def llforest(
             grad_l.append(
                 grad_ls[i_prime, j]
                 + np.exp(
-                    logsumexp(
+                    scs.logsumexp(
                         ls - ls[i_prime],
                         b=(grad_ls[:, j] - grad_ls[i_prime, j]) * count_ls,
                     )
-                    - logsumexp(ls - ls[i_prime], b=count_ls)
+                    - scs.logsumexp(ls - ls[i_prime], b=count_ls)
                 )
             )
-        return (-np.log(count_ls.sum()) + logsumexp(ls, b=count_ls)), np.array(grad_l)
+        return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(grad_l)
     else:
         return (ls * count_ls).sum(), np.array(
             [(grad_ls[:, 0] * count_ls).sum(), (grad_ls[:, 1] * count_ls).sum()]
@@ -1175,22 +1169,22 @@ def cmcounter_dagfuncs():
     def edge_weight_func(n1, n2):
         if n1.label == n2.label and n2.is_leaf():
             # Then this is a leaf-adjacent node with nonzero abundance
-            return FrozenMultiset()
+            return multiset.FrozenMultiset()
         else:
             m = len(n2.clades)
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            return FrozenMultiset([(n2.attr["abundance"], m)])
+            return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
 
-    def accum_func(cmsetlist: List[FrozenMultiset]):
-        st = FrozenMultiset()
+    def accum_func(cmsetlist: List[multiset.FrozenMultiset]):
+        st = multiset.FrozenMultiset()
         for cmset in cmsetlist:
             st += cmset
         return st
 
     return hdag.utils.AddFuncDict(
         {
-            "start_func": lambda n: FrozenMultiset(),
+            "start_func": lambda n: multiset.FrozenMultiset(),
             "edge_weight_func": edge_weight_func,
             "accum_func": accum_func,
         },
