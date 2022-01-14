@@ -125,6 +125,7 @@ def main(arg_list=None):
             if len(cell_idset) > 0:
                 idmap[seqid] = cell_idset
 
+    parameters = tuple()
     with open(args.inference_log, "r") as fh:
         for line in fh:
             if re.match(r"params:", line):
@@ -132,6 +133,8 @@ def main(arg_list=None):
                 q = float(re.search(r"(?<=\,\s)\S+(?=[\)])", line).group())
                 parameters = (p, q)
                 break
+    if len(parameters) != 2:
+        raise RuntimeError("unable to find parameters in passed `inference_log` file.")
 
     with open(args.parsimony_forest, "rb") as fh:
         forest = pickle.load(fh)

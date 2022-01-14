@@ -117,12 +117,12 @@ manipulated using ``gctree infer``. For example, to find the optimal tree
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:
 
-.. command-output:: gctree infer gctree.out.serialized_dag.p --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --priority_weights 100 10 1 0 --tree_only
+.. command-output:: gctree infer gctree.out.serialized_dag.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --priority_weights 2 2 1 0 --tree_only --outbase newranking --verbose
    :shell:
 
-All inference output is written unless we include the argument ``--tree_only``, in which case only files related to the optimal trees are written:
+All inference output is written unless we include the argument ``--tree_only``, in which case only files related to the optimal trees are written. The argument ``--outbase`` optionally specifies how the new output files should be named.
 
-.. image:: gctree.out.inference.1.svg
+.. image:: newranking.inference.1.svg
    :width: 1000
 
 

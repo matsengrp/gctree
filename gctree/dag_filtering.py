@@ -27,12 +27,19 @@ def filter_dag(
 ):
     """Trim the provided history DAG, containing sequence labels, by-node abundance attributes,
     and a `parameters` attribute, to minimize a linear combination of
-    branching process likelihood, isotype parsimony score, mutability parsimony score, and number of alleles,
-    with coefficients provided in `priority_weights`, in that order.
+    branching process likelihood, isotype parsimony score, mutability parsimony score, and number of alleles, with coefficients provided in the argument `priority_weights`, in that order.
+
+    To compute each tree's combined score, a linear transformation is applied to each trait,
+    so that the best observed value is mapped to 0, and the worst observed value is mapped to
+    1. The tree score is the weighted sum of transformed traits, using passed coefficients.
 
     Args:
         dag: A history DAG object to trim
-        priority_weights: A sequence of coefficients for prioritizing tree weights
+        priority_weights: A sequence of coefficients for prioritizing tree weights.
+            The order of coefficients is: branching process likelihood, isotype
+            parsimony score, mutability parsimony score, and number of alleles.
+            If priority_weights is not provided, trees will be ranked lexicographically
+            by traits, in the same order.
         verbose: print information about trimming
         outbase: file name stem for a file with information for each tree in the DAG, and rank plots of likelihoods.
             If not provided, no such files will be written.
@@ -69,7 +76,7 @@ def filter_dag(
         if verbose:
             print("Isotype parsimony will be used as a ranking criterion")
     except ValueError:
-        isotype_dagfuncs = placeholder_dagfuncs
+        isotype_dagfuncs = placeholder_dagfuncs + placeholder_dagfuncs
     ll_dagfuncs = ll_cmcount_dagfuncs(p, q)
     if mutability_file and substitution_file:
         if verbose:
@@ -221,8 +228,17 @@ def filter_dag(
 
 def ll_cmcount_dagfuncs(p, q):
     """A slower but more numerically stable equivalent to ll_genotype_dagfuncs.
-    To use these functions for DAG trimming, use an optimal function like
-    `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too."""
+
+    Args:
+        p, q: branching process parameters
+
+    Returns:
+        A ``historydag.utils.AddFuncDict`` object, which can be unpacked and used
+        as keyword arguments for DAG trimming and weight annotation according to
+        branching process likelihood.
+        Weight format is ``(log likelihood, cmcounts)`` where cmcounts is a FrozenMultiset containing abundance, mutant clade count pairs.
+        To use these functions for DAG trimming, use an optimal function like
+        `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too."""
 
     funcdict = bp.cmcounter_dagfuncs()
     cmcount_weight_func = funcdict["edge_weight_func"]
@@ -257,7 +273,16 @@ def ll_cmcount_dagfuncs(p, q):
 
 def ll_genotype_dagfuncs(p, q):
     """Functions for counting tree log likelihood on the history DAG. Although these
-    functions are fast, for numerical consistency use :meth:`ll_cmcount_dagfuncs` instead."""
+    functions are fast, for numerical consistency use :meth:`ll_cmcount_dagfuncs` instead.
+
+    Args:
+        p, q: branching process parameters
+
+    Returns:
+        A ``historydag.utils.AddFuncDict`` object, which can be unpacked and used
+        as keyword arguments for DAG trimming and weight annotation according to
+        branching process likelihood.
+    """
 
     def edge_weight_ll_genotype(n1, n2):
         """The _ll_genotype weight of the target node, unless it should be collapsed, then 0.
@@ -281,11 +306,11 @@ def ll_genotype_dagfuncs(p, q):
 
 
 def make_mutability_dagfuncs(*args, **kwargs):
-    """Returns a historydag.AddFuncDict containing functions for
+    """Returns a ``historydag.AddFuncDict`` containing functions for
     counting tree-wise sums of mutability distances in the history DAG.
 
     This may not be stable numerically, but we expect every tree to have
-    a unique mutability parsimony score, for non-degenerate models, so
+    a unique mutability parsimony score for non-degenerate mutability models, so
     so this shouldn't matter in practice.
 
     Arguments are passed to :meth:`MutationModel` constructor."""
@@ -359,10 +384,19 @@ def _mutability_distance_precursors(mutation_model):
 
 
 def mutability_distance(mutation_model):
-    """Returns a fast distance function based on mutability_model.
+    """Returns a fast distance function based on passed mutation_model.
     First, caches computed mutabilities for k-mers with k // 2 N's on either
     end. This is pretty fast for k=5, but the distance function should be created
-    once and reused."""
+    once and reused.
+
+    The returned distance function sums :math:`-log(mutability * p)` over all
+    sites which do match between its two sequence arguments, where ``mutability``
+    is the mutation frequency of the k-mer surrounding the mutated base (in the
+    first sequence argument) and ``p`` is the transition probability to the new
+    base.
+
+    Note that, in particular, this function is not symmetric on its  arguments.
+    """
     mutpairs, sum_minus_logp = _mutability_distance_precursors(mutation_model)
 
     def distance(seq1, seq2):
@@ -389,6 +423,12 @@ def make_isotype_dagfuncs(
         idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
         idmap_file: A csv file providing an `idmap`
         isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order
+
+    Returns:
+        A ``historydag.utils.AddFuncDict`` which may be passed as keyword arguments
+        to ``historydag.HistoryDag`` methods which trim or annotate by weight.
+        These functions return weights which are a tuple containing
+        a progressive isotype score, and a frozenset containing isotypes used for computing isotype scores.
     """
     if isotypemap_file and isotypemap is None:
         with open(isotypemap_file, "r") as fh:
