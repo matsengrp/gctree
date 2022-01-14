@@ -35,6 +35,7 @@ setuptools.setup(
         "pandas",
         "scipy",
         "seaborn",
+        "multiset",
         "historydag @ https://github.com/matsengrp/historydag/archive/fbfe61b05305e3a80920c052666f83747b88c988.zip#egg=historydag-0.1"
     ],
 )
