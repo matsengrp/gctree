@@ -160,11 +160,6 @@ def infer(args):
     """inference subprogram."""
     if args.bootstrap_phylipfile is not None:
         raise NotImplementedError("Bootstrap pipeline is no longer supported.")
-    if args.priority_weights:
-        priority_weights = str(args.priority_weights).split(",")
-        priority_weights = [float(weight) for weight in priority_weights]
-    else:
-        priority_weights = None
 
     if len(args.infiles) == 2:
         trees, sequence_counts = pp.parse_outfile(
@@ -183,8 +178,6 @@ def infer(args):
         # Begin inference
         dag = pp.make_dag(trees, sequence_counts=sequence_counts)
 
-        outbase = args.outbase
-
         n_trees = dag.count_trees()
         if n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
@@ -201,14 +194,17 @@ def infer(args):
 
         dag.attr["parameters"] = (p, q)
 
-        with open(outbase + ".serialized_dag.p", "wb") as fh:
+        with open(args.outbase + ".serialized_dag.p", "wb") as fh:
             fh.write(dag.serialize())
+
     elif len(args.infiles) == 1:
         if args.verbose:
             print("Skipping parameter fitting, loading provided history DAG")
         with open(args.infiles[0], "rb") as fh:
             dag = hdag.deserialize(fh.read())
         p, q = dag.attr["parameters"]
+        n_trees = dag.count_trees()
+        validation_stats = {}
     else:
         raise ValueError(
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
@@ -219,9 +215,9 @@ def infer(args):
     # and isotype parsimony score if possible.
     dag = fd.filter_dag(
         dag,
-        priority_weights=priority_weights,
+        priority_weights=args.priority_weights,
         verbose=args.verbose,
-        outbase=outbase,
+        outbase=(None if args.tree_only else args.outbase),
         mutability_file=args.mutability,
         substitution_file=args.substitution,
         isotypemap_file=args.isotype_mapfile,
@@ -261,7 +257,7 @@ def infer(args):
 
     parsimony_forest = bp.CollapsedForest(forest=ctrees)
 
-    with open(outbase + ".inference.parsimony_forest.p", "wb") as f:
+    with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
         pickle.dump(parsimony_forest, f)
 
     if args.colormapfile is not None:
@@ -293,9 +289,8 @@ def infer(args):
         position_map2 = None
 
     for j, collapsed_tree in enumerate(parsimony_forest.forest, 1):
-        print("rendering tree...")
         collapsed_tree.render(
-            f"{outbase}.inference.{j}.svg",
+            f"{args.outbase}.inference.{j}.svg",
             idlabel=args.idlabel,
             colormap=colormap,
             frame=args.frame,
@@ -304,24 +299,25 @@ def infer(args):
             frame2=args.frame2,
             position_map2=position_map2,
         )
-        collapsed_tree.newick(f"{outbase}.inference.{j}.nk")
-        with open(f"{outbase}.inference.{j}.p", "wb") as f:
+        collapsed_tree.newick(f"{args.outbase}.inference.{j}.nk")
+        with open(f"{args.outbase}.inference.{j}.p", "wb") as f:
             pickle.dump(collapsed_tree, f)
 
-    # rank plot of observed allele frequencies
-    y = sorted(
-        (
-            node.abundance
-            for node in parsimony_forest.forest[0].tree.traverse()
-            if node.abundance != 0
-        ),
-        reverse=True,
-    )
-    plt.figure()
-    plt.bar(range(1, len(y) + 1), y, color="black")
-    plt.xlabel("genotype")
-    plt.ylabel("abundance")
-    plt.savefig(outbase + ".inference.abundance_rank." + args.img_type)
+    if not args.tree_only:
+        # rank plot of observed allele frequencies
+        y = sorted(
+            (
+                node.abundance
+                for node in parsimony_forest.forest[0].tree.traverse()
+                if node.abundance != 0
+            ),
+            reverse=True,
+        )
+        plt.figure()
+        plt.bar(range(1, len(y) + 1), y, color="black")
+        plt.xlabel("genotype")
+        plt.ylabel("abundance")
+        plt.savefig(args.outbase + ".inference.abundance_rank." + args.img_type)
 
 
 def simulate(args):
@@ -601,7 +597,8 @@ def get_parser():
         "--idmapfile",
         default=None,
         type=str,
-        help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.",
+        help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate."
+        " For use by isotype ranking.",
     )
     parser_infer.add_argument(
         "--isotype_mapfile",
@@ -642,12 +639,20 @@ def get_parser():
     )
     parser_infer.add_argument(
         "--priority_weights",
-        type=str,
+        type=float,
+        nargs="+",
         default=None,
         help=(
             "List of weights to assign tree traits when ranking trees. "
             "Weights are in order likelihood, isotype parsimony, mutation model parsimony, number of alleles. "
             "If not provided, trees will be ranked lexicographically by traits in that order, ignoring number of alleles."
+        ),
+    )
+    parser_infer.add_argument(
+        "--tree_only",
+        action="store_true",
+        help=(
+            "Skip writing all output, but only render the optimal tree. Useful for quickly querying a history DAG."
         ),
     )
 
