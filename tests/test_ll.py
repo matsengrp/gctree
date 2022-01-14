@@ -1,9 +1,11 @@
 import gctree.branching_processes as bp
 import numpy as np
 
+
 def test_numpy():
-    np.seterr(all='raise')
+    np.seterr(all="raise")
     print(np.exp(-np.inf))
+
 
 def test_ll_genotype_cache():
     p, q = 0.4, 0.6
