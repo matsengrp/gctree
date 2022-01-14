@@ -1,6 +1,10 @@
 r"""Utility functions."""
 from functools import wraps
+import Bio.Data.IUPACData
 
+bases = "AGCT-"
+ambiguous_dna_values = Bio.Data.IUPACData.ambiguous_dna_values.copy()
+ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
 
 def check_distance_arguments(distance):
     @wraps(distance)

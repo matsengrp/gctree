@@ -8,12 +8,9 @@ from scipy.stats import poisson
 import random
 import scipy
 from Bio.Seq import Seq
-from Bio.Data.IUPACData import ambiguous_dna_values
 from typing import Tuple, List, Callable
 
 
-bases = "AGCT-"
-ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
 
 
 class MutationModel:
@@ -385,10 +382,10 @@ def sequence_disambiguations(sequence, _accum=""):
     """
     if sequence:
         for index, base in enumerate(sequence):
-            if base in bases:
+            if base in utils.bases:
                 _accum += base
             else:
-                for newbase in ambiguous_dna_values[base]:
+                for newbase in utils.ambiguous_dna_values[base]:
                     yield from sequence_disambiguations(
                         sequence[index + 1 :], _accum=(_accum + newbase)
                     )

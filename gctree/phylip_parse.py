@@ -6,28 +6,25 @@ ancestral sequences), a newick tree (with matching internal node lables), and an
 """
 
 import gctree.branching_processes as bp
-from gctree.utils import hamming_distance
+import gctree.utils
 
 import historydag as hdag
 from ete3 import Tree
 import re
 import random
 from collections import defaultdict
-from Bio.Data.IUPACData import ambiguous_dna_values
 
 import pickle
 import argparse
 import warnings
 from typing import Dict
 
-bases = "AGCT-"
-ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
 code_vectors = {
-    code: [0 if base in ambiguous_dna_values[code] else float("inf") for base in bases]
-    for code in ambiguous_dna_values
+    code: [0 if base in gctree.utils.ambiguous_dna_values[code] else float("inf") for base in gctree.utils.bases]
+    for code in gctree.utils.ambiguous_dna_values
 }
 cost_adjust = {
-    base: [int(not i == j) for j in range(5)] for i, base in enumerate(bases)
+    base: [int(not i == j) for j in range(5)] for i, base in enumerate(gctree.utils.bases)
 }
 
 
@@ -250,10 +247,10 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
         random.setstate(random_state)
     for node in tree.traverse():
         for site, base in enumerate(node.sequence):
-            if base not in bases:
+            if base not in gctree.utils.bases:
 
                 def is_leaf(node):
-                    return (node.is_leaf()) or (node.sequence[site] in bases)
+                    return (node.is_leaf()) or (node.sequence[site] in gctree.utils.bases)
 
                 # First pass of Sankoff: compute cost vectors
                 for node2 in node.traverse(strategy="postorder", is_leaf_fn=is_leaf):
@@ -265,7 +262,7 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                                 node2.cv[i] += min(
                                     [
                                         sum(v)
-                                        for v in zip(child.cv, cost_adjust[bases[i]])
+                                        for v in zip(child.cv, cost_adjust[gctree.utils.bases[i]])
                                     ]
                                 )
                 # Second pass: Choose base and adjust children's cost vectors
@@ -279,13 +276,13 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                 # making changes.
                 preorder = list(node.traverse(strategy="preorder", is_leaf_fn=is_leaf))
                 for node2 in preorder:
-                    if node2.sequence[site] in bases:
+                    if node2.sequence[site] in gctree.utils.bases:
                         continue
                     min_cost = min(node2.cv)
                     base_index = random.choice(
                         [i for i, val in enumerate(node2.cv) if val == min_cost]
                     )
-                    new_base = bases[base_index]
+                    new_base = gctree.utils.bases[base_index]
                     # Adjust child cost vectors
                     if not is_leaf(node2):
                         for child in node2.children:
@@ -302,7 +299,7 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
             pass
     tree.dist = 0
     for node in tree.iter_descendants():
-        node.dist = hamming_distance(node.up.sequence, node.sequence)
+        node.dist = gctree.utils.hamming_distance(node.up.sequence, node.sequence)
     return tree
 
 
@@ -347,7 +344,7 @@ def build_tree(
         # remove possible unecessary unifurcation after rerooting
         if len(root_parent.children) == 1:
             root_parent.delete(prevent_nondicotomic=False)
-            root_parent.children[0].dist = hamming_distance(
+            root_parent.children[0].dist = gctree.utils.hamming_distance(
                 root_parent.children[0].sequence, nodes[root_id].sequence
             )
         tree = nodes[root_id]

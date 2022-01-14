@@ -8,7 +8,7 @@ import historydag as hdag
 from multiset import FrozenMultiset
 import matplotlib.pyplot as plt
 from typing import List, Tuple
-from numpy import exp, log
+import numpy as np
 
 
 def filter_dag(
@@ -191,10 +191,10 @@ def filter_dag(
         # rank plot of likelihoods
         plt.figure(figsize=(6.5, 2))
         try:
-            plt.plot(exp(dag_l), "ko", clip_on=False, markersize=4)
+            plt.plot(np.exp(dag_l), "ko", clip_on=False, markersize=4)
             plt.ylabel("gctree likelihood")
             plt.yscale("log")
-            plt.ylim([None, 1.1 * max(exp(dag_l))])
+            plt.ylim([None, 1.1 * max(np.exp(dag_l))])
         except FloatingPointError:
             plt.plot(dag_l, "ko", clip_on=False, markersize=4)
             plt.ylabel("gctree log-likelihood")
@@ -373,7 +373,7 @@ def _mutability_distance_precursors(mutation_model):
             pairs = sorted(pairs.items())
             p_arr = [
                 mult
-                * (log(context_model[mer][0]) + log(context_model[mer][1][newbase]))
+                * (np.log(context_model[mer][0]) + np.log(context_model[mer][1][newbase]))
                 for (mer, newbase), mult in pairs
             ]
             return -sum(p_arr)
