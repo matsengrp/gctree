@@ -27,6 +27,10 @@ jobs:
         python -m pip install --upgrade pip
         make install
 
+    - name: Test Numpy
+      run: |
+        python -vv testnumpy.py
+
     - name: Lint
       run: |
         make lint
