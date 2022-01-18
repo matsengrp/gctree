@@ -287,6 +287,24 @@ def test_fit():
         assert np.isclose(q, qold)
 
 
+def test_validate_ll_genotype():
+    c_max, m_max = 10, 10
+    for params in [(0.4, 0.6), (0.3, 0.5)]:
+        for c in range(c_max):
+            for m in range(m_max):
+                if c > 0 or m > 1:
+                    true_res = OldCollapsedTree._ll_genotype(c, m, *params)
+                    res = bp.CollapsedTree._ll_genotype(c, m, *params)
+                    assert np.isclose(true_res[0], res[0])
+                    assert np.isclose(true_res[1][0], res[1][0])
+                    assert np.isclose(true_res[1][1], res[1][1])
+
+def test_recursion_depth():
+    # Be sure ahead-of-time caching is implemented correctly to avoid
+    # recursion depth issues
+    bp.CollapsedTree._ll_genotype(5, 10000, .4, .6)
+
+
 class OldCollapsedTree:
     def __init__(self, tree: ete3.TreeNode = None, allow_repeats: bool = False):
         if tree is not None:

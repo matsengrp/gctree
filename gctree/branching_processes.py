@@ -39,6 +39,8 @@ class CollapsedTree:
         allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.
     """
 
+    _max_ll_cache: Dict[Tuple[float, float], Tuple[int, int]] = {}
+
     def __init__(self, tree: ete3.TreeNode = None, allow_repeats: bool = False):
         if tree is not None:
             self.tree = tree.copy()
@@ -150,8 +152,6 @@ class CollapsedTree:
                 ).items()
             )
             # store max c and m
-            self._c_max = max(node.abundance for node in self.tree.traverse())
-            self._m_max = max(len(node.children) for node in self.tree.traverse())
         else:
             self.tree = tree
 
@@ -219,6 +219,32 @@ class CollapsedTree:
         Returns:
             log-likelihood and gradient wrt :math:`p` and :math:`q`.
         """
+        if (p, q) in CollapsedTree._max_ll_cache:
+            cached_c, cached_m = CollapsedTree._max_ll_cache[(p, q)]
+        else:
+            cached_c, cached_m = 0, 0
+        # Check cache is built
+        if c > cached_c or m > cached_m:
+            CollapsedTree._max_ll_cache[(p, q)] = (c, m)
+            # Build missing cache in three parts:
+            # |1 3
+            # |X 2
+            # Where 'X' is already built, axes are c and m.
+            for cx in range(cached_c + 1):
+                for mx in range(cached_m, m + 1):
+                    if cx > 0 or mx > 1:
+                        CollapsedTree._ll_genotype(cx, mx, p, q)
+            for mx in range(cached_m + 1):
+                for cx in range(cached_c, c + 1):
+                    if cx > 0 or mx > 1:
+                        CollapsedTree._ll_genotype(cx, mx, p, q)
+            for mx in range(cached_m + 1, m + 1):
+                for cx in range(cached_c + 1, c + 1):
+                    if cx > 0 or mx > 1:
+                        CollapsedTree._ll_genotype(cx, mx, p, q)
+            # If we're here, we've computed what we want
+            return CollapsedTree._ll_genotype(c, m, p, q)
+
         if c == m == 0 or (c == 0 and m == 1):
             raise ValueError("Zero likelihood event")
         elif c == 1 and m == 0:
@@ -285,18 +311,9 @@ class CollapsedTree:
 
         return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
 
-    @staticmethod
-    def _build_ll_genotype_cache(c_max: int, m_max: int, p: np.float64, q: np.float64):
-        r"""build up the lru_cache from the bottom to avoid recursion depth
-        issues."""
-        CollapsedTree._ll_genotype.cache_clear()
-        for c in range(c_max + 1):
-            for m in range(m_max + 1):
-                if c > 0 or m > 1:
-                    CollapsedTree._ll_genotype(c, m, p, q)
 
     def ll(
-        self, p: np.float64, q: np.float64, build_cache: bool = False
+        self, p: np.float64, q: np.float64,
     ) -> Tuple[np.float64, np.ndarray]:
         r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.
 
@@ -313,8 +330,6 @@ class CollapsedTree:
         """
         if self.tree is None:
             raise ValueError("tree data must be defined to compute likelihood")
-        if build_cache:
-            self._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
         return lltree(self._cm_counts, p, q)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
@@ -362,9 +377,6 @@ class CollapsedTree:
                     ]
                 ).items()
             )
-            # store max c and m
-            self._c_max = max(node.abundance for node in self.tree.traverse())
-            self._m_max = max(len(node.children) for node in self.tree.traverse())
 
     def __repr__(self):
         r"""return a string representation for printing."""
@@ -856,14 +868,6 @@ class CollapsedForest:
                 raise ValueError("passed empty tree list")
             self.forest = forest
             self.n_trees = len(forest)
-            self._c_max = max(
-                node.abundance for tree in self.forest for node in tree.tree.traverse()
-            )
-            self._m_max = max(
-                len(node.children)
-                for tree in self.forest
-                for node in tree.tree.traverse()
-            )
         else:
             self.forest = None
             self.n_trees = None
@@ -880,13 +884,6 @@ class CollapsedForest:
         self.n_trees = n_trees
         for tree in self.forest:
             tree.simulate(p, q)
-
-        self._c_max = max(
-            node.abundance for tree in self.forest for node in tree.tree.traverse()
-        )
-        self._m_max = max(
-            len(node.children) for tree in self.forest for node in tree.tree.traverse()
-        )
 
     def ll(
         self,
@@ -916,11 +913,6 @@ class CollapsedForest:
         """
         if self.forest is None:
             raise ValueError("forest data must be defined to compute likelihood")
-        CollapsedTree._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
-        # This doesn't take full advantage of storing tree genotype
-        # multiplicities. Two trees with same cm multiplicities could have them
-        # ordered differently in _cm_counts tuple. Easy fix would require
-        # frozenmultiset import.
         cm_countlist = tuple(coll.Counter([tree._cm_counts for tree in self.forest]).items())
         return llforest(cm_countlist, p, q, marginal=marginal)
 
@@ -971,6 +963,7 @@ def lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndar
     r"""Log likelihood of branching process parameters :math:`(p, q)`
     .. math::
         \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)
+
     Args:
         cm_counts: an iterable containing tuples `((c, m), n)` where `n` is the number of nodes
             in the tree with abundance `c` and `m` mutant clades
