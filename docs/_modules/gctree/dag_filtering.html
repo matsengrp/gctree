@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gctree.dag_filtering &mdash; gctree  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html">
+            <img src="../../_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cite.html">Citing gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rendering-demo.html">Custom tree visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html#parsimony-utilities">Parsimony utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html#isotype">isotype</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html#modules">Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html">Open source code repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html#developer-tools">Developer tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html#todo-list">Todo list</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gctree</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>gctree.dag_filtering</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gctree.dag_filtering</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Functions for choosing optimal trees according to flexible criteria.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">gctree.mutation_model</span> <span class="k">as</span> <span class="nn">mm</span>
+<span class="kn">import</span> <span class="nn">gctree.isotyping</span> <span class="k">as</span> <span class="nn">itp</span>
+<span class="kn">import</span> <span class="nn">gctree.branching_processes</span> <span class="k">as</span> <span class="nn">bp</span>
+<span class="kn">import</span> <span class="nn">gctree.utils</span> <span class="k">as</span> <span class="nn">utils</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">lru_cache</span>
+<span class="kn">import</span> <span class="nn">historydag</span> <span class="k">as</span> <span class="nn">hdag</span>
+<span class="kn">from</span> <span class="nn">multiset</span> <span class="kn">import</span> <span class="n">FrozenMultiset</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">FrozenSet</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="filter_dag"><a class="viewcode-back" href="../../stubs/gctree.dag_filtering.filter_dag.html#gctree.dag_filtering.filter_dag">[docs]</a><span class="k">def</span> <span class="nf">filter_dag</span><span class="p">(</span>
+    <span class="n">dag</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDag</span><span class="p">,</span>
+    <span class="n">priority_weights</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">outbase</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">mutability_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">substitution_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotypemap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotypemap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">idmap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">idmap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">img_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;svg&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filter trees in the provided history DAG.</span>
+
+<span class="sd">    Trim the provided history DAG, containing sequence labels, by-node</span>
+<span class="sd">    abundance attributes, and a `parameters` attribute, to minimize a linear</span>
+<span class="sd">    combination of branching process likelihood, isotype parsimony score,</span>
+<span class="sd">    mutability parsimony score, and number of alleles, with coefficients</span>
+<span class="sd">    provided in the argument `priority_weights`, in that order.</span>
+
+<span class="sd">    To compute each tree&#39;s combined score, a linear transformation is applied to each trait,</span>
+<span class="sd">    so that the best observed value is mapped to 0, and the worst observed value is mapped to</span>
+<span class="sd">    1. The tree score is the weighted sum of transformed traits, using passed coefficients.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dag: A history DAG object to trim</span>
+<span class="sd">        priority_weights: A sequence of coefficients for prioritizing tree weights.</span>
+<span class="sd">            The order of coefficients is: branching process likelihood, isotype</span>
+<span class="sd">            parsimony score, mutability parsimony score, and number of alleles.</span>
+<span class="sd">            If priority_weights is not provided, trees will be ranked lexicographically</span>
+<span class="sd">            by traits, in the same order.</span>
+<span class="sd">        verbose: print information about trimming</span>
+<span class="sd">        outbase: file name stem for a file with information for each tree in the DAG, and rank plots of likelihoods.</span>
+<span class="sd">            If not provided, no such files will be written.</span>
+<span class="sd">        mutability_file: A mutability model</span>
+<span class="sd">        substitution_file: A substitution model</span>
+<span class="sd">        isotypemap: A mapping of sequences to isotypes</span>
+<span class="sd">        isotypemap: A dictionary mapping original IDs to observed isotype names</span>
+<span class="sd">        isotypemap_file: A csv file providing an `isotypemap`</span>
+<span class="sd">        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences</span>
+<span class="sd">        idmap_file: A csv file providing an `idmap`</span>
+<span class="sd">        isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order</span>
+<span class="sd">        img_type: Format to be used for output plots, if `outbase` string is provided.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The trimmed history DAG, containing all optimal trees according to specified criteria.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span>
+    <span class="n">placeholder_dagfuncs</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">names</span><span class="o">=</span><span class="s2">&quot;PlaceholderWeight&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">iso_funcs</span> <span class="o">=</span> <span class="n">isotype_dagfuncs</span><span class="p">(</span>
+            <span class="n">isotypemap_file</span><span class="o">=</span><span class="n">isotypemap_file</span><span class="p">,</span>
+            <span class="n">isotypemap</span><span class="o">=</span><span class="n">isotypemap</span><span class="p">,</span>
+            <span class="n">idmap_file</span><span class="o">=</span><span class="n">idmap_file</span><span class="p">,</span>
+            <span class="n">idmap</span><span class="o">=</span><span class="n">idmap</span><span class="p">,</span>
+            <span class="n">isotype_names</span><span class="o">=</span><span class="n">isotype_names</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Isotype parsimony will be used as a ranking criterion&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="n">iso_funcs</span> <span class="o">=</span> <span class="n">placeholder_dagfuncs</span> <span class="o">+</span> <span class="n">placeholder_dagfuncs</span>
+    <span class="n">ll_dagfuncs</span> <span class="o">=</span> <span class="n">ll_cmcount_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mutability_file</span> <span class="ow">and</span> <span class="n">substitution_file</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mutation model parsimony will be used as a ranking criterion&quot;</span><span class="p">)</span>
+        <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">mutability_dagfuncs</span><span class="p">(</span>
+            <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span> <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">placeholder_dagfuncs</span>
+    <span class="n">allele_dagfuncs</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="n">n1</span><span class="o">.</span><span class="n">label</span> <span class="o">!=</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">names</span><span class="o">=</span><span class="s2">&quot;NodeCount&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">priority_weights</span><span class="p">:</span>
+        <span class="c1"># a vector of relative weights, for ll, isotype pars, mutability_pars, alleles</span>
+        <span class="c1"># This is possible because all weights are additive up the tree,</span>
+        <span class="c1"># and the transformations are strictly increasing/decreasing.</span>
+        <span class="n">kwargls</span> <span class="o">=</span> <span class="p">[</span><span class="n">ll_dagfuncs</span><span class="p">,</span> <span class="n">iso_funcs</span><span class="p">,</span> <span class="n">mut_funcs</span><span class="p">,</span> <span class="n">allele_dagfuncs</span><span class="p">]</span>
+        <span class="n">minmaxls</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span>
+                <span class="n">dag</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">optimal_func</span><span class="o">=</span><span class="nb">min</span><span class="p">),</span>
+                <span class="n">dag</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">optimal_func</span><span class="o">=</span><span class="nb">max</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="n">kwargls</span>
+        <span class="p">]</span>
+        <span class="n">minmaxls</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">mn</span><span class="p">,</span> <span class="n">mx</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">mn</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">mx</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">mn</span><span class="p">,</span> <span class="n">mx</span><span class="p">),</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">minmaxls</span><span class="p">,</span> <span class="n">kwargls</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">transformation</span><span class="p">(</span><span class="n">mn</span><span class="p">,</span> <span class="n">mx</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">mx</span> <span class="o">-</span> <span class="n">mn</span> <span class="o">&lt;</span> <span class="mf">0.0001</span><span class="p">:</span>
+
+                <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">n</span> <span class="o">-</span> <span class="n">mn</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">mn</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">mx</span> <span class="o">-</span> <span class="n">mn</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="n">transformations</span> <span class="o">=</span> <span class="p">[</span><span class="n">transformation</span><span class="p">(</span><span class="o">*</span><span class="n">minmax</span><span class="p">)</span> <span class="k">for</span> <span class="n">minmax</span> <span class="ow">in</span> <span class="n">minmaxls</span><span class="p">]</span>
+        <span class="c1"># switch first transformation so that we maximize ls, not minimize:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">transformations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">transformations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="o">-</span><span class="n">f</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">def</span> <span class="nf">minfunckey</span><span class="p">(</span><span class="n">weighttuple</span><span class="p">):</span>
+            <span class="n">ll</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">isotypepars</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mutabilitypars</span><span class="p">,</span> <span class="n">alleles</span> <span class="o">=</span> <span class="n">weighttuple</span>
+            <span class="n">weightlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">ll</span><span class="p">,</span> <span class="n">isotypepars</span><span class="p">,</span> <span class="n">mutabilitypars</span><span class="p">,</span> <span class="n">alleles</span><span class="p">]</span>
+            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">priority</span> <span class="o">*</span> <span class="n">transform</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">priority</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                        <span class="n">priority_weights</span><span class="p">,</span> <span class="n">transformations</span><span class="p">,</span> <span class="n">weightlist</span>
+                    <span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="k">def</span> <span class="nf">minfunckey</span><span class="p">(</span><span class="n">weighttuple</span><span class="p">):</span>
+            <span class="n">ll</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">isotypepars</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mutabilitypars</span><span class="p">,</span> <span class="n">alleles</span> <span class="o">=</span> <span class="n">weighttuple</span>
+            <span class="c1"># Sort output by likelihood, then isotype parsimony, then mutability score</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="n">ll</span><span class="p">,</span> <span class="n">isotypepars</span><span class="p">,</span> <span class="n">mutabilitypars</span><span class="p">)</span>
+
+    <span class="c1"># Filter by likelihood, isotype parsimony, mutability,</span>
+    <span class="c1"># and make ctrees, cforest, and render trees</span>
+    <span class="n">dagweight_kwargs</span> <span class="o">=</span> <span class="n">ll_dagfuncs</span> <span class="o">+</span> <span class="n">iso_funcs</span> <span class="o">+</span> <span class="n">mut_funcs</span> <span class="o">+</span> <span class="n">allele_dagfuncs</span>
+    <span class="n">trimdag</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">trimdag</span><span class="o">.</span><span class="n">trim_optimal_weight</span><span class="p">(</span>
+        <span class="o">**</span><span class="n">dagweight_kwargs</span><span class="p">,</span> <span class="n">optimal_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">outbase</span><span class="p">:</span>
+        <span class="n">dag_ls</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dag</span><span class="o">.</span><span class="n">weight_count</span><span class="p">(</span><span class="o">**</span><span class="n">dagweight_kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">elements</span><span class="p">())</span>
+        <span class="c1"># To clear _dp_data fields of their large cargo</span>
+        <span class="n">dag</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span><span class="o">**</span><span class="n">placeholder_dagfuncs</span><span class="p">)</span>
+        <span class="n">dag_ls</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="s2">&quot;.dag_summary.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameters: </span><span class="si">{</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="s2">&quot;tree</span><span class="se">\t</span><span class="s2">alleles</span><span class="se">\t</span><span class="s2">logLikelihood</span><span class="se">\t\t</span><span class="s2">isotype_parsimony</span><span class="se">\t</span><span class="s2">mutability_parsimony&quot;</span>
+                <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">tree score&quot;</span> <span class="k">if</span> <span class="n">priority_weights</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">isotypepars</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mutabilitypars</span><span class="p">,</span> <span class="n">alleles</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                <span class="n">dag_ls</span><span class="p">,</span> <span class="mi">1</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="n">priority_weights</span><span class="p">:</span>
+                    <span class="n">treescore</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                        <span class="n">minfunckey</span><span class="p">((</span><span class="n">l</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">isotypepars</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">mutabilitypars</span><span class="p">,</span> <span class="n">alleles</span><span class="p">))</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">treescore</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">alleles</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">l</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">isotypepars</span><span class="si">}</span><span class="se">\t\t\t</span><span class="si">{</span><span class="n">mutabilitypars</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">treescore</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+        <span class="c1"># For use in later plots</span>
+        <span class="n">dag_l</span> <span class="o">=</span> <span class="p">[</span><span class="n">ls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">ls</span> <span class="ow">in</span> <span class="n">dag_ls</span><span class="p">]</span>
+
+        <span class="c1"># rank plot of likelihoods</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">dag_l</span><span class="p">),</span> <span class="s2">&quot;ko&quot;</span><span class="p">,</span> <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;gctree likelihood&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="kc">None</span><span class="p">,</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">dag_l</span><span class="p">))])</span>
+        <span class="k">except</span> <span class="ne">FloatingPointError</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">dag_l</span><span class="p">,</span> <span class="s2">&quot;ko&quot;</span><span class="p">,</span> <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;gctree log-likelihood&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="kc">None</span><span class="p">,</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">dag_l</span><span class="p">)])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;parsimony tree&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dag_l</span><span class="p">)])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span>
+            <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="s2">&quot;off&quot;</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="s2">&quot;off&quot;</span><span class="p">,</span> <span class="n">labelbottom</span><span class="o">=</span><span class="s2">&quot;off&quot;</span>
+        <span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="s2">&quot;.inference.likelihood_rank.&quot;</span> <span class="o">+</span> <span class="n">img_type</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;params: </span><span class="si">{</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;stats for optimal trees:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;alleles</span><span class="se">\t</span><span class="s2">logLikelihood</span><span class="se">\t\t</span><span class="s2">isotype_parsimony</span><span class="se">\t</span><span class="s2">mutability_parsimony&quot;</span>
+            <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">treescore&quot;</span> <span class="k">if</span> <span class="n">priority_weights</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="c1"># with format (ll, _, isotypepars, _, mutabilitypars, alleles)</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="n">trimdag</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span>
+            <span class="o">**</span><span class="n">dagweight_kwargs</span><span class="p">,</span> <span class="n">optimal_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="se">\t\t\t</span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="si">}</span><span class="se">\t</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">minfunckey</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span> <span class="k">if</span> <span class="n">priority_weights</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">trimdag</span></div>
+
+
+<div class="viewcode-block" id="ll_cmcount_dagfuncs"><a class="viewcode-back" href="../../stubs/gctree.dag_filtering.ll_cmcount_dagfuncs.html#gctree.dag_filtering.ll_cmcount_dagfuncs">[docs]</a><span class="k">def</span> <span class="nf">ll_cmcount_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A slower but more numerically stable equivalent to ll_genotype_dagfuncs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        p, q: branching process parameters</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A ``historydag.utils.AddFuncDict`` object, which can be unpacked and used</span>
+<span class="sd">        as keyword arguments for DAG trimming and weight annotation according to</span>
+<span class="sd">        branching process likelihood.</span>
+<span class="sd">        Weight format is ``(log likelihood, cmcounts)`` where cmcounts is a FrozenMultiset containing abundance, mutant clade count pairs.</span>
+<span class="sd">        To use these functions for DAG trimming, use an optimal function like</span>
+<span class="sd">        `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">funcdict</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">cmcounter_dagfuncs</span><span class="p">()</span>
+    <span class="n">cmcount_weight_func</span> <span class="o">=</span> <span class="n">funcdict</span><span class="p">[</span><span class="s2">&quot;edge_weight_func&quot;</span><span class="p">]</span>
+    <span class="n">cmcount_addfunc</span> <span class="o">=</span> <span class="n">funcdict</span><span class="p">[</span><span class="s2">&quot;accum_func&quot;</span><span class="p">]</span>
+
+    <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span><span class="n">cmcounter</span><span class="p">:</span> <span class="n">FrozenMultiset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cmcounter</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cmcounter</span><span class="p">:</span>
+                <span class="n">cmcounter</span> <span class="o">=</span> <span class="n">cmcounter</span> <span class="o">-</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)}</span> <span class="o">+</span> <span class="p">{(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)}</span>
+            <span class="k">return</span> <span class="n">bp</span><span class="o">.</span><span class="n">lltree</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">cmcounter</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span> <span class="nf">edge_weight_func</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">):</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">cmcount_weight_func</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ll</span><span class="p">(</span><span class="n">st</span><span class="p">),</span> <span class="n">st</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">accum_func</span><span class="p">(</span><span class="n">cmsetlist</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">FrozenMultiset</span><span class="p">]]):</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">cmcount_addfunc</span><span class="p">([</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">cmsetlist</span><span class="p">])</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ll</span><span class="p">(</span><span class="n">st</span><span class="p">),</span> <span class="n">st</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">FrozenMultiset</span><span class="p">()),</span>
+            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">edge_weight_func</span><span class="p">,</span>
+            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="n">accum_func</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;LogLikelihood&quot;</span><span class="p">,</span> <span class="s2">&quot;cmcounters&quot;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ll_genotype_dagfuncs"><a class="viewcode-back" href="../../stubs/gctree.dag_filtering.ll_genotype_dagfuncs.html#gctree.dag_filtering.ll_genotype_dagfuncs">[docs]</a><span class="k">def</span> <span class="nf">ll_genotype_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return functions for counting tree log likelihood on the history DAG.</span>
+
+<span class="sd">    Although these functions are fast, for numerical consistency use</span>
+<span class="sd">    :meth:`ll_cmcount_dagfuncs` instead.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        p, q: branching process parameters</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A ``historydag.utils.AddFuncDict`` object, which can be unpacked and used</span>
+<span class="sd">        as keyword arguments for DAG trimming and weight annotation according to</span>
+<span class="sd">        branching process likelihood.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">edge_weight_ll_genotype</span><span class="p">(</span><span class="n">n1</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The _ll_genotype weight of the target node, unless it should be</span>
+<span class="sd">        collapsed, then 0.</span>
+
+<span class="sd">        Expects DAG to have abundances added with</span>
+<span class="sd">        :meth:`dag.add_abundances`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="ow">and</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">n1</span><span class="o">.</span><span class="n">label</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">n2</span><span class="o">.</span><span class="n">clades</span><span class="p">)</span>
+            <span class="c1"># Check if this edge should be collapsed, and reduce mutant descendants</span>
+            <span class="k">if</span> <span class="nb">frozenset</span><span class="p">({</span><span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="p">})</span> <span class="ow">in</span> <span class="n">n2</span><span class="o">.</span><span class="n">clades</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">bp</span><span class="o">.</span><span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">n2</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">],</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">edge_weight_ll_genotype</span><span class="p">,</span>
+            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="mutability_dagfuncs"><a class="viewcode-back" href="../../stubs/gctree.dag_filtering.mutability_dagfuncs.html#gctree.dag_filtering.mutability_dagfuncs">[docs]</a><span class="k">def</span> <span class="nf">mutability_dagfuncs</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return functions for counting mutability parsimony on the history DAG.</span>
+
+<span class="sd">    Returns a ``historydag.AddFuncDict`` containing functions for counting</span>
+<span class="sd">    tree-wise sums of mutability distances in the history DAG.</span>
+
+<span class="sd">    This may not be stable numerically, but we expect every tree to have</span>
+<span class="sd">    a unique mutability parsimony score for non-degenerate mutability models, so</span>
+<span class="sd">    so this shouldn&#39;t matter in practice.</span>
+
+<span class="sd">    Arguments are passed to :meth:`MutationModel` constructor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mutation_model</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">MutationModel</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">)</span>
+
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">access_field</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">)</span>
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">ignore_ualabel</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">access_field</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dist</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span> <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">},</span>
+        <span class="n">names</span><span class="o">=</span><span class="s2">&quot;MutabilityParsimony&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_mutability_distance_precursors</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">mm</span><span class="o">.</span><span class="n">MutationModel</span><span class="p">):</span>
+    <span class="c1"># Caching could be moved to the MutationModel class instead.</span>
+    <span class="n">context_model</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">context_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">k</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">k</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="c1"># Build all sequences with (when k=5) one or two Ns on either end</span>
+    <span class="n">templates</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">left</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="n">left</span> <span class="o">-</span> <span class="n">right</span><span class="p">),</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">right</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">left</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">right</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">left</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">right</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="p">]</span>
+
+    <span class="n">kmers_to_compute</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">leftns</span> <span class="o">+</span> <span class="n">stub</span> <span class="o">+</span> <span class="n">rightns</span>
+        <span class="k">for</span> <span class="n">leftns</span><span class="p">,</span> <span class="n">ambig_stub</span><span class="p">,</span> <span class="n">rightns</span> <span class="ow">in</span> <span class="n">templates</span>
+        <span class="k">for</span> <span class="n">stub</span> <span class="ow">in</span> <span class="n">mm</span><span class="o">.</span><span class="n">sequence_disambiguations</span><span class="p">(</span><span class="n">ambig_stub</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="c1"># Cache all these mutabilities in context_model also</span>
+    <span class="n">context_model</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="n">kmer</span><span class="p">:</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">mutability</span><span class="p">(</span><span class="n">kmer</span><span class="p">)</span> <span class="k">for</span> <span class="n">kmer</span> <span class="ow">in</span> <span class="n">kmers_to_compute</span><span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="nd">@utils</span><span class="o">.</span><span class="n">check_distance_arguments</span>
+    <span class="k">def</span> <span class="nf">mutpairs</span><span class="p">(</span><span class="n">seq1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seq2</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">ns</span> <span class="o">=</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">seq1N</span> <span class="o">=</span> <span class="n">ns</span> <span class="o">+</span> <span class="n">seq1</span> <span class="o">+</span> <span class="n">ns</span>
+        <span class="n">seq2N</span> <span class="o">=</span> <span class="n">ns</span> <span class="o">+</span> <span class="n">seq2</span> <span class="o">+</span> <span class="n">ns</span>
+        <span class="n">mut_idxs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">index</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">base1</span><span class="p">,</span> <span class="n">base2</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">seq1N</span><span class="p">,</span> <span class="n">seq2N</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">base1</span> <span class="o">!=</span> <span class="n">base2</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">FrozenMultiset</span><span class="p">((</span><span class="n">seq1N</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">h</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">seq2N</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mut_idxs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_minus_logp</span><span class="p">(</span><span class="n">pairs</span><span class="p">:</span> <span class="n">FrozenMultiset</span><span class="p">):</span>
+        <span class="c1"># I have chosen to multiply substitution rate for central base</span>
+        <span class="c1"># with rate of new base. Not sure if this is a good choice.</span>
+        <span class="k">if</span> <span class="n">pairs</span><span class="p">:</span>
+            <span class="c1"># for floating point behavior</span>
+            <span class="n">pairs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">pairs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="n">p_arr</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">mult</span>
+                <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">context_model</span><span class="p">[</span><span class="n">mer</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">context_model</span><span class="p">[</span><span class="n">mer</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">newbase</span><span class="p">])</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">mer</span><span class="p">,</span> <span class="n">newbase</span><span class="p">),</span> <span class="n">mult</span> <span class="ow">in</span> <span class="n">pairs</span>
+            <span class="p">]</span>
+            <span class="k">return</span> <span class="o">-</span><span class="nb">sum</span><span class="p">(</span><span class="n">p_arr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="mutability_distance"><a class="viewcode-back" href="../../stubs/gctree.dag_filtering.mutability_distance.html#gctree.dag_filtering.mutability_distance">[docs]</a><span class="k">def</span> <span class="nf">mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">mm</span><span class="o">.</span><span class="n">MutationModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a fast distance function based on passed mutation_model.</span>
+
+<span class="sd">    First, caches computed mutabilities for k-mers with k // 2 N&#39;s on either end. This</span>
+<span class="sd">    is pretty fast for k=5, but the distance function should be created once</span>
+<span class="sd">    and reused.</span>
+
+<span class="sd">    The returned distance function sums :math:`-log(mutability * p)` over all</span>
+<span class="sd">    sites which do match between its two sequence arguments, where ``mutability``</span>
+<span class="sd">    is the mutation frequency of the k-mer surrounding the mutated base (in the</span>
+<span class="sd">    first sequence argument) and ``p`` is the transition probability to the new</span>
+<span class="sd">    base.</span>
+
+<span class="sd">    Note that, in particular, this function is not symmetric on its  arguments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span> <span class="o">=</span> <span class="n">_mutability_distance_precursors</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">sum_minus_logp</span><span class="p">(</span><span class="n">mutpairs</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">distance</span></div>
+
+
+<div class="viewcode-block" id="isotype_dagfuncs"><a class="viewcode-back" href="../../stubs/gctree.dag_filtering.isotype_dagfuncs.html#gctree.dag_filtering.isotype_dagfuncs">[docs]</a><span class="k">def</span> <span class="nf">isotype_dagfuncs</span><span class="p">(</span>
+    <span class="n">isotypemap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotypemap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">idmap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">idmap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return functions for filtering by isotype parsimony score on the history</span>
+<span class="sd">    DAG.</span>
+
+<span class="sd">    Returns a ``historydag.utils.AddFuncDict`` which contains functions</span>
+<span class="sd">    necessary for filtering by isotype parsimony score. These functions return</span>
+<span class="sd">    weights which are a tuple containing a progressive isotype score, and a</span>
+<span class="sd">    frozenset containing isotypes used internally to compute isotype scores.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        isotypemap: A dictionary mapping original IDs to observed isotype names</span>
+<span class="sd">        isotypemap_file: A csv file providing an `isotypemap`</span>
+<span class="sd">        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences</span>
+<span class="sd">        idmap_file: A csv file providing an `idmap`</span>
+<span class="sd">        isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A ``historydag.utils.AddFuncDict`` which may be passed as keyword arguments</span>
+<span class="sd">        to ``historydag.HistoryDag`` methods which trim or annotate by weight.</span>
+<span class="sd">        These functions return weights which are a tuple containing</span>
+<span class="sd">        a progressive isotype score, and a frozenset containing isotypes used for computing isotype scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">isotypemap_file</span> <span class="ow">and</span> <span class="n">isotypemap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">isotypemap_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">isotypemap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">isotypemap_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either isotypemap or isotypemap_file is required&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">idmap_file</span> <span class="ow">and</span> <span class="n">idmap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idmap_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">idmap</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+                <span class="n">seqid</span><span class="p">,</span> <span class="n">cell_ids</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+                <span class="n">cell_idset</span> <span class="o">=</span> <span class="p">{</span><span class="n">cell_id</span> <span class="k">for</span> <span class="n">cell_id</span> <span class="ow">in</span> <span class="n">cell_ids</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">cell_id</span><span class="p">}</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cell_idset</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">idmap</span><span class="p">[</span><span class="n">seqid</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell_idset</span>
+        <span class="n">newidmap</span> <span class="o">=</span> <span class="n">itp</span><span class="o">.</span><span class="n">explode_idmap</span><span class="p">(</span><span class="n">idmap</span><span class="p">,</span> <span class="n">isotypemap</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">isotype_names</span><span class="p">:</span>
+            <span class="n">isotype_names</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">isotype_names</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">isotype_names</span> <span class="o">=</span> <span class="n">itp</span><span class="o">.</span><span class="n">default_isotype_order</span>
+        <span class="n">newisotype</span> <span class="o">=</span> <span class="n">itp</span><span class="o">.</span><span class="n">IsotypeTemplate</span><span class="p">(</span><span class="n">isotype_names</span><span class="p">,</span> <span class="n">weight_matrix</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">new</span>
+    <span class="k">elif</span> <span class="n">idmap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Either idmap or idmap_file is required&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">distance_func</span><span class="p">(</span><span class="n">n1</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+            <span class="n">seqid</span> <span class="o">=</span> <span class="n">n2</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">seqid</span> <span class="ow">in</span> <span class="n">newidmap</span><span class="p">:</span>
+                <span class="n">isoset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">newisotype</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">newidmap</span><span class="p">[</span><span class="n">seqid</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">isoset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">isoset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">isoset</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sumweights</span><span class="p">(</span><span class="n">weights</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="n">itp</span><span class="o">.</span><span class="n">Isotype</span><span class="p">]]]):</span>
+        <span class="n">ps</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">]</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">weights</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">ts</span><span class="p">:</span>
+            <span class="n">newt</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="nb">min</span><span class="p">(</span><span class="n">ts</span><span class="p">)})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">newt</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="n">itp</span><span class="o">.</span><span class="n">isotype_distance</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">newt</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">el</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">ts</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ps</span><span class="p">),</span>
+            <span class="n">newt</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">()),</span>
+            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">distance_func</span><span class="p">,</span>
+            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="n">sumweights</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;IsotypeParsimony&quot;</span><span class="p">,</span> <span class="s2">&quot;Isotype_state&quot;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, William DeWitt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
