@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: [3.9]
+        python-version: [3.7]
 
     steps:
     - uses: actions/checkout@v2
@@ -26,10 +26,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         make install
-
-    - name: Test Numpy
-      run: |
-        python -vv testnumpy.py
 
     - name: Lint
       run: |

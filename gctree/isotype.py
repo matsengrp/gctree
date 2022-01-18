@@ -140,14 +140,12 @@ def main(arg_list=None):
         forest = pickle.load(fh)
     # parse the idmap file and the isotypemap file
     forest.forest = tuple(
-        sorted(
-            forest.forest, key=lambda tree: -tree.ll(*parameters, build_cache=False)[0]
-        )
+        sorted(forest.forest, key=lambda tree: -tree.ll(*parameters)[0])
     )
     tree_stats = [
         [
             ctree,
-            ctree.ll(*parameters, build_cache=False)[0],
+            ctree.ll(*parameters)[0],
             idx,
             sum(1 for _ in ctree.tree.traverse()),
         ]

@@ -15,7 +15,10 @@ import os
 import scipy.special as scs
 import scipy.optimize as sco
 import ete3
-import Bio
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio import AlignIO
+from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 import pickle
 import functools
 import collections as coll
@@ -326,7 +329,6 @@ class CollapsedTree:
         Args:
             p: branching probability
             q: mutation probability
-            build_cache: build cache from the bottom up. Normally this should be left to its default ``True``.
 
         Returns:
             Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
@@ -512,7 +514,7 @@ class CollapsedTree:
                         ):
                             if start is not None:
                                 seq = node.sequence[start:end]
-                                aa = Bio.Seq.Seq(
+                                aa = Seq(
                                     seq[
                                         (framex - 1) : (
                                             framex
@@ -522,7 +524,7 @@ class CollapsedTree:
                                     ]
                                 ).translate()
                                 seq = node.up.sequence[start:end]
-                                aa_parent = Bio.Seq.Seq(
+                                aa_parent = Seq(
                                     seq[
                                         (framex - 1) : (
                                             framex
@@ -572,16 +574,16 @@ class CollapsedTree:
         # if we labelled seqs, let's also write the alignment out so we have
         # the sequences (including of internal nodes)
         if idlabel:
-            aln = Bio.Phylo.TreeConstruction.MultipleSeqAlignment([])
+            aln = MultipleSeqAlignment([])
             for node in tree_copy.traverse():
                 aln.append(
-                    Bio.SeqRecordSeqRecord(
-                        Bio.Seq.Seq(str(node.sequence)),
+                    SeqRecord(
+                        Seq(str(node.sequence)),
                         id=str(node.name),
                         description=f"abundance={node.abundance}",
                     )
                 )
-            Bio.AlignIO.write(
+            AlignIO.write(
                 aln, open(os.path.splitext(outfile)[0] + ".fasta", "w"), "fasta"
             )
         return tree_copy.render(outfile, tree_style=ts)

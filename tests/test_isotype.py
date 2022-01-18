@@ -1,4 +1,4 @@
-from gctree.dag_filtering import make_isotype_dagfuncs
+from gctree.dag_filtering import isotype_dagfuncs
 import gctree.isotyping as iso
 import gctree.phylip_parse as pp
 import ete3
@@ -36,7 +36,7 @@ def test_isotype_disambiguate():
 
 
 def test_trim_byisotype():
-    kwargs = make_isotype_dagfuncs(
+    kwargs = isotype_dagfuncs(
         isotypemap_file="example/isotypemap.txt",
         idmap_file="tests/example_output/original/idmap.txt",
     )

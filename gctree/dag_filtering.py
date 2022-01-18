@@ -1,3 +1,5 @@
+r"""Functions for choosing optimal trees according to flexible criteria."""
+
 import gctree.mutation_model as mm
 import gctree.isotyping as itp
 import gctree.branching_processes as bp
@@ -7,25 +9,27 @@ from functools import lru_cache
 import historydag as hdag
 from multiset import FrozenMultiset
 import matplotlib.pyplot as plt
-from typing import List, Tuple
+from typing import List, Tuple, Mapping, Set, FrozenSet, Sequence
 import numpy as np
 
 
 def filter_dag(
-    dag,
-    priority_weights=None,
+    dag: hdag.HistoryDag,
+    priority_weights: Sequence[float] = None,
     verbose: bool = False,
     outbase: str = None,
     mutability_file: str = None,
     substitution_file: str = None,
-    isotypemap=None,
-    isotypemap_file=None,
-    idmap=None,
-    idmap_file=None,
-    isotype_names=None,
-    img_type="svg",
+    isotypemap: Mapping[str, str] = None,
+    isotypemap_file: str = None,
+    idmap: Mapping[str, Set[str]] = None,
+    idmap_file: str = None,
+    isotype_names: Sequence[str] = None,
+    img_type: str = "svg",
 ):
-    """Trim the provided history DAG, containing sequence labels, by-node
+    """Filter trees in the provided history DAG.
+
+    Trim the provided history DAG, containing sequence labels, by-node
     abundance attributes, and a `parameters` attribute, to minimize a linear
     combination of branching process likelihood, isotype parsimony score,
     mutability parsimony score, and number of alleles, with coefficients
@@ -68,7 +72,7 @@ def filter_dag(
         names="PlaceholderWeight",
     )
     try:
-        isotype_dagfuncs = make_isotype_dagfuncs(
+        iso_funcs = isotype_dagfuncs(
             isotypemap_file=isotypemap_file,
             isotypemap=isotypemap,
             idmap_file=idmap_file,
@@ -78,16 +82,16 @@ def filter_dag(
         if verbose:
             print("Isotype parsimony will be used as a ranking criterion")
     except ValueError:
-        isotype_dagfuncs = placeholder_dagfuncs + placeholder_dagfuncs
+        iso_funcs = placeholder_dagfuncs + placeholder_dagfuncs
     ll_dagfuncs = ll_cmcount_dagfuncs(p, q)
     if mutability_file and substitution_file:
         if verbose:
             print("Mutation model parsimony will be used as a ranking criterion")
-        mutability_dagfuncs = make_mutability_dagfuncs(
+        mut_funcs = mutability_dagfuncs(
             mutability_file=mutability_file, substitution_file=substitution_file
         )
     else:
-        mutability_dagfuncs = placeholder_dagfuncs
+        mut_funcs = placeholder_dagfuncs
     allele_dagfuncs = hdag.utils.AddFuncDict(
         {
             "start_func": lambda n: 0,
@@ -101,7 +105,7 @@ def filter_dag(
         # a vector of relative weights, for ll, isotype pars, mutability_pars, alleles
         # This is possible because all weights are additive up the tree,
         # and the transformations are strictly increasing/decreasing.
-        kwargls = [ll_dagfuncs, isotype_dagfuncs, mutability_dagfuncs, allele_dagfuncs]
+        kwargls = [ll_dagfuncs, iso_funcs, mut_funcs, allele_dagfuncs]
         minmaxls = [
             (
                 dag.optimal_weight_annotate(**kwargs, optimal_func=min),
@@ -153,9 +157,7 @@ def filter_dag(
 
     # Filter by likelihood, isotype parsimony, mutability,
     # and make ctrees, cforest, and render trees
-    dagweight_kwargs = (
-        ll_dagfuncs + isotype_dagfuncs + mutability_dagfuncs + allele_dagfuncs
-    )
+    dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_dagfuncs
     trimdag = dag.copy()
     trimdag.trim_optimal_weight(
         **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
@@ -228,7 +230,7 @@ def filter_dag(
     return trimdag
 
 
-def ll_cmcount_dagfuncs(p, q):
+def ll_cmcount_dagfuncs(p: np.float64, q: np.float64):
     """A slower but more numerically stable equivalent to ll_genotype_dagfuncs.
 
     Args:
@@ -274,9 +276,10 @@ def ll_cmcount_dagfuncs(p, q):
     )
 
 
-def ll_genotype_dagfuncs(p, q):
-    """Functions for counting tree log likelihood on the history DAG. Although
-    these functions are fast, for numerical consistency use
+def ll_genotype_dagfuncs(p: np.float64, q: np.float64):
+    """Return functions for counting tree log likelihood on the history DAG.
+
+    Although these functions are fast, for numerical consistency use
     :meth:`ll_cmcount_dagfuncs` instead.
 
     Args:
@@ -288,7 +291,7 @@ def ll_genotype_dagfuncs(p, q):
         branching process likelihood.
     """
 
-    def edge_weight_ll_genotype(n1, n2):
+    def edge_weight_ll_genotype(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
         """The _ll_genotype weight of the target node, unless it should be
         collapsed, then 0.
 
@@ -313,8 +316,10 @@ def ll_genotype_dagfuncs(p, q):
     )
 
 
-def make_mutability_dagfuncs(*args, **kwargs):
-    """Returns a ``historydag.AddFuncDict`` containing functions for counting
+def mutability_dagfuncs(*args, **kwargs):
+    """Return functions for counting mutability parsimony on the history DAG.
+
+    Returns a ``historydag.AddFuncDict`` containing functions for counting
     tree-wise sums of mutability distances in the history DAG.
 
     This may not be stable numerically, but we expect every tree to have
@@ -339,7 +344,7 @@ def make_mutability_dagfuncs(*args, **kwargs):
     )
 
 
-def _mutability_distance_precursors(mutation_model):
+def _mutability_distance_precursors(mutation_model: mm.MutationModel):
     # Caching could be moved to the MutationModel class instead.
     context_model = mutation_model.context_model.copy()
     k = mutation_model.k
@@ -363,7 +368,7 @@ def _mutability_distance_precursors(mutation_model):
     )
 
     @utils.check_distance_arguments
-    def mutpairs(seq1, seq2):
+    def mutpairs(seq1: str, seq2: str):
         ns = "N" * h
         seq1N = ns + seq1 + ns
         seq2N = ns + seq2 + ns
@@ -374,7 +379,7 @@ def _mutability_distance_precursors(mutation_model):
         ]
         return FrozenMultiset((seq1N[i - h : i + h + 1], seq2N[i]) for i in mut_idxs)
 
-    def sum_minus_logp(pairs):
+    def sum_minus_logp(pairs: FrozenMultiset):
         # I have chosen to multiply substitution rate for central base
         # with rate of new base. Not sure if this is a good choice.
         if pairs:
@@ -395,9 +400,10 @@ def _mutability_distance_precursors(mutation_model):
     return (mutpairs, sum_minus_logp)
 
 
-def mutability_distance(mutation_model):
-    """Returns a fast distance function based on passed mutation_model. First,
-    caches computed mutabilities for k-mers with k // 2 N's on either end. This
+def mutability_distance(mutation_model: mm.MutationModel):
+    """Returns a fast distance function based on passed mutation_model.
+
+    First, caches computed mutabilities for k-mers with k // 2 N's on either end. This
     is pretty fast for k=5, but the distance function should be created once
     and reused.
 
@@ -417,14 +423,17 @@ def mutability_distance(mutation_model):
     return distance
 
 
-def make_isotype_dagfuncs(
-    isotypemap=None,
-    isotypemap_file=None,
-    idmap=None,
-    idmap_file=None,
-    isotype_names=None,
+def isotype_dagfuncs(
+    isotypemap: Mapping[str, str] = None,
+    isotypemap_file: str = None,
+    idmap: Mapping[str, Set[str]] = None,
+    idmap_file: str = None,
+    isotype_names: Sequence[str] = None,
 ):
-    """Returns a historydag.utils.AddFuncDict which contains functions
+    """Return functions for filtering by isotype parsimony score on the history
+    DAG.
+
+    Returns a ``historydag.utils.AddFuncDict`` which contains functions
     necessary for filtering by isotype parsimony score. These functions return
     weights which are a tuple containing a progressive isotype score, and a
     frozenset containing isotypes used internally to compute isotype scores.
@@ -465,7 +474,7 @@ def make_isotype_dagfuncs(
     elif idmap is None:
         raise TypeError("Either idmap or idmap_file is required")
 
-    def distance_func(n1, n2):
+    def distance_func(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
         if n2.is_leaf():
             seqid = n2.attr["name"]
             if seqid in newidmap:
@@ -476,7 +485,7 @@ def make_isotype_dagfuncs(
             isoset = frozenset()
         return (0, isoset)
 
-    def sumweights(weights):
+    def sumweights(weights: Sequence[Tuple[float, FrozenSet[itp.Isotype]]]):
         ps = [i[0] for i in weights]
         ts = [item for i in weights for item in i[1]]
         if ts:

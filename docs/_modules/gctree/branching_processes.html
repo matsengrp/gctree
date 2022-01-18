@@ -1,75 +1,33 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>gctree.branching_processes &mdash; gctree  documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-
-    
+    <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../../index.html">
-          
-
-          
-            
             <img src="../../_static/logo.png" class="logo" alt="Logo"/>
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -77,18 +35,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
@@ -114,69 +61,30 @@
 <li class="toctree-l1"><a class="reference internal" href="../../developer.html#todo-list">Todo list</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">gctree</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="../index.html">Module code</a> &raquo;</li>
-        
       <li>gctree.branching_processes</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for gctree.branching_processes</h1><div class="highlight"><pre>
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">This module contains classes for simulation and inference for a binary</span>
@@ -186,26 +94,26 @@
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span> <span class="nn">gctree.utils</span> <span class="kn">import</span> <span class="n">hamming_distance</span>
+<span class="kn">import</span> <span class="nn">gctree.utils</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">logsumexp</span>
-<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">softmax</span>
-<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">minimize</span><span class="p">,</span> <span class="n">check_grad</span>
+<span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">scs</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">sco</span>
 <span class="kn">import</span> <span class="nn">ete3</span>
 <span class="kn">from</span> <span class="nn">Bio.Seq</span> <span class="kn">import</span> <span class="n">Seq</span>
 <span class="kn">from</span> <span class="nn">Bio.SeqRecord</span> <span class="kn">import</span> <span class="n">SeqRecord</span>
 <span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">AlignIO</span>
 <span class="kn">from</span> <span class="nn">Bio.Phylo.TreeConstruction</span> <span class="kn">import</span> <span class="n">MultipleSeqAlignment</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">lru_cache</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">collections</span> <span class="k">as</span> <span class="nn">coll</span>
+<span class="kn">import</span> <span class="nn">historydag</span> <span class="k">as</span> <span class="nn">hdag</span>
+<span class="kn">import</span> <span class="nn">multiset</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mp</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Callable</span>
-
-<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">cm</span>
-<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">Normalize</span><span class="p">,</span> <span class="n">to_hex</span>
 
 <span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span>
 
@@ -218,21 +126,27 @@
 <span class="sd">        tree: :class:`ete3.TreeNode` object with ``abundance`` node features</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        tree: ete3 tree with ``abundance`` node features. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.</span>
+<span class="sd">        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves, and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.</span>
 <span class="sd">        allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_max_ll_cache</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">allow_repeats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">tree</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="mi">0</span>
+
             <span class="c1"># remove unobserved internal unifurcations</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
-                <span class="n">parent</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span>
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                    <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span>
-                        <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">parent</span><span class="o">.</span><span class="n">sequence</span>
-                    <span class="p">)</span>
+
+            <span class="c1"># ensure distances are correct before collapse</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">gctree</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">hamming_distance</span><span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span>
+                <span class="p">)</span>
 
             <span class="c1"># iterate over the tree below root and collapse edges of zero</span>
             <span class="c1"># length if the node is a leaf and it&#39;s parent has nonzero</span>
@@ -242,7 +156,8 @@
             <span class="n">observed_genotypes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_descendants</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span> <span class="o">+=</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+                    <span class="c1"># See note in docsrc/implementation_details/notes.rst for discussion</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                         <span class="n">node_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
                     <span class="k">else</span><span class="p">:</span>
@@ -277,9 +192,6 @@
                     <span class="s2">&quot;symmetric diff: &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">observed_genotypes</span> <span class="o">^</span> <span class="n">final_observed_genotypes</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
-            <span class="k">assert</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span>
-                <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
-            <span class="p">)</span>
 
             <span class="n">rep_seq</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span>
                 <span class="nb">set</span><span class="p">(</span>
@@ -322,13 +234,17 @@
                 <span class="c1"># sort children of this node based on partion and sequence</span>
                 <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">node</span><span class="p">:</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">partition</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">))</span>
 
-            <span class="c1"># create list of (c, m) for each node</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">))</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
-            <span class="p">]</span>
+            <span class="c1"># create tuple (c, m) for each node, and store in a tuple of</span>
+            <span class="c1"># ((c, m), n)&#39;s, where n is the multiplicity of (c, m) seen in the tree.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cm_counts</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                <span class="n">coll</span><span class="o">.</span><span class="n">Counter</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">))</span>
+                        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+                    <span class="p">]</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">)</span>
             <span class="c1"># store max c and m</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_c_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_m_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span>
 
@@ -376,7 +292,7 @@
         <span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="n">m</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_ll_genotype</span><span class="p">(</span>
         <span class="n">c</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
@@ -396,10 +312,34 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            log-likelihood and gradient wrt :math:`p` and :math:`q`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span> <span class="ow">in</span> <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_max_ll_cache</span><span class="p">:</span>
+            <span class="n">cached_c</span><span class="p">,</span> <span class="n">cached_m</span> <span class="o">=</span> <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_max_ll_cache</span><span class="p">[(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cached_c</span><span class="p">,</span> <span class="n">cached_m</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+        <span class="c1"># Check cache is built</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">&gt;</span> <span class="n">cached_c</span> <span class="ow">or</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="n">cached_m</span><span class="p">:</span>
+            <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_max_ll_cache</span><span class="p">[(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+            <span class="c1"># Build missing cache in three parts:</span>
+            <span class="c1"># |1 3</span>
+            <span class="c1"># |X 2</span>
+            <span class="c1"># Where &#39;X&#39; is already built, axes are c and m.</span>
+            <span class="k">for</span> <span class="n">cx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cached_c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">mx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cached_m</span><span class="p">,</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">cx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">mx</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">mx</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">mx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cached_m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">cx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cached_c</span><span class="p">,</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">cx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">mx</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">mx</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">mx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cached_m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">cx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cached_c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">cx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">mx</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">mx</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+            <span class="c1"># If we&#39;re here, we&#39;ve computed what we want</span>
+            <span class="k">return</span> <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="n">logf_result</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-            <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Zero likelihood event&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">logf_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
             <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
@@ -417,25 +357,24 @@
                         <span class="n">neighbor_dlogfdq</span><span class="p">,</span>
                     <span class="p">),</span>
                 <span class="p">)</span> <span class="o">=</span> <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
-                <span class="n">logf_result</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
-                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span>
-                    <span class="o">+</span> <span class="n">neighbor_ll_genotype</span>
-                <span class="p">)</span>
-                <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">p</span> <span class="o">+</span> <span class="n">neighbor_dlogfdp</span>
-                <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">q</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="n">neighbor_dlogfdq</span>
+                <span class="n">logg_array</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                        <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                        <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+                        <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span>
+                        <span class="o">+</span> <span class="n">neighbor_ll_genotype</span>
+                    <span class="p">)</span>
+                <span class="p">]</span>
+                <span class="n">dloggdp_array</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="n">p</span> <span class="o">+</span> <span class="n">neighbor_dlogfdp</span><span class="p">]</span>
+                <span class="n">dloggdq_array</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="n">q</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="n">neighbor_dlogfdq</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">logf_result</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-                <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="mf">0.0</span>
-                <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="mf">0.0</span>
-            <span class="n">logg_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">logf_result</span><span class="p">]</span>
-            <span class="n">dloggdp_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">dlogfdp_result</span><span class="p">]</span>
-            <span class="n">dloggdq_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">dlogfdq_result</span><span class="p">]</span>
+                <span class="n">logg_array</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">dloggdp_array</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">dloggdq_array</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">cx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">mx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="p">(</span><span class="n">cx</span> <span class="o">==</span> <span class="n">mx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="p">(</span><span class="n">cx</span> <span class="o">==</span> <span class="n">c</span> <span class="ow">and</span> <span class="n">mx</span> <span class="o">==</span> <span class="n">m</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">cx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">mx</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">c</span> <span class="o">-</span> <span class="n">cx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">m</span> <span class="o">-</span> <span class="n">mx</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
                         <span class="p">(</span>
                             <span class="n">neighbor1_ll_genotype</span><span class="p">,</span>
                             <span class="p">(</span><span class="n">neighbor1_dlogfdp</span><span class="p">,</span> <span class="n">neighbor1_dlogfdq</span><span class="p">),</span>
@@ -455,24 +394,20 @@
                         <span class="n">logg_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">logg</span><span class="p">)</span>
                         <span class="n">dloggdp_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dloggdp</span><span class="p">)</span>
                         <span class="n">dloggdq_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dloggdq</span><span class="p">)</span>
-            <span class="n">logf_result</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">logg_array</span><span class="p">)</span>
-            <span class="n">softmax_logg_array</span> <span class="o">=</span> <span class="n">softmax</span><span class="p">(</span><span class="n">logg_array</span><span class="p">)</span>
-            <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">softmax_logg_array</span><span class="p">,</span> <span class="n">dloggdp_array</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-            <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">softmax_logg_array</span><span class="p">,</span> <span class="n">dloggdq_array</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">logg_array</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Zero likelihood event&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logf_result</span> <span class="o">=</span> <span class="n">scs</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">logg_array</span><span class="p">)</span>
+                <span class="n">softmax_logg_array</span> <span class="o">=</span> <span class="n">scs</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logg_array</span><span class="p">)</span>
+                <span class="n">dlogfdp_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">softmax_logg_array</span><span class="p">,</span> <span class="n">dloggdp_array</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                <span class="n">dlogfdq_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">softmax_logg_array</span><span class="p">,</span> <span class="n">dloggdq_array</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">logf_result</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dlogfdp_result</span><span class="p">,</span> <span class="n">dlogfdq_result</span><span class="p">]))</span>
 
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_build_ll_genotype_cache</span><span class="p">(</span><span class="n">c_max</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m_max</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;build up the lru_cache from the bottom to avoid recursion depth</span>
-<span class="sd">        issues.&quot;&quot;&quot;</span>
-        <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="o">.</span><span class="n">cache_clear</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">c_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-                <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
-
 <div class="viewcode-block" id="CollapsedTree.ll"><a class="viewcode-back" href="../../stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.ll">[docs]</a>    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">build_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+        <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.</span>
 
@@ -482,31 +417,13 @@
 <span class="sd">        Args:</span>
 <span class="sd">            p: branching probability</span>
 <span class="sd">            q: mutation probability</span>
-<span class="sd">            build_cache: build cache from the bottom up. Normally this should be left to its default ``True``.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tree data must be defined to compute likelihood&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">build_cache</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_build_ll_genotype_cache</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_c_max</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_m_max</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
-            <span class="ow">and</span> <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span>
-            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="o">==</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-        <span class="p">):</span>
-            <span class="c1"># if unifurcation not possible under current model, add a</span>
-            <span class="c1"># psuedocount for the root</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
-        <span class="c1"># extract vector of function values and gradient components</span>
-        <span class="n">logf_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span><span class="p">]</span>
-        <span class="n">logf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">logf_data</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="n">grad_ll_genotype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">logf_data</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">logf</span><span class="p">,</span> <span class="n">grad_ll_genotype</span></div>
+        <span class="k">return</span> <span class="n">lltree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cm_counts</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedTree.mle"><a class="viewcode-back" href="../../stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.mle">[docs]</a>    <span class="k">def</span> <span class="nf">mle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Maximum likelihood estimate of :math:`(p, q)`.</span>
@@ -545,12 +462,14 @@
 
         <span class="k">if</span> <span class="n">root</span><span class="p">:</span>
             <span class="c1"># create list of (c, m) for each node</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_cm_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">))</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
-            <span class="p">]</span>
-            <span class="c1"># store max c and m</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_c_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_m_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cm_counts</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                <span class="n">coll</span><span class="o">.</span><span class="n">Counter</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">))</span>
+                        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+                    <span class="p">]</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">)</span></div>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;return a string representation for printing.&quot;&quot;&quot;</span>
@@ -775,7 +694,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Dictionary of node names to hex color strings, which may be used as the colormap in :meth:`gctree.CollapsedTree.render`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">cmap</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cmap</span><span class="p">)</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cmap</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">vmin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">vmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">([</span><span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">feature</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()])</span>
@@ -783,10 +702,10 @@
             <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">([</span><span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">feature</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()])</span>
 
         <span class="c1"># define the minimum and maximum values for our colormap</span>
-        <span class="n">norm</span> <span class="o">=</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">)</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="p">{</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">to_hex</span><span class="p">(</span><span class="n">cmap</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">feature</span><span class="p">))))</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">mp</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">to_hex</span><span class="p">(</span><span class="n">cmap</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">feature</span><span class="p">))))</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
         <span class="p">}</span></div>
 
@@ -858,7 +777,7 @@
                         <span class="p">(</span><span class="n">nodei_true</span><span class="p">,</span> <span class="n">nodej_true</span><span class="p">)</span>
                     <span class="p">)</span><span class="o">.</span><span class="n">sequence</span>
                     <span class="n">MRCA</span> <span class="o">=</span> <span class="n">tree2</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_common_ancestor</span><span class="p">((</span><span class="n">nodei</span><span class="p">,</span> <span class="n">nodej</span><span class="p">))</span><span class="o">.</span><span class="n">sequence</span>
-                    <span class="n">d</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span><span class="n">MRCA_true</span><span class="p">,</span> <span class="n">MRCA</span><span class="p">)</span>
+                    <span class="n">d</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">gctree</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">hamming_distance</span><span class="p">(</span><span class="n">MRCA_true</span><span class="p">,</span> <span class="n">MRCA</span><span class="p">)</span>
                     <span class="n">sum_sites</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">MRCA_true</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">sum_sites</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
         <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;RF&quot;</span><span class="p">:</span>
@@ -1042,14 +961,6 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;passed empty tree list&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="o">=</span> <span class="n">forest</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_c_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
-                <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_m_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
-                <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span>
-                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
-            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1065,14 +976,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="o">=</span> <span class="p">[</span><span class="n">CollapsedTree</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_trees</span><span class="p">)]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span> <span class="o">=</span> <span class="n">n_trees</span>
         <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span><span class="p">:</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_c_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_m_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
-        <span class="p">)</span></div>
+            <span class="n">tree</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.ll"><a class="viewcode-back" href="../../stubs/gctree.CollapsedForest.html#gctree.CollapsedForest.ll">[docs]</a>    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1102,29 +1006,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;forest data must be defined to compute likelihood&quot;</span><span class="p">)</span>
-        <span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_build_ll_genotype_cache</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_c_max</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_m_max</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
-        <span class="c1"># we don&#39;t want to build the cache again in each tree</span>
-        <span class="n">terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">tree</span><span class="o">.</span><span class="n">ll</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">build_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span><span class="p">]</span>
-        <span class="n">ls</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">term</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">])</span>
-        <span class="n">grad_ls</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">term</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">marginal</span><span class="p">:</span>
-            <span class="c1"># we need to find the smallest derivative component for each</span>
-            <span class="c1"># coordinate, then subtract off to get positive things to logsumexp</span>
-            <span class="n">grad_l</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">))):</span>
-                <span class="n">i_prime</span> <span class="o">=</span> <span class="n">grad_ls</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
-                <span class="n">grad_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">grad_ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
-                        <span class="n">logsumexp</span><span class="p">(</span>
-                            <span class="n">ls</span> <span class="o">-</span> <span class="n">ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">],</span> <span class="n">b</span><span class="o">=</span><span class="n">grad_ls</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">grad_ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                        <span class="p">)</span>
-                        <span class="o">-</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">ls</span> <span class="o">-</span> <span class="n">ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">])</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
-            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ls</span><span class="p">))</span> <span class="o">+</span> <span class="n">logsumexp</span><span class="p">(</span><span class="n">ls</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">grad_l</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ls</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">grad_ls</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+        <span class="n">cm_countlist</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">coll</span><span class="o">.</span><span class="n">Counter</span><span class="p">([</span><span class="n">tree</span><span class="o">.</span><span class="n">_cm_counts</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forest</span><span class="p">])</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">llforest</span><span class="p">(</span><span class="n">cm_countlist</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">marginal</span><span class="o">=</span><span class="n">marginal</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.mle"><a class="viewcode-back" href="../../stubs/gctree.CollapsedForest.html#gctree.CollapsedForest.mle">[docs]</a>    <span class="k">def</span> <span class="nf">mle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
         <span class="k">return</span> <span class="n">_mle_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
@@ -1149,13 +1034,13 @@
         <span class="sd">&quot;&quot;&quot;negative log likelihood.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="o">-</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
 
-    <span class="n">grad_check</span> <span class="o">=</span> <span class="n">check_grad</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x_0</span><span class="p">)</span>
+    <span class="n">grad_check</span> <span class="o">=</span> <span class="n">sco</span><span class="o">.</span><span class="n">check_grad</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x_0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">grad_check</span> <span class="o">&gt;</span> <span class="mf">1e-3</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
             <span class="s2">&quot;gradient mismatches finite difference &quot;</span> <span class="sa">f</span><span class="s2">&quot;approximation by </span><span class="si">{</span><span class="n">grad_check</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="ne">RuntimeWarning</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">sco</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span>
         <span class="n">f</span><span class="p">,</span>
         <span class="n">jac</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">x0</span><span class="o">=</span><span class="n">x_0</span><span class="p">,</span>
@@ -1167,49 +1052,259 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;optimization not sucessful, &quot;</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">result</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">lltree</span><span class="p">(</span><span class="n">cm_counts</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)`</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cm_counts: an iterable containing tuples `((c, m), n)` where `n` is the number of nodes</span>
+<span class="sd">            in the tree with abundance `c` and `m` mutant clades</span>
+<span class="sd">        p: branching probability</span>
+<span class="sd">        q: mutation probability</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">count_ls</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">cm</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cm_counts</span><span class="p">]</span>
+    <span class="n">cm_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">cm</span> <span class="k">for</span> <span class="n">cm</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cm_counts</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># if unifurcation not possible under current model, add a</span>
+        <span class="c1"># psuedocount for the root</span>
+        <span class="n">cm_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># extract vector of function values and gradient components</span>
+    <span class="n">logf_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cm_list</span><span class="p">]</span>
+    <span class="n">logf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logf_data</span><span class="p">)])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">grad_ll_genotype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logf_data</span><span class="p">)]</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">logf</span><span class="p">,</span> <span class="n">grad_ll_genotype</span>
+
+
+<span class="k">def</span> <span class="nf">llforest</span><span class="p">(</span>
+    <span class="n">cm_countlist</span><span class="p">,</span>
+    <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+    <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+    <span class="n">marginal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given `cm_countlist`, an iterable</span>
+<span class="sd">    containing tuples `(cm_counts, mult)`, where `cm_counts` is an iterable describing a tree, and `mult`</span>
+<span class="sd">    is the number of trees in the forest which can be described with the iterable `cm_counts`.</span>
+
+<span class="sd">    `cm_counts` is in the format expected as an argument to :meth:`lltree`.</span>
+
+<span class="sd">    If ``marginal=False`` (the default), compute the joint log likelihood</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        \ell(p, q; T, A) = \sum_{i=1}^n\log\mathbb{P}(T_i, A_i \mid p, q),</span>
+<span class="sd">    otherwise compute the marginal log likelihood</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        \ell(p, q; T, A) = \log\left(\sum_{i=1}^n\mathbb{P}(T_i, A_i \mid p, q)\right).</span>
+<span class="sd">    Args:</span>
+<span class="sd">        p: branching probability</span>
+<span class="sd">        q: mutation probability</span>
+<span class="sd">        marginal: compute the marginal likelihood over trees, otherwise compute the joint likelihood of trees</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">terms</span> <span class="o">=</span> <span class="p">[[</span><span class="n">lltree</span><span class="p">(</span><span class="n">cmcounts</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">),</span> <span class="n">count</span><span class="p">]</span> <span class="k">for</span> <span class="n">cmcounts</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">cm_countlist</span><span class="p">]</span>
+    <span class="n">ls</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">term</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">])</span>
+    <span class="n">grad_ls</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">term</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">])</span>
+    <span class="c1"># This can be done ahead of time</span>
+    <span class="n">count_ls</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">term</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">marginal</span><span class="p">:</span>
+        <span class="c1"># we need to find the smallest derivative component for each</span>
+        <span class="c1"># coordinate, then subtract off to get positive things to logsumexp</span>
+        <span class="n">grad_l</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">((</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">))):</span>
+            <span class="n">i_prime</span> <span class="o">=</span> <span class="n">grad_ls</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+            <span class="n">grad_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">grad_ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+                    <span class="n">scs</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span>
+                        <span class="n">ls</span> <span class="o">-</span> <span class="n">ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">],</span>
+                        <span class="n">b</span><span class="o">=</span><span class="p">(</span><span class="n">grad_ls</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">grad_ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="o">-</span> <span class="n">scs</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">ls</span> <span class="o">-</span> <span class="n">ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">],</span> <span class="n">b</span><span class="o">=</span><span class="n">count_ls</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">count_ls</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">+</span> <span class="n">scs</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">count_ls</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="n">grad_l</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ls</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[(</span><span class="n">grad_ls</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="p">(</span><span class="n">grad_ls</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()]</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">fit_branching_process</span><span class="p">(</span><span class="n">dag</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">marginal</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;fit p and q using all trees in the dag. DAG should be abundance_annotated, like that output by phylip_parse.</span>
+<span class="sd">    if we get floating point errors, try a few more times</span>
+<span class="sd">    (starting params aren&#39;t random right now, but they could be in the future?)&quot;&quot;&quot;</span>
+    <span class="n">cmcount_dagfuncs</span> <span class="o">=</span> <span class="n">cmcounter_dagfuncs</span><span class="p">()</span>
+    <span class="n">cmcounters</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">weight_count</span><span class="p">(</span><span class="o">**</span><span class="n">cmcount_dagfuncs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_tuple</span><span class="p">(</span><span class="n">mset</span><span class="p">):</span>
+        <span class="c1"># lltree checks first item in list for unobserved root unifurcation,</span>
+        <span class="c1"># but here it could end up not being first.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">in</span> <span class="n">mset</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">mset</span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">==</span> <span class="mi">1</span>
+            <span class="n">mset</span> <span class="o">=</span> <span class="n">mset</span> <span class="o">-</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)}</span> <span class="o">+</span> <span class="p">{(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">mset</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+    <span class="n">cmcountlist</span> <span class="o">=</span> <span class="p">[(</span><span class="n">to_tuple</span><span class="p">(</span><span class="n">mset</span><span class="p">),</span> <span class="n">mult</span><span class="p">)</span> <span class="k">for</span> <span class="n">mset</span><span class="p">,</span> <span class="n">mult</span> <span class="ow">in</span> <span class="n">cmcounters</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+
+    <span class="n">max_tries</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="k">for</span> <span class="n">tries</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_tries</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">_mle_helper</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">llforest</span><span class="p">(</span><span class="n">cmcountlist</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">marginal</span><span class="o">=</span><span class="n">marginal</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">except</span> <span class="ne">FloatingPointError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tries</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">max_tries</span> <span class="ow">and</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;floating point error in MLE: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Attempt </span><span class="si">{</span><span class="n">tries</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">max_tries</span><span class="si">}</span><span class="s2">. &quot;</span>
+                    <span class="s2">&quot;Rerunning with new random start.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">clade_tree_to_ctree</span><span class="p">(</span>
+    <span class="n">clade_tree</span><span class="p">,</span>
+    <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">counts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">parsimony_score</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">root_seq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">leaf_seqs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">etetree</span> <span class="o">=</span> <span class="n">clade_tree</span><span class="o">.</span><span class="n">to_ete</span><span class="p">(</span>
+        <span class="n">name_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+        <span class="n">features</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">],</span>
+        <span class="n">feature_funcs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;abundance&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">]},</span>
+    <span class="p">)</span>
+
+    <span class="n">ctree</span> <span class="o">=</span> <span class="n">CollapsedTree</span><span class="p">(</span><span class="n">etetree</span><span class="p">)</span>
+    <span class="c1"># Here can do some validation on the tree:</span>
+    <span class="c1"># root name:</span>
+    <span class="k">if</span> <span class="n">root</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;collapsed tree should have root name &#39;</span><span class="si">{</span><span class="n">root</span><span class="si">}</span><span class="s2">&#39; but has instead </span><span class="si">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+    <span class="c1"># counts:</span>
+    <span class="k">if</span> <span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">etetree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">counts</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
+                        <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="n">counts</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">counts</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span>
+
+    <span class="c1"># unnamed_seq issue:</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;unnamed_seq&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Some node names are missing&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Parsimony:</span>
+    <span class="k">if</span> <span class="n">parsimony_score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">parsimony_score</span> <span class="o">!=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()]):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;History DAG tree parsimony score does not match parsimony score provided&quot;</span>
+            <span class="p">)</span>
+    <span class="c1"># Root sequence:</span>
+    <span class="k">if</span> <span class="n">root_seq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span> <span class="o">!=</span> <span class="n">root_seq</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;History DAG root node sequence does not match root sequence provided&quot;</span>
+            <span class="p">)</span>
+    <span class="c1"># Leaf names:</span>
+    <span class="k">if</span> <span class="n">leaf_seqs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># A dictionary of leaf sequences to leaf names</span>
+        <span class="n">observed_set</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">()</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">observed_set</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_root</span><span class="p">()</span> <span class="ow">and</span> <span class="n">leaf_seqs</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="o">!=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;History DAG tree leaf names don&#39;t match sequences&quot;</span><span class="p">)</span>
+        <span class="n">observed_seqs</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">observed_set</span><span class="p">}</span>
+        <span class="n">nonroot_observed_seqs</span> <span class="o">=</span> <span class="n">observed_seqs</span> <span class="o">-</span> <span class="p">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">}</span>
+        <span class="n">nonroot_leaf_seqs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">leaf_seqs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="p">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">nonroot_leaf_seqs</span> <span class="o">!=</span> <span class="n">nonroot_observed_seqs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Observed nonroot sequences in history DAG tree don&#39;t match &quot;</span>
+                <span class="s2">&quot;observed nonroot sequences passed in leaf_seqs.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ctree</span>
+
+
+<span class="k">def</span> <span class="nf">cmcounter_dagfuncs</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Functions for accumulating frozen multisets of (c, m) pairs in trees in</span>
+<span class="sd">    the DAG.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">edge_weight_func</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n1</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span> <span class="ow">and</span> <span class="n">n2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+            <span class="c1"># Then this is a leaf-adjacent node with nonzero abundance</span>
+            <span class="k">return</span> <span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">n2</span><span class="o">.</span><span class="n">clades</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">frozenset</span><span class="p">({</span><span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="p">})</span> <span class="ow">in</span> <span class="n">n2</span><span class="o">.</span><span class="n">clades</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">([(</span><span class="n">n2</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">],</span> <span class="n">m</span><span class="p">)])</span>
+
+    <span class="k">def</span> <span class="nf">accum_func</span><span class="p">(</span><span class="n">cmsetlist</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">]):</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">cmset</span> <span class="ow">in</span> <span class="n">cmsetlist</span><span class="p">:</span>
+            <span class="n">st</span> <span class="o">+=</span> <span class="n">cmset</span>
+        <span class="k">return</span> <span class="n">st</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">(),</span>
+            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">edge_weight_func</span><span class="p">,</span>
+            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="n">accum_func</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">names</span><span class="o">=</span><span class="s2">&quot;cmcounters&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2020, William DeWitt.
-
-    </p>
+    <p>&#169; Copyright 2020, William DeWitt.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
