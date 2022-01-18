@@ -20,11 +20,15 @@ import warnings
 from typing import Dict
 
 code_vectors = {
-    code: [0 if base in gctree.utils.ambiguous_dna_values[code] else float("inf") for base in gctree.utils.bases]
+    code: [
+        0 if base in gctree.utils.ambiguous_dna_values[code] else float("inf")
+        for base in gctree.utils.bases
+    ]
     for code in gctree.utils.ambiguous_dna_values
 }
 cost_adjust = {
-    base: [int(not i == j) for j in range(5)] for i, base in enumerate(gctree.utils.bases)
+    base: [int(not i == j) for j in range(5)]
+    for i, base in enumerate(gctree.utils.bases)
 }
 
 
@@ -99,8 +103,9 @@ def parse_seqdict(fh, mode="dnaml"):
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
 def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False):
-    """parse phylip outfile, and return dnapars trees, a dictionary mapping node names to sequences,
-    and a dictionary mapping node names to observed abundances."""
+    """parse phylip outfile, and return dnapars trees, a dictionary mapping
+    node names to sequences, and a dictionary mapping node names to observed
+    abundances."""
     if abundance_file is not None:
         counts = {
             line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)
@@ -142,7 +147,8 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
 
 
 def make_dag(trees, sequence_counts={}, from_copy=True):
-    """Build a history DAG from ambiguous or disambiguated trees, whose nodes have abundance, name, and sequence attributes."""
+    """Build a history DAG from ambiguous or disambiguated trees, whose nodes
+    have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
     # Assume all trees have fixed root sequence and fixed leaf sequences
     leaf_seqs = {node.sequence for node in trees[0].get_leaves()}
@@ -250,7 +256,9 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
             if base not in gctree.utils.bases:
 
                 def is_leaf(node):
-                    return (node.is_leaf()) or (node.sequence[site] in gctree.utils.bases)
+                    return (node.is_leaf()) or (
+                        node.sequence[site] in gctree.utils.bases
+                    )
 
                 # First pass of Sankoff: compute cost vectors
                 for node2 in node.traverse(strategy="postorder", is_leaf_fn=is_leaf):
@@ -262,7 +270,9 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                                 node2.cv[i] += min(
                                     [
                                         sum(v)
-                                        for v in zip(child.cv, cost_adjust[gctree.utils.bases[i]])
+                                        for v in zip(
+                                            child.cv, cost_adjust[gctree.utils.bases[i]]
+                                        )
                                     ]
                                 )
                 # Second pass: Choose base and adjust children's cost vectors
@@ -307,7 +317,7 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
 def build_tree(
     sequences: Dict[str, str], parents: Dict[str, str], counts=None, root="root"
 ):
-    """Build an ete tree from sequences and parents dictionaries
+    """Build an ete tree from sequences and parents dictionaries.
 
     Args:
         sequences: a dictionary mapping names to sequences
@@ -315,7 +325,8 @@ def build_tree(
         counts: a dictionary mapping node names to observed abundances. This argument
             is no longer used in the main gctree inference pipeline (counts are assigned in DAG)
             but remains for compatibility.
-        root: the name of the root node"""
+        root: the name of the root node
+    """
     # build an ete tree
     # first a dictionary of disconnected nodes
     nodes = {}

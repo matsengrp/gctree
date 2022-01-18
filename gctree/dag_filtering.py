@@ -25,9 +25,11 @@ def filter_dag(
     isotype_names=None,
     img_type="svg",
 ):
-    """Trim the provided history DAG, containing sequence labels, by-node abundance attributes,
-    and a `parameters` attribute, to minimize a linear combination of
-    branching process likelihood, isotype parsimony score, mutability parsimony score, and number of alleles, with coefficients provided in the argument `priority_weights`, in that order.
+    """Trim the provided history DAG, containing sequence labels, by-node
+    abundance attributes, and a `parameters` attribute, to minimize a linear
+    combination of branching process likelihood, isotype parsimony score,
+    mutability parsimony score, and number of alleles, with coefficients
+    provided in the argument `priority_weights`, in that order.
 
     To compute each tree's combined score, a linear transformation is applied to each trait,
     so that the best observed value is mapped to 0, and the worst observed value is mapped to
@@ -238,7 +240,8 @@ def ll_cmcount_dagfuncs(p, q):
         branching process likelihood.
         Weight format is ``(log likelihood, cmcounts)`` where cmcounts is a FrozenMultiset containing abundance, mutant clade count pairs.
         To use these functions for DAG trimming, use an optimal function like
-        `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too."""
+        `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too.
+    """
 
     funcdict = bp.cmcounter_dagfuncs()
     cmcount_weight_func = funcdict["edge_weight_func"]
@@ -272,8 +275,9 @@ def ll_cmcount_dagfuncs(p, q):
 
 
 def ll_genotype_dagfuncs(p, q):
-    """Functions for counting tree log likelihood on the history DAG. Although these
-    functions are fast, for numerical consistency use :meth:`ll_cmcount_dagfuncs` instead.
+    """Functions for counting tree log likelihood on the history DAG. Although
+    these functions are fast, for numerical consistency use
+    :meth:`ll_cmcount_dagfuncs` instead.
 
     Args:
         p, q: branching process parameters
@@ -285,8 +289,12 @@ def ll_genotype_dagfuncs(p, q):
     """
 
     def edge_weight_ll_genotype(n1, n2):
-        """The _ll_genotype weight of the target node, unless it should be collapsed, then 0.
-        Expects DAG to have abundances added with :meth:`dag.add_abundances`."""
+        """The _ll_genotype weight of the target node, unless it should be
+        collapsed, then 0.
+
+        Expects DAG to have abundances added with
+        :meth:`dag.add_abundances`.
+        """
         if n2.is_leaf() and n2.label == n1.label:
             return 0.0
         else:
@@ -306,14 +314,15 @@ def ll_genotype_dagfuncs(p, q):
 
 
 def make_mutability_dagfuncs(*args, **kwargs):
-    """Returns a ``historydag.AddFuncDict`` containing functions for
-    counting tree-wise sums of mutability distances in the history DAG.
+    """Returns a ``historydag.AddFuncDict`` containing functions for counting
+    tree-wise sums of mutability distances in the history DAG.
 
     This may not be stable numerically, but we expect every tree to have
     a unique mutability parsimony score for non-degenerate mutability models, so
     so this shouldn't matter in practice.
 
-    Arguments are passed to :meth:`MutationModel` constructor."""
+    Arguments are passed to :meth:`MutationModel` constructor.
+    """
 
     mutation_model = mm.MutationModel(*args, **kwargs)
     dist = mutability_distance(mutation_model)
@@ -373,7 +382,10 @@ def _mutability_distance_precursors(mutation_model):
             pairs = sorted(pairs.items())
             p_arr = [
                 mult
-                * (np.log(context_model[mer][0]) + np.log(context_model[mer][1][newbase]))
+                * (
+                    np.log(context_model[mer][0])
+                    + np.log(context_model[mer][1][newbase])
+                )
                 for (mer, newbase), mult in pairs
             ]
             return -sum(p_arr)
@@ -384,10 +396,10 @@ def _mutability_distance_precursors(mutation_model):
 
 
 def mutability_distance(mutation_model):
-    """Returns a fast distance function based on passed mutation_model.
-    First, caches computed mutabilities for k-mers with k // 2 N's on either
-    end. This is pretty fast for k=5, but the distance function should be created
-    once and reused.
+    """Returns a fast distance function based on passed mutation_model. First,
+    caches computed mutabilities for k-mers with k // 2 N's on either end. This
+    is pretty fast for k=5, but the distance function should be created once
+    and reused.
 
     The returned distance function sums :math:`-log(mutability * p)` over all
     sites which do match between its two sequence arguments, where ``mutability``
@@ -412,10 +424,10 @@ def make_isotype_dagfuncs(
     idmap_file=None,
     isotype_names=None,
 ):
-    """Returns a historydag.utils.AddFuncDict which contains functions necessary for filtering
-    by isotype parsimony score. These functions return weights which are a tuple containing
-    a progressive isotype score, and a frozenset containing isotypes used internally to compute
-    isotype scores.
+    """Returns a historydag.utils.AddFuncDict which contains functions
+    necessary for filtering by isotype parsimony score. These functions return
+    weights which are a tuple containing a progressive isotype score, and a
+    frozenset containing isotypes used internally to compute isotype scores.
 
     Args:
         isotypemap: A dictionary mapping original IDs to observed isotype names

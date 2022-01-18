@@ -6,6 +6,7 @@ bases = "AGCT-"
 ambiguous_dna_values = Bio.Data.IUPACData.ambiguous_dna_values.copy()
 ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
 
+
 def check_distance_arguments(distance):
     @wraps(distance)
     def new_distance(seq1: str, seq2: str, *args, **kwargs):

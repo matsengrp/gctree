@@ -53,7 +53,9 @@ class CollapsedTree:
 
             # ensure distances are correct before collapse
             for node in self.tree.iter_descendants():
-                node.dist = gctree.utils.hamming_distance(node.sequence, node.up.sequence)
+                node.dist = gctree.utils.hamming_distance(
+                    node.sequence, node.up.sequence
+                )
 
             # iterate over the tree below root and collapse edges of zero
             # length if the node is a leaf and it's parent has nonzero
@@ -311,9 +313,10 @@ class CollapsedTree:
 
         return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
 
-
     def ll(
-        self, p: np.float64, q: np.float64,
+        self,
+        p: np.float64,
+        q: np.float64,
     ) -> Tuple[np.float64, np.ndarray]:
         r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.
 
@@ -913,7 +916,9 @@ class CollapsedForest:
         """
         if self.forest is None:
             raise ValueError("forest data must be defined to compute likelihood")
-        cm_countlist = tuple(coll.Counter([tree._cm_counts for tree in self.forest]).items())
+        cm_countlist = tuple(
+            coll.Counter([tree._cm_counts for tree in self.forest]).items()
+        )
         return llforest(cm_countlist, p, q, marginal=marginal)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
@@ -974,10 +979,7 @@ def lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndar
     """
     count_ls = [n for cm, n in cm_counts]
     cm_list = [cm for cm, n in cm_counts]
-    if (
-        cm_list[0][0] == 0
-        and cm_list[0][1] == 1
-    ):
+    if cm_list[0][0] == 0 and cm_list[0][1] == 1:
         # if unifurcation not possible under current model, add a
         # psuedocount for the root
         cm_list[0] = (1, 1)
@@ -1036,7 +1038,9 @@ def llforest(
                     - scs.logsumexp(ls - ls[i_prime], b=count_ls)
                 )
             )
-        return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(grad_l)
+        return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
+            grad_l
+        )
     else:
         return (ls * count_ls).sum(), np.array(
             [(grad_ls[:, 0] * count_ls).sum(), (grad_ls[:, 1] * count_ls).sum()]
@@ -1157,7 +1161,8 @@ def clade_tree_to_ctree(
 
 
 def cmcounter_dagfuncs():
-    """Functions for accumulating frozen multisets of (c, m) pairs in trees in the DAG."""
+    """Functions for accumulating frozen multisets of (c, m) pairs in trees in
+    the DAG."""
 
     def edge_weight_func(n1, n2):
         if n1.label == n2.label and n2.is_leaf():

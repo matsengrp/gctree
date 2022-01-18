@@ -11,8 +11,6 @@ from Bio.Seq import Seq
 from typing import Tuple, List, Callable
 
 
-
-
 class MutationModel:
     r"""A class for a mutation model, and functions to mutate sequences.
 
@@ -377,8 +375,9 @@ class MutationModel:
 
 def sequence_disambiguations(sequence, _accum=""):
     """Iterates through possible disambiguations of sequence, recursively.
-    Recursion-depth-limited by number of ambiguity codes in
-    sequence, not sequence length.
+
+    Recursion-depth-limited by number of ambiguity codes in sequence,
+    not sequence length.
     """
     if sequence:
         for index, base in enumerate(sequence):

@@ -288,6 +288,7 @@ def test_fit():
 
 
 def test_validate_ll_genotype():
+    # compare old ll_genotype to new ll_genotype directly
     c_max, m_max = 10, 10
     for params in [(0.4, 0.6), (0.3, 0.5)]:
         for c in range(c_max):
@@ -299,10 +300,13 @@ def test_validate_ll_genotype():
                     assert np.isclose(true_res[1][0], res[1][0])
                     assert np.isclose(true_res[1][1], res[1][1])
 
+
 def test_recursion_depth():
     # Be sure ahead-of-time caching is implemented correctly to avoid
     # recursion depth issues
-    bp.CollapsedTree._ll_genotype(5, 10000, .4, .6)
+    bp.CollapsedTree._ll_genotype.cache_clear()
+    bp.CollapsedTree._max_ll_cache = {}
+    bp.CollapsedTree._ll_genotype(2, 500, 0.4, 0.6)
 
 
 class OldCollapsedTree:
@@ -421,10 +425,7 @@ class OldCollapsedTree:
     ) -> Tuple[np.float64, np.ndarray]:
         if self.tree is None:
             raise ValueError("tree data must be defined to compute likelihood")
-        if (
-            self._cm_list[0][0] == 0
-            and self._cm_list[0][1] == 1
-        ):
+        if self._cm_list[0][0] == 0 and self._cm_list[0][1] == 1:
             # if unifurcation not possible under current model, add a
             # psuedocount for the root
             self._cm_list[0] = (1, self._cm_list[0][1])
