@@ -219,7 +219,7 @@ class CollapsedTree:
         if c == m == 0 or (c == 0 and m == 1):
             raise ValueError("Zero likelihood event")
         elif c == 1 and m == 0:
-            logf_result = np.log(1-p)
+            logf_result = np.log(1 - p)
             dlogfdp_result = -1 / (1 - p)
             dlogfdq_result = 0
         elif c == 0 and m == 2:
@@ -235,13 +235,15 @@ class CollapsedTree:
                         neighbor_dlogfdq,
                     ),
                 ) = CollapsedTree._ll_genotype(c, m - 1, p, q)
-                logg_array = [(
-                    np.log(2)
-                    + np.log(p)
-                    + np.log(q)
-                    + np.log(1 - q)
-                    + neighbor_ll_genotype
-                )]
+                logg_array = [
+                    (
+                        np.log(2)
+                        + np.log(p)
+                        + np.log(q)
+                        + np.log(1 - q)
+                        + neighbor_ll_genotype
+                    )
+                ]
                 dloggdp_array = [1 / p + neighbor_dlogfdp]
                 dloggdq_array = [1 / q - 1 / (1 - q) + neighbor_dlogfdq]
             else:
@@ -310,10 +312,7 @@ class CollapsedTree:
             raise ValueError("tree data must be defined to compute likelihood")
         if build_cache:
             self._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
-        if (
-            self._cm_list[0][0] == 0
-            and self._cm_list[0][1] == 1
-        ):
+        if self._cm_list[0][0] == 0 and self._cm_list[0][1] == 1:
             # if unifurcation not possible under current model, add a
             # psuedocount for the root
             self._cm_list[0] = (1, self._cm_list[0][1])

@@ -14,6 +14,7 @@ def test_ll_genotype_cache():
     c_max, m_max = 10, 10
     bp.CollapsedTree._build_ll_genotype_cache(c_max, m_max, p, q)
 
+
 def validate_ll_genotype():
     c_max, m_max = 10, 10
     for params in [(0.4, 0.6), (0.3, 0.5)]:
@@ -25,7 +26,7 @@ def validate_ll_genotype():
                     assert np.isclose(true_res[0], res[0])
                     assert np.isclose(true_res[1][0], res[1][0])
                     assert np.isclose(true_res[1][1], res[1][1])
-        
+
 
 @lru_cache(maxsize=None)
 def ll_validate(c, m, p, q):
@@ -64,11 +65,7 @@ def ll_validate(c, m, p, q):
                 ),
             ) = ll_validate(c, m - 1, p, q)
             logf_result = (
-                np.log(2)
-                + np.log(p)
-                + np.log(q)
-                + np.log(1 - q)
-                + neighbor_ll_genotype
+                np.log(2) + np.log(p) + np.log(q) + np.log(1 - q) + neighbor_ll_genotype
             )
             dlogfdp_result = 1 / p + neighbor_dlogfdp
             dlogfdq_result = 1 / q - 1 / (1 - q) + neighbor_dlogfdq
