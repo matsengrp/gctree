@@ -220,9 +220,7 @@ class CollapsedTree:
             log-likelihood and gradient wrt :math:`p` and :math:`q`.
         """
         if c == m == 0 or (c == 0 and m == 1):
-            logf_result = -np.inf
-            dlogfdp_result = 0
-            dlogfdq_result = 0
+            raise ValueError("Zero likelihood event")
         elif c == 1 and m == 0:
             logf_result = np.log(1 - p)
             dlogfdp_result = -1 / (1 - p)
@@ -240,25 +238,24 @@ class CollapsedTree:
                         neighbor_dlogfdq,
                     ),
                 ) = CollapsedTree._ll_genotype(c, m - 1, p, q)
-                logf_result = (
-                    np.log(2)
-                    + np.log(p)
-                    + np.log(q)
-                    + np.log(1 - q)
-                    + neighbor_ll_genotype
-                )
-                dlogfdp_result = 1 / p + neighbor_dlogfdp
-                dlogfdq_result = 1 / q - 1 / (1 - q) + neighbor_dlogfdq
+                logg_array = [
+                    (
+                        np.log(2)
+                        + np.log(p)
+                        + np.log(q)
+                        + np.log(1 - q)
+                        + neighbor_ll_genotype
+                    )
+                ]
+                dloggdp_array = [1 / p + neighbor_dlogfdp]
+                dloggdq_array = [1 / q - 1 / (1 - q) + neighbor_dlogfdq]
             else:
-                logf_result = -np.inf
-                dlogfdp_result = 0.0
-                dlogfdq_result = 0.0
-            logg_array = [logf_result]
-            dloggdp_array = [dlogfdp_result]
-            dloggdq_array = [dlogfdq_result]
+                logg_array = []
+                dloggdp_array = []
+                dloggdq_array = []
             for cx in range(c + 1):
                 for mx in range(m + 1):
-                    if (not (cx == mx == 0)) and (not (cx == c and mx == m)):
+                    if (cx > 0 or mx > 1) and (c - cx > 0 or m - mx > 1):
                         (
                             neighbor1_ll_genotype,
                             (neighbor1_dlogfdp, neighbor1_dlogfdq),
@@ -278,10 +275,13 @@ class CollapsedTree:
                         logg_array.append(logg)
                         dloggdp_array.append(dloggdp)
                         dloggdq_array.append(dloggdq)
-            logf_result = scs.logsumexp(logg_array)
-            softmax_logg_array = scs.softmax(logg_array)
-            dlogfdp_result = np.multiply(softmax_logg_array, dloggdp_array).sum()
-            dlogfdq_result = np.multiply(softmax_logg_array, dloggdq_array).sum()
+            if not logg_array:
+                raise ValueError("Zero likelihood event")
+            else:
+                logf_result = scs.logsumexp(logg_array)
+                softmax_logg_array = scs.softmax(logg_array)
+                dlogfdp_result = np.multiply(softmax_logg_array, dloggdp_array).sum()
+                dlogfdq_result = np.multiply(softmax_logg_array, dloggdq_array).sum()
 
         return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
 
@@ -292,7 +292,8 @@ class CollapsedTree:
         CollapsedTree._ll_genotype.cache_clear()
         for c in range(c_max + 1):
             for m in range(m_max + 1):
-                CollapsedTree._ll_genotype(c, m, p, q)
+                if c > 0 or m > 1:
+                    CollapsedTree._ll_genotype(c, m, p, q)
 
     def ll(
         self, p: np.float64, q: np.float64, build_cache: bool = False
@@ -983,7 +984,6 @@ def lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndar
     if (
         cm_list[0][0] == 0
         and cm_list[0][1] == 1
-        and CollapsedTree._ll_genotype(cm_list[0][0], cm_list[0][1], p, q)[0] == -np.inf
     ):
         # if unifurcation not possible under current model, add a
         # psuedocount for the root
