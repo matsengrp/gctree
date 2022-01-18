@@ -4,11 +4,6 @@ from scipy.special import logsumexp, softmax
 from functools import lru_cache
 
 
-def test_numpy():
-    np.seterr(all="raise")
-    print(np.exp(-np.inf))
-
-
 def test_ll_genotype_cache():
     p, q = 0.4, 0.6
     c_max, m_max = 10, 10
