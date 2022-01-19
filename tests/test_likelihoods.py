@@ -569,12 +569,13 @@ class OldCollapsedForest:
             grad_l = []
             for j in range(len((p, q))):
                 i_prime = grad_ls[:, j].argmin()
+                b = grad_ls[:, j] - grad_ls[i_prime, j]
+                # believe it or not, logsumexp can't handle 0 in b
+                # when np.seterr(underflow='raise') on newer processors:
                 grad_l.append(
                     grad_ls[i_prime, j]
                     + np.exp(
-                        logsumexp(
-                            ls - ls[i_prime], b=grad_ls[:, j] - grad_ls[i_prime, j]
-                        )
+                        logsumexp((ls - ls[i_prime])[b != 0], b=b[b != 0])
                         - logsumexp(ls - ls[i_prime])
                     )
                 )
