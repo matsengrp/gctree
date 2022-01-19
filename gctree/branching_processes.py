@@ -1032,14 +1032,15 @@ def llforest(
             i_prime = grad_ls[:, j].argmin()
             grad_l.append(
                 grad_ls[i_prime, j]
+                b = (grad_ls[:, j] - grad_ls[i_prime, j]) * count_ls
+                # believe it or not, logsumexp can't handle 0 in b
+                # when np.seterr(underflow='raise') on newer processors:
                 + np.exp(
-                    scs.logsumexp(
-                        ls - ls[i_prime],
-                        b=(grad_ls[:, j] - grad_ls[i_prime, j]) * count_ls,
-                    )
+                    scs.logsumexp((ls - ls[i_prime])[b != 0], b=b[b != 0])
                     - scs.logsumexp(ls - ls[i_prime], b=count_ls)
                 )
             )
+        # count_ls shouldn't have any zeros in it...
         return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
             grad_l
         )
