@@ -1030,11 +1030,11 @@ def llforest(
         grad_l = []
         for j in range(len((p, q))):
             i_prime = grad_ls[:, j].argmin()
+            b = (grad_ls[:, j] - grad_ls[i_prime, j]) * count_ls
+            # believe it or not, logsumexp can't handle 0 in b
+            # when np.seterr(underflow='raise') on newer processors:
             grad_l.append(
                 grad_ls[i_prime, j]
-                b = (grad_ls[:, j] - grad_ls[i_prime, j]) * count_ls
-                # believe it or not, logsumexp can't handle 0 in b
-                # when np.seterr(underflow='raise') on newer processors:
                 + np.exp(
                     scs.logsumexp((ls - ls[i_prime])[b != 0], b=b[b != 0])
                     - scs.logsumexp(ls - ls[i_prime], b=count_ls)
