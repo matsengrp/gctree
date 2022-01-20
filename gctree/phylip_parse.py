@@ -209,9 +209,7 @@ def make_dag(trees, sequence_counts={}, from_copy=True):
     dag.convert_to_collapsed()
     # Add abundances to attrs:
     for node in dag.preorder(skip_root=True):
-        if (
-            node.label.sequence in sequence_counts
-        ):  # and (node.is_leaf() or frozenset({node.label}) in node.clades):
+        if node.label.sequence in sequence_counts:
             node.attr["abundance"] = sequence_counts[node.label.sequence]
         else:
             node.attr["abundance"] = 0

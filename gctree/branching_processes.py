@@ -25,7 +25,7 @@ import collections as coll
 import historydag as hdag
 import multiset
 import matplotlib as mp
-from typing import Tuple, Dict, List, Union, Set, Callable
+from typing import Tuple, Dict, List, Union, Set, Callable, Mapping
 
 np.seterr(all="raise")
 
@@ -1050,10 +1050,21 @@ def _llforest(
         )
 
 
-def fit_branching_process(dag, verbose=True, marginal=True):
-    r"""fit p and q using all trees in the dag. DAG should be abundance_annotated, like that output by phylip_parse.
-    if we get floating point errors, try a few more times
-    (starting params aren't random right now, but they could be in the future?)"""
+def fit_branching_process(
+    dag: hdag.HistoryDag, verbose: bool = True, marginal: bool = True
+) -> Tuple[np.float64, np.float64]:
+    r"""fit p and q using all trees in the provided history DAG.
+
+    DAG should be abundance_annotated and collapsed, like that output by phylip_parse.
+
+    Args:
+        dag: :meth:`historydag.HistoryDag` containing trees for fitting.
+        verbose: when True, notifies when there are floating point errors.
+        marginal: whether to calculate marginal likelihood of trees in ``dag``
+
+    Returns:
+        (p, q): branching process parameters
+    """
     cmcount_dagfuncs = _cmcounter_dagfuncs()
     cmcounters = dag.weight_count(**cmcount_dagfuncs)
 
@@ -1089,13 +1100,25 @@ def fit_branching_process(dag, verbose=True, marginal=True):
 
 
 def clade_tree_to_ctree(
-    clade_tree,
-    root=None,
-    counts=None,
-    parsimony_score=None,
-    root_seq=None,
-    leaf_seqs=None,
-):
+    clade_tree: hdag.HistoryDag,
+    root: str = None,
+    counts: Mapping[str, int] = None,
+    parsimony_score: float = None,
+    root_seq: str = None,
+    leaf_seqs: Mapping[str, str] = None,
+) -> CollapsedTree:
+    """Create and validate :meth:`CollapsedTree` object from tree-shaped history DAG.
+
+    Args:
+        clade_tree: A tree-shaped history DAG, like that returned by :meth:`historydag.HistoryDag.sample`
+        root: The expected root name for the resulting tree (for validation)
+        counts: Expected node abundances for each node name (for validation)
+        parsimony_score: Expected Hamming parsimony score (for validation)
+        root_seq: Expected root sequence (for validation)
+        leaf_seqs: Expected leaf names, keyed by leaf sequences (for validation)
+
+    Returns:
+        :meth:`CollapsedTree` object matching the topology of ``clade_tree``, but fully collapsed."""
     etetree = clade_tree.to_ete(
         name_func=lambda n: n.attr["name"],
         features=["sequence"],

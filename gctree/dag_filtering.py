@@ -26,7 +26,7 @@ def filter_dag(
     idmap_file: str = None,
     isotype_names: Sequence[str] = None,
     img_type: str = "svg",
-):
+) -> hdag.HistoryDag:
     """Filter trees in the provided history DAG.
 
     Trim the provided history DAG, containing sequence labels, by-node
@@ -41,7 +41,7 @@ def filter_dag(
 
     Args:
         dag: A history DAG object to trim
-        priority_weights: A sequence of coefficients for prioritizing tree weights.
+        priority_weights: A list or tuple of coefficients for prioritizing tree weights.
             The order of coefficients is: branching process likelihood, isotype
             parsimony score, mutability parsimony score, and number of alleles.
             If priority_weights is not provided, trees will be ranked lexicographically
@@ -92,20 +92,12 @@ def filter_dag(
         )
     else:
         mut_funcs = placeholder_dagfuncs
-    allele_dagfuncs = hdag.utils.AddFuncDict(
-        {
-            "start_func": lambda n: 0,
-            "edge_weight_func": lambda n1, n2: n1.label != n2.label,
-            "accum_func": sum,
-        },
-        names="NodeCount",
-    )
-
+    allele_funcs = allele_dagfuncs()
     if priority_weights:
         # a vector of relative weights, for ll, isotype pars, mutability_pars, alleles
         # This is possible because all weights are additive up the tree,
         # and the transformations are strictly increasing/decreasing.
-        kwargls = [ll_dagfuncs, iso_funcs, mut_funcs, allele_dagfuncs]
+        kwargls = [ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs]
         minmaxls = [
             (
                 dag.optimal_weight_annotate(**kwargs, optimal_func=min),
@@ -157,7 +149,7 @@ def filter_dag(
 
     # Filter by likelihood, isotype parsimony, mutability,
     # and make ctrees, cforest, and render trees
-    dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_dagfuncs
+    dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_funcs
     trimdag = dag.copy()
     trimdag.trim_optimal_weight(
         **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
@@ -230,16 +222,17 @@ def filter_dag(
     return trimdag
 
 
-def ll_cmcount_dagfuncs(p: np.float64, q: np.float64):
+def ll_cmcount_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDict:
     """A slower but more numerically stable equivalent to ll_genotype_dagfuncs.
 
     Args:
         p, q: branching process parameters
 
     Returns:
-        A ``historydag.utils.AddFuncDict`` object, which can be unpacked and used
-        as keyword arguments for DAG trimming and weight annotation according to
-        branching process likelihood.
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to branching process likelihood.
         Weight format is ``(log likelihood, cmcounts)`` where cmcounts is a FrozenMultiset containing abundance, mutant clade count pairs.
         To use these functions for DAG trimming, use an optimal function like
         `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too.
@@ -276,7 +269,7 @@ def ll_cmcount_dagfuncs(p: np.float64, q: np.float64):
     )
 
 
-def ll_genotype_dagfuncs(p: np.float64, q: np.float64):
+def ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDict:
     """Return functions for counting tree log likelihood on the history DAG.
 
     Although these functions are fast, for numerical consistency use
@@ -286,17 +279,18 @@ def ll_genotype_dagfuncs(p: np.float64, q: np.float64):
         p, q: branching process parameters
 
     Returns:
-        A ``historydag.utils.AddFuncDict`` object, which can be unpacked and used
-        as keyword arguments for DAG trimming and weight annotation according to
-        branching process likelihood.
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to branching process likelihood.
+        Weight format is ``float``.
     """
 
     def edge_weight_ll_genotype(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
         """The _ll_genotype weight of the target node, unless it should be
         collapsed, then 0.
 
-        Expects DAG to have abundances added with
-        :meth:`dag.add_abundances`.
+        Expects DAG to have abundances added so that each
         """
         if n2.is_leaf() and n2.label == n1.label:
             return 0.0
@@ -316,21 +310,34 @@ def ll_genotype_dagfuncs(p: np.float64, q: np.float64):
     )
 
 
-def mutability_dagfuncs(*args, **kwargs):
+def mutability_dagfuncs(*args, **kwargs) -> hdag.utils.AddFuncDict:
     """Return functions for counting mutability parsimony on the history DAG.
 
-    Returns a ``historydag.AddFuncDict`` containing functions for counting
-    tree-wise sums of mutability distances in the history DAG.
+    Mutability parsimony of a tree is the sum over all edges in the tree
+    of mutability distances between parent and child node sequences.
 
-    This may not be stable numerically, but we expect every tree to have
+    The mutability distance from an ancestral sequence to a target sequence is the sum of
+    :math:`-log(mutability * p)` over all sites which do match, where :math:`mutability`
+    is the mutation frequency of the k-mer surrounding the mutated base
+    (in the ancestral sequence), and :math:`p` is the transition probability to the new
+    base in the target sequence. Notice that this so-called distance is not symmetric.
+
+    These functions may not be stable numerically, but we expect every tree to have
     a unique mutability parsimony score for non-degenerate mutability models, so
     so this shouldn't matter in practice.
 
-    Arguments are passed to :meth:`MutationModel` constructor.
+    Arguments are passed to :meth:`mutation_model.MutationModel` constructor.
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to mutability model parsimony.
+        Weight format is ``float``.
     """
 
     mutation_model = mm.MutationModel(*args, **kwargs)
-    dist = mutability_distance(mutation_model)
+    dist = _mutability_distance(mutation_model)
 
     @hdag.utils.access_field("label")
     @hdag.utils.ignore_ualabel(0)
@@ -400,7 +407,7 @@ def _mutability_distance_precursors(mutation_model: mm.MutationModel):
     return (mutpairs, sum_minus_logp)
 
 
-def mutability_distance(mutation_model: mm.MutationModel):
+def _mutability_distance(mutation_model: mm.MutationModel):
     """Returns a fast distance function based on passed mutation_model.
 
     First, caches computed mutabilities for k-mers with k // 2 N's on either end. This
@@ -429,14 +436,12 @@ def isotype_dagfuncs(
     idmap: Mapping[str, Set[str]] = None,
     idmap_file: str = None,
     isotype_names: Sequence[str] = None,
-):
+) -> hdag.utils.AddFuncDict:
     """Return functions for filtering by isotype parsimony score on the history
     DAG.
 
-    Returns a ``historydag.utils.AddFuncDict`` which contains functions
-    necessary for filtering by isotype parsimony score. These functions return
-    weights which are a tuple containing a progressive isotype score, and a
-    frozenset containing isotypes used internally to compute isotype scores.
+    Isotype parsimony of a tree is the minimum number of allowed isotype transitions
+    required along all edges.
 
     Args:
         isotypemap: A dictionary mapping original IDs to observed isotype names
@@ -446,10 +451,12 @@ def isotype_dagfuncs(
         isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order
 
     Returns:
-        A ``historydag.utils.AddFuncDict`` which may be passed as keyword arguments
-        to ``historydag.HistoryDag`` methods which trim or annotate by weight.
-        These functions return weights which are a tuple containing
-        a progressive isotype score, and a frozenset containing isotypes used for computing isotype scores.
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to isotype parsimony.
+        Weight format is ``(score, isotypeset)``, where ``score`` is isotype parsimony as a float,
+        and ``isotypeset`` is a frozenset containing isotypes used internally for computing parsimony score.
     """
     if isotypemap_file and isotypemap is None:
         with open(isotypemap_file, "r") as fh:
@@ -504,4 +511,26 @@ def isotype_dagfuncs(
             "accum_func": sumweights,
         },
         names=("IsotypeParsimony", "Isotype_state"),
+    )
+
+
+def allele_dagfuncs() -> hdag.utils.AddFuncDict:
+    """Return functions for filtering trees in a history DAG by allele count.
+
+    The number of alleles in a tree is the number of unique sequences observed on nodes of that tree.
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to allele count.
+        Weight format is ``int``.
+    """
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: 0,
+            "edge_weight_func": lambda n1, n2: n1.label != n2.label,
+            "accum_func": sum,
+        },
+        names="NodeCount",
     )
