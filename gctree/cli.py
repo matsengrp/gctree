@@ -556,7 +556,7 @@ def get_parser():
     parser_infer.add_argument(
         "--bootstrap_phylipfile",
         type=str,
-        help="dnapars outfile from seqboot (multiple data sets)",
+        help="This argument is deprecated.",
     )
     parser_infer.add_argument(
         "--colormapfile",

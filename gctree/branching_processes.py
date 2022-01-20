@@ -335,7 +335,7 @@ class CollapsedTree:
         """
         if self.tree is None:
             raise ValueError("tree data must be defined to compute likelihood")
-        return lltree(self._cm_counts, p, q)
+        return _lltree(self._cm_counts, p, q)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
         r"""Maximum likelihood estimate of :math:`(p, q)`.
@@ -921,7 +921,7 @@ class CollapsedForest:
         cm_countlist = tuple(
             coll.Counter([tree._cm_counts for tree in self.forest]).items()
         )
-        return llforest(cm_countlist, p, q, marginal=marginal)
+        return _llforest(cm_countlist, p, q, marginal=marginal)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
         return _mle_helper(self.ll, **kwargs)
@@ -966,7 +966,7 @@ def _mle_helper(
     return result.x[0], result.x[1]
 
 
-def lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndarray]:
+def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndarray]:
     r"""Log likelihood of branching process parameters :math:`(p, q)`
     .. math::
         \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)
@@ -994,7 +994,7 @@ def lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndar
     return logf, grad_ll_genotype
 
 
-def llforest(
+def _llforest(
     cm_countlist,
     p: np.float64,
     q: np.float64,
@@ -1004,7 +1004,7 @@ def llforest(
     containing tuples `(cm_counts, mult)`, where `cm_counts` is an iterable describing a tree, and `mult`
     is the number of trees in the forest which can be described with the iterable `cm_counts`.
 
-    `cm_counts` is in the format expected as an argument to :meth:`lltree`.
+    `cm_counts` is in the format expected as an argument to :meth:`_lltree`.
 
     If ``marginal=False`` (the default), compute the joint log likelihood
     .. math::
@@ -1019,7 +1019,7 @@ def llforest(
     Returns:
         Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
     """
-    terms = [[lltree(cmcounts, p, q), count] for cmcounts, count in cm_countlist]
+    terms = [[_lltree(cmcounts, p, q), count] for cmcounts, count in cm_countlist]
     ls = np.array([term[0][0] for term in terms])
     grad_ls = np.array([term[0][1] for term in terms])
     # This can be done ahead of time
@@ -1054,11 +1054,11 @@ def fit_branching_process(dag, verbose=True, marginal=True):
     r"""fit p and q using all trees in the dag. DAG should be abundance_annotated, like that output by phylip_parse.
     if we get floating point errors, try a few more times
     (starting params aren't random right now, but they could be in the future?)"""
-    cmcount_dagfuncs = cmcounter_dagfuncs()
+    cmcount_dagfuncs = _cmcounter_dagfuncs()
     cmcounters = dag.weight_count(**cmcount_dagfuncs)
 
     def to_tuple(mset):
-        # lltree checks first item in list for unobserved root unifurcation,
+        # _lltree checks first item in list for unobserved root unifurcation,
         # but here it could end up not being first.
         if (0, 1) in mset:
             assert mset[(0, 1)] == 1
@@ -1071,7 +1071,7 @@ def fit_branching_process(dag, verbose=True, marginal=True):
     for tries in range(max_tries):
         try:
             p, q = _mle_helper(
-                lambda p, q: llforest(cmcountlist, p, q, marginal=marginal)
+                lambda p, q: _llforest(cmcountlist, p, q, marginal=marginal)
             )
             break
         except FloatingPointError as e:
@@ -1163,7 +1163,7 @@ def clade_tree_to_ctree(
     return ctree
 
 
-def cmcounter_dagfuncs():
+def _cmcounter_dagfuncs():
     """Functions for accumulating frozen multisets of (c, m) pairs in trees in
     the DAG."""
 

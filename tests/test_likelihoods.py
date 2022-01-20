@@ -78,17 +78,17 @@ singletree_dags = [
 ]
 # These are for testing if added leaf is dealt with correctly.
 
-cmcount_dagfuncs = bp.cmcounter_dagfuncs()
+cmcount_dagfuncs = bp._cmcounter_dagfuncs()
 
 
 def tree_likelihood(dag, p, q, marginal=True):
     cmcounters = dag.weight_count(**cmcount_dagfuncs)
     cmcountlist = [(tuple(mset.items()), mult) for mset, mult in cmcounters.items()]
-    return bp.lltree(cmcountlist, p, q, marginal=marginal)
+    return bp._lltree(cmcountlist, p, q, marginal=marginal)
 
 
 def cmset_to_tuple(mset):
-    # lltree checks first item in list for unobserved root unifurcation,
+    # _lltree checks first item in list for unobserved root unifurcation,
     # but here it could end up not being first.
     if (0, 1) in mset:
         assert mset[(0, 1)] == 1
@@ -99,7 +99,7 @@ def cmset_to_tuple(mset):
 def dag_likelihood(dag, p, q, marginal=True):
     cmcounters = dag.weight_count(**cmcount_dagfuncs)
     cmcountlist = [(cmset_to_tuple(mset), mult) for mset, mult in cmcounters.items()]
-    return bp.llforest(cmcountlist, p, q, marginal=marginal)
+    return bp._llforest(cmcountlist, p, q, marginal=marginal)
 
 
 def test_newcounters():
@@ -239,7 +239,7 @@ def test_newlikelihoods_singletree_in_dag():
             cmcounters = dag.weight_count(**cmcount_dagfuncs)
             assert len(cmcounters) == 1  # there's just one tree in the dag
             cmcounts = cmset_to_tuple(list(cmcounters.keys())[0])
-            newtreell = bp.lltree(cmcounts, p, q)
+            newtreell = bp._lltree(cmcounts, p, q)
             assert np.isclose(oldtreell[0], newtreell[0])
             assert np.isclose(oldtreell[1][0], newtreell[1][0])
             assert np.isclose(oldtreell[1][1], newtreell[1][1])

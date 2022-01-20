@@ -245,7 +245,7 @@ def ll_cmcount_dagfuncs(p: np.float64, q: np.float64):
         `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too.
     """
 
-    funcdict = bp.cmcounter_dagfuncs()
+    funcdict = bp._cmcounter_dagfuncs()
     cmcount_weight_func = funcdict["edge_weight_func"]
     cmcount_addfunc = funcdict["accum_func"]
 
@@ -254,7 +254,7 @@ def ll_cmcount_dagfuncs(p: np.float64, q: np.float64):
         if cmcounter:
             if (0, 1) in cmcounter:
                 cmcounter = cmcounter - {(0, 1)} + {(1, 1)}
-            return bp.lltree(tuple(cmcounter.items()), p, q)[0]
+            return bp._lltree(tuple(cmcounter.items()), p, q)[0]
         else:
             return 0.0
 
@@ -360,7 +360,7 @@ def _mutability_distance_precursors(mutation_model: mm.MutationModel):
     kmers_to_compute = [
         leftns + stub + rightns
         for leftns, ambig_stub, rightns in templates
-        for stub in mm.sequence_disambiguations(ambig_stub)
+        for stub in mm._sequence_disambiguations(ambig_stub)
     ]
     # Cache all these mutabilities in context_model also
     context_model.update(

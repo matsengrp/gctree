@@ -64,7 +64,7 @@ class MutationModel:
     def _disambiguate(sequence):
         r"""generator of all possible nt sequences implied by a sequence
         containing ambiguous bases."""
-        return sequence_disambiguations(sequence)
+        return _sequence_disambiguations(sequence)
 
     def mutability(self, kmer: str) -> Tuple[np.float64, np.float64]:
         r"""Returns the mutability of a central base of :math:`k`-mer, along with
@@ -373,7 +373,7 @@ class MutationModel:
         return tree
 
 
-def sequence_disambiguations(sequence, _accum=""):
+def _sequence_disambiguations(sequence, _accum=""):
     """Iterates through possible disambiguations of sequence, recursively.
 
     Recursion-depth-limited by number of ambiguity codes in sequence,
@@ -385,7 +385,7 @@ def sequence_disambiguations(sequence, _accum=""):
                 _accum += base
             else:
                 for newbase in utils.ambiguous_dna_values[base]:
-                    yield from sequence_disambiguations(
+                    yield from _sequence_disambiguations(
                         sequence[index + 1 :], _accum=(_accum + newbase)
                     )
                 return
