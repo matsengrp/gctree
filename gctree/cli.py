@@ -158,9 +158,6 @@ def test(args):
 
 def infer(args):
     """inference subprogram."""
-    if args.bootstrap_phylipfile is not None:
-        raise NotImplementedError("Bootstrap pipeline is no longer supported.")
-
     if len(args.infiles) == 2:
         trees, sequence_counts = pp.parse_outfile(
             args.infiles[0], args.infiles[1], args.root
@@ -552,11 +549,6 @@ def get_parser():
             "the format: 'SeqID, Nobs'. If a single filename is passed, it shall be the name "
             "of a pickled history DAG object created by gctree."
         ),
-    )
-    parser_infer.add_argument(
-        "--bootstrap_phylipfile",
-        type=str,
-        help="This argument is deprecated.",
     )
     parser_infer.add_argument(
         "--colormapfile",
