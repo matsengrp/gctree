@@ -8,6 +8,8 @@ from scipy.stats import poisson
 import random
 import scipy
 from Bio.Seq import Seq
+import historydag as hdag
+from multiset import FrozenMultiset
 from typing import Tuple, List, Callable
 
 
@@ -390,3 +392,123 @@ def _sequence_disambiguations(sequence, _accum=""):
                     )
                 return
     yield _accum
+
+
+def _mutability_dagfuncs(*args, **kwargs) -> hdag.utils.AddFuncDict:
+    """Return functions for counting mutability parsimony on the history DAG.
+
+    Mutability parsimony of a tree is the sum over all edges in the tree
+    of mutability distances between parent and child node sequences.
+
+    The mutability distance from an ancestral sequence to a target sequence is the sum of
+    :math:`-log(mutability * p)` over all sites which do match, where :math:`mutability`
+    is the mutation frequency of the k-mer surrounding the mutated base
+    (in the ancestral sequence), and :math:`p` is the transition probability to the new
+    base in the target sequence. Notice that this so-called distance is not symmetric.
+
+    These functions may not be stable numerically, but we expect every tree to have
+    a unique mutability parsimony score for non-degenerate mutability models, so
+    so this shouldn't matter in practice.
+
+    Arguments are passed to :meth:`mutation_model.MutationModel` constructor.
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to mutability model parsimony.
+        Weight format is ``float``.
+    """
+
+    mutation_model = MutationModel(*args, **kwargs)
+    dist = _mutability_distance(mutation_model)
+
+    @hdag.utils.access_field("label")
+    @hdag.utils.ignore_ualabel(0)
+    @hdag.utils.access_field("sequence")
+    def distance(seq1, seq2):
+        return dist(seq1, seq2)
+
+    return hdag.utils.AddFuncDict(
+        {"start_func": lambda n: 0, "edge_weight_func": distance, "accum_func": sum},
+        names="MutabilityParsimony",
+    )
+
+
+def _mutability_distance_precursors(mutation_model: MutationModel):
+    # Caching could be moved to the MutationModel class instead.
+    context_model = mutation_model.context_model.copy()
+    k = mutation_model.k
+    h = k // 2
+    # Build all sequences with (when k=5) one or two Ns on either end
+    templates = [
+        ("N" * left, "N" * (k - left - right), "N" * right)
+        for left in range(h + 1)
+        for right in range(h + 1)
+        if left != 0 or right != 0
+    ]
+
+    kmers_to_compute = [
+        leftns + stub + rightns
+        for leftns, ambig_stub, rightns in templates
+        for stub in _sequence_disambiguations(ambig_stub)
+    ]
+    # Cache all these mutabilities in context_model also
+    context_model.update(
+        {kmer: mutation_model.mutability(kmer) for kmer in kmers_to_compute}
+    )
+
+    @utils.check_distance_arguments
+    def mutpairs(seq1: str, seq2: str):
+        ns = "N" * h
+        seq1N = ns + seq1 + ns
+        seq2N = ns + seq2 + ns
+        mut_idxs = [
+            index
+            for index, (base1, base2) in enumerate(zip(seq1N, seq2N))
+            if base1 != base2
+        ]
+        return FrozenMultiset((seq1N[i - h : i + h + 1], seq2N[i]) for i in mut_idxs)
+
+    def sum_minus_logp(pairs: FrozenMultiset):
+        # I have chosen to multiply substitution rate for central base
+        # with rate of new base. Not sure if this is a good choice.
+        if pairs:
+            # for floating point behavior
+            pairs = sorted(pairs.items())
+            p_arr = [
+                mult
+                * (
+                    np.log(context_model[mer][0])
+                    + np.log(context_model[mer][1][newbase])
+                )
+                for (mer, newbase), mult in pairs
+            ]
+            return -sum(p_arr)
+        else:
+            return 0.0
+
+    return (mutpairs, sum_minus_logp)
+
+
+def _mutability_distance(mutation_model: MutationModel):
+    """Returns a fast distance function based on passed mutation_model.
+
+    First, caches computed mutabilities for k-mers with k // 2 N's on either end. This
+    is pretty fast for k=5, but the distance function should be created once
+    and reused.
+
+    The returned distance function sums :math:`-log(mutability * p)` over all
+    sites which do match between its two sequence arguments, where ``mutability``
+    is the mutation frequency of the k-mer surrounding the mutated base (in the
+    first sequence argument) and ``p`` is the transition probability to the new
+    base.
+
+    Note that, in particular, this function is not symmetric on its  arguments.
+    """
+    mutpairs, sum_minus_logp = _mutability_distance_precursors(mutation_model)
+
+    def distance(seq1, seq2):
+        return sum_minus_logp(mutpairs(seq1, seq2))
+
+    return distance

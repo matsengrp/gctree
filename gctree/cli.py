@@ -4,10 +4,8 @@ import gctree.branching_processes as bp
 import gctree.phylip_parse as pp
 import gctree.mutation_model as mm
 import gctree.utils as utils
-import gctree.dag_filtering as fd
 
 
-import historydag as hdag
 import argparse
 import pandas as pd
 import numpy as np
@@ -47,7 +45,7 @@ def test(args):
                 print(f"parameters: p = {p}, q = {q}")
             forest.simulate(p, q, n)
             tree_dict = {}
-            for tree in forest.forest:
+            for tree in forest:
                 tree_hash = tuple(
                     (node.abundance, len(node.children))
                     for node in tree.tree.traverse()
@@ -159,59 +157,33 @@ def test(args):
 def infer(args):
     """inference subprogram."""
     if len(args.infiles) == 2:
-        trees, sequence_counts = pp.parse_outfile(
-            args.infiles[0], args.infiles[1], args.root
-        )
-        # Collect stats for validation, in clade_tree_to_ctree method
-        model_tree = pp.disambiguate(trees[0].copy())
-        counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
-        validation_stats = {
-            "counts": counts,
-            "root": args.root,
-            "parsimony_score": sum([node.dist for node in model_tree.traverse()]),
-            "root_seq": model_tree.sequence,
-            "leaf_seqs": {node.sequence: node.name for node in model_tree.get_leaves()},
-        }
-        # Begin inference
-        dag = pp.make_dag(trees, sequence_counts=sequence_counts)
-
-        n_trees = dag.count_trees()
-        if n_trees == 1:
+        forest = bp.CollapsedForest(*pp.parse_outfile(args.infiles[0], args.infiles[1], args.root))
+        if forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
 
         if args.verbose:
-            print("number of trees with integer branch lengths:", n_trees)
+            print("number of trees with integer branch lengths:", forest.n_trees)
             print(
                 "number of unique collapsed topologies, ignoring inferred ancestral sequences:",
-                dag.count_topologies(collapse_leaves=True),
+                forest.n_topologies(),
             )
-
-        # fit p and q using all trees
-        p, q = bp.fit_branching_process(dag, verbose=args.verbose, marginal=True)
-
-        dag.attr["parameters"] = (p, q)
-
-        with open(args.outbase + ".serialized_dag.p", "wb") as fh:
-            fh.write(dag.serialize())
+        forest.mle(marginal=True)
+        with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
+            pickle.dump(forest, f)
 
     elif len(args.infiles) == 1:
         if args.verbose:
-            print("Skipping parameter fitting, loading provided history DAG")
+            print("Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.")
         with open(args.infiles[0], "rb") as fh:
-            dag = hdag.deserialize(fh.read())
-        p, q = dag.attr["parameters"]
-        n_trees = dag.count_trees()
-        validation_stats = {}
+            forest = pickle.load(fh)
     else:
         raise ValueError(
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
         )
 
-    # Query the DAG to construct log file of the same format as the printed verbose
-    # output, containing likelihoods and alleles for all trees in the DAG,
-    # and isotype parsimony score if possible.
-    dag = fd.filter_dag(
-        dag,
+    # Filter the forest according to specified criteria, and along the way,
+    # write a log file containing stats for all trees in the forest:
+    trimmed_forest = forest.filter_trees(
         priority_weights=args.priority_weights,
         verbose=args.verbose,
         outbase=(None if args.tree_only else args.outbase),
@@ -222,22 +194,16 @@ def infer(args):
         isotype_names=args.isotype_names,
     )
 
-    # Render most represented topologies first
-    topology_dagfuncs = hdag.utils.make_newickcountfuncs(
-        internal_labels=False, collapse_leaves=True
-    )
-    ctopologies = list(dag.weight_count(**topology_dagfuncs).items())
-    random.seed(n_trees)
-    random.shuffle(ctopologies)
-    ctopologies.sort(key=lambda t: -t[1])
+
+
     if args.verbose:
-        n_trees = dag.count_trees()
-        if n_trees > 1:
+        if trimmed_forest.n_trees > 1:
+            n_topologies = trimmed_forest.n_topologies()
             print(
                 "Degenerate ranking criteria: trimmed history DAG contains "
-                f"{n_trees} unique trees, with {len(ctopologies)} unique collapsed topologies."
+                f"{trimmed_forest.n_trees} unique trees, with {n_topologies} unique collapsed topologies."
             )
-            if len(ctopologies) > 10:
+            if n_topologies > 10:
                 print(
                     "A representative from each of the ten most abundant topologies will be sampled randomly for rendering."
                 )
@@ -245,17 +211,12 @@ def infer(args):
                 print(
                     "A representative of each topology will be sampled randomly for rendering."
                 )
-    ctrees = []
-    for index, (ctopology, count) in zip(range(10), ctopologies):
-        tdag = dag.copy()
-        tdag.trim_topology(ctopology, collapse_leaves=True)
-        tdag.make_uniform()
-        ctrees.append(bp.clade_tree_to_ctree(tdag.sample(), **validation_stats))
 
-    parsimony_forest = bp.CollapsedForest(forest=ctrees)
-
-    with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
-        pickle.dump(parsimony_forest, f)
+    random.seed(forest.n_trees)
+    ctrees = [
+        topoclass.sample_tree()
+        for _, topoclass in zip(range(10), trimmed_forest.iter_topology_classes())
+    ]
 
     if args.colormapfile is not None:
         with open(args.colormapfile, "r") as f:
@@ -285,7 +246,7 @@ def infer(args):
     else:
         position_map2 = None
 
-    for j, collapsed_tree in enumerate(parsimony_forest.forest, 1):
+    for j, collapsed_tree in enumerate(ctrees, 1):
         collapsed_tree.render(
             f"{args.outbase}.inference.{j}.svg",
             idlabel=args.idlabel,
@@ -303,11 +264,7 @@ def infer(args):
     if not args.tree_only:
         # rank plot of observed allele frequencies
         y = sorted(
-            (
-                node.abundance
-                for node in parsimony_forest.forest[0].tree.traverse()
-                if node.abundance != 0
-            ),
+            (node.abundance for node in ctrees[0].tree.traverse() if node.abundance != 0),
             reverse=True,
         )
         plt.figure()

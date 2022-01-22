@@ -5,8 +5,9 @@ from gctree.utils import hamming_distance
 import random
 import ete3
 import warnings
-from typing import Dict, Callable, Optional, Set, Sequence
+from typing import Dict, Callable, Optional, Set, Sequence, Mapping, Tuple, FrozenSet
 from functools import wraps
+import historydag as hdag
 
 default_isotype_order = ["IgM", "IgG3", "IgG1", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
 
@@ -382,3 +383,87 @@ def explode_idmap(
             for isotype in isotypeset
         }
     return newidmap
+
+
+def _isotype_dagfuncs(
+    isotypemap: Mapping[str, str] = None,
+    isotypemap_file: str = None,
+    idmap: Mapping[str, Set[str]] = None,
+    idmap_file: str = None,
+    isotype_names: Sequence[str] = None,
+) -> hdag.utils.AddFuncDict:
+    """Return functions for filtering by isotype parsimony score on the history
+    DAG.
+
+    Isotype parsimony of a tree is the minimum number of allowed isotype transitions
+    required along all edges.
+
+    Args:
+        isotypemap: A dictionary mapping original IDs to observed isotype names
+        isotypemap_file: A csv file providing an `isotypemap`
+        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
+        idmap_file: A csv file providing an `idmap`
+        isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to isotype parsimony.
+        Weight format is ``(score, isotypeset)``, where ``score`` is isotype parsimony as a float,
+        and ``isotypeset`` is a frozenset containing isotypes used internally for computing parsimony score.
+    """
+    if isotypemap_file and isotypemap is None:
+        with open(isotypemap_file, "r") as fh:
+            isotypemap = dict(map(lambda x: x.strip(), line.split(",")) for line in fh)
+    elif isotypemap_file is None:
+        raise ValueError("Either isotypemap or isotypemap_file is required")
+
+    if idmap_file and idmap is None:
+        with open(idmap_file, "r") as fh:
+            idmap = {}
+            for line in fh:
+                seqid, cell_ids = line.rstrip().split(",")
+                cell_idset = {cell_id for cell_id in cell_ids.split(":") if cell_id}
+                if len(cell_idset) > 0:
+                    idmap[seqid] = cell_idset
+        newidmap = explode_idmap(idmap, isotypemap)
+        if isotype_names:
+            isotype_names = str(isotype_names).split(",")
+        else:
+            isotype_names = default_isotype_order
+        newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
+    elif idmap is None:
+        raise TypeError("Either idmap or idmap_file is required")
+
+    def distance_func(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
+        if n2.is_leaf():
+            seqid = n2.attr["name"]
+            if seqid in newidmap:
+                isoset = frozenset(newisotype(name) for name in newidmap[seqid].keys())
+            else:
+                isoset = frozenset()
+        else:
+            isoset = frozenset()
+        return (0, isoset)
+
+    def sumweights(weights: Sequence[Tuple[float, FrozenSet[Isotype]]]):
+        ps = [i[0] for i in weights]
+        ts = [item for i in weights for item in i[1]]
+        if ts:
+            newt = frozenset({min(ts)})
+        else:
+            newt = frozenset()
+        return (
+            sum(isotype_distance(list(newt)[0], el) for el in ts) + sum(ps),
+            newt,
+        )
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: (0, frozenset()),
+            "edge_weight_func": distance_func,
+            "accum_func": sumweights,
+        },
+        names=("IsotypeParsimony", "Isotype_state"),
+    )
