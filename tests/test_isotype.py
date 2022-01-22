@@ -1,4 +1,4 @@
-from gctree.dag_filtering import isotype_dagfuncs
+from gctree.isotyping import _isotype_dagfuncs
 import gctree.isotyping as iso
 import gctree.phylip_parse as pp
 import ete3
