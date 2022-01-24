@@ -157,7 +157,9 @@ def test(args):
 def infer(args):
     """inference subprogram."""
     if len(args.infiles) == 2:
-        forest = bp.CollapsedForest(*pp.parse_outfile(args.infiles[0], args.infiles[1], args.root))
+        forest = bp.CollapsedForest(
+            *pp.parse_outfile(args.infiles[0], args.infiles[1], args.root)
+        )
         if forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
 
@@ -173,7 +175,9 @@ def infer(args):
 
     elif len(args.infiles) == 1:
         if args.verbose:
-            print("Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.")
+            print(
+                "Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped."
+            )
         with open(args.infiles[0], "rb") as fh:
             forest = pickle.load(fh)
     else:
@@ -193,8 +197,6 @@ def infer(args):
         idmap_file=args.idmapfile,
         isotype_names=args.isotype_names,
     )
-
-
 
     if args.verbose:
         if trimmed_forest.n_trees > 1:
@@ -264,7 +266,11 @@ def infer(args):
     if not args.tree_only:
         # rank plot of observed allele frequencies
         y = sorted(
-            (node.abundance for node in ctrees[0].tree.traverse() if node.abundance != 0),
+            (
+                node.abundance
+                for node in ctrees[0].tree.traverse()
+                if node.abundance != 0
+            ),
             reverse=True,
         )
         plt.figure()

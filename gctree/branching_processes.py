@@ -158,7 +158,10 @@ class CollapsedTree:
         # create tuple (c, m) for each node, and store in a tuple of
         # ((c, m), n)'s, where n is the multiplicity of (c, m) seen in the
         # tree, adding pseudocount to root if unobserved unifurcation at root.
-        cmlist = [(node.abundance, len(node.children)) for node in self.tree.iter_descendants()]
+        cmlist = [
+            (node.abundance, len(node.children))
+            for node in self.tree.iter_descendants()
+        ]
         rootcm = (self.tree.abundance, len(self.tree.children))
         if rootcm == (0, 1):
             cmlist.append((1, 1))
@@ -985,7 +988,6 @@ class CollapsedForest:
             else:
                 raise ValueError("forest data must be defined to compute likelihood")
 
-
         terms = [
             [_lltree(cmcounts, p, q), count] for cmcounts, count in self._cm_countlist
         ]
@@ -1247,9 +1249,7 @@ class CollapsedForest:
 
     def __repr__(self):
         r"""return a string representation for printing."""
-        return f"n_trees = {self.n_trees}\n" "\n".join(
-            [str(tree) for tree in self]
-        )
+        return f"n_trees = {self.n_trees}\n" "\n".join([str(tree) for tree in self])
 
     def __iter__(self):
         if self._ctrees is not None:
