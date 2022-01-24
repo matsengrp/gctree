@@ -1314,6 +1314,14 @@ class CollapsedForest:
             feature_funcs={"abundance": lambda n: n.attr["abundance"]},
         )
 
+        # Remove dummy leaf added below root for hDAG compatibility
+        dummyleaves = [
+            node for node in etetree.children if node.is_leaf() and node.abundance == 0
+        ]
+        assert len(dummyleaves) <= 1
+        for leaf in dummyleaves:
+            leaf.delete()
+
         ctree = CollapsedTree(etetree)
         # Here can do some validation on the tree:
         # root name:
