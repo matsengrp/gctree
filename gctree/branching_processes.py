@@ -150,19 +150,21 @@ class CollapsedTree:
                 # sort children of this node based on partion and sequence
                 node.children.sort(key=lambda node: (node.partition, node.sequence))
 
-            # create tuple (c, m) for each node, and store in a tuple of
-            # ((c, m), n)'s, where n is the multiplicity of (c, m) seen in the tree.
-            self._cm_counts = tuple(
-                coll.Counter(
-                    [
-                        (node.abundance, len(node.children))
-                        for node in self.tree.traverse()
-                    ]
-                ).items()
-            )
-            # store max c and m
+            self._build_cm_counts()
         else:
-            self.tree = tree
+            self.tree = None
+
+    def _build_cm_counts(self):
+        # create tuple (c, m) for each node, and store in a tuple of
+        # ((c, m), n)'s, where n is the multiplicity of (c, m) seen in the
+        # tree, adding pseudocount to root if unobserved unifurcation at root.
+        cmlist = [(node.abundance, len(node.children)) for node in self.tree.iter_descendants()]
+        rootcm = (self.tree.abundance, len(self.tree.children))
+        if rootcm == (0, 1):
+            cmlist.append((1, 1))
+        else:
+            cmlist.append(rootcm)
+        self._cm_counts = tuple(coll.Counter(cmlist).items())
 
     @staticmethod
     def _simulate_genotype(p: np.float64, q: np.float64) -> Tuple[int, int]:
@@ -378,14 +380,7 @@ class CollapsedTree:
 
         if root:
             # create list of (c, m) for each node
-            self._cm_counts = tuple(
-                coll.Counter(
-                    [
-                        (node.abundance, len(node.children))
-                        for node in self.tree.traverse()
-                    ]
-                ).items()
-            )
+            self._build_cm_counts()
 
     def __repr__(self):
         r"""return a string representation for printing."""
@@ -964,26 +959,32 @@ class CollapsedForest:
         Returns:
             Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
         """
-        if self._cm_countlist is None and self._forest is None:
-            raise ValueError("forest data must be defined to compute likelihood")
-        elif self._cm_countlist is None:
-            cmcount_dagfuncs = _cmcounter_dagfuncs()
+        if self._cm_countlist is None:
+            if self._forest is not None:
+                cmcount_dagfuncs = _cmcounter_dagfuncs()
 
-            def to_tuple(mset):
-                # _lltree checks first item in list for unobserved root unifurcation,
-                # but here it could end up not being first.
-                if (0, 1) in mset:
-                    assert mset[(0, 1)] == 1
-                    mset = mset - {(0, 1)} + {(1, 1)}
-                return tuple(mset.items())
+                def to_tuple(mset):
+                    # When there's unobserved root unifurcation, augment with
+                    # pseudocount.
+                    if (0, 1) in mset:
+                        assert mset[(0, 1)] == 1
+                        mset = mset - {(0, 1)} + {(1, 1)}
+                    return tuple(mset.items())
 
-            cmcounters = self._forest.weight_count(**cmcount_dagfuncs)
-            self._cm_countlist = [
-                (to_tuple(mset), mult) for mset, mult in cmcounters.items()
-            ]
-            # an iterable containing tuples `(cm_counts, mult)`, where `cm_counts`
-            # is an iterable describing a tree, and `mult` is the number of trees in the forest
-            # which can be described with the iterable `cm_counts`.
+                cmcounters = self._forest.weight_count(**cmcount_dagfuncs)
+                self._cm_countlist = [
+                    (to_tuple(mset), mult) for mset, mult in cmcounters.items()
+                ]
+                # an iterable containing tuples `(cm_counts, mult)`, where `cm_counts`
+                # is an iterable describing a tree, and `mult` is the number of trees in the forest
+                # which can be described with the iterable `cm_counts`.
+            elif self._ctrees is not None:
+                self._cm_countlist = tuple(
+                    coll.Counter([tree._cm_counts for tree in self._ctrees]).items()
+                )
+            else:
+                raise ValueError("forest data must be defined to compute likelihood")
+
 
         terms = [
             [_lltree(cmcounts, p, q), count] for cmcounts, count in self._cm_countlist
@@ -1436,10 +1437,6 @@ def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.nda
     """
     count_ls = [n for cm, n in cm_counts]
     cm_list = [cm for cm, n in cm_counts]
-    if cm_list[0][0] == 0 and cm_list[0][1] == 1:
-        # if unifurcation not possible under current model, add a
-        # psuedocount for the root
-        cm_list[0] = (1, 1)
     # extract vector of function values and gradient components
     logf_data = [CollapsedTree._ll_genotype(c, m, p, q) for c, m in cm_list]
     logf = np.array([[x[0] * count_ls[i]] for i, x in enumerate(logf_data)]).sum()

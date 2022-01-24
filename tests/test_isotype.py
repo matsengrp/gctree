@@ -1,4 +1,5 @@
 from gctree.isotyping import _isotype_dagfuncs
+import gctree.branching_processes as bp
 import gctree.isotyping as iso
 import gctree.phylip_parse as pp
 import ete3
@@ -16,7 +17,8 @@ trees_seqcounts1 = pp.parse_outfile(
     root="GL",
 )
 
-dag = pp.make_dag(*trees_seqcounts1)
+forest = bp.CollapsedForest(*trees_seqcounts1)
+dag = forest._forest
 
 
 def test_isotype_disambiguate():
@@ -36,7 +38,7 @@ def test_isotype_disambiguate():
 
 
 def test_trim_byisotype():
-    kwargs = isotype_dagfuncs(
+    kwargs = _isotype_dagfuncs(
         isotypemap_file="example/isotypemap.txt",
         idmap_file="tests/example_output/original/idmap.txt",
     )
