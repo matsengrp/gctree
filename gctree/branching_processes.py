@@ -72,7 +72,6 @@ class CollapsedTree:
             observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy="postorder"):
                 if node.dist == 0:
-                    # See note in docsrc/implementation_details/notes.rst for discussion
                     node.up.abundance = max(node.abundance, node.up.abundance)
                     if isinstance(node.name, str):
                         node_set = set([node.name])
@@ -1247,19 +1246,6 @@ class CollapsedForest:
 
         return self._trimmed_self(trimdag)
 
-    def __repr__(self):
-        r"""return a string representation for printing."""
-        return f"n_trees = {self.n_trees}\n" "\n".join([str(tree) for tree in self])
-
-    def __iter__(self):
-        if self._ctrees is not None:
-            yield from self._ctrees
-        elif self._forest is not None:
-            for cladetree in self._forest.get_trees():
-                yield self._clade_tree_to_ctree(cladetree)
-        else:
-            yield from ()
-
     @requires_dag
     def n_topologies(self) -> int:
         """Count the number of topology classes, ignoring internal node sequences"""
@@ -1389,6 +1375,26 @@ class CollapsedForest:
                     "observed nonroot sequences passed in leaf_seqs."
                 )
         return ctree
+
+    def __repr__(self):
+        r"""return a string representation for printing."""
+        return f"n_trees = {self.n_trees}\n" "\n".join([str(tree) for tree in self])
+
+    def __iter__(self):
+        if self._ctrees is not None:
+            yield from self._ctrees
+        elif self._forest is not None:
+            for cladetree in self._forest.get_trees():
+                yield self._clade_tree_to_ctree(cladetree)
+        else:
+            yield from ()
+
+    def __getstate__(self):
+        # Avoid pickling large cached abundance data.
+        # hDAG also defines its own getstate.
+        d = self.__dict__.copy()
+        d["_cm_countlist"] = None
+        return d
 
 
 def _mle_helper(
