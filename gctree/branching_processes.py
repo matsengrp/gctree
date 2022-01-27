@@ -1556,6 +1556,8 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
         if node.label.sequence in sequence_counts:
             node.attr["abundance"] = sequence_counts[node.label.sequence]
         else:
+            if node.is_leaf():
+                raise ValueError("sequence_counts dictionary should contain all leaf sequences")
             node.attr["abundance"] = 0
 
     if len(dag.hamming_parsimony_count()) > 1:
