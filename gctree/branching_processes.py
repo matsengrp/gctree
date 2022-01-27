@@ -30,6 +30,7 @@ import multiset
 import matplotlib as mp
 import matplotlib.pyplot as plt
 from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence
+from decimal import Decimal
 
 np.seterr(all="raise")
 
@@ -1085,8 +1086,6 @@ class CollapsedForest:
         dag = self._forest
         if self.parameters is None:
             self.mle(marginal=True)
-        elif verbose:
-            print("Skipping parameter fitting")
         p, q = self.parameters
         placeholder_dagfuncs = hdag.utils.AddFuncDict(
             {
@@ -1108,7 +1107,7 @@ class CollapsedForest:
                 print("Isotype parsimony will be used as a ranking criterion")
         except ValueError:
             iso_funcs = placeholder_dagfuncs + placeholder_dagfuncs
-        ll_dagfuncs = _ll_cmcount_dagfuncs(p, q)
+        ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
         if mutability_file and substitution_file:
             if verbose:
                 print("Mutation model parsimony will be used as a ranking criterion")
@@ -1168,7 +1167,7 @@ class CollapsedForest:
         else:
 
             def minfunckey(weighttuple):
-                ll, _, isotypepars, _, mutabilitypars, alleles = weighttuple
+                ll, isotypepars, _, mutabilitypars, alleles = weighttuple
                 # Sort output by likelihood, then isotype parsimony, then mutability score
                 return (-ll, isotypepars, mutabilitypars)
 
@@ -1193,21 +1192,21 @@ class CollapsedForest:
                     + ("\ttree score" if priority_weights else "")
                     + "\n"
                 )
-                for j, (l, _, isotypepars, _, mutabilitypars, alleles) in enumerate(
+                for j, (l, isotypepars, _, mutabilitypars, alleles) in enumerate(
                     dag_ls, 1
                 ):
                     if priority_weights:
                         treescore = str(
-                            minfunckey((l, 0, isotypepars, 0, mutabilitypars, alleles))
+                            minfunckey((l, isotypepars, 0, mutabilitypars, alleles))
                         )
                     else:
                         treescore = ""
                     fh.write(
-                        f"{j}\t{alleles}\t{l}\t{isotypepars}\t\t\t{mutabilitypars}\t{treescore}\n"
+                        f"{j}\t{alleles}\t{float(l)}\t{isotypepars}\t\t\t{mutabilitypars}\t{treescore}\n"
                     )
 
             # For use in later plots
-            dag_l = [ls[0] for ls in dag_ls]
+            dag_l = [float(ls[0]) for ls in dag_ls]
 
             # rank plot of likelihoods
             plt.figure(figsize=(6.5, 2))
@@ -1240,7 +1239,7 @@ class CollapsedForest:
                 **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
             )
             print(
-                f"{stats[5]}\t{stats[0]}\t{stats[2]}\t\t\t{stats[4]}\t"
+                f"{stats[4]}\t{float(stats[0])}\t{stats[1]}\t\t\t{stats[3]}\t"
                 + str(minfunckey(stats) if priority_weights else "")
             )
 
@@ -1557,7 +1556,9 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
             node.attr["abundance"] = sequence_counts[node.label.sequence]
         else:
             if node.is_leaf():
-                raise ValueError("sequence_counts dictionary should contain all leaf sequences")
+                raise ValueError(
+                    "sequence_counts dictionary should contain all leaf sequences"
+                )
             node.attr["abundance"] = 0
 
     if len(dag.hamming_parsimony_count()) > 1:
@@ -1588,58 +1589,13 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
     return dag
 
 
-def _ll_cmcount_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDict:
-    """A slower but more numerically stable equivalent to _ll_genotype_dagfuncs.
-
-    Args:
-        p, q: branching process parameters
-
-    Returns:
-        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
-        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
-        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
-        methods to trim or annotate a :meth:`historydag.HistoryDag` according to branching process likelihood.
-        Weight format is ``(log likelihood, cmcounts)`` where cmcounts is a FrozenMultiset containing abundance, mutant clade count pairs.
-        To use these functions for DAG trimming, use an optimal function like
-        `lambda l: max(l, key=lambda ll: ll[0])` for clarity, although min or max should work too.
-    """
-
-    funcdict = _cmcounter_dagfuncs()
-    cmcount_weight_func = funcdict["edge_weight_func"]
-    cmcount_addfunc = funcdict["accum_func"]
-
-    @functools.lru_cache(maxsize=None)
-    def ll(cmcounter: multiset.FrozenMultiset) -> np.float64:
-        if cmcounter:
-            if (0, 1) in cmcounter:
-                cmcounter = cmcounter - {(0, 1)} + {(1, 1)}
-            return _lltree(tuple(cmcounter.items()), p, q)[0]
-        else:
-            return np.float64(0.0)
-
-    def edge_weight_func(n1, n2):
-        st = cmcount_weight_func(n1, n2)
-        return (ll(st), st)
-
-    def accum_func(cmsetlist: List[Tuple[float, multiset.FrozenMultiset]]):
-        st = cmcount_addfunc([t[1] for t in cmsetlist])
-        return (ll(st), st)
-
-    return hdag.utils.AddFuncDict(
-        {
-            "start_func": lambda n: (0, multiset.FrozenMultiset()),
-            "edge_weight_func": edge_weight_func,
-            "accum_func": accum_func,
-        },
-        names=("LogLikelihood", "cmcounters"),
-    )
-
-
 def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDict:
     """Return functions for counting tree log likelihood on the history DAG.
 
-    Although these functions are fast, for numerical consistency use
-    :meth:`_ll_cmcount_dagfuncs` instead.
+    For numerical consistency, we resort to the use of ``decimal.Decimal``.
+    This is exactly for the purpose of solving the problem that float sum is
+    sensitive to order of summation, while Decimal sum is not.
+
 
     Args:
         p, q: branching process parameters
@@ -1649,7 +1605,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
         to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
         or :meth:`historydag.HistoryDag.optimal_weight_annotate`
         methods to trim or annotate a :meth:`historydag.HistoryDag` according to branching process likelihood.
-        Weight format is ``float``.
+        Weight format is ``decimal.Decimal``.
     """
 
     def edge_weight_ll_genotype(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
@@ -1659,19 +1615,19 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
         Expects DAG to have abundances added so that each node has "abundance" key in attr dict.
         """
         if n2.is_leaf() and n2.label == n1.label:
-            return np.float64(0.0)
+            return Decimal(0.0)
         else:
             m = len(n2.clades)
             # Check if this edge should be collapsed, and reduce mutant descendants
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            return CollapsedTree._ll_genotype(n2.attr["abundance"], m, p, q)[0]
+            return Decimal(CollapsedTree._ll_genotype(n2.attr["abundance"], m, p, q)[0])
 
     return hdag.utils.AddFuncDict(
         {
-            "start_func": lambda n: np.float64(0),
+            "start_func": lambda n: Decimal(0),
             "edge_weight_func": edge_weight_ll_genotype,
-            "accum_func": np.sum,
+            "accum_func": sum,
         }
     )
 
