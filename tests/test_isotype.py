@@ -50,7 +50,5 @@ def test_trim_byisotype():
     c = tdag.weight_count(**kwargs)
     key = min(c)
     count = c[key]
-    tdag.trim_optimal_weight(
-        **kwargs, optimal_func=min, eq_func=lambda t1, t2: t1[0] == t2[0]
-    )
+    tdag.trim_optimal_weight(**kwargs, optimal_func=min)
     assert tdag.weight_count(**kwargs) == {key: count}

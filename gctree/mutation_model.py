@@ -431,7 +431,7 @@ def _mutability_dagfuncs(*args, **kwargs) -> hdag.utils.AddFuncDict:
 
     return hdag.utils.AddFuncDict(
         {"start_func": lambda n: 0, "edge_weight_func": distance, "accum_func": sum},
-        names="MutabilityParsimony",
+        name="Mutability Parsimony",
     )
 
 

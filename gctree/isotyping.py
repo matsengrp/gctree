@@ -445,25 +445,25 @@ def _isotype_dagfuncs(
                 isoset = frozenset()
         else:
             isoset = frozenset()
-        return (0, isoset)
+        return hdag.utils.IntState(0, state=isoset)
 
     def sumweights(weights: Sequence[Tuple[float, FrozenSet[Isotype]]]):
-        ps = [i[0] for i in weights]
-        ts = [item for i in weights for item in i[1]]
+        ps = [int(i) for i in weights]
+        ts = [item for i in weights for item in i.state]
         if ts:
             newt = frozenset({min(ts)})
         else:
             newt = frozenset()
-        return (
+        return hdag.utils.IntState(
             sum(isotype_distance(list(newt)[0], el) for el in ts) + sum(ps),
-            newt,
+            state=newt,
         )
 
     return hdag.utils.AddFuncDict(
         {
-            "start_func": lambda n: (0, frozenset()),
+            "start_func": lambda n: hdag.utils.IntState(0, state=frozenset()),
             "edge_weight_func": distance_func,
             "accum_func": sumweights,
         },
-        names=("IsotypeParsimony", "Isotype_state"),
+        name="Isotype Parsimony",
     )

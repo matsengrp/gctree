@@ -1041,6 +1041,7 @@ class CollapsedForest:
         priority_weights: Sequence[float] = None,
         verbose: bool = False,
         outbase: str = None,
+        summarize_forest=False,
         mutability_file: str = None,
         substitution_file: str = None,
         isotypemap: Mapping[str, str] = None,
@@ -1093,7 +1094,7 @@ class CollapsedForest:
                 "edge_weight_func": lambda n1, n2: 0,
                 "accum_func": sum,
             },
-            names="PlaceholderWeight",
+            name="",
         )
         try:
             iso_funcs = _isotype_dagfuncs(
@@ -1117,11 +1118,11 @@ class CollapsedForest:
         else:
             mut_funcs = placeholder_dagfuncs
         allele_funcs = _allele_dagfuncs()
+        kwargls = [ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs]
         if priority_weights:
             # a vector of relative weights, for ll, isotype pars, mutability_pars, alleles
             # This is possible because all weights are additive up the tree,
             # and the transformations are strictly increasing/decreasing.
-            kwargls = [ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs]
             minmaxls = [
                 (
                     dag.optimal_weight_annotate(**kwargs, optimal_func=min),
@@ -1129,12 +1130,10 @@ class CollapsedForest:
                 )
                 for kwargs in kwargls
             ]
-            minmaxls = [
-                (mn, mx) if isinstance(kwargs.names, str) else (mn[0], mx[0])
-                for (mn, mx), kwargs in zip(minmaxls, kwargls)
-            ]
 
             def transformation(mn, mx):
+                mn = float(mn)
+                mx = float(mx)
                 if mx - mn < 0.0001:
 
                     def func(n):
@@ -1153,13 +1152,12 @@ class CollapsedForest:
             transformations[0] = lambda n: -f(n) + 1
 
             def minfunckey(weighttuple):
-                ll, _, isotypepars, _, mutabilitypars, alleles = weighttuple
-                weightlist = [ll, isotypepars, mutabilitypars, alleles]
+                """Weighttuple will have (ll, isotypepars, mutabilitypars, alleles)"""
                 return sum(
                     [
-                        priority * transform(weight)
+                        priority * transform(float(weight))
                         for priority, transform, weight in zip(
-                            priority_weights, transformations, weightlist
+                            priority_weights, transformations, weighttuple
                         )
                     ]
                 )
@@ -1167,9 +1165,9 @@ class CollapsedForest:
         else:
 
             def minfunckey(weighttuple):
-                ll, isotypepars, _, mutabilitypars, alleles = weighttuple
+                """Weighttuple will have (ll, isotypepars, mutabilitypars, alleles)"""
                 # Sort output by likelihood, then isotype parsimony, then mutability score
-                return (-ll, isotypepars, mutabilitypars)
+                return (-weighttuple[0],) + weighttuple[1:-1]
 
         # Filter by likelihood, isotype parsimony, mutability,
         # and make ctrees, cforest, and render trees
@@ -1180,33 +1178,64 @@ class CollapsedForest:
         )
 
         if outbase:
-            dag_ls = list(dag.weight_count(**dagweight_kwargs).elements())
-            # To clear _dp_data fields of their large cargo
-            dag.optimal_weight_annotate(**placeholder_dagfuncs)
-            dag_ls.sort(key=minfunckey)
-
             with open(outbase + ".forest_summary.log", "w") as fh:
                 fh.write(f"Parameters: {(p, q)}\n")
-                fh.write(
-                    "tree\talleles\tlogLikelihood\t\tisotype_parsimony\tmutability_parsimony"
-                    + ("\ttree score" if priority_weights else "")
-                    + "\n"
-                )
-                for j, (l, isotypepars, _, mutabilitypars, alleles) in enumerate(
-                    dag_ls, 1
-                ):
-                    if priority_weights:
-                        treescore = str(
-                            minfunckey((l, isotypepars, 0, mutabilitypars, alleles))
+                for index, kwargs in enumerate(kwargls):
+                    for opt in [min, max]:
+                        tempdag = dag.copy()
+                        opt_weight = tempdag.trim_optimal_weight(
+                            **kwargs, optimal_func=opt
                         )
-                    else:
-                        treescore = ""
-                    fh.write(
-                        f"{j}\t{alleles}\t{float(l)}\t{isotypepars}\t\t\t{mutabilitypars}\t{treescore}\n"
-                    )
+                        fh.write(
+                            f"\nAmong trees with {opt.__name__} {kwargs.name} of: {opt_weight}\n"
+                        )
+                        for inkwargs in kwargls:
+                            if inkwargs != kwargs:
+                                fh.write(
+                                    f"\t{inkwargs.name} range: "
+                                    + str(
+                                        tempdag.optimal_weight_annotate(
+                                            **inkwargs, optimal_func=min
+                                        )
+                                    )
+                                    + " to "
+                                    + str(
+                                        tempdag.optimal_weight_annotate(
+                                            **inkwargs, optimal_func=max
+                                        )
+                                    )
+                                    + "\n"
+                                )
 
-            # For use in later plots
-            dag_l = [float(ls[0]) for ls in dag_ls]
+            if summarize_forest:
+                dag_ls = list(dag.weight_count(**dagweight_kwargs).elements())
+                # To clear _dp_data fields of their large cargo
+                dag.optimal_weight_annotate(**placeholder_dagfuncs)
+                dag_ls.sort(key=minfunckey)
+
+                with open(outbase + ".forest_summary.log", "a") as fh:
+                    fh.write(
+                        "\nForest summary:\n"
+                        + "tree\talleles\tlogLikelihood\t\tisotype_parsimony\tmutability_parsimony"
+                        + ("\ttree score" if priority_weights else "")
+                        + "\n"
+                    )
+                    for j, weighttuple in enumerate(dag_ls, 1):
+                        if priority_weights:
+                            treescore = str(minfunckey(weighttuple))
+                        else:
+                            treescore = ""
+                        l, isotypepars, mutabilitypars, alleles = weighttuple
+                        fh.write(
+                            f"{j}\t{alleles}\t{float(l)}\t{isotypepars}\t\t\t{mutabilitypars}\t{treescore}\n"
+                        )
+
+                # For use in later plots
+                dag_l = [float(ls[0]) for ls in dag_ls]
+            else:
+                dag_l = list(
+                    float(ll) for ll in dag.weight_count(**ll_dagfuncs).elements()
+                )
 
             # rank plot of likelihoods
             plt.figure(figsize=(6.5, 2))
@@ -1235,12 +1264,13 @@ class CollapsedForest:
                 + ("\ttreescore" if priority_weights else "")
             )
             # with format (ll, _, isotypepars, _, mutabilitypars, alleles)
-            stats = trimdag.optimal_weight_annotate(
+            weighttuple = trimdag.optimal_weight_annotate(
                 **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
             )
+            l, isotypepars, mutabilitypars, alleles = weighttuple
             print(
-                f"{stats[4]}\t{float(stats[0])}\t{stats[1]}\t\t\t{stats[3]}\t"
-                + str(minfunckey(stats) if priority_weights else "")
+                f"{alleles}\t{float(l)}\t{isotypepars}\t\t\t{mutabilitypars}\t"
+                + str(minfunckey(weighttuple) if priority_weights else "")
             )
 
         return self._trimmed_self(trimdag)
@@ -1485,7 +1515,7 @@ def _cmcounter_dagfuncs():
             "edge_weight_func": edge_weight_func,
             "accum_func": accum_func,
         },
-        names="cmcounters",
+        name="cmcounters",
     )
 
 
@@ -1628,7 +1658,8 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
             "start_func": lambda n: Decimal(0),
             "edge_weight_func": edge_weight_ll_genotype,
             "accum_func": sum,
-        }
+        },
+        name="Log Likelihood",
     )
 
 
@@ -1650,5 +1681,5 @@ def _allele_dagfuncs() -> hdag.utils.AddFuncDict:
             "edge_weight_func": lambda n1, n2: n1.label != n2.label,
             "accum_func": sum,
         },
-        names="NodeCount",
+        name="Alleles",
     )

@@ -191,6 +191,7 @@ def infer(args):
         priority_weights=args.priority_weights,
         verbose=args.verbose,
         outbase=(None if args.tree_only else args.outbase),
+        summarize_forest=args.summarize_forest,
         mutability_file=args.mutability,
         substitution_file=args.substitution,
         isotypemap_file=args.isotype_mapfile,
@@ -595,7 +596,7 @@ def get_parser():
     parser_infer.add_argument(
         "--priority_weights",
         type=float,
-        nargs="+",
+        nargs=4,
         default=None,
         help=(
             "List of weights to assign tree traits when ranking trees. "
@@ -608,6 +609,14 @@ def get_parser():
         action="store_true",
         help=(
             "Skip writing all output, but only render the optimal tree. Useful for quickly querying a history DAG."
+        ),
+    )
+    parser_infer.add_argument(
+        "--summarize_forest",
+        action="store_true",
+        help=(
+            "Whether to include summary information for each tree in `outbase.forest_summary.log`. "
+            "For large forests, this may be slow and memory intensive."
         ),
     )
 
