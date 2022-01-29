@@ -1039,9 +1039,6 @@ class CollapsedForest:
     def filter_trees(
         self,
         priority_weights: Sequence[float] = None,
-        verbose: bool = False,
-        outbase: str = None,
-        summarize_forest=False,
         mutability_file: str = None,
         substitution_file: str = None,
         isotypemap: Mapping[str, str] = None,
@@ -1049,7 +1046,10 @@ class CollapsedForest:
         idmap: Mapping[str, Set[str]] = None,
         idmap_file: str = None,
         isotype_names: Sequence[str] = None,
-        img_type: str = "svg",
+        verbose: bool = False,
+        outbase: str = "gctree.out",
+        summarize_forest: bool = False,
+        tree_stats: bool = False,
     ) -> CollapsedForest:
         """Filter trees according to specified criteria.
 
@@ -1068,9 +1068,6 @@ class CollapsedForest:
                 parsimony score, mutability parsimony score, and number of alleles.
                 If priority_weights is not provided, trees will be ranked lexicographically
                 by traits, in the same order.
-            verbose: print information about trimming
-            outbase: file name stem for a file with information for each tree in the DAG, and rank plots of likelihoods.
-                If not provided, no such files will be written.
             mutability_file: A mutability model
             substitution_file: A substitution model
             isotypemap: A mapping of sequences to isotypes
@@ -1079,7 +1076,10 @@ class CollapsedForest:
             idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
             idmap_file: A csv file providing an `idmap`
             isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order
-            img_type: Format to be used for output plots, if `outbase` string is provided.
+            verbose: print information about trimming
+            outbase: file name stem for a file with information for each tree in the DAG.
+            summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`
+            tree_stats: whether to write stats for each tree in the forest to file `[outbase].tree_stats.log`
 
         Returns:
             The trimmed forest, containing all optimal trees according to the specified criteria.
@@ -1135,16 +1135,9 @@ class CollapsedForest:
                 mn = float(mn)
                 mx = float(mx)
                 if mx - mn < 0.0001:
-
-                    def func(n):
-                        return n - mn
-
+                    return lambda n: n - mn
                 else:
-
-                    def func(n):
-                        return (n - mn) / (mx - mn)
-
-                return func
+                    return lambda n: (n - mn) / (mx - mn)
 
             transformations = [transformation(*minmax) for minmax in minmaxls]
             # switch first transformation so that we maximize ls, not minimize:
@@ -1177,7 +1170,7 @@ class CollapsedForest:
             **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
         )
 
-        if outbase:
+        if summarize_forest:
             with open(outbase + ".forest_summary.log", "w") as fh:
                 fh.write(f"Parameters: {(p, q)}\n")
                 for index, kwargs in enumerate(kwargls):
@@ -1191,70 +1184,39 @@ class CollapsedForest:
                         )
                         for inkwargs in kwargls:
                             if inkwargs != kwargs:
+                                minval = tempdag.optimal_weight_annotate(
+                                    **inkwargs, optimal_func=min
+                                )
+                                maxval = tempdag.optimal_weight_annotate(
+                                    **inkwargs, optimal_func=max
+                                )
                                 fh.write(
-                                    f"\t{inkwargs.name} range: "
-                                    + str(
-                                        tempdag.optimal_weight_annotate(
-                                            **inkwargs, optimal_func=min
-                                        )
-                                    )
-                                    + " to "
-                                    + str(
-                                        tempdag.optimal_weight_annotate(
-                                            **inkwargs, optimal_func=max
-                                        )
-                                    )
-                                    + "\n"
+                                    f"\t{inkwargs.name} range: {minval} to {maxval}\n"
                                 )
 
-            if summarize_forest:
-                dag_ls = list(dag.weight_count(**dagweight_kwargs).elements())
-                # To clear _dp_data fields of their large cargo
-                dag.optimal_weight_annotate(**placeholder_dagfuncs)
-                dag_ls.sort(key=minfunckey)
+        if tree_stats:
+            dag_ls = list(dag.weight_count(**dagweight_kwargs).elements())
+            # To clear _dp_data fields of their large cargo
+            dag.optimal_weight_annotate(**placeholder_dagfuncs)
+            dag_ls.sort(key=minfunckey)
 
-                with open(outbase + ".forest_summary.log", "a") as fh:
-                    fh.write(
-                        "\nForest summary:\n"
-                        + "tree\talleles\tlogLikelihood\t\tisotype_parsimony\tmutability_parsimony"
-                        + ("\ttree score" if priority_weights else "")
-                        + "\n"
-                    )
-                    for j, weighttuple in enumerate(dag_ls, 1):
-                        if priority_weights:
-                            treescore = str(minfunckey(weighttuple))
-                        else:
-                            treescore = ""
-                        l, isotypepars, mutabilitypars, alleles = weighttuple
-                        fh.write(
-                            f"{j}\t{alleles}\t{float(l)}\t{isotypepars}\t\t\t{mutabilitypars}\t{treescore}\n"
-                        )
-
-                # For use in later plots
-                dag_l = [float(ls[0]) for ls in dag_ls]
-            else:
-                dag_l = list(
-                    float(ll) for ll in dag.weight_count(**ll_dagfuncs).elements()
+            with open(outbase + ".tree_stats.log", "w") as fh:
+                fh.write(f"Parameters: {(p, q)}\n")
+                fh.write(
+                    "\nForest summary:\n"
+                    + "tree\talleles\tlogLikelihood\t\tisotype_parsimony\tmutability_parsimony"
+                    + ("\ttree score" if priority_weights else "")
+                    + "\n"
                 )
-
-            # rank plot of likelihoods
-            plt.figure(figsize=(6.5, 2))
-            try:
-                plt.plot(np.exp(dag_l), "ko", clip_on=False, markersize=4)
-                plt.ylabel("gctree likelihood")
-                plt.yscale("log")
-                plt.ylim([None, 1.1 * max(np.exp(dag_l))])
-            except FloatingPointError:
-                plt.plot(dag_l, "ko", clip_on=False, markersize=4)
-                plt.ylabel("gctree log-likelihood")
-                plt.ylim([None, 1.1 * max(dag_l)])
-            plt.xlabel("parsimony tree")
-            plt.xlim([-1, len(dag_l)])
-            plt.tick_params(axis="y", direction="out", which="both")
-            plt.tick_params(
-                axis="x", which="both", bottom="off", top="off", labelbottom="off"
-            )
-            plt.savefig(outbase + ".inference.likelihood_rank." + img_type)
+                for j, weighttuple in enumerate(dag_ls, 1):
+                    if priority_weights:
+                        treescore = str(minfunckey(weighttuple))
+                    else:
+                        treescore = ""
+                    l, isotypepars, mutabilitypars, alleles = weighttuple
+                    fh.write(
+                        f"{j}\t{alleles}\t{float(l)}\t{isotypepars}\t\t\t{mutabilitypars}\t{treescore}\n"
+                    )
 
         if verbose:
             print(f"params: {(p, q)}")
@@ -1274,6 +1236,34 @@ class CollapsedForest:
             )
 
         return self._trimmed_self(trimdag)
+
+    def likelihood_rankplot(self, outbase, p, q, img_type="svg"):
+        """save a rank plot of likelihoods to the file `[outbase].inference.likelihood_rank.[img_type]`."""
+        ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
+        if self._forest is not None:
+            dag_l = list(
+                float(ll) for ll in self._forest.weight_count(**ll_dagfuncs).elements()
+            )
+        else:
+            dag_l = [ctree.ll(p, q)[0] for ctree in self]
+        dag_l.sort(key=lambda n: -n)
+        plt.figure(figsize=(6.5, 2))
+        try:
+            plt.plot(np.exp(dag_l), "ko", clip_on=False, markersize=4)
+            plt.ylabel("gctree likelihood")
+            plt.yscale("log")
+            plt.ylim([None, 1.1 * max(np.exp(dag_l))])
+        except FloatingPointError:
+            plt.plot(dag_l, "ko", clip_on=False, markersize=4)
+            plt.ylabel("gctree log-likelihood")
+            plt.ylim([None, 1.1 * max(dag_l)])
+        plt.xlabel("parsimony tree")
+        plt.xlim([-1, len(dag_l)])
+        plt.tick_params(axis="y", direction="out", which="both")
+        plt.tick_params(
+            axis="x", which="both", bottom="off", top="off", labelbottom="off"
+        )
+        plt.savefig(outbase + ".inference.likelihood_rank." + img_type)
 
     @requires_dag
     def n_topologies(self) -> int:

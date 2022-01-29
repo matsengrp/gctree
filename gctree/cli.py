@@ -190,8 +190,9 @@ def infer(args):
     trimmed_forest = forest.filter_trees(
         priority_weights=args.priority_weights,
         verbose=args.verbose,
-        outbase=(None if args.tree_only else args.outbase),
+        outbase=args.outbase,
         summarize_forest=args.summarize_forest,
+        tree_stats=args.tree_stats,
         mutability_file=args.mutability,
         substitution_file=args.substitution,
         isotypemap_file=args.isotype_mapfile,
@@ -264,21 +265,16 @@ def infer(args):
         with open(f"{args.outbase}.inference.{j}.p", "wb") as f:
             pickle.dump(collapsed_tree, f)
 
-    if not args.tree_only:
-        # rank plot of observed allele frequencies
-        y = sorted(
-            (
-                node.abundance
-                for node in ctrees[0].tree.traverse()
-                if node.abundance != 0
-            ),
-            reverse=True,
-        )
-        plt.figure()
-        plt.bar(range(1, len(y) + 1), y, color="black")
-        plt.xlabel("genotype")
-        plt.ylabel("abundance")
-        plt.savefig(args.outbase + ".inference.abundance_rank." + args.img_type)
+    # rank plot of observed allele frequencies
+    y = sorted(
+        (node.abundance for node in ctrees[0].tree.traverse() if node.abundance != 0),
+        reverse=True,
+    )
+    plt.figure()
+    plt.bar(range(1, len(y) + 1), y, color="black")
+    plt.xlabel("genotype")
+    plt.ylabel("abundance")
+    plt.savefig(args.outbase + ".inference.abundance_rank." + args.img_type)
 
 
 def simulate(args):
@@ -605,18 +601,18 @@ def get_parser():
         ),
     )
     parser_infer.add_argument(
-        "--tree_only",
-        action="store_true",
-        help=(
-            "Skip writing all output, but only render the optimal tree. Useful for quickly querying a history DAG."
-        ),
-    )
-    parser_infer.add_argument(
         "--summarize_forest",
         action="store_true",
         help=(
-            "Whether to include summary information for each tree in `outbase.forest_summary.log`. "
-            "For large forests, this may be slow and memory intensive."
+            "write a file `[outbase].forest_summary.log` with a summary of traits for trees in the forest."
+        ),
+    )
+    parser_infer.add_argument(
+        "--tree_stats",
+        action="store_true",
+        help=(
+            "write a file `[outbase].tree_stats.log` with stats for all trees in the forest. "
+            "For large forests, this is slow and memory intensive."
         ),
     )
 
