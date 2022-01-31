@@ -1643,7 +1643,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
             # Check if this edge should be collapsed, and reduce mutant descendants
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            c = n2.attr['abundance']
+            c = n2.attr["abundance"]
             if n1.is_root() and c == 0 and m == 1:
                 # Add pseudocount for unobserved root unifurcation
                 c = 1

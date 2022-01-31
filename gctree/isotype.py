@@ -72,7 +72,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--trees",
-        nargs='+',
+        nargs="+",
         type=str,
         help="filenames for collapsed tree pickle files output by gctree inference",
     )
@@ -142,9 +142,7 @@ def main(arg_list=None):
         with open(treefile, "rb") as fh:
             ctrees.append(pickle.load(fh))
     # parse the idmap file and the isotypemap file
-    ctrees = tuple(
-        sorted(ctrees, key=lambda tree: -tree.ll(*parameters)[0])
-    )
+    ctrees = tuple(sorted(ctrees, key=lambda tree: -tree.ll(*parameters)[0]))
     tree_stats = [
         [
             filename,
@@ -196,12 +194,14 @@ def main(arg_list=None):
             node.name: isotype_palette[node.isotype.isotype % len(isotype_palette)]
             for node in ctree.tree.traverse()
         }
-        newfilename = filename + f"{likelihood_idx + 1}.isotype_parsimony.{int(parsimony)}"
+        newfilename = (
+            filename + f"{likelihood_idx + 1}.isotype_parsimony.{int(parsimony)}"
+        )
         ctree.render(
             outfile=out_directory + newfilename + ".svg",
             colormap=colormap,
             idlabel=True,
         )
         ctree.newick(out_directory + newfilename + ".nk")
-        with open(out_directory + newfilename + ".p", 'wb') as fh:
+        with open(out_directory + newfilename + ".p", "wb") as fh:
             fh.write(pickle.dumps(ctree))
