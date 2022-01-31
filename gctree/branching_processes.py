@@ -917,7 +917,6 @@ class CollapsedForest:
         self._cm_countlist = None
         self._ctrees = None
         self.parameters = None
-        self._cm = None
 
     def simulate(self, p: np.float64, q: np.float64, n_trees: int):
         r"""Simulate a forest of collapsed trees. Overwrites existing forest attribute.
@@ -1004,12 +1003,18 @@ class CollapsedForest:
                 b = (grad_ls[:, j] - grad_ls[i_prime, j]) * count_ls
                 # believe it or not, logsumexp can't handle 0 in b
                 # when np.seterr(underflow='raise') on newer processors:
+                if all(b == 0):
+                    # logsumexp can't take empty list, but if b is 0, then
+                    # logsumexp should be -inf, whose exponent is 0:
+                    res = 0
+                else:
+                    res = np.exp(
+                         scs.logsumexp((ls - ls[i_prime])[b != 0], b=b[b != 0])
+                         - scs.logsumexp(ls - ls[i_prime], b=count_ls)
+                    )
                 grad_l.append(
                     grad_ls[i_prime, j]
-                    + np.exp(
-                        scs.logsumexp((ls - ls[i_prime])[b != 0], b=b[b != 0])
-                        - scs.logsumexp(ls - ls[i_prime], b=count_ls)
-                    )
+                    + res
                 )
             # count_ls shouldn't have any zeros in it...
             return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
@@ -1438,7 +1443,7 @@ def _mle_helper(
     grad_check = sco.check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
     if grad_check > 1e-3:
         warnings.warn(
-            "gradient mismatches finite difference " f"approximation by {grad_check}",
+            f"gradient mismatches finite difference approximation by {grad_check}",
             RuntimeWarning,
         )
     result = sco.minimize(
