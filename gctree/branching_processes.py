@@ -1009,13 +1009,10 @@ class CollapsedForest:
                     res = 0
                 else:
                     res = np.exp(
-                         scs.logsumexp((ls - ls[i_prime])[b != 0], b=b[b != 0])
-                         - scs.logsumexp(ls - ls[i_prime], b=count_ls)
+                        scs.logsumexp((ls - ls[i_prime])[b != 0], b=b[b != 0])
+                        - scs.logsumexp(ls - ls[i_prime], b=count_ls)
                     )
-                grad_l.append(
-                    grad_ls[i_prime, j]
-                    + res
-                )
+                grad_l.append(grad_ls[i_prime, j] + res)
             # count_ls shouldn't have any zeros in it...
             return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
                 grad_l
