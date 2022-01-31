@@ -89,12 +89,7 @@ The SVG image file ``gctree.out.inference.abundance_rank.svg`` shows a distribut
 .. image:: gctree.out.inference.abundance_rank.svg
   :width: 600
 
-The SVG image file ``gctree.out.inference.likelihood_rank.svg`` is a rank plot of likelihood over the set of maximum parsimony trees:
-
-.. image:: gctree.out.inference.likelihood_rank.svg
-  :width: 600
-
-Then there are files ``gctree.out.inference.1.svg`` and ``gctree.out.inference.1.nk`` containing an SVG tree image and newick tree file. If more than one parsimony tree is optimal, then up to ten optimal trees will be sampled randomly, and the corresponding files will be numbered arbitrarily.
+Then there are files ``gctree.out.inference.1.svg`` and ``gctree.out.inference.1.nk`` containing an SVG tree image and newick tree file. If more than one parsimony tree is optimal, then up to ten optimal trees will be sampled randomly, and the corresponding files will be numbered **arbitrarily**.
 For example here is the top ranked tree ``gctree.out.inference.1.svg``:
 
 .. image:: gctree.out.inference.1.svg
@@ -112,15 +107,15 @@ parsimony and mutabilities, if such information is provided.
 Ranking priorities can be adjusted using the argument ``--priority_weights``.
 
 All parsimony trees found by dnapars, as well as branching process parameters
-are saved in the file ``gctree.out.serialized_dag.p``. This file may be
-manipulated using ``gctree infer``. For example, to find the optimal tree
+are saved in the file ``gctree.out.inference.parsimony_forest.p``, containing a :class:`gctree.CollapsedForest` object.
+This file may be manipulated using ``gctree infer``. For example, to find the optimal tree
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:
 
-.. command-output:: gctree infer gctree.out.serialized_dag.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --priority_weights 2 2 1 0 --tree_only --outbase newranking --verbose
+.. command-output:: gctree infer gctree.out.serialized_dag.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --priority_weights 2 2 1 0 --outbase newranking --verbose
    :shell:
 
-All inference output is written unless we include the argument ``--tree_only``, in which case only files related to the optimal trees are written. The argument ``--outbase`` optionally specifies how the new output files should be named.
+By default, only the files listed above will be generated, with the optional argument ``--outbase`` specifying how the output files should be named. For a summary of the collection of trees used for ranking, the argument ``--summarize_forest`` is provided. For detailed information about each tree used for ranking, use the argument ``--tree_stats``.
 
 .. image:: newranking.inference.1.svg
    :width: 1000
@@ -134,7 +129,7 @@ inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
 sequences to their observed isotypes (like ``example/isotypemap.txt``) is required.
 
-.. command-output:: isotype gctree.out.inference.parsimony_forest.p gctree.inference.log idmap.txt ../example/isotypemap.txt --out_directory isotyped
+.. command-output:: isotype gctree.inference.log idmap.txt ../example/isotypemap.txt --trees gctree.out.inference.1.p newranking.inference.1.p --out_directory isotyped
   :shell:
   :ellipsis: 10
 
