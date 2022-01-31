@@ -1109,7 +1109,7 @@ class CollapsedForest:
             if verbose:
                 print("Isotype parsimony will be used as a ranking criterion")
         except ValueError:
-            iso_funcs = placeholder_dagfuncs + placeholder_dagfuncs
+            iso_funcs = placeholder_dagfuncs
         ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
         if mutability_file and substitution_file:
             if verbose:
@@ -1643,7 +1643,11 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
             # Check if this edge should be collapsed, and reduce mutant descendants
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            return Decimal(CollapsedTree._ll_genotype(n2.attr["abundance"], m, p, q)[0])
+            c = n2.attr['abundance']
+            if n1.is_root() and c == 0 and m == 1:
+                # Add pseudocount for unobserved root unifurcation
+                c = 1
+            return Decimal(CollapsedTree._ll_genotype(c, m, p, q)[0])
 
     return hdag.utils.AddFuncDict(
         {

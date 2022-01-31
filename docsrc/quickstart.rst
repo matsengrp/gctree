@@ -112,7 +112,7 @@ This file may be manipulated using ``gctree infer``. For example, to find the op
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:
 
-.. command-output:: gctree infer gctree.out.serialized_dag.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --priority_weights 2 2 1 0 --outbase newranking --verbose
+.. command-output:: gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --priority_weights 2 2 1 0 --outbase newranking --verbose
    :shell:
 
 By default, only the files listed above will be generated, with the optional argument ``--outbase`` specifying how the output files should be named. For a summary of the collection of trees used for ranking, the argument ``--summarize_forest`` is provided. For detailed information about each tree used for ranking, use the argument ``--tree_stats``.

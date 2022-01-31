@@ -175,11 +175,7 @@ def main(arg_list=None):
             print(f"{name},{':'.join(cellidset)}", file=fh)
 
     for sublist in tree_stats:
-        sublist.append(isotype_parsimony(sublist[0].tree))
-
-    # Compute parsimony indices
-    for index, sublist in enumerate(sorted(tree_stats, key=lambda slist: slist[2])):
-        sublist.append(index)
+        sublist.append(isotype_parsimony(sublist[1].tree))
 
     print(
         f"Parameters:\t{parameters}\n"
@@ -192,7 +188,6 @@ def main(arg_list=None):
         likelihood_idx,
         original_numnodes,
         parsimony,
-        parsimony_idx,
     ) in tree_stats:
         print(
             f"{likelihood_idx + 1}\t {likelihood}\t {original_numnodes}\t\t\t {parsimony}\t\t\t {sum(1 for _ in ctree.tree.traverse())}"
