@@ -465,5 +465,5 @@ def _isotype_dagfuncs(
             "edge_weight_func": distance_func,
             "accum_func": sumweights,
         },
-        name="Isotype Parsimony",
+        name="Isotype Pars.",
     )

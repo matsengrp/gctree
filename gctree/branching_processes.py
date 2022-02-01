@@ -1175,67 +1175,77 @@ class CollapsedForest:
         if summarize_forest:
             with open(outbase + ".forest_summary.log", "w") as fh:
                 fh.write(f"Parameters: {(p, q)}\n")
-                for index, kwargs in enumerate(kwargls):
-                    for opt in [min, max]:
-                        tempdag = dag.copy()
-                        opt_weight = tempdag.trim_optimal_weight(
-                            **kwargs, optimal_func=opt
-                        )
-                        fh.write(
-                            f"\nAmong trees with {opt.__name__} {kwargs.name} of: {opt_weight}\n"
-                        )
-                        for inkwargs in kwargls:
-                            if inkwargs != kwargs:
-                                minval = tempdag.optimal_weight_annotate(
-                                    **inkwargs, optimal_func=min
-                                )
-                                maxval = tempdag.optimal_weight_annotate(
-                                    **inkwargs, optimal_func=max
-                                )
-                                fh.write(
-                                    f"\t{inkwargs.name} range: {minval} to {maxval}\n"
-                                )
+                for kwargs in kwargls:
+                    # Only summarize for stats for which information was
+                    # provided (not just placeholders):
+                    if kwargs.name:
+                        for opt in [min, max]:
+                            tempdag = dag.copy()
+                            opt_weight = tempdag.trim_optimal_weight(
+                                **kwargs, optimal_func=opt
+                            )
+                            fh.write(
+                                f"\nAmong trees with {opt.__name__} {kwargs.name} of: {opt_weight}\n"
+                            )
+                            for inkwargs in kwargls:
+                                if inkwargs != kwargs and inkwargs.name:
+                                    minval = tempdag.optimal_weight_annotate(
+                                        **inkwargs, optimal_func=min
+                                    )
+                                    maxval = tempdag.optimal_weight_annotate(
+                                        **inkwargs, optimal_func=max
+                                    )
+                                    fh.write(
+                                        f"\t{inkwargs.name} range: {minval} to {maxval}\n"
+                                    )
+
+        def reformat(field, n=10):
+            if isinstance(field, int):
+                return format(field, "<" + str(n))
+            else:
+                return f"{field:{n}.{n}}"
+
+        def mask(weighttuple, n=10):
+            return tuple(
+                reformat(field, n=n)
+                for field, kwargs in zip(weighttuple, kwargls)
+                if kwargs.name
+            )
+
+        def print_stats(statlist, title, file=None):
+            print(f"Parameters: {(p, q)}", file=file)
+            print("\n" + title + ":", file=file)
+            statstring = "\t".join(mask(tuple(kwargs.name for kwargs in kwargls), n=14))
+            print(
+                f"tree     \t{statstring}"
+                + ("\ttreescore" if priority_weights else ""),
+                file=file,
+            )
+            for j, weighttuple in enumerate(statlist, 1):
+                statstring = "\t".join(mask(weighttuple))
+                print(
+                    f"{j:<10}\t{statstring}"
+                    + (
+                        f"\t{reformat(minfunckey(weighttuple))}"
+                        if priority_weights
+                        else ""
+                    ),
+                    file=file,
+                )
 
         if tree_stats:
             dag_ls = list(dag.weight_count(**dagweight_kwargs).elements())
             # To clear _dp_data fields of their large cargo
             dag.optimal_weight_annotate(**placeholder_dagfuncs)
             dag_ls.sort(key=minfunckey)
-
             with open(outbase + ".tree_stats.log", "w") as fh:
-                fh.write(f"Parameters: {(p, q)}\n")
-                fh.write(
-                    "\nForest summary:\n"
-                    + "tree\talleles\tlogLikelihood\t\tisotype_parsimony\tmutability_parsimony"
-                    + ("\ttree score" if priority_weights else "")
-                    + "\n"
-                )
-                for j, weighttuple in enumerate(dag_ls, 1):
-                    if priority_weights:
-                        treescore = str(minfunckey(weighttuple))
-                    else:
-                        treescore = ""
-                    l, isotypepars, mutabilitypars, alleles = weighttuple
-                    fh.write(
-                        f"{j}\t{alleles}\t{float(l)}\t{isotypepars}\t\t\t{mutabilitypars}\t{treescore}\n"
-                    )
+                print_stats(dag_ls, "Forest summary", file=fh)
 
         if verbose:
-            print(f"params: {(p, q)}")
-            print("stats for optimal trees:")
-            print(
-                "alleles\tlogLikelihood\t\tisotype_parsimony\tmutability_parsimony"
-                + ("\ttreescore" if priority_weights else "")
-            )
-            # with format (ll, _, isotypepars, _, mutabilitypars, alleles)
             weighttuple = trimdag.optimal_weight_annotate(
                 **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
             )
-            l, isotypepars, mutabilitypars, alleles = weighttuple
-            print(
-                f"{alleles}\t{float(l)}\t{isotypepars}\t\t\t{mutabilitypars}\t"
-                + str(minfunckey(weighttuple) if priority_weights else "")
-            )
+            print_stats([weighttuple], "Stats for optimal trees")
 
         return self._trimmed_self(trimdag)
 
