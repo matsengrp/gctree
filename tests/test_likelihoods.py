@@ -62,6 +62,8 @@ newforests_ctrees = []
 for forest in newforests:
     f = bp.CollapsedForest()
     f._ctrees = list(forest)
+    f.n_trees = len(f._ctrees)
+    f._cm_countlist = None
     newforests_ctrees.append(f)
 
 # old ones
@@ -153,8 +155,16 @@ def test_newlikelihoods():
 
 
 def test_fit():
-    """mle is the same from old code and computed directly using the DAG."""
+    """mle is the same from old code and computed directly using the DAG.
+    This test extends ``gctree test`` (which verifies that inferred parameters
+    on simulated forests consisting of a list of ctrees match simulation parameters)
+    to also validate parameter inference in forests using the DAG to store trees.
+    ``newforest_ctrees`` is the forest constructed from all the ctrees extracted from
+    the DAG in ``newforest``"""
     for newforest, newforest_ctrees, oldforest in allforests:
+        newforest._cm_countlist = None
+        newforest_ctrees._cm_countlist = None
+        assert newforest.n_trees == newforest_ctrees.n_trees
         pnew, qnew = newforest.mle(marginal=True)
         pnewc, qnewc = newforest_ctrees.mle(marginal=True)
         pold, qold = oldforest.mle(marginal=True)
