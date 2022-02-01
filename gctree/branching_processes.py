@@ -1199,20 +1199,20 @@ class CollapsedForest:
                                         f"\t{inkwargs.name} range: {minval} to {maxval}\n"
                                     )
 
-        def reformat(field, n=10):
-            if isinstance(field, int):
-                return format(field, "<" + str(n))
-            else:
-                return f"{field:{n}.{n}}"
-
-        def mask(weighttuple, n=10):
-            return tuple(
-                reformat(field, n=n)
-                for field, kwargs in zip(weighttuple, kwargls)
-                if kwargs.name
-            )
-
         def print_stats(statlist, title, file=None):
+            def reformat(field, n=10):
+                if isinstance(field, int):
+                    return format(field, "<" + str(n))
+                else:
+                    return f"{field:{n}.{n}}"
+
+            def mask(weighttuple, n=10):
+                return tuple(
+                    reformat(field, n=n)
+                    for field, kwargs in zip(weighttuple, kwargls)
+                    if kwargs.name
+                )
+
             print(f"Parameters: {(p, q)}", file=file)
             print("\n" + title + ":", file=file)
             statstring = "\t".join(mask(tuple(kwargs.name for kwargs in kwargls), n=14))
