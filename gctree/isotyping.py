@@ -390,7 +390,7 @@ def _isotype_dagfuncs(
     isotypemap_file: str = None,
     idmap: Mapping[str, Set[str]] = None,
     idmap_file: str = None,
-    isotype_names: Sequence[str] = None,
+    isotype_names: Sequence[str] = default_isotype_order,
 ) -> hdag.utils.AddFuncDict:
     """Return functions for filtering by isotype parsimony score on the history
     DAG.
@@ -428,10 +428,6 @@ def _isotype_dagfuncs(
                 if len(cell_idset) > 0:
                     idmap[seqid] = cell_idset
         newidmap = explode_idmap(idmap, isotypemap)
-        if isotype_names:
-            isotype_names = str(isotype_names).split(",")
-        else:
-            isotype_names = default_isotype_order
         newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
     elif idmap is None:
         raise TypeError("Either idmap or idmap_file is required")
