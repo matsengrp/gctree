@@ -1171,6 +1171,14 @@ class CollapsedForest:
         trimdag.trim_optimal_weight(
             **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
         )
+        # make sure trimming worked as expected:
+        min_weightcounter = trimdag.weight_count(**dagweight_kwargs)
+        min_weightset = {minfunckey(key) for key in min_weightcounter}
+        if len(min_weightset) != 1:
+            raise RuntimeError(
+                "Filtering was not successful. After trimming, these weights are represented:",
+                min_weightset,
+            )
 
         if summarize_forest:
             with open(outbase + ".forest_summary.log", "w") as fh:
@@ -1628,6 +1636,10 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
     This is exactly for the purpose of solving the problem that float sum is
     sensitive to order of summation, while Decimal sum is not.
 
+    Still, there seems to be some inconsistency (probably in the part of the computation done with floats)
+    so we wrap the Decimal in a :class:`historydag.utils.FloatState` object, where the exposed
+    float is a rounded version of the hidden Decimal state, which is used for actual computations.
+
 
     Args:
         p, q: branching process parameters
@@ -1647,7 +1659,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
         Expects DAG to have abundances added so that each node has "abundance" key in attr dict.
         """
         if n2.is_leaf() and n2.label == n1.label:
-            return Decimal(0.0)
+            return hdag.utils.FloatState(0.0, state=Decimal(0.0))
         else:
             m = len(n2.clades)
             # Check if this edge should be collapsed, and reduce mutant descendants
@@ -1657,13 +1669,18 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
             if n1.is_root() and c == 0 and m == 1:
                 # Add pseudocount for unobserved root unifurcation
                 c = 1
-            return Decimal(CollapsedTree._ll_genotype(c, m, p, q)[0])
+            res = Decimal(CollapsedTree._ll_genotype(c, m, p, q)[0])
+            return hdag.utils.FloatState(float(round(res, 8)), state=res)
+
+    def accum_func(weightlist):
+        res = sum(weight.state for weight in weightlist)
+        return hdag.utils.FloatState(float(round(res, 8)), state=res)
 
     return hdag.utils.AddFuncDict(
         {
-            "start_func": lambda n: Decimal(0),
+            "start_func": lambda n: hdag.utils.FloatState(0.0, state=Decimal(0)),
             "edge_weight_func": edge_weight_ll_genotype,
-            "accum_func": sum,
+            "accum_func": accum_func,
         },
         name="Log Likelihood",
     )
