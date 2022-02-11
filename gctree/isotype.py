@@ -1,4 +1,3 @@
-import re
 import pickle
 import argparse
 from pathlib import Path
@@ -55,11 +54,6 @@ def get_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "inference_log",
-        type=str,
-        help="filename for gctree inference log file which contains branching process parameters",
-    )
-    parser.add_argument(
         "idmapfile",
         type=str,
         help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.",
@@ -78,10 +72,10 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--isotype_names",
+        nargs="+",
         type=str,
-        default=None,
         help="A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated."
-        """ Default is equivalent to providing the argument ``--isotype_names IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2``""",
+        """ Default is equivalent to providing the argument ``--isotype_names IgM IgD IgG3 IgG1 IgG2 IgE IgA``""",
     )
     parser.add_argument(
         "--out_directory",
@@ -126,37 +120,24 @@ def main(arg_list=None):
             if len(cell_idset) > 0:
                 idmap[seqid] = cell_idset
 
-    parameters = tuple()
-    with open(args.inference_log, "r") as fh:
-        for line in fh:
-            if re.match(r"params:", line):
-                p = float(re.search(r"(?<=[\(])\S+(?=\,)", line).group())
-                q = float(re.search(r"(?<=\,\s)\S+(?=[\)])", line).group())
-                parameters = (p, q)
-                break
-    if len(parameters) != 2:
-        raise RuntimeError("unable to find parameters in passed `inference_log` file.")
-
     ctrees = []
     for treefile in args.trees:
         with open(treefile, "rb") as fh:
             ctrees.append(pickle.load(fh))
     # parse the idmap file and the isotypemap file
-    ctrees = tuple(sorted(ctrees, key=lambda tree: -tree.ll(*parameters)[0]))
     tree_stats = [
         [
             filename,
+            Path(filename).name,
             ctree,
-            ctree.ll(*parameters)[0],
-            idx,
             sum(1 for _ in ctree.tree.traverse()),
         ]
-        for filename, (idx, ctree) in zip(args.trees, enumerate(ctrees))
+        for filename, ctree in zip(args.trees, ctrees)
     ]
     if not args.isotype_names:
         isotype_names = default_isotype_order
     else:
-        isotype_names = str(args.isotype_names).split(",")
+        isotype_names = args.isotype_names
 
     newidmap = explode_idmap(idmap, isotypemap)
     for ctree in ctrees:
@@ -173,30 +154,24 @@ def main(arg_list=None):
             print(f"{name},{':'.join(cellidset)}", file=fh)
 
     for sublist in tree_stats:
-        sublist.append(isotype_parsimony(sublist[1].tree))
+        sublist.append(isotype_parsimony(sublist[2].tree))
 
-    print(
-        f"Parameters:\t{parameters}\n"
-        "index\t ll\t\t\t original node count\t isotype parsimony\t new node count"
-    )
+    print("name\t\t original node count\t isotype parsimony\t new node count")
     for (
         filename,
+        name,
         ctree,
-        likelihood,
-        likelihood_idx,
         original_numnodes,
         parsimony,
     ) in tree_stats:
         print(
-            f"{likelihood_idx + 1}\t {likelihood}\t {original_numnodes}\t\t\t {parsimony}\t\t\t {sum(1 for _ in ctree.tree.traverse())}"
+            f"{name}\t\t {original_numnodes}\t\t\t {parsimony}\t\t\t {sum(1 for _ in ctree.tree.traverse())}"
         )
         colormap = {
             node.name: isotype_palette[node.isotype.isotype % len(isotype_palette)]
             for node in ctree.tree.traverse()
         }
-        newfilename = (
-            filename + f"{likelihood_idx + 1}.isotype_parsimony.{int(parsimony)}"
-        )
+        newfilename = name + f".isotype_parsimony.{int(parsimony)}"
         ctree.render(
             outfile=out_directory + newfilename + ".svg",
             colormap=colormap,

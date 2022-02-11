@@ -9,7 +9,7 @@ from typing import Dict, Callable, Optional, Set, Sequence, Mapping, Tuple, Froz
 from functools import wraps
 import historydag as hdag
 
-default_isotype_order = ["IgM", "IgG3", "IgG1", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
+default_isotype_order = ["IgM", "IgD", "IgG3", "IgG1", "IgG2", "IgE", "IgA"]
 
 
 def _assert_switching_order_match(
@@ -390,7 +390,7 @@ def _isotype_dagfuncs(
     isotypemap_file: str = None,
     idmap: Mapping[str, Set[str]] = None,
     idmap_file: str = None,
-    isotype_names: Sequence[str] = default_isotype_order,
+    isotype_names: Sequence[str] = None,
 ) -> hdag.utils.AddFuncDict:
     """Return functions for filtering by isotype parsimony score on the history
     DAG.
@@ -413,6 +413,8 @@ def _isotype_dagfuncs(
         Weight format is ``(score, isotypeset)``, where ``score`` is isotype parsimony as a float,
         and ``isotypeset`` is a frozenset containing isotypes used internally for computing parsimony score.
     """
+    if isotype_names is None:
+        isotype_names = default_isotype_order
     if isotypemap_file and isotypemap is None:
         with open(isotypemap_file, "r") as fh:
             isotypemap = dict(map(lambda x: x.strip(), line.split(",")) for line in fh)

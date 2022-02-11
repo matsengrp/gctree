@@ -568,7 +568,7 @@ def get_parser():
         nargs="+",
         help=(
             "A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated."
-            """ Default is equivalent to providing the argument ``--isotype_names IgM IgG3 IgG1 IgA1 IgG2 IgG4 IgE IgA2``"""
+            """ Default is equivalent to providing the argument ``--isotype_names IgM IgD IgG3 IgG1 IgG2 IgE IgA``"""
         ),
     )
     parser_infer.add_argument(
