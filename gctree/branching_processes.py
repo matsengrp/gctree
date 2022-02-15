@@ -1241,9 +1241,9 @@ class CollapsedForest:
             # To clear _dp_data fields of their large cargo
             dag.optimal_weight_annotate(**placeholder_dagfuncs)
             dag_ls.sort(key=minfunckey)
-            with open(outbase + ".tree_stats.log", "w") as fh:
-                print_stats(dag_ls, "Forest summary", file=fh)
+            
             df = pd.DataFrame(dag_ls, columns=dagweight_kwargs.names)
+            df.to_csv(outbase + ".tree_stats.csv")
             df["set"] = ["all_trees"] * len(df)
             bestdf = pd.DataFrame([best_weighttuple], columns=dagweight_kwargs.names)
             bestdf["set"] = ["best_tree"]
