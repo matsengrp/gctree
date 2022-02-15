@@ -1089,37 +1089,18 @@ class CollapsedForest:
         if self.parameters is None:
             self.mle(marginal=True)
         p, q = self.parameters
-        placeholder_dagfuncs = hdag.utils.AddFuncDict(
-            {
-                "start_func": lambda n: 0,
-                "edge_weight_func": lambda n1, n2: 0,
-                "accum_func": sum,
-            },
-            name="",
+        kwargls = _get_dagweight_funcs(
+            self.parameters,
+            isotypemap_file=isotypemap_file,
+            isotypemap=isotypemap,
+            idmap_file=idmap_file,
+            idmap=idmap,
+            isotype_names=isotype_names,
+            mutability_file=mutability_file,
+            substitution_file=substitution_file,
+            verbose=verbose,
         )
-        try:
-            iso_funcs = _isotype_dagfuncs(
-                isotypemap_file=isotypemap_file,
-                isotypemap=isotypemap,
-                idmap_file=idmap_file,
-                idmap=idmap,
-                isotype_names=isotype_names,
-            )
-            if verbose:
-                print("Isotype parsimony will be used as a ranking criterion")
-        except ValueError:
-            iso_funcs = placeholder_dagfuncs
-        ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
-        if mutability_file and substitution_file:
-            if verbose:
-                print("Mutation model parsimony will be used as a ranking criterion")
-            mut_funcs = _mutability_dagfuncs(
-                mutability_file=mutability_file, substitution_file=substitution_file
-            )
-        else:
-            mut_funcs = placeholder_dagfuncs
-        allele_funcs = _allele_dagfuncs()
-        kwargls = [ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs]
+        ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs = kwargls
         if ranking_coeffs:
             if len(ranking_coeffs) != 3:
                 raise ValueError(
@@ -1239,9 +1220,9 @@ class CollapsedForest:
         if tree_stats:
             dag_ls = list(dag.weight_count(**dagweight_kwargs).elements())
             # To clear _dp_data fields of their large cargo
-            dag.optimal_weight_annotate(**placeholder_dagfuncs)
+            dag.optimal_weight_annotate(edge_weight_func=lambda n1, n2: 0)
             dag_ls.sort(key=minfunckey)
-            
+
             df = pd.DataFrame(dag_ls, columns=dagweight_kwargs.names)
             df.to_csv(outbase + ".tree_stats.csv")
             df["set"] = ["all_trees"] * len(df)
@@ -1709,3 +1690,48 @@ def _allele_dagfuncs() -> hdag.utils.AddFuncDict:
         },
         name="Alleles",
     )
+
+
+def _get_dagweight_funcs(
+    parameters,
+    isotypemap_file=None,
+    isotypemap=None,
+    idmap_file=None,
+    idmap=None,
+    isotype_names=None,
+    mutability_file=None,
+    substitution_file=None,
+    verbose=False,
+):
+    p, q = parameters
+    placeholder_dagfuncs = hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: 0,
+            "edge_weight_func": lambda n1, n2: 0,
+            "accum_func": sum,
+        },
+        name="",
+    )
+    try:
+        iso_funcs = _isotype_dagfuncs(
+            isotypemap_file=isotypemap_file,
+            isotypemap=isotypemap,
+            idmap_file=idmap_file,
+            idmap=idmap,
+            isotype_names=isotype_names,
+        )
+        if verbose:
+            print("Isotype parsimony will be used as a ranking criterion")
+    except ValueError:
+        iso_funcs = placeholder_dagfuncs
+    ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
+    if mutability_file and substitution_file:
+        if verbose:
+            print("Mutation model parsimony will be used as a ranking criterion")
+        mut_funcs = _mutability_dagfuncs(
+            mutability_file=mutability_file, substitution_file=substitution_file
+        )
+    else:
+        mut_funcs = placeholder_dagfuncs
+    allele_funcs = _allele_dagfuncs()
+    return (ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs)
