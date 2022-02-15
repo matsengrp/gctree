@@ -187,8 +187,8 @@ def infer(args):
 
     # Filter the forest according to specified criteria, and along the way,
     # write a log file containing stats for all trees in the forest:
-    trimmed_forest = forest.filter_trees(
-        priority_weights=args.priority_weights,
+    trimmed_forest, _ = forest.filter_trees(
+        ranking_coeffs=args.ranking_coeffs,
         verbose=args.verbose,
         outbase=args.outbase,
         summarize_forest=args.summarize_forest,
@@ -590,13 +590,14 @@ def get_parser():
         ),
     )
     parser_infer.add_argument(
-        "--priority_weights",
+        "--ranking_coeffs",
         type=float,
-        nargs=4,
+        nargs=3,
         default=None,
         help=(
-            "List of weights to assign tree traits when ranking trees. "
-            "Weights are in order likelihood, isotype parsimony, mutation model parsimony, number of alleles. "
+            "List of coefficients for ranking trees by a linear combination of traits. "
+            "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
+            "A coefficient of -1 will be applied to branching process likelihood."
             "If not provided, trees will be ranked lexicographically by traits in that order, ignoring number of alleles."
         ),
     )

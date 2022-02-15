@@ -11,6 +11,8 @@ from gctree.isotyping import _isotype_dagfuncs
 from gctree.mutation_model import _mutability_dagfuncs
 from gctree.phylip_parse import disambiguate
 
+import pandas as pd
+import seaborn as sns
 import numpy as np
 import warnings
 import random
@@ -1040,7 +1042,7 @@ class CollapsedForest:
     @requires_dag
     def filter_trees(
         self,
-        priority_weights: Sequence[float] = None,
+        ranking_coeffs: Sequence[float] = None,
         mutability_file: str = None,
         substitution_file: str = None,
         isotypemap: Mapping[str, str] = None,
@@ -1058,18 +1060,15 @@ class CollapsedForest:
         Trim the forest to minimize a linear
         combination of branching process likelihood, isotype parsimony score,
         mutability parsimony score, and number of alleles, with coefficients
-        provided in the argument `priority_weights`, in that order.
-
-        To compute each tree's combined score, a linear transformation is applied to each trait,
-        so that the best observed value is mapped to 0, and the worst observed value is mapped to
-        1. The tree score is the weighted sum of transformed traits, using passed coefficients.
+        provided in the argument ``ranking_coeffs`, in that order.
 
         Args:
-            priority_weights: A list or tuple of coefficients for prioritizing tree weights.
-                The order of coefficients is: branching process likelihood, isotype
-                parsimony score, mutability parsimony score, and number of alleles.
-                If priority_weights is not provided, trees will be ranked lexicographically
-                by traits, in the same order.
+            ranking_coeffs: A list or tuple of coefficients for prioritizing tree weights.
+                The order of coefficients is: isotype parsimony score, mutability parsimony score,
+                and number of alleles. A coefficient of ``-1`` will be applied to branching process
+                likelihood.
+                If ranking_coeffs is not provided, trees will be ranked lexicographically
+                by likelihood, then by other traits, in the same order.
             mutability_file: A mutability model
             substitution_file: A substitution model
             isotypemap: A mapping of sequences to isotypes
@@ -1121,39 +1120,19 @@ class CollapsedForest:
             mut_funcs = placeholder_dagfuncs
         allele_funcs = _allele_dagfuncs()
         kwargls = [ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs]
-        if priority_weights:
-            # a vector of relative weights, for ll, isotype pars, mutability_pars, alleles
-            # This is possible because all weights are additive up the tree,
-            # and the transformations are strictly increasing/decreasing.
-            minmaxls = [
-                (
-                    dag.optimal_weight_annotate(**kwargs, optimal_func=min),
-                    dag.optimal_weight_annotate(**kwargs, optimal_func=max),
+        if ranking_coeffs:
+            if len(ranking_coeffs) != 3:
+                raise ValueError(
+                    "If ranking_coeffs are provided to `filter_trees` method, a list of three values is expected."
                 )
-                for kwargs in kwargls
-            ]
-
-            def transformation(mn, mx):
-                mn = float(mn)
-                mx = float(mx)
-                if mx - mn < 0.0001:
-                    return lambda n: n - mn
-                else:
-                    return lambda n: (n - mn) / (mx - mn)
-
-            transformations = [transformation(*minmax) for minmax in minmaxls]
-            # switch first transformation so that we maximize ls, not minimize:
-            f = transformations[0]
-            transformations[0] = lambda n: -f(n) + 1
+            coeffs = [-1] + list(ranking_coeffs)
 
             def minfunckey(weighttuple):
                 """Weighttuple will have (ll, isotypepars, mutabilitypars, alleles)"""
                 return sum(
                     [
-                        priority * transform(float(weight))
-                        for priority, transform, weight in zip(
-                            priority_weights, transformations, weighttuple
-                        )
+                        priority * float(weight)
+                        for priority, weight in zip(coeffs, weighttuple)
                     ]
                 )
 
@@ -1163,49 +1142,6 @@ class CollapsedForest:
                 """Weighttuple will have (ll, isotypepars, mutabilitypars, alleles)"""
                 # Sort output by likelihood, then isotype parsimony, then mutability score
                 return (-weighttuple[0],) + weighttuple[1:-1]
-
-        # Filter by likelihood, isotype parsimony, mutability,
-        # and make ctrees, cforest, and render trees
-        dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_funcs
-        trimdag = dag.copy()
-        trimdag.trim_optimal_weight(
-            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
-        )
-        # make sure trimming worked as expected:
-        min_weightcounter = trimdag.weight_count(**dagweight_kwargs)
-        min_weightset = {minfunckey(key) for key in min_weightcounter}
-        if len(min_weightset) != 1:
-            raise RuntimeError(
-                "Filtering was not successful. After trimming, these weights are represented:",
-                min_weightset,
-            )
-
-        if summarize_forest:
-            with open(outbase + ".forest_summary.log", "w") as fh:
-                fh.write(f"Parameters: {(p, q)}\n")
-                for kwargs in kwargls:
-                    # Only summarize for stats for which information was
-                    # provided (not just placeholders):
-                    if kwargs.name:
-                        for opt in [min, max]:
-                            tempdag = dag.copy()
-                            opt_weight = tempdag.trim_optimal_weight(
-                                **kwargs, optimal_func=opt
-                            )
-                            fh.write(
-                                f"\nAmong trees with {opt.__name__} {kwargs.name} of: {opt_weight}\n"
-                            )
-                            for inkwargs in kwargls:
-                                if inkwargs != kwargs and inkwargs.name:
-                                    minval = tempdag.optimal_weight_annotate(
-                                        **inkwargs, optimal_func=min
-                                    )
-                                    maxval = tempdag.optimal_weight_annotate(
-                                        **inkwargs, optimal_func=max
-                                    )
-                                    fh.write(
-                                        f"\t{inkwargs.name} range: {minval} to {maxval}\n"
-                                    )
 
         def print_stats(statlist, title, file=None):
             def reformat(field, n=10):
@@ -1225,20 +1161,79 @@ class CollapsedForest:
             print("\n" + title + ":", file=file)
             statstring = "\t".join(mask(tuple(kwargs.name for kwargs in kwargls), n=14))
             print(
-                f"tree     \t{statstring}"
-                + ("\ttreescore" if priority_weights else ""),
+                f"tree     \t{statstring}" + ("\ttreescore" if ranking_coeffs else ""),
                 file=file,
             )
-            for j, weighttuple in enumerate(statlist, 1):
-                statstring = "\t".join(mask(weighttuple))
+            for j, best_weighttuple in enumerate(statlist, 1):
+                statstring = "\t".join(mask(best_weighttuple))
                 print(
                     f"{j:<10}\t{statstring}"
                     + (
-                        f"\t{reformat(minfunckey(weighttuple))}"
-                        if priority_weights
+                        f"\t{reformat(minfunckey(best_weighttuple))}"
+                        if ranking_coeffs
                         else ""
                     ),
                     file=file,
+                )
+
+        # Filter by likelihood, isotype parsimony, mutability,
+        # and make ctrees, cforest, and render trees
+        dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_funcs
+        trimdag = dag.copy()
+        trimdag.trim_optimal_weight(
+            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
+        )
+        # make sure trimming worked as expected:
+        min_weightcounter = trimdag.weight_count(**dagweight_kwargs)
+        min_weightset = {minfunckey(key) for key in min_weightcounter}
+        if len(min_weightset) != 1:
+            raise RuntimeError(
+                "Filtering was not successful. After trimming, these weights are represented:",
+                min_weightset,
+            )
+
+        best_weighttuple = trimdag.optimal_weight_annotate(
+            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
+        )
+        if summarize_forest:
+            with open(outbase + ".forest_summary.log", "w") as fh:
+                independent_best = []
+                for kwargs in kwargls:
+                    # Only summarize for stats for which information was
+                    # provided (not just placeholders):
+                    if kwargs.name:
+                        independent_best.append([])
+                        for opt in [min, max]:
+                            tempdag = dag.copy()
+                            opt_weight = tempdag.trim_optimal_weight(
+                                **kwargs, optimal_func=opt
+                            )
+                            independent_best[-1].append(opt_weight)
+                            fh.write(
+                                f"\nAmong trees with {opt.__name__} {kwargs.name} of: {opt_weight}\n"
+                            )
+                            for inkwargs in kwargls:
+                                if inkwargs != kwargs and inkwargs.name:
+                                    minval = tempdag.optimal_weight_annotate(
+                                        **inkwargs, optimal_func=min
+                                    )
+                                    maxval = tempdag.optimal_weight_annotate(
+                                        **inkwargs, optimal_func=max
+                                    )
+                                    fh.write(
+                                        f"\t{inkwargs.name} range: {minval} to {maxval}\n"
+                                    )
+                independent_best[0].reverse()
+                print("\n", file=fh)
+                print_stats(
+                    [
+                        [
+                            stat - best[0]
+                            for stat, best in zip(best_weighttuple, independent_best)
+                        ]
+                    ],
+                    "Highest ranked tree: loss from best value",
+                    file=fh,
                 )
 
         if tree_stats:
@@ -1248,14 +1243,22 @@ class CollapsedForest:
             dag_ls.sort(key=minfunckey)
             with open(outbase + ".tree_stats.log", "w") as fh:
                 print_stats(dag_ls, "Forest summary", file=fh)
+            df = pd.DataFrame(dag_ls, columns=dagweight_kwargs.names)
+            df["set"] = ["all_trees"] * len(df)
+            bestdf = pd.DataFrame([best_weighttuple], columns=dagweight_kwargs.names)
+            bestdf["set"] = ["best_tree"]
+            toplot_df = pd.concat([df, bestdf], ignore_index=True)
+            pplot = sns.pairplot(
+                toplot_df[["Log Likelihood", "Isotype Pars.", "Mut. Pars.", "set"]],
+                hue="set",
+                diag_kind="hist",
+            )
+            pplot.savefig(outbase + ".tree_stats.pairplot.png")
 
         if verbose:
-            weighttuple = trimdag.optimal_weight_annotate(
-                **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
-            )
-            print_stats([weighttuple], "Stats for optimal trees")
+            print_stats([best_weighttuple], "Stats for optimal trees")
 
-        return self._trimmed_self(trimdag)
+        return (self._trimmed_self(trimdag), best_weighttuple)
 
     def likelihood_rankplot(self, outbase, p, q, img_type="svg"):
         """save a rank plot of likelihoods to the file `[outbase].inference.likelihood_rank.[img_type]`."""
