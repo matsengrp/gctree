@@ -421,18 +421,19 @@ def _isotype_dagfuncs(
     elif isotypemap_file is None:
         raise ValueError("Either isotypemap or isotypemap_file is required")
 
-    if idmap_file and idmap is None:
-        with open(idmap_file, "r") as fh:
-            idmap = {}
-            for line in fh:
-                seqid, cell_ids = line.rstrip().split(",")
-                cell_idset = {cell_id for cell_id in cell_ids.split(":") if cell_id}
-                if len(cell_idset) > 0:
-                    idmap[seqid] = cell_idset
-        newidmap = explode_idmap(idmap, isotypemap)
-        newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
-    elif idmap is None:
-        raise TypeError("Either idmap or idmap_file is required")
+    if idmap is None:
+        if idmap_file is None:
+            raise TypeError("either idmap or idmap_file is required")
+        else:
+            with open(idmap_file, "r") as fh:
+                idmap = {}
+                for line in fh:
+                    seqid, cell_ids = line.rstrip().split(",")
+                    cell_idset = {cell_id for cell_id in cell_ids.split(":") if cell_id}
+                    if len(cell_idset) > 0:
+                        idmap[seqid] = cell_idset
+    newidmap = explode_idmap(idmap, isotypemap)
+    newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
 
     def distance_func(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
         if n2.is_leaf():

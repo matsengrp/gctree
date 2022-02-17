@@ -1124,7 +1124,9 @@ class CollapsedForest:
                 # Sort output by likelihood, then isotype parsimony, then mutability score
                 return (-weighttuple[0],) + weighttuple[1:-1]
 
-        def print_stats(statlist, title, file=None):
+        def print_stats(statlist, title, file=None, suppress_score=False):
+            show_score = ranking_coeffs and not suppress_score
+
             def reformat(field, n=10):
                 if isinstance(field, int):
                     return format(field, "<" + str(n))
@@ -1142,7 +1144,7 @@ class CollapsedForest:
             print("\n" + title + ":", file=file)
             statstring = "\t".join(mask(tuple(kwargs.name for kwargs in kwargls), n=14))
             print(
-                f"tree     \t{statstring}" + ("\ttreescore" if ranking_coeffs else ""),
+                f"tree     \t{statstring}" + ("\ttreescore" if show_score else ""),
                 file=file,
             )
             for j, best_weighttuple in enumerate(statlist, 1):
@@ -1151,7 +1153,7 @@ class CollapsedForest:
                     f"{j:<10}\t{statstring}"
                     + (
                         f"\t{reformat(minfunckey(best_weighttuple))}"
-                        if ranking_coeffs
+                        if show_score
                         else ""
                     ),
                     file=file,
@@ -1215,6 +1217,7 @@ class CollapsedForest:
                     ],
                     "Highest ranked tree: loss from best value",
                     file=fh,
+                    suppress_score=True,
                 )
 
         if tree_stats:
