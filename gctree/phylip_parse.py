@@ -281,20 +281,11 @@ def main(arg_list=None):
 
     if args.outputfile is None:
         args.outputfile = args.phylip_outfile + ".collapsed_forest.p"
-    trees = parse_outfile(args.phylip_outfile, args.abundance_file, args.root)
-    if isinstance(trees[0], list):
-        print(trees[0][0])
-        print(bp.CollapsedTree(tree=trees[0][0]))
-        bootstraps = [
-            [bp.CollapsedTree(tree=tree) for tree in bootstrap] for bootstrap in trees
-        ]
-        pickle.dump(
-            [bp.CollapsedForest(forest=trees) for trees in bootstraps],
-            open(args.outputfile, "w"),
-        )
-    else:
-        trees = [bp.CollapsedTree(tree=tree) for tree in trees]
-        pickle.dump(bp.CollapsedForest(forest=trees), open(args.outputfile, "w"))
+    forest = bp.CollapsedForest(
+        *parse_outfile(args.phylip_outfile, args.abundance_file, args.root)
+    )
+    with open(args.outputfile, "wb") as fh:
+        pickle.dump(forest, fh)
 
 
 if __name__ == "__main__":
