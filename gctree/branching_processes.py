@@ -1083,7 +1083,8 @@ class CollapsedForest:
             tree_stats: whether to write stats for each tree in the forest to file `[outbase].tree_stats.log`
 
         Returns:
-            The trimmed forest, containing all optimal trees according to the specified criteria.
+            The trimmed forest, containing all optimal trees according to the specified criteria, and a tuple
+            of data about the trees in that forest, with format (ll, isotype parsimony, mutability parsimony, alleles).
         """
         dag = self._forest
         if self.parameters is None:
@@ -1486,36 +1487,6 @@ def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.nda
     return logf, grad_ll_genotype
 
 
-def _cmcounter_dagfuncs():
-    """Functions for accumulating frozen multisets of (c, m) pairs in trees in
-    the DAG."""
-
-    def edge_weight_func(n1, n2):
-        if n1.label == n2.label and n2.is_leaf():
-            # Then this is a leaf-adjacent node with nonzero abundance
-            return multiset.FrozenMultiset()
-        else:
-            m = len(n2.clades)
-            if frozenset({n2.label}) in n2.clades:
-                m -= 1
-            return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
-
-    def accum_func(cmsetlist: List[multiset.FrozenMultiset]):
-        st = multiset.FrozenMultiset()
-        for cmset in cmsetlist:
-            st += cmset
-        return st
-
-    return hdag.utils.AddFuncDict(
-        {
-            "start_func": lambda n: multiset.FrozenMultiset(),
-            "edge_weight_func": edge_weight_func,
-            "accum_func": accum_func,
-        },
-        name="cmcounters",
-    )
-
-
 def _make_dag(trees, sequence_counts={}, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
@@ -1614,6 +1585,36 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
             namedict[node.label.sequence] = str(n_max)
             node.attr["name"] = str(n_max)
     return dag
+
+
+def _cmcounter_dagfuncs():
+    """Functions for accumulating frozen multisets of (c, m) pairs in trees in
+    the DAG."""
+
+    def edge_weight_func(n1, n2):
+        if n1.label == n2.label and n2.is_leaf():
+            # Then this is a leaf-adjacent node with nonzero abundance
+            return multiset.FrozenMultiset()
+        else:
+            m = len(n2.clades)
+            if frozenset({n2.label}) in n2.clades:
+                m -= 1
+            return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
+
+    def accum_func(cmsetlist: List[multiset.FrozenMultiset]):
+        st = multiset.FrozenMultiset()
+        for cmset in cmsetlist:
+            st += cmset
+        return st
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: multiset.FrozenMultiset(),
+            "edge_weight_func": edge_weight_func,
+            "accum_func": accum_func,
+        },
+        name="cmcounters",
+    )
 
 
 def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDict:
