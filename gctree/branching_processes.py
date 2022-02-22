@@ -238,6 +238,9 @@ class CollapsedTree:
         if (p, q) in CollapsedTree._max_ll_cache:
             cached_c, cached_m = CollapsedTree._max_ll_cache[(p, q)]
         else:
+            # clear cache for old parameters if parameters change:
+            CollapsedTree._max_ll_cache = {}
+            CollapsedTree._ll_genotype.cache_clear()
             cached_c, cached_m = 0, 0
         # Check cache is built
         if c > cached_c or m > cached_m:
