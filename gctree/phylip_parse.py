@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Given an outputfile from one of the PHYLIP tools - `dnaml` or `dnapars` - produce an alignment (including
-ancestral sequences), a newick tree (with matching internal node lables), and an svg rendering of said tree.
-"""
+"""Given an outputfile from one of the PHYLIP tools - `dnaml` or `dnapars` -
+produce a CollapsedForest containing the trees in that outputfile."""
 
 import gctree.branching_processes as bp
 import gctree.utils

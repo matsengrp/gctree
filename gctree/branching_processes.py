@@ -898,6 +898,12 @@ class CollapsedForest:
                 raise ValueError(
                     "an abundance dictionary must be provided to the keyword argument sequence_counts"
                 )
+            if isinstance(forest[0], CollapsedTree):
+                forest = [ctree.tree for tree in forest]
+            elif not isinstance(forest[0], ete3.Tree):
+                raise ValueError(
+                    "If provided, `forest` argument should contain a list of ete3 trees or CollapsedTrees."
+                )
             # Collect stats for validation
             model_tree = disambiguate(forest[0].copy())
             counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
