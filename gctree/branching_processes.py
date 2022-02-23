@@ -6,26 +6,33 @@ count the number of clonal leaves of each type.
 
 from __future__ import annotations
 
-from gctree.utils import hamming_distance
+import gctree.utils
+from gctree.isotyping import _isotype_dagfuncs
+from gctree.mutation_model import _mutability_dagfuncs
+from gctree.phylip_parse import disambiguate
 
+import pandas as pd
+import seaborn as sns
 import numpy as np
 import warnings
 import random
 import os
-from scipy.special import logsumexp
-from scipy.special import softmax
-from scipy.optimize import minimize, check_grad
+import scipy.special as scs
+import scipy.optimize as sco
 import ete3
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 import pickle
-from functools import lru_cache
-from typing import Tuple, Dict, List, Union, Set, Callable
-
-from matplotlib import cm
-from matplotlib.colors import Normalize, to_hex
+import functools
+import collections as coll
+import historydag as hdag
+import multiset
+import matplotlib as mp
+import matplotlib.pyplot as plt
+from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence
+from decimal import Decimal
 
 np.seterr(all="raise")
 
@@ -38,21 +45,27 @@ class CollapsedTree:
         tree: :class:`ete3.TreeNode` object with ``abundance`` node features
 
     Args:
-        tree: ete3 tree with ``abundance`` node features. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves, and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
         allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.
     """
+
+    _max_ll_cache: Dict[Tuple[float, float], Tuple[int, int]] = {}
 
     def __init__(self, tree: ete3.TreeNode = None, allow_repeats: bool = False):
         if tree is not None:
             self.tree = tree.copy()
+            self.tree.dist = 0
+
             # remove unobserved internal unifurcations
             for node in self.tree.iter_descendants():
-                parent = node.up
                 if node.abundance == 0 and len(node.children) == 1:
                     node.delete(prevent_nondicotomic=False)
-                    node.children[0].dist = hamming_distance(
-                        node.children[0].sequence, parent.sequence
-                    )
+
+            # ensure distances are correct before collapse
+            for node in self.tree.iter_descendants():
+                node.dist = gctree.utils.hamming_distance(
+                    node.sequence, node.up.sequence
+                )
 
             # iterate over the tree below root and collapse edges of zero
             # length if the node is a leaf and it's parent has nonzero
@@ -62,7 +75,7 @@ class CollapsedTree:
             observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy="postorder"):
                 if node.dist == 0:
-                    node.up.abundance += node.abundance
+                    node.up.abundance = max(node.abundance, node.up.abundance)
                     if isinstance(node.name, str):
                         node_set = set([node.name])
                     else:
@@ -97,9 +110,6 @@ class CollapsedTree:
                     "symmetric diff: "
                     f"{observed_genotypes ^ final_observed_genotypes}"
                 )
-            assert sum(node.abundance for node in tree.traverse()) == sum(
-                node.abundance for node in self.tree.traverse()
-            )
 
             rep_seq = sum(node.abundance > 0 for node in self.tree.traverse()) - len(
                 set(
@@ -142,15 +152,24 @@ class CollapsedTree:
                 # sort children of this node based on partion and sequence
                 node.children.sort(key=lambda node: (node.partition, node.sequence))
 
-            # create list of (c, m) for each node
-            self._cm_list = [
-                (node.abundance, len(node.children)) for node in self.tree.traverse()
-            ]
-            # store max c and m
-            self._c_max = max(node.abundance for node in self.tree.traverse())
-            self._m_max = max(len(node.children) for node in self.tree.traverse())
+            self._build_cm_counts()
         else:
-            self.tree = tree
+            self.tree = None
+
+    def _build_cm_counts(self):
+        # create tuple (c, m) for each node, and store in a tuple of
+        # ((c, m), n)'s, where n is the multiplicity of (c, m) seen in the
+        # tree, adding pseudocount to root if unobserved unifurcation at root.
+        cmlist = [
+            (node.abundance, len(node.children))
+            for node in self.tree.iter_descendants()
+        ]
+        rootcm = (self.tree.abundance, len(self.tree.children))
+        if rootcm == (0, 1):
+            cmlist.append((1, 1))
+        else:
+            cmlist.append(rootcm)
+        self._cm_counts = tuple(coll.Counter(cmlist).items())
 
     @staticmethod
     def _simulate_genotype(p: np.float64, q: np.float64) -> Tuple[int, int]:
@@ -196,7 +215,7 @@ class CollapsedTree:
         return c, m
 
     @staticmethod
-    @lru_cache(maxsize=None)
+    @functools.lru_cache(maxsize=None)
     def _ll_genotype(
         c: int, m: int, p: np.float64, q: np.float64
     ) -> Tuple[np.float64, np.ndarray]:
@@ -216,10 +235,37 @@ class CollapsedTree:
         Returns:
             log-likelihood and gradient wrt :math:`p` and :math:`q`.
         """
+        if (p, q) in CollapsedTree._max_ll_cache:
+            cached_c, cached_m = CollapsedTree._max_ll_cache[(p, q)]
+        else:
+            # clear cache for old parameters if parameters change:
+            CollapsedTree._max_ll_cache = {}
+            CollapsedTree._ll_genotype.cache_clear()
+            cached_c, cached_m = 0, 0
+        # Check cache is built
+        if c > cached_c or m > cached_m:
+            CollapsedTree._max_ll_cache[(p, q)] = (c, m)
+            # Build missing cache in three parts:
+            # |1 3
+            # |X 2
+            # Where 'X' is already built, axes are c and m.
+            for cx in range(cached_c + 1):
+                for mx in range(cached_m, m + 1):
+                    if cx > 0 or mx > 1:
+                        CollapsedTree._ll_genotype(cx, mx, p, q)
+            for mx in range(cached_m + 1):
+                for cx in range(cached_c, c + 1):
+                    if cx > 0 or mx > 1:
+                        CollapsedTree._ll_genotype(cx, mx, p, q)
+            for mx in range(cached_m + 1, m + 1):
+                for cx in range(cached_c + 1, c + 1):
+                    if cx > 0 or mx > 1:
+                        CollapsedTree._ll_genotype(cx, mx, p, q)
+            # If we're here, we've computed what we want
+            return CollapsedTree._ll_genotype(c, m, p, q)
+
         if c == m == 0 or (c == 0 and m == 1):
-            logf_result = -np.inf
-            dlogfdp_result = 0
-            dlogfdq_result = 0
+            raise ValueError("Zero likelihood event")
         elif c == 1 and m == 0:
             logf_result = np.log(1 - p)
             dlogfdp_result = -1 / (1 - p)
@@ -237,25 +283,24 @@ class CollapsedTree:
                         neighbor_dlogfdq,
                     ),
                 ) = CollapsedTree._ll_genotype(c, m - 1, p, q)
-                logf_result = (
-                    np.log(2)
-                    + np.log(p)
-                    + np.log(q)
-                    + np.log(1 - q)
-                    + neighbor_ll_genotype
-                )
-                dlogfdp_result = 1 / p + neighbor_dlogfdp
-                dlogfdq_result = 1 / q - 1 / (1 - q) + neighbor_dlogfdq
+                logg_array = [
+                    (
+                        np.log(2)
+                        + np.log(p)
+                        + np.log(q)
+                        + np.log(1 - q)
+                        + neighbor_ll_genotype
+                    )
+                ]
+                dloggdp_array = [1 / p + neighbor_dlogfdp]
+                dloggdq_array = [1 / q - 1 / (1 - q) + neighbor_dlogfdq]
             else:
-                logf_result = -np.inf
-                dlogfdp_result = 0.0
-                dlogfdq_result = 0.0
-            logg_array = [logf_result]
-            dloggdp_array = [dlogfdp_result]
-            dloggdq_array = [dlogfdq_result]
+                logg_array = []
+                dloggdp_array = []
+                dloggdq_array = []
             for cx in range(c + 1):
                 for mx in range(m + 1):
-                    if (not (cx == mx == 0)) and (not (cx == c and mx == m)):
+                    if (cx > 0 or mx > 1) and (c - cx > 0 or m - mx > 1):
                         (
                             neighbor1_ll_genotype,
                             (neighbor1_dlogfdp, neighbor1_dlogfdq),
@@ -275,24 +320,20 @@ class CollapsedTree:
                         logg_array.append(logg)
                         dloggdp_array.append(dloggdp)
                         dloggdq_array.append(dloggdq)
-            logf_result = logsumexp(logg_array)
-            softmax_logg_array = softmax(logg_array)
-            dlogfdp_result = np.multiply(softmax_logg_array, dloggdp_array).sum()
-            dlogfdq_result = np.multiply(softmax_logg_array, dloggdq_array).sum()
+            if not logg_array:
+                raise ValueError("Zero likelihood event")
+            else:
+                logf_result = scs.logsumexp(logg_array)
+                softmax_logg_array = scs.softmax(logg_array)
+                dlogfdp_result = np.multiply(softmax_logg_array, dloggdp_array).sum()
+                dlogfdq_result = np.multiply(softmax_logg_array, dloggdq_array).sum()
 
         return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
 
-    @staticmethod
-    def _build_ll_genotype_cache(c_max: int, m_max: int, p: np.float64, q: np.float64):
-        r"""build up the lru_cache from the bottom to avoid recursion depth
-        issues."""
-        CollapsedTree._ll_genotype.cache_clear()
-        for c in range(c_max + 1):
-            for m in range(m_max + 1):
-                CollapsedTree._ll_genotype(c, m, p, q)
-
     def ll(
-        self, p: np.float64, q: np.float64, build_cache: bool = True
+        self,
+        p: np.float64,
+        q: np.float64,
     ) -> Tuple[np.float64, np.ndarray]:
         r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.
 
@@ -302,31 +343,13 @@ class CollapsedTree:
         Args:
             p: branching probability
             q: mutation probability
-            build_cache: build cache from the bottom up. Normally this should be left to its default ``True``.
 
         Returns:
             Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
         """
         if self.tree is None:
             raise ValueError("tree data must be defined to compute likelihood")
-        if build_cache:
-            self._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
-        if (
-            self._cm_list[0][0] == 0
-            and self._cm_list[0][1] == 1
-            and CollapsedTree._ll_genotype(
-                self._cm_list[0][0], self._cm_list[0][1], p, q
-            )[0]
-            == -np.inf
-        ):
-            # if unifurcation not possible under current model, add a
-            # psuedocount for the root
-            self._cm_list[0] = (1, self._cm_list[0][1])
-        # extract vector of function values and gradient components
-        logf_data = [CollapsedTree._ll_genotype(c, m, p, q) for c, m in self._cm_list]
-        logf = np.array([[x[0]] for x in logf_data]).sum()
-        grad_ll_genotype = np.array([x[1] for x in logf_data]).sum(axis=0)
-        return logf, grad_ll_genotype
+        return _lltree(self._cm_counts, p, q)
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
         r"""Maximum likelihood estimate of :math:`(p, q)`.
@@ -365,12 +388,7 @@ class CollapsedTree:
 
         if root:
             # create list of (c, m) for each node
-            self._cm_list = [
-                (node.abundance, len(node.children)) for node in self.tree.traverse()
-            ]
-            # store max c and m
-            self._c_max = max(node.abundance for node in self.tree.traverse())
-            self._m_max = max(len(node.children) for node in self.tree.traverse())
+            self._build_cm_counts()
 
     def __repr__(self):
         r"""return a string representation for printing."""
@@ -595,7 +613,7 @@ class CollapsedTree:
         Returns:
             Dictionary of node names to hex color strings, which may be used as the colormap in :meth:`gctree.CollapsedTree.render`
         """
-        cmap = cm.get_cmap(cmap)
+        cmap = mp.cm.get_cmap(cmap)
 
         if vmin is None:
             vmin = np.nanmin([getattr(node, feature) for node in self.tree.traverse()])
@@ -603,10 +621,10 @@ class CollapsedTree:
             vmax = np.nanmax([getattr(node, feature) for node in self.tree.traverse()])
 
         # define the minimum and maximum values for our colormap
-        norm = Normalize(vmin=vmin, vmax=vmax)
+        norm = mp.colors.Normalize(vmin=vmin, vmax=vmax)
 
         return {
-            node.name: to_hex(cmap(norm(getattr(node, feature))))
+            node.name: mp.colors.to_hex(cmap(norm(getattr(node, feature))))
             for node in self.tree.traverse()
         }
 
@@ -678,7 +696,7 @@ class CollapsedTree:
                         (nodei_true, nodej_true)
                     ).sequence
                     MRCA = tree2.tree.get_common_ancestor((nodei, nodej)).sequence
-                    d[i, j] = hamming_distance(MRCA_true, MRCA)
+                    d[i, j] = gctree.utils.hamming_distance(MRCA_true, MRCA)
                     sum_sites[i, j] = len(MRCA_true)
             return d.sum() / sum_sites.sum()
         elif method == "RF":
@@ -843,36 +861,75 @@ class CollapsedTree:
             )
 
 
-class CollapsedForest:
-    r"""A collection of :class:`CollapsedTree`
+def requires_dag(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self._forest is None:
+            raise NotImplementedError(
+                f"CollapsedForest class method {func.__name__} may only be called on instances "
+                "created from lists of ete3 trees. Instances created by simulation are not supported."
+            )
+        return func(self, *args, **kwargs)
 
-    We can intialize with a list of trees, each an instance of :class:`CollapsedTree`, or we can simulate the forest later.
+    return wrapper
+
+
+class CollapsedForest:
+    r"""A collection of trees.
+
+    We can intialize with a list of trees, each an instance of :class:`ete3.Tree` or :class:`CollapsedTree`, or we can simulate the forest later.
 
     Attributes:
-        forest: list of trees
         n_trees: number of trees in forest
+        parameters: fit branching process parameters, if mle has been run, otherwise None
 
     Args:
-        forest: list of :class:`CollapsedTree`
+        forest: list of :class:`ete3.Tree`
+        sequence_counts: a mapping of observed sequences to observed abundances
     """
 
-    def __init__(self, forest: List[CollapsedTree] = None):
+    def __init__(
+        self,
+        forest: List[Union[CollapsedTree, ete3.Tree]] = None,
+        sequence_counts: Mapping[str, int] = None,
+    ):
         if forest is not None:
             if len(forest) == 0:
                 raise ValueError("passed empty tree list")
-            self.forest = forest
-            self.n_trees = len(forest)
-            self._c_max = max(
-                node.abundance for tree in self.forest for node in tree.tree.traverse()
-            )
-            self._m_max = max(
-                len(node.children)
-                for tree in self.forest
-                for node in tree.tree.traverse()
-            )
+            if sequence_counts is None:
+                raise ValueError(
+                    "an abundance dictionary must be provided to the keyword argument sequence_counts"
+                )
+            if isinstance(forest[0], CollapsedTree):
+                forest = [ctree.tree for ctree in forest]
+            elif not isinstance(forest[0], ete3.Tree):
+                raise ValueError(
+                    "If provided, `forest` argument should contain a list of ete3 trees or CollapsedTrees."
+                )
+            # Collect stats for validation
+            model_tree = disambiguate(forest[0].copy())
+            counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
+            self._validation_stats = {
+                "counts": counts,
+                "root": model_tree.name,
+                "parsimony_score": sum([node.dist for node in model_tree.traverse()]),
+                "root_seq": model_tree.sequence,
+                "leaf_seqs": {
+                    node.sequence: node.name for node in model_tree.get_leaves()
+                },
+            }
+            # Making this a private variable so that trying to access forest
+            # attribute as before won't just give a confusing type or
+            # attribute error.
+            self._forest = _make_dag(forest, sequence_counts=sequence_counts)
+            self.n_trees = self._forest.count_trees()
         else:
-            self.forest = None
-            self.n_trees = None
+            self._forest = None
+            self.n_trees = 0
+            self._validation_stats = None
+        self._cm_countlist = None
+        self._ctrees = None
+        self.parameters = None
 
     def simulate(self, p: np.float64, q: np.float64, n_trees: int):
         r"""Simulate a forest of collapsed trees. Overwrites existing forest attribute.
@@ -882,16 +939,13 @@ class CollapsedForest:
             q: mutation probability
             n_trees: number of trees
         """
-        self.forest = [CollapsedTree() for _ in range(n_trees)]
+        self._forest = None
+        self._ctrees = [CollapsedTree() for _ in range(n_trees)]
         self.n_trees = n_trees
-        for tree in self.forest:
+        for tree in self._ctrees:
             tree.simulate(p, q)
-
-        self._c_max = max(
-            node.abundance for tree in self.forest for node in tree.tree.traverse()
-        )
-        self._m_max = max(
-            len(node.children) for tree in self.forest for node in tree.tree.traverse()
+        self._cm_countlist = tuple(
+            coll.Counter([tree._cm_counts for tree in self._ctrees]).items()
         )
 
     def ll(
@@ -920,42 +974,473 @@ class CollapsedForest:
         Returns:
             Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
         """
-        if self.forest is None:
-            raise ValueError("forest data must be defined to compute likelihood")
-        CollapsedTree._build_ll_genotype_cache(self._c_max, self._m_max, p, q)
-        # we don't want to build the cache again in each tree
-        terms = [tree.ll(p, q, build_cache=False) for tree in self.forest]
-        ls = np.array([term[0] for term in terms])
-        grad_ls = np.array([term[1] for term in terms])
+        if self._cm_countlist is None:
+            if self._forest is not None:
+                cmcount_dagfuncs = _cmcounter_dagfuncs()
+
+                def to_tuple(mset):
+                    # When there's unobserved root unifurcation, augment with
+                    # pseudocount.
+                    if (0, 1) in mset:
+                        assert mset[(0, 1)] == 1
+                        mset = mset - {(0, 1)} + {(1, 1)}
+                    return tuple(mset.items())
+
+                cmcounters = self._forest.weight_count(**cmcount_dagfuncs)
+                self._cm_countlist = [
+                    (to_tuple(mset), mult) for mset, mult in cmcounters.items()
+                ]
+                # an iterable containing tuples `(cm_counts, mult)`, where `cm_counts`
+                # is an iterable describing a tree, and `mult` is the number of trees in the forest
+                # which can be described with the iterable `cm_counts`.
+            elif self._ctrees is not None:
+                self._cm_countlist = tuple(
+                    coll.Counter([tree._cm_counts for tree in self._ctrees]).items()
+                )
+            else:
+                raise ValueError("forest data must be defined to compute likelihood")
+
+        terms = [
+            [_lltree(cmcounts, p, q), count] for cmcounts, count in self._cm_countlist
+        ]
+        ls = np.array([term[0][0] for term in terms])
+        grad_ls = np.array([term[0][1] for term in terms])
+        # This can be done ahead of time
+        count_ls = np.array([term[1] for term in terms])
         if marginal:
             # we need to find the smallest derivative component for each
             # coordinate, then subtract off to get positive things to logsumexp
             grad_l = []
             for j in range(len((p, q))):
                 i_prime = grad_ls[:, j].argmin()
-                grad_l.append(
-                    grad_ls[i_prime, j]
-                    + np.exp(
-                        logsumexp(
-                            ls - ls[i_prime], b=grad_ls[:, j] - grad_ls[i_prime, j]
-                        )
-                        - logsumexp(ls - ls[i_prime])
+                b = (grad_ls[:, j] - grad_ls[i_prime, j]) * count_ls
+                # believe it or not, logsumexp can't handle 0 in b
+                # when np.seterr(underflow='raise') on newer processors:
+                if all(b == 0):
+                    # logsumexp can't take empty list, but if b is 0, then
+                    # logsumexp should be -inf, whose exponent is 0:
+                    res = 0
+                else:
+                    res = np.exp(
+                        scs.logsumexp((ls - ls[i_prime])[b != 0], b=b[b != 0])
+                        - scs.logsumexp(ls - ls[i_prime], b=count_ls)
                     )
-                )
-            return (-np.log(len(ls)) + logsumexp(ls)), np.array(grad_l)
+                grad_l.append(grad_ls[i_prime, j] + res)
+            # count_ls shouldn't have any zeros in it...
+            return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
+                grad_l
+            )
         else:
-            return ls.sum(), grad_ls.sum(axis=0)
+            return (ls * count_ls).sum(), np.array(
+                [(grad_ls[:, 0] * count_ls).sum(), (grad_ls[:, 1] * count_ls).sum()]
+            )
 
     def mle(self, **kwargs) -> Tuple[np.float64, np.float64]:
-        return _mle_helper(self.ll, **kwargs)
+        r"""Maximum likelihood estimate of :math:`(p, q)`.
 
-    mle.__doc__ = CollapsedTree.mle.__doc__
+        .. math::
+            (p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)
+
+        Args:
+            kwargs: keyword arguments passed along to the log likelihood :meth:`CollapsedForest.ll`
+
+        Returns:
+            Tuple :math:`(p, q)` with estimated branching probability and estimated mutation probability
+        """
+        self.parameters = _mle_helper(self.ll, **kwargs)
+        return self.parameters
+
+    @requires_dag
+    def filter_trees(
+        self,
+        ranking_coeffs: Sequence[float] = None,
+        mutability_file: str = None,
+        substitution_file: str = None,
+        isotypemap: Mapping[str, str] = None,
+        isotypemap_file: str = None,
+        idmap: Mapping[str, Set[str]] = None,
+        idmap_file: str = None,
+        isotype_names: Sequence[str] = None,
+        verbose: bool = False,
+        outbase: str = "gctree.out",
+        summarize_forest: bool = False,
+        tree_stats: bool = False,
+    ) -> CollapsedForest:
+        """Filter trees according to specified criteria.
+
+        Trim the forest to minimize a linear
+        combination of branching process likelihood, isotype parsimony score,
+        mutability parsimony score, and number of alleles, with coefficients
+        provided in the argument ``ranking_coeffs`, in that order.
+
+        Args:
+            ranking_coeffs: A list or tuple of coefficients for prioritizing tree weights.
+                The order of coefficients is: isotype parsimony score, mutability parsimony score,
+                and number of alleles. A coefficient of ``-1`` will be applied to branching process
+                likelihood.
+                If ranking_coeffs is not provided, trees will be ranked lexicographically
+                by likelihood, then by other traits, in the same order.
+            mutability_file: A mutability model
+            substitution_file: A substitution model
+            isotypemap: A mapping of sequences to isotypes
+            isotypemap: A dictionary mapping original IDs to observed isotype names
+            isotypemap_file: A csv file providing an `isotypemap`
+            idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
+            idmap_file: A csv file providing an `idmap`
+            isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order
+            verbose: print information about trimming
+            outbase: file name stem for a file with information for each tree in the DAG.
+            summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`
+            tree_stats: whether to write stats for each tree in the forest to file `[outbase].tree_stats.log`
+
+        Returns:
+            The trimmed forest, containing all optimal trees according to the specified criteria, and a tuple
+            of data about the trees in that forest, with format (ll, isotype parsimony, mutability parsimony, alleles).
+        """
+        dag = self._forest
+        if self.parameters is None:
+            self.mle(marginal=True)
+        p, q = self.parameters
+        kwargls = _get_dagweight_funcs(
+            self.parameters,
+            isotypemap_file=isotypemap_file,
+            isotypemap=isotypemap,
+            idmap_file=idmap_file,
+            idmap=idmap,
+            isotype_names=isotype_names,
+            mutability_file=mutability_file,
+            substitution_file=substitution_file,
+            verbose=verbose,
+        )
+        ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs = kwargls
+        if ranking_coeffs:
+            if len(ranking_coeffs) != 3:
+                raise ValueError(
+                    "If ranking_coeffs are provided to `filter_trees` method, a list of three values is expected."
+                )
+            coeffs = [-1] + list(ranking_coeffs)
+
+            def minfunckey(weighttuple):
+                """Weighttuple will have (ll, isotypepars, mutabilitypars, alleles)"""
+                return sum(
+                    [
+                        priority * float(weight)
+                        for priority, weight in zip(coeffs, weighttuple)
+                    ]
+                )
+
+        else:
+
+            def minfunckey(weighttuple):
+                """Weighttuple will have (ll, isotypepars, mutabilitypars, alleles)"""
+                # Sort output by likelihood, then isotype parsimony, then mutability score
+                return (-weighttuple[0],) + weighttuple[1:-1]
+
+        def print_stats(statlist, title, file=None, suppress_score=False):
+            show_score = ranking_coeffs and not suppress_score
+
+            def reformat(field, n=10):
+                if isinstance(field, int):
+                    return format(field, "<" + str(n))
+                else:
+                    return f"{field:{n}.{n}}"
+
+            def mask(weighttuple, n=10):
+                return tuple(
+                    reformat(field, n=n)
+                    for field, kwargs in zip(weighttuple, kwargls)
+                    if kwargs.name
+                )
+
+            print(f"Parameters: {(p, q)}", file=file)
+            print("\n" + title + ":", file=file)
+            statstring = "\t".join(mask(tuple(kwargs.name for kwargs in kwargls), n=14))
+            print(
+                f"tree     \t{statstring}" + ("\ttreescore" if show_score else ""),
+                file=file,
+            )
+            for j, best_weighttuple in enumerate(statlist, 1):
+                statstring = "\t".join(mask(best_weighttuple))
+                print(
+                    f"{j:<10}\t{statstring}"
+                    + (
+                        f"\t{reformat(minfunckey(best_weighttuple))}"
+                        if show_score
+                        else ""
+                    ),
+                    file=file,
+                )
+
+        # Filter by likelihood, isotype parsimony, mutability,
+        # and make ctrees, cforest, and render trees
+        dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_funcs
+        trimdag = dag.copy()
+        trimdag.trim_optimal_weight(
+            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
+        )
+        # make sure trimming worked as expected:
+        min_weightcounter = trimdag.weight_count(**dagweight_kwargs)
+        min_weightset = {minfunckey(key) for key in min_weightcounter}
+        if len(min_weightset) != 1:
+            raise RuntimeError(
+                "Filtering was not successful. After trimming, these weights are represented:",
+                min_weightset,
+            )
+
+        best_weighttuple = trimdag.optimal_weight_annotate(
+            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
+        )
+        if summarize_forest:
+            with open(outbase + ".forest_summary.log", "w") as fh:
+                independent_best = []
+                for kwargs in kwargls:
+                    # Only summarize for stats for which information was
+                    # provided (not just placeholders):
+                    if kwargs.name:
+                        independent_best.append([])
+                        for opt in [min, max]:
+                            tempdag = dag.copy()
+                            opt_weight = tempdag.trim_optimal_weight(
+                                **kwargs, optimal_func=opt
+                            )
+                            independent_best[-1].append(opt_weight)
+                            fh.write(
+                                f"\nAmong trees with {opt.__name__} {kwargs.name} of: {opt_weight}\n"
+                            )
+                            for inkwargs in kwargls:
+                                if inkwargs != kwargs and inkwargs.name:
+                                    minval = tempdag.optimal_weight_annotate(
+                                        **inkwargs, optimal_func=min
+                                    )
+                                    maxval = tempdag.optimal_weight_annotate(
+                                        **inkwargs, optimal_func=max
+                                    )
+                                    fh.write(
+                                        f"\t{inkwargs.name} range: {minval} to {maxval}\n"
+                                    )
+                independent_best[0].reverse()
+                print("\n", file=fh)
+                print_stats(
+                    [
+                        [
+                            stat - best[0]
+                            for stat, best in zip(best_weighttuple, independent_best)
+                        ]
+                    ],
+                    "Highest ranked tree: loss from best value",
+                    file=fh,
+                    suppress_score=True,
+                )
+
+        if tree_stats:
+            dag_ls = list(dag.weight_count(**dagweight_kwargs).elements())
+            # To clear _dp_data fields of their large cargo
+            dag.optimal_weight_annotate(edge_weight_func=lambda n1, n2: 0)
+            dag_ls.sort(key=minfunckey)
+
+            df = pd.DataFrame(dag_ls, columns=dagweight_kwargs.names)
+            df.to_csv(outbase + ".tree_stats.csv")
+            df["set"] = ["all_trees"] * len(df)
+            bestdf = pd.DataFrame([best_weighttuple], columns=dagweight_kwargs.names)
+            bestdf["set"] = ["best_tree"]
+            toplot_df = pd.concat([df, bestdf], ignore_index=True)
+            pplot = sns.pairplot(
+                toplot_df[["Log Likelihood", "Isotype Pars.", "Mut. Pars.", "set"]],
+                hue="set",
+                diag_kind="hist",
+            )
+            pplot.savefig(outbase + ".tree_stats.pairplot.png")
+
+        if verbose:
+            print_stats([best_weighttuple], "Stats for optimal trees")
+
+        return (self._trimmed_self(trimdag), best_weighttuple)
+
+    def likelihood_rankplot(self, outbase, p, q, img_type="svg"):
+        """save a rank plot of likelihoods to the file `[outbase].inference.likelihood_rank.[img_type]`."""
+        ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
+        if self._forest is not None:
+            dag_l = list(
+                float(ll) for ll in self._forest.weight_count(**ll_dagfuncs).elements()
+            )
+        else:
+            dag_l = [ctree.ll(p, q)[0] for ctree in self]
+        dag_l.sort(key=lambda n: -n)
+        plt.figure(figsize=(6.5, 2))
+        try:
+            plt.plot(np.exp(dag_l), "ko", clip_on=False, markersize=4)
+            plt.ylabel("gctree likelihood")
+            plt.yscale("log")
+            plt.ylim([None, 1.1 * max(np.exp(dag_l))])
+        except FloatingPointError:
+            plt.plot(dag_l, "ko", clip_on=False, markersize=4)
+            plt.ylabel("gctree log-likelihood")
+            plt.ylim([None, 1.1 * max(dag_l)])
+        plt.xlabel("parsimony tree")
+        plt.xlim([-1, len(dag_l)])
+        plt.tick_params(axis="y", direction="out", which="both")
+        plt.tick_params(
+            axis="x", which="both", bottom="off", top="off", labelbottom="off"
+        )
+        plt.savefig(outbase + ".inference.likelihood_rank." + img_type)
+
+    @requires_dag
+    def n_topologies(self) -> int:
+        """Count the number of topology classes, ignoring internal node sequences"""
+        return self._forest.count_topologies(collapse_leaves=True)
+
+    @requires_dag
+    def iter_topology_classes(self):
+        """Sort trees by topology class
+
+        Returns:
+            A generator of CollapsedForest objects, each containing trees with the same topology,
+                ignoring internal node labels. CollapsedForests will be yielded in reverse-order
+                of the number of trees in each topology class, so that each CollapsedForest will
+                contain at least as many trees as the one that follows."""
+        topology_dagfuncs = hdag.utils.make_newickcountfuncs(
+            internal_labels=False, collapse_leaves=True
+        )
+        ctopologies = list(self._forest.weight_count(**topology_dagfuncs).items())
+        # yield classes with most members first
+        ctopologies.sort(key=lambda t: -t[1])
+        for ctopology, count in ctopologies:
+            tdag = self._forest.copy()
+            tdag.trim_topology(ctopology, collapse_leaves=True)
+            yield self._trimmed_self(tdag)
+
+    def sample_tree(self) -> CollapsedTree:
+        """Sample a random CollapsedTree from the forest"""
+        if self._ctrees is not None:
+            return random.choice(self._ctrees)
+        elif self._forest is not None:
+            return self._clade_tree_to_ctree(self._forest.sample())
+        else:
+            raise ValueError("Cannot sample trees from an empty forest")
+
+    def _trimmed_self(self, dag):
+        """Create a new CollapsedForest object from a subset of the current one's
+        history DAG, properly initializing validation_stats and n_trees"""
+        newforest = CollapsedForest()
+        newforest._validation_stats = self._validation_stats.copy()
+        newforest.n_trees = dag.count_trees()
+        newforest._forest = dag
+        newforest.parameters = self.parameters
+        return newforest
+
+    def _clade_tree_to_ctree(
+        self,
+        clade_tree: hdag.HistoryDag,
+    ) -> CollapsedTree:
+        """Create and validate :meth:`CollapsedTree` object from tree-shaped history DAG.
+
+        Uses self._validation_stats dictionary, if available, for validation. Dictionary keys are:
+            root: The expected root name for the resulting tree (for validation)
+            counts: Expected node abundances for each node name (for validation)
+            parsimony_score: Expected Hamming parsimony score (for validation)
+            root_seq: Expected root sequence (for validation)
+            leaf_seqs: Expected leaf names, keyed by leaf sequences (for validation)
+
+        Args:
+            clade_tree: A tree-shaped history DAG, like that returned by :meth:`historydag.HistoryDag.sample`
+
+        Returns:
+            :meth:`CollapsedTree` object matching the topology of ``clade_tree``, but fully collapsed."""
+        etetree = clade_tree.to_ete(
+            name_func=lambda n: n.attr["name"],
+            features=["sequence"],
+            feature_funcs={"abundance": lambda n: n.attr["abundance"]},
+        )
+
+        # Remove dummy leaf added below root for hDAG compatibility
+        dummyleaves = [
+            node for node in etetree.children if node.is_leaf() and node.abundance == 0
+        ]
+        assert len(dummyleaves) <= 1
+        for leaf in dummyleaves:
+            leaf.delete()
+
+        ctree = CollapsedTree(etetree)
+        # Here can do some validation on the tree:
+        # root name:
+        if self._validation_stats is not None:
+            if self._validation_stats["root"] not in ctree.tree.name:
+                raise RuntimeError(
+                    f"collapsed tree should have root name '{self._validation_stats['root']}' but has instead {ctree.tree.name}"
+                )
+            # counts:
+            counts = self._validation_stats["counts"]
+            for node in etetree.iter_leaves():
+                if node.name:
+                    assert counts[node.name] == node.abundance
+            for node in ctree.tree.traverse():
+                if isinstance(node.name, tuple):
+                    for name in node.name:
+                        if name in counts:
+                            assert node.abundance == counts[name]
+                else:
+                    if node.name in counts:
+                        assert counts[node.name] == node.abundance
+                    else:
+                        assert node.abundance == 0
+
+            # unnamed_seq issue:
+            for node in ctree.tree.traverse():
+                if node.name == "unnamed_seq":
+                    raise RuntimeError("Some node names are missing")
+
+            # Parsimony:
+            if self._validation_stats["parsimony_score"] != sum(
+                [node.dist for node in ctree.tree.traverse()]
+            ):
+                raise RuntimeError(
+                    "History DAG tree parsimony score does not match parsimony score provided"
+                )
+            # Root sequence:
+            if ctree.tree.sequence != self._validation_stats["root_seq"]:
+                raise RuntimeError(
+                    "History DAG root node sequence does not match root sequence provided"
+                )
+            # Leaf names:
+            leaf_seqs = self._validation_stats["leaf_seqs"]
+            # A dictionary of leaf sequences to leaf names
+            observed_set = {
+                node for node in ctree.tree.iter_descendants() if node.abundance > 0
+            }
+            for node in observed_set:
+                if not node.is_root() and leaf_seqs[node.sequence] != node.name:
+                    raise RuntimeError(
+                        "History DAG tree leaf names don't match sequences"
+                    )
+            observed_seqs = {node.sequence for node in observed_set}
+            nonroot_observed_seqs = observed_seqs - {ctree.tree.sequence}
+            nonroot_leaf_seqs = set(leaf_seqs.keys()) - {ctree.tree.sequence}
+            if nonroot_leaf_seqs != nonroot_observed_seqs:
+                raise RuntimeError(
+                    "Observed nonroot sequences in history DAG tree don't match "
+                    "observed nonroot sequences passed in leaf_seqs."
+                )
+        return ctree
 
     def __repr__(self):
         r"""return a string representation for printing."""
-        return f"n_trees = {self.n_trees}\n" "\n".join(
-            [str(tree) for tree in self.forest]
-        )
+        return f"n_trees = {self.n_trees}\n" "\n".join([str(tree) for tree in self])
+
+    def __iter__(self):
+        if self._ctrees is not None:
+            yield from self._ctrees
+        elif self._forest is not None:
+            for cladetree in self._forest.get_trees():
+                yield self._clade_tree_to_ctree(cladetree)
+        else:
+            yield from ()
+
+    def __getstate__(self):
+        # Avoid pickling large cached abundance data.
+        # hDAG also defines its own getstate.
+        d = self.__dict__.copy()
+        d["_cm_countlist"] = None
+        return d
 
 
 def _mle_helper(
@@ -967,15 +1452,15 @@ def _mle_helper(
 
     def f(x):
         """negative log likelihood."""
-        return tuple(-x for x in ll(*x, **kwargs))
+        return tuple(-y for y in ll(*x, **kwargs))
 
-    grad_check = check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
+    grad_check = sco.check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
     if grad_check > 1e-3:
         warnings.warn(
-            "gradient mismatches finite difference " f"approximation by {grad_check}",
+            f"gradient mismatches finite difference approximation by {grad_check}",
             RuntimeWarning,
         )
-    result = minimize(
+    result = sco.minimize(
         f,
         jac=True,
         x0=x_0,
@@ -987,3 +1472,281 @@ def _mle_helper(
     if not result.success:
         warnings.warn("optimization not sucessful, " + result.message, RuntimeWarning)
     return result.x[0], result.x[1]
+
+
+def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndarray]:
+    r"""Log likelihood of branching process parameters :math:`(p, q)`
+    .. math::
+        \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)
+
+    Args:
+        cm_counts: an iterable containing tuples `((c, m), n)` where `n` is the number of nodes
+            in the tree with abundance `c` and `m` mutant clades
+        p: branching probability
+        q: mutation probability
+    Returns:
+        Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
+    """
+    count_ls = [n for cm, n in cm_counts]
+    cm_list = [cm for cm, n in cm_counts]
+    # extract vector of function values and gradient components
+    logf_data = [CollapsedTree._ll_genotype(c, m, p, q) for c, m in cm_list]
+    logf = np.array([[x[0] * count_ls[i]] for i, x in enumerate(logf_data)]).sum()
+    grad_ll_genotype = np.array(
+        [x[1] * count_ls[i] for i, x in enumerate(logf_data)]
+    ).sum(axis=0)
+    return logf, grad_ll_genotype
+
+
+def _make_dag(trees, sequence_counts={}, from_copy=True):
+    """Build a history DAG from ambiguous or disambiguated trees, whose nodes
+    have abundance, name, and sequence attributes."""
+    # preprocess trees so they're acceptable inputs
+    # Assume all trees have fixed root sequence and fixed leaf sequences
+    leaf_seqs = {node.sequence for node in trees[0].get_leaves()}
+
+    sequence_counts = sequence_counts.copy()
+    if from_copy:
+        trees = [tree.copy() for tree in trees]
+    if all(len(tree.children) > 1 for tree in trees):
+        pass  # We're all good!
+    elif trees[0].sequence not in leaf_seqs:
+        if trees[0].sequence not in sequence_counts:
+            sequence_counts[trees[0].sequence] = 0
+        for tree in trees:
+            newleaf = tree.add_child(name="", dist=0)
+            newleaf.add_feature("sequence", trees[0].sequence)
+            if tree.sequence != newleaf.sequence:
+                raise ValueError(
+                    "At least some trees unifurcate at root, but root sequence is not fixed."
+                )
+    else:
+        # This should never happen in parsimony setting, when internal edges
+        # are collapsed by sequence
+        raise RuntimeError(
+            "Root sequence observed, but the corresponding leaf is not a child of the root node. "
+            "Gctree inference may give nonsensical results. Are you sure these are parsimony trees?"
+        )
+
+    dag = hdag.history_dag_from_etes(
+        trees,
+        ["sequence"],
+        attr_func=lambda n: {
+            "name": n.name,
+        },
+    )
+    # If there are too many ambiguities at too many nodes, disambiguation will
+    # hang. Need to have an alternative (disambiguate each tree before putting in dag):
+    if (
+        dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
+        / dag.count_trees()
+        > 500000000
+    ):
+        warnings.warn(
+            "Parsimony trees have too many ambiguities for disambiguation in history DAG. "
+            "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
+        )
+        trees = [disambiguate(tree) for tree in trees]
+        dag = hdag.history_dag_from_etes(
+            trees,
+            ["sequence"],
+            attr_func=lambda n: {
+                "name": n.name,
+            },
+        )
+    dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
+    # Look for (even) more trees:
+    dag.add_all_allowed_edges(adjacent_labels=True)
+    dag.trim_optimal_weight()
+    dag.convert_to_collapsed()
+    # Add abundances to attrs:
+    for node in dag.preorder(skip_root=True):
+        if node.label.sequence in sequence_counts:
+            node.attr["abundance"] = sequence_counts[node.label.sequence]
+        else:
+            if node.is_leaf():
+                raise ValueError(
+                    "sequence_counts dictionary should contain all leaf sequences"
+                )
+            node.attr["abundance"] = 0
+
+    if len(dag.hamming_parsimony_count()) > 1:
+        raise RuntimeError(
+            f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.hamming_parsimony_count()}"
+        )
+    for node in dag.preorder(skip_root=True):
+        if (
+            node.attr["abundance"] != 0
+            and not node.is_leaf()
+            and frozenset({node.label}) not in node.clades
+        ):
+            raise RuntimeError(
+                "An internal node not adjacent to a leaf with the same label was found with nonzero abundance."
+            )
+
+    # give disambiguated sequences unique names
+    sequences = {
+        node.attr["name"]: node.label.sequence for node in dag.preorder(skip_root=True)
+    }
+    n_max = max([int(name) for name in sequences.keys() if name.isdigit()])
+    namedict = {sequence: name for name, sequence in sequences.items()}
+    for node in dag.preorder(skip_root=True):
+        if node.label.sequence not in namedict:
+            n_max += 1
+            namedict[node.label.sequence] = str(n_max)
+            node.attr["name"] = str(n_max)
+    return dag
+
+
+def _cmcounter_dagfuncs():
+    """Functions for accumulating frozen multisets of (c, m) pairs in trees in
+    the DAG."""
+
+    def edge_weight_func(n1, n2):
+        if n1.label == n2.label and n2.is_leaf():
+            # Then this is a leaf-adjacent node with nonzero abundance
+            return multiset.FrozenMultiset()
+        else:
+            m = len(n2.clades)
+            if frozenset({n2.label}) in n2.clades:
+                m -= 1
+            return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
+
+    def accum_func(cmsetlist: List[multiset.FrozenMultiset]):
+        st = multiset.FrozenMultiset()
+        for cmset in cmsetlist:
+            st += cmset
+        return st
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: multiset.FrozenMultiset(),
+            "edge_weight_func": edge_weight_func,
+            "accum_func": accum_func,
+        },
+        name="cmcounters",
+    )
+
+
+def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDict:
+    """Return functions for counting tree log likelihood on the history DAG.
+
+    For numerical consistency, we resort to the use of ``decimal.Decimal``.
+    This is exactly for the purpose of solving the problem that float sum is
+    sensitive to order of summation, while Decimal sum is not.
+
+    Still, there seems to be some inconsistency (probably in the part of the computation done with floats)
+    so we wrap the Decimal in a :class:`historydag.utils.FloatState` object, where the exposed
+    float is a rounded version of the hidden Decimal state, which is used for actual computations.
+
+
+    Args:
+        p, q: branching process parameters
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to branching process likelihood.
+        Weight format is ``decimal.Decimal``.
+    """
+
+    def edge_weight_ll_genotype(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
+        """The _ll_genotype weight of the target node, unless it should be
+        collapsed, then 0.
+
+        Expects DAG to have abundances added so that each node has "abundance" key in attr dict.
+        """
+        if n2.is_leaf() and n2.label == n1.label:
+            return hdag.utils.FloatState(0.0, state=Decimal(0.0))
+        else:
+            m = len(n2.clades)
+            # Check if this edge should be collapsed, and reduce mutant descendants
+            if frozenset({n2.label}) in n2.clades:
+                m -= 1
+            c = n2.attr["abundance"]
+            if n1.is_root() and c == 0 and m == 1:
+                # Add pseudocount for unobserved root unifurcation
+                c = 1
+            res = Decimal(CollapsedTree._ll_genotype(c, m, p, q)[0])
+            return hdag.utils.FloatState(float(round(res, 8)), state=res)
+
+    def accum_func(weightlist):
+        res = sum(weight.state for weight in weightlist)
+        return hdag.utils.FloatState(float(round(res, 8)), state=res)
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: hdag.utils.FloatState(0.0, state=Decimal(0)),
+            "edge_weight_func": edge_weight_ll_genotype,
+            "accum_func": accum_func,
+        },
+        name="Log Likelihood",
+    )
+
+
+def _allele_dagfuncs() -> hdag.utils.AddFuncDict:
+    """Return functions for filtering trees in a history DAG by allele count.
+
+    The number of alleles in a tree is the number of unique sequences observed on nodes of that tree.
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to allele count.
+        Weight format is ``int``.
+    """
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: 0,
+            "edge_weight_func": lambda n1, n2: n1.label != n2.label,
+            "accum_func": sum,
+        },
+        name="Alleles",
+    )
+
+
+def _get_dagweight_funcs(
+    parameters,
+    isotypemap_file=None,
+    isotypemap=None,
+    idmap_file=None,
+    idmap=None,
+    isotype_names=None,
+    mutability_file=None,
+    substitution_file=None,
+    verbose=False,
+):
+    p, q = parameters
+    placeholder_dagfuncs = hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: 0,
+            "edge_weight_func": lambda n1, n2: 0,
+            "accum_func": sum,
+        },
+        name="",
+    )
+    try:
+        iso_funcs = _isotype_dagfuncs(
+            isotypemap_file=isotypemap_file,
+            isotypemap=isotypemap,
+            idmap_file=idmap_file,
+            idmap=idmap,
+            isotype_names=isotype_names,
+        )
+        if verbose:
+            print("Isotype parsimony will be used as a ranking criterion")
+    except ValueError:
+        iso_funcs = placeholder_dagfuncs
+    ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
+    if mutability_file and substitution_file:
+        if verbose:
+            print("Mutation model parsimony will be used as a ranking criterion")
+        mut_funcs = _mutability_dagfuncs(
+            mutability_file=mutability_file, substitution_file=substitution_file
+        )
+    else:
+        mut_funcs = placeholder_dagfuncs
+    allele_funcs = _allele_dagfuncs()
+    return (ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs)

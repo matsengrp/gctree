@@ -75,8 +75,10 @@ gctree
 
 We're now ready to run ``gctree infer`` to use abundance data (in ``abundances.csv``) to rank the equally parsimonious trees (in ``outfile``).
 We can use the optional argument ``--frame`` to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.
+
 If working in a headless environment, ``gctree infer`` must be run with a tool
 like ``xvfb-run`` to provide an X server for rendering the output trees.
+This may also require telling matplotlib to use a headless backend with ``export MPLBACKEND=agg``.
 
 .. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 --verbose | tee gctree.inference.log
   :shell:
@@ -88,18 +90,46 @@ The SVG image file ``gctree.out.inference.abundance_rank.svg`` shows a distribut
 .. image:: gctree.out.inference.abundance_rank.svg
   :width: 600
 
-The SVG image file ``gctree.out.inference.likelihood_rank.svg`` is a rank plot of likelihood over the set of maximum parsimony trees:
-
-.. image:: gctree.out.inference.likelihood_rank.svg
-  :width: 600
-
-Then there are files ``gctree.out.inference.[1,2,...].svg`` and ``gctree.out.inference.[1,2,...].nk`` containing an SVG tree image and newick tree file for each of the parsimony trees (numbered according to likelihood rank).
+Then there are files ``gctree.out.inference.1.svg`` and ``gctree.out.inference.1.nk`` containing an SVG tree image and newick tree file. If more than one parsimony tree is optimal, then up to ten optimal trees will be sampled randomly, and the corresponding files will be numbered **arbitrarily**.
 For example here is the top ranked tree ``gctree.out.inference.1.svg``:
 
 .. image:: gctree.out.inference.1.svg
   :width: 1000
 
-You will also see Python pickle files ``gctree.out.inference.[1,2,...].p`` containing a :obj:`gctree.CollapsedTree` object for each tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using :meth:`gctree.CollapsedTree.render`).
+You will also see Python pickle files ``gctree.out.inference.[1,2,...].p`` containing a :obj:`gctree.CollapsedTree` object for each optimal tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using :meth:`gctree.CollapsedTree.render`).
+
+Criteria other than branching process likelihoods can be used to break ties
+between trees. Providing arguments ``--isotype_mapfile`` and
+``--idmapfile`` will allow trees to be ranked by isotype parsimony. Providing
+arguments ``--mutability`` and ``--substitution`` allows trees to be ranked
+according to a context-sensitive mutation model. By default, trees are ranked
+lexicographically, first maximizing likelihood, then minimizing isotype
+parsimony and mutabilities, if such information is provided.
+Ranking priorities can be adjusted using the argument ``--priority_weights``.
+
+All parsimony trees found by dnapars, as well as branching process parameters
+are saved in the file ``gctree.out.inference.parsimony_forest.p``, containing a :class:`gctree.CollapsedForest` object.
+This file may be manipulated using ``gctree infer``. For example, to find the optimal tree
+according to a linear combination of likelihood, isotype parsimony,
+mutabilities, and alleles:
+
+.. command-output:: gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
+   :shell:
+
+By default, only the files listed above will be generated, with the optional argument ``--outbase`` specifying how the output files should be named.
+
+.. image:: newranking.inference.1.svg
+   :width: 1000
+
+For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees,use the argument ``--tree_stats``.
+
+.. image:: newranking.tree_stats.pairplot.png
+   :width: 1000
+
+Sometimes ranked trees are too numerous, and generating the output of ``--tree_stats`` would require too many resources. For a summary of the collection of trees used for ranking, the argument ``--summarize_forest`` is provided. Most importantly, this option summarizes how much less likely the top ranked tree is, compared to the most likely tree being ranked, for example to validate coefficients passed to ``--ranking_coeffs``.
+
+.. command-output:: cat newranking.forest_summary.log
+   :shell:
 
 
 isotype
@@ -110,7 +140,7 @@ inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
 sequences to their observed isotypes (like ``example/isotypemap.txt``) is required.
 
-.. command-output:: isotype gctree.out.inference.parsimony_forest.p gctree.inference.log idmap.txt ../example/isotypemap.txt --out_directory isotyped
+.. command-output:: isotype idmap.txt ../example/isotypemap.txt --trees gctree.out.inference.1.p newranking.inference.1.p --out_directory isotyped
   :shell:
   :ellipsis: 10
 

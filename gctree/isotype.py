@@ -1,8 +1,12 @@
-import re
 import pickle
 import argparse
 from pathlib import Path
-from gctree.isotyping import explode_idmap, isotype_tree, isotype_parsimony
+from gctree.isotyping import (
+    explode_idmap,
+    isotype_tree,
+    isotype_parsimony,
+    default_isotype_order,
+)
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -50,16 +54,6 @@ def get_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "parsimony_forest",
-        type=str,
-        help="filename for parsimony_forest pickle file output by gctree inference",
-    )
-    parser.add_argument(
-        "inference_log",
-        type=str,
-        help="filename for gctree inference log file which contains branching process parameters",
-    )
-    parser.add_argument(
         "idmapfile",
         type=str,
         help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.",
@@ -71,11 +65,17 @@ def get_parser() -> argparse.ArgumentParser:
         ". For example, each line should have the format 'somesequence_id, some_isotype'.",
     )
     parser.add_argument(
-        "--isotype_names",
+        "--trees",
+        nargs="+",
         type=str,
-        default=None,
+        help="filenames for collapsed tree pickle files output by gctree inference",
+    )
+    parser.add_argument(
+        "--isotype_names",
+        nargs="+",
+        type=str,
         help="A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated."
-        """ Default is equivalent to providing the argument ``--isotype_names IgM,IgG3,IgG1,IgA1,IgG2,IgG4,IgE,IgA2``""",
+        """ Default is equivalent to providing the argument ``--isotype_names IgM IgD IgG3 IgG1 IgG2 IgE IgA``""",
     )
     parser.add_argument(
         "--out_directory",
@@ -120,38 +120,27 @@ def main(arg_list=None):
             if len(cell_idset) > 0:
                 idmap[seqid] = cell_idset
 
-    with open(args.inference_log, "r") as fh:
-        for line in fh:
-            if re.match(r"params:", line):
-                p = float(re.search(r"(?<=[\(])\S+(?=\,)", line).group())
-                q = float(re.search(r"(?<=\,\s)\S+(?=[\)])", line).group())
-                parameters = (p, q)
-                break
-
-    with open(args.parsimony_forest, "rb") as fh:
-        forest = pickle.load(fh)
+    ctrees = []
+    for treefile in args.trees:
+        with open(treefile, "rb") as fh:
+            ctrees.append(pickle.load(fh))
     # parse the idmap file and the isotypemap file
-    forest.forest = tuple(
-        sorted(
-            forest.forest, key=lambda tree: -tree.ll(*parameters, build_cache=False)[0]
-        )
-    )
     tree_stats = [
         [
+            filename,
+            Path(filename).name,
             ctree,
-            ctree.ll(*parameters, build_cache=False)[0],
-            idx,
             sum(1 for _ in ctree.tree.traverse()),
         ]
-        for idx, ctree in enumerate(forest.forest)
+        for filename, ctree in zip(args.trees, ctrees)
     ]
     if not args.isotype_names:
-        isotype_names = ["IgM", "IgG3", "IgG1", "IgA1", "IgG2", "IgG4", "IgE", "IgA2"]
+        isotype_names = default_isotype_order
     else:
-        isotype_names = str(args.isotype_names).split(",")
+        isotype_names = args.isotype_names
 
     newidmap = explode_idmap(idmap, isotypemap)
-    for ctree in forest.forest:
+    for ctree in ctrees:
         ctree.tree = isotype_tree(ctree.tree, newidmap, isotype_names)
 
     flattened_newidmap = {
@@ -165,39 +154,29 @@ def main(arg_list=None):
             print(f"{name},{':'.join(cellidset)}", file=fh)
 
     for sublist in tree_stats:
-        sublist.append(isotype_parsimony(sublist[0].tree))
+        sublist.append(isotype_parsimony(sublist[2].tree))
 
-    # Compute parsimony indices
-    for index, sublist in enumerate(sorted(tree_stats, key=lambda slist: slist[2])):
-        sublist.append(index)
-
-    # Pickle forest (still sorted by likelihood)
-    with open(out_directory + "parsimonyforest.isotyped.p", "wb") as fh:
-        fh.write(pickle.dumps(forest))
-
-    print(
-        f"Parameters:\t{parameters}\n"
-        "index\t ll\t\t\t original node count\t isotype parsimony\t new node count"
-    )
+    print("name\t\t\t original node count\t isotype parsimony\t new node count")
     for (
+        filename,
+        name,
         ctree,
-        likelihood,
-        likelihood_idx,
         original_numnodes,
         parsimony,
-        parsimony_idx,
     ) in tree_stats:
         print(
-            f"{likelihood_idx + 1}\t {likelihood}\t {original_numnodes}\t\t\t {parsimony}\t\t\t {sum(1 for _ in ctree.tree.traverse())}"
+            f"{name}\t\t {original_numnodes}\t\t\t {parsimony}\t\t\t {sum(1 for _ in ctree.tree.traverse())}"
         )
         colormap = {
             node.name: isotype_palette[node.isotype.isotype % len(isotype_palette)]
             for node in ctree.tree.traverse()
         }
-        filename = f"gctree.out.{likelihood_idx + 1}.isotype_parsimony.{int(parsimony)}"
+        newfilename = name + f".isotype_parsimony.{int(parsimony)}"
         ctree.render(
-            outfile=out_directory + filename + ".svg",
+            outfile=out_directory + newfilename + ".svg",
             colormap=colormap,
             idlabel=True,
         )
-        ctree.newick(out_directory + filename + ".nk")
+        ctree.newick(out_directory + newfilename + ".nk")
+        with open(out_directory + newfilename + ".p", "wb") as fh:
+            fh.write(pickle.dumps(ctree))

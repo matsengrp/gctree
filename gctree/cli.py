@@ -5,6 +5,7 @@ import gctree.phylip_parse as pp
 import gctree.mutation_model as mm
 import gctree.utils as utils
 
+
 import argparse
 import pandas as pd
 import numpy as np
@@ -44,7 +45,7 @@ def test(args):
                 print(f"parameters: p = {p}, q = {q}")
             forest.simulate(p, q, n)
             tree_dict = {}
-            for tree in forest.forest:
+            for tree in forest:
                 tree_hash = tuple(
                     (node.abundance, len(node.children))
                     for node in tree.tree.traverse()
@@ -155,226 +156,125 @@ def test(args):
 
 def infer(args):
     """inference subprogram."""
-    outfiles = [pp.parse_outfile(args.phylipfile, args.abundance_file, args.root)]
-    if args.bootstrap_phylipfile is not None:
-        outfiles.extend(
-            pp.parse_outfile(args.bootstrap_phylipfile, args.abundance_file, args.root)
+    if len(args.infiles) == 2:
+        forest = bp.CollapsedForest(
+            *pp.parse_outfile(args.infiles[0], args.infiles[1], args.root)
         )
-    bootstrap = len(outfiles) > 1
-    if bootstrap:
-        # store bootstrap parameter data
-        df = pd.DataFrame(columns=("$\\hat{p}$", "$\\hat{q}$"))
-        # we'll store the mle gctrees here for computing support later
-        gctrees = []
-
-    for i, content in enumerate(outfiles):
-        if i > 0:
-            if args.verbose:
-                print(f"bootstrap sample {i}")
-                print("----------------------")
-            outbase = args.outbase + f".bootstrap_{i}"
-        else:
-            outbase = args.outbase
-        phylip_collapsed = [
-            bp.CollapsedTree(tree=tree, allow_repeats=(i > 0)) for tree in content
-        ]
-        phylip_collapsed_unique = []
-        for tree in phylip_collapsed:
-            if (
-                sum(
-                    tree.compare(tree2, method="identity")
-                    for tree2 in phylip_collapsed_unique
-                )
-                == 0
-            ):
-                phylip_collapsed_unique.append(tree)
-
-        parsimony_forest = bp.CollapsedForest(forest=phylip_collapsed_unique)
-
-        if parsimony_forest.n_trees == 1:
+        if forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
 
         if args.verbose:
+            print("number of trees with integer branch lengths:", forest.n_trees)
             print(
-                "number of trees with integer branch lengths:", parsimony_forest.n_trees
+                "number of unique collapsed topologies, ignoring inferred ancestral sequences:",
+                forest.n_topologies(),
             )
+        forest.mle(marginal=True)
+        with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
+            pickle.dump(forest, f)
 
-        # check for unifurcations at root
-        unifurcations = sum(
-            tree.tree.abundance == 0 and len(tree.tree.children) == 1
-            for tree in parsimony_forest.forest
+    elif len(args.infiles) == 1:
+        if args.verbose:
+            print(
+                "Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped."
+            )
+        with open(args.infiles[0], "rb") as fh:
+            forest = pickle.load(fh)
+    else:
+        raise ValueError(
+            "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
         )
-        if unifurcations and args.verbose:
-            print(
-                f"{unifurcations} trees exhibit unobserved unifurcation from"
-                " root. Adding psuedocounts to these roots"
-            )
 
-        # fit p and q using all trees
-        # if we get floating point errors, try a few more times
-        # (starting params are random)
-        max_tries = 10
-        for tries in range(max_tries):
-            try:
-                p, q = parsimony_forest.mle(marginal=True)
-                break
-            except FloatingPointError as e:
-                if tries + 1 < max_tries and args.verbose:
-                    print(
-                        f"floating point error in MLE: {e}. "
-                        f"Attempt {tries + 1} of {max_tries}. "
-                        "Rerunning with new random start."
-                    )
-                else:
-                    raise
+    # Filter the forest according to specified criteria, and along the way,
+    # write a log file containing stats for all trees in the forest:
+    trimmed_forest, _ = forest.filter_trees(
+        ranking_coeffs=args.ranking_coeffs,
+        verbose=args.verbose,
+        outbase=args.outbase,
+        summarize_forest=args.summarize_forest,
+        tree_stats=args.tree_stats,
+        mutability_file=args.mutability,
+        substitution_file=args.substitution,
+        isotypemap_file=args.isotype_mapfile,
+        idmap_file=args.idmapfile,
+        isotype_names=args.isotype_names,
+    )
+
+    if args.verbose:
+        if trimmed_forest.n_trees > 1:
+            n_topologies = trimmed_forest.n_topologies()
+            print(
+                "Degenerate ranking criteria: trimmed history DAG contains "
+                f"{trimmed_forest.n_trees} unique trees, with {n_topologies} unique collapsed topologies."
+            )
+            if n_topologies > 10:
+                print(
+                    "A representative from each of the ten most abundant topologies will be sampled randomly for rendering."
+                )
             else:
-                raise
+                print(
+                    "A representative of each topology will be sampled randomly for rendering."
+                )
 
-        if args.verbose:
-            print(f"params: {(p, q)}")
+    random.seed(forest.n_trees)
+    ctrees = [
+        topoclass.sample_tree()
+        for _, topoclass in zip(range(10), trimmed_forest.iter_topology_classes())
+    ]
 
-        if i > 0:
-            df.loc[i - 1] = p, q
+    if args.colormapfile is not None:
+        with open(args.colormapfile, "r") as f:
+            colormap = {}
+            for line in f:
+                seqid, color = line.rstrip().split("\t")
+                if "," in color:
+                    colors = {
+                        x.split(":")[0]: int(x.split(":")[1]) for x in color.split(",")
+                    }
+                    colormap[seqid] = colors
+                else:
+                    colormap[seqid] = color
+    else:
+        colormap = None
 
-        # get likelihoods and sort by them
-        ls = [tree.ll(p, q)[0] for tree in parsimony_forest.forest]
-        ls, parsimony_forest.forest = zip(
-            *sorted(zip(ls, parsimony_forest.forest), key=lambda x: x[0], reverse=True)
-        )
+    # parse position map file(s)
+    if args.positionmapfile is not None:
+        with open(args.positionmapfile) as f:
+            position_map = [int(x) for x in f.read().split()]
+    else:
+        position_map = None
 
-        if bootstrap:
-            gctrees.append(parsimony_forest.forest[0])
+    if args.positionmapfile2 is not None:
+        with open(args.positionmapfile2) as f:
+            position_map2 = [int(x) for x in f.read().split()]
+    else:
+        position_map2 = None
 
-        with open(outbase + ".inference.parsimony_forest.p", "wb") as f:
-            pickle.dump(parsimony_forest, f)
-
-        if args.colormapfile is not None:
-            with open(args.colormapfile, "r") as f:
-                colormap = {}
-                for line in f:
-                    seqid, color = line.rstrip().split("\t")
-                    if "," in color:
-                        colors = {
-                            x.split(":")[0]: int(x.split(":")[1])
-                            for x in color.split(",")
-                        }
-                        colormap[seqid] = colors
-                    else:
-                        colormap[seqid] = color
-        else:
-            colormap = None
-
-        # parse position map file(s)
-        if args.positionmapfile is not None:
-            with open(args.positionmapfile) as f:
-                position_map = [int(x) for x in f.read().split()]
-        else:
-            position_map = None
-
-        if args.positionmapfile2 is not None:
-            with open(args.positionmapfile2) as f:
-                position_map2 = [int(x) for x in f.read().split()]
-        else:
-            position_map2 = None
-
-        if args.verbose:
-            print("tree\talleles\tlogLikelihood")
-        for j, (l, collapsed_tree) in enumerate(zip(ls, parsimony_forest.forest), 1):
-            alleles = sum(1 for _ in collapsed_tree.tree.traverse())
-            if args.verbose:
-                print(f"{j}\t{alleles}\t{l}")
-            collapsed_tree.render(
-                f"{outbase}.inference.{j}.svg",
-                idlabel=args.idlabel,
-                colormap=colormap,
-                frame=args.frame,
-                position_map=position_map,
-                chain_split=args.chain_split,
-                frame2=args.frame2,
-                position_map2=position_map2,
-            )
-            collapsed_tree.newick(f"{outbase}.inference.{j}.nk")
-            with open(f"{outbase}.inference.{j}.p", "wb") as f:
-                pickle.dump(collapsed_tree, f)
-
-        # rank plot of likelihoods
-        plt.figure(figsize=(6.5, 2))
-        try:
-            plt.plot(np.exp(ls), "ko", clip_on=False, markersize=4)
-            plt.ylabel("gctree likelihood")
-            plt.yscale("log")
-            plt.ylim([None, 1.1 * max(np.exp(ls))])
-        except FloatingPointError:
-            plt.plot(ls, "ko", clip_on=False, markersize=4)
-            plt.ylabel("gctree log-likelihood")
-            plt.ylim([None, 1.1 * max(ls)])
-        plt.xlabel("parsimony tree")
-        plt.xlim([-1, len(ls)])
-        plt.tick_params(axis="y", direction="out", which="both")
-        plt.tick_params(
-            axis="x", which="both", bottom="off", top="off", labelbottom="off"
-        )
-        plt.savefig(outbase + ".inference.likelihood_rank." + args.img_type)
-
-        # rank plot of observed allele frequencies
-        y = sorted(
-            (
-                node.abundance
-                for node in parsimony_forest.forest[0].tree.traverse()
-                if node.abundance != 0
-            ),
-            reverse=True,
-        )
-        plt.figure()
-        plt.bar(range(1, len(y) + 1), y, color="black")
-        plt.xlabel("genotype")
-        plt.ylabel("abundance")
-        plt.savefig(outbase + ".inference.abundance_rank." + args.img_type)
-
-    if bootstrap:
-        import seaborn as sns
-
-        sns.set(style="white", color_codes=True)
-        sns.set_style("ticks")
-        plt.figure()
-        np.seterr(all="ignore")
-        sns.jointplot(
-            "$\\hat{p}$",
-            "$\\hat{q}$",
-            data=df,
-            joint_kws={"alpha": 0.1, "s": 0.1},
-            space=0,
-            color="k",
-            stat_func=None,
-            xlim=(0, 1),
-            ylim=(0, 1),
-            height=3,
-        )
-        plt.savefig(args.outbase + ".inference.bootstrap_theta." + args.img_type)
-        gctrees[0].support(gctrees[1:])
-        gctrees[0].render(
-            args.outbase + ".inference.bootstrap_support.svg",
-            colormap=colormap,
+    for j, collapsed_tree in enumerate(ctrees, 1):
+        collapsed_tree.render(
+            f"{args.outbase}.inference.{j}.svg",
             idlabel=args.idlabel,
+            colormap=colormap,
             frame=args.frame,
             position_map=position_map,
-            show_support=True,
             chain_split=args.chain_split,
             frame2=args.frame2,
             position_map2=position_map2,
         )
-        gctrees[0].support(gctrees[1:], compatibility=True)
-        gctrees[0].render(
-            args.outbase + ".inference.bootstrap_compatibility.svg",
-            colormap=colormap,
-            idlabel=args.idlabel,
-            frame=args.frame,
-            position_map=position_map,
-            show_support=True,
-            chain_split=args.chain_split,
-            frame2=args.frame2,
-            position_map2=position_map2,
-        )
+        collapsed_tree.newick(f"{args.outbase}.inference.{j}.nk")
+        with open(f"{args.outbase}.inference.{j}.p", "wb") as f:
+            pickle.dump(collapsed_tree, f)
+
+    # rank plot of observed allele frequencies
+    y = sorted(
+        (node.abundance for node in ctrees[0].tree.traverse() if node.abundance != 0),
+        reverse=True,
+    )
+    plt.figure()
+    plt.bar(range(1, len(y) + 1), y, color="black")
+    plt.xlabel("genotype")
+    plt.ylabel("abundance")
+    plt.savefig(args.outbase + ".inference.abundance_rank." + args.img_type)
 
 
 def simulate(args):
@@ -599,20 +499,16 @@ def get_parser():
         help=r'name of root sequence (outgroup root), default ``"root"``',
     )
     parser_infer.add_argument(
-        "phylipfile",
+        "infiles",
         type=str,
-        help="dnapars outfile (verbose output with sequences at each site)",
-    )
-    parser_infer.add_argument(
-        "abundance_file",
-        type=str,
-        help="File containing allele frequencies (sequence counts) in the "
-        'format: "SeqID,Nobs"',
-    )
-    parser_infer.add_argument(
-        "--bootstrap_phylipfile",
-        type=str,
-        help="dnapars outfile from seqboot (multiple data sets)",
+        nargs="+",
+        help=(
+            "Input files for inference. If two filenames are passed, the first shall be a "
+            "dnapars outfile (verbose output with sequences at each site), and the second "
+            "shall be an abundance file containing allele frequencies (sequence counts) in "
+            "the format: ``SeqID, Nobs``. If a single filename is passed, it shall be the name "
+            "of a pickled history DAG object created by gctree."
+        ),
     )
     parser_infer.add_argument(
         "--colormapfile",
@@ -624,7 +520,10 @@ def get_parser():
         "--chain_split",
         type=int,
         default=None,
-        help="when using concatenated heavy and light chains, this is the 0-based index at which the 2nd chain begins, needed for determining coding frame in both chains",
+        help=(
+            "when using concatenated heavy and light chains, this is the 0-based"
+            " index at which the 2nd chain begins, needed for determining coding frame in both chains"
+        ),
     )
     parser_infer.add_argument(
         "--frame2",
@@ -646,6 +545,78 @@ def get_parser():
         help="positionmapfile for the 2nd chain when using the ``chain_split`` option",
     )
     parser_infer.set_defaults(func=infer)
+    parser_infer.add_argument(
+        "--idmapfile",
+        default=None,
+        type=str,
+        help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate."
+        " For use by isotype ranking.",
+    )
+    parser_infer.add_argument(
+        "--isotype_mapfile",
+        default=None,
+        type=str,
+        help=(
+            "filename for a csv file mapping original sequence ids to observed isotypes"
+            ". For example, each line should have the format 'somesequence_id, some_isotype'."
+        ),
+    )
+    parser_infer.add_argument(
+        "--isotype_names",
+        type=str,
+        default=None,
+        nargs="+",
+        help=(
+            "A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated."
+            """ Default is equivalent to providing the argument ``--isotype_names IgM IgD IgG3 IgG1 IgG2 IgE IgA``"""
+        ),
+    )
+    parser_infer.add_argument(
+        "--mutability",
+        type=str,
+        default=None,
+        help=(
+            "Path to mutability model file. If --mutability and --substitution are both provided, "
+            "they will be used to rank trees after likelihood and isotype parsimony."
+        ),
+    )
+    parser_infer.add_argument(
+        "--substitution",
+        type=str,
+        default=None,
+        help=(
+            "Path to substitution model file. If --mutability and --substitution are both provided, "
+            "they will be used to rank trees after likelihood and isotype parsimony."
+        ),
+    )
+    parser_infer.add_argument(
+        "--ranking_coeffs",
+        type=float,
+        nargs=3,
+        default=None,
+        help=(
+            "List of coefficients for ranking trees by a linear combination of traits. "
+            "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
+            "A coefficient of -1 will be applied to branching process likelihood. "
+            "If not provided, trees will be ranked lexicographically by likelihood, "
+            "isotype parsimony, and mutability parsimony in that order."
+        ),
+    )
+    parser_infer.add_argument(
+        "--summarize_forest",
+        action="store_true",
+        help=(
+            "write a file `[outbase].forest_summary.log` with a summary of traits for trees in the forest."
+        ),
+    )
+    parser_infer.add_argument(
+        "--tree_stats",
+        action="store_true",
+        help=(
+            "write a file `[outbase].tree_stats.log` with stats for all trees in the forest. "
+            "For large forests, this is slow and memory intensive."
+        ),
+    )
 
     # parser for simulation subprogram
     parser_sim = subparsers.add_parser(

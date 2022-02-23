@@ -35,5 +35,7 @@ setuptools.setup(
         "pandas",
         "scipy",
         "seaborn",
+        "multiset",
+        "historydag"
     ],
 )

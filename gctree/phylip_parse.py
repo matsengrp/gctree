@@ -1,31 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Given an outputfile from one of the PHYLIP tools - `dnaml` or `dnapars` - produce an alignment (including
-ancestral sequences), a newick tree (with matching internal node lables), and an svg rendering of said tree.
-"""
+"""Given an outputfile from one of the PHYLIP tools - `dnaml` or `dnapars` -
+produce a CollapsedForest containing the trees in that outputfile."""
 
-import gctree.phylip_parse as pp
 import gctree.branching_processes as bp
-from gctree.utils import hamming_distance
+import gctree.utils
 
 from ete3 import Tree
 import re
 import random
 from collections import defaultdict
-from Bio.Data.IUPACData import ambiguous_dna_values
 
 import pickle
 import argparse
+from typing import Dict
 
-bases = "AGCT-"
-ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
 code_vectors = {
-    code: [0 if base in ambiguous_dna_values[code] else float("inf") for base in bases]
-    for code in ambiguous_dna_values
+    code: [
+        0 if base in gctree.utils.ambiguous_dna_values[code] else float("inf")
+        for base in gctree.utils.bases
+    ]
+    for code in gctree.utils.ambiguous_dna_values
 }
 cost_adjust = {
-    base: [int(not i == j) for j in range(5)] for i, base in enumerate(bases)
+    base: [int(not i == j) for j in range(5)]
+    for i, base in enumerate(gctree.utils.bases)
 }
 
 
@@ -99,8 +99,10 @@ def parse_seqdict(fh, mode="dnaml"):
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
-def parse_outfile(outfile, abundance_file=None, root="root"):
-    """parse phylip outfile."""
+def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False):
+    """parse phylip outfile, and return dnapars trees, a dictionary mapping
+    node names to sequences, and a dictionary mapping node names to observed
+    abundances."""
     if abundance_file is not None:
         counts = {
             line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)
@@ -134,7 +136,11 @@ def parse_outfile(outfile, abundance_file=None, root="root"):
                 trees.append([])
             else:
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
-    return trees
+    if disambiguate:
+        # Disambiguate sets node.dist for all nodes in disambiguated trees
+        trees = [disambiguate(tree) for tree in trees]
+    sequence_counts = {sequences[name]: count for name, count in counts.items()}
+    return (trees, sequence_counts)
 
 
 def disambiguate(tree: Tree, random_state=None) -> Tree:
@@ -146,10 +152,12 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
         random.setstate(random_state)
     for node in tree.traverse():
         for site, base in enumerate(node.sequence):
-            if base not in bases:
+            if base not in gctree.utils.bases:
 
                 def is_leaf(node):
-                    return (node.is_leaf()) or (node.sequence[site] in bases)
+                    return (node.is_leaf()) or (
+                        node.sequence[site] in gctree.utils.bases
+                    )
 
                 # First pass of Sankoff: compute cost vectors
                 for node2 in node.traverse(strategy="postorder", is_leaf_fn=is_leaf):
@@ -161,7 +169,9 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                                 node2.cv[i] += min(
                                     [
                                         sum(v)
-                                        for v in zip(child.cv, cost_adjust[bases[i]])
+                                        for v in zip(
+                                            child.cv, cost_adjust[gctree.utils.bases[i]]
+                                        )
                                     ]
                                 )
                 # Second pass: Choose base and adjust children's cost vectors
@@ -175,13 +185,13 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
                 # making changes.
                 preorder = list(node.traverse(strategy="preorder", is_leaf_fn=is_leaf))
                 for node2 in preorder:
-                    if node2.sequence[site] in bases:
+                    if node2.sequence[site] in gctree.utils.bases:
                         continue
                     min_cost = min(node2.cv)
                     base_index = random.choice(
                         [i for i, val in enumerate(node2.cv) if val == min_cost]
                     )
-                    new_base = bases[base_index]
+                    new_base = gctree.utils.bases[base_index]
                     # Adjust child cost vectors
                     if not is_leaf(node2):
                         for child in node2.children:
@@ -196,11 +206,26 @@ def disambiguate(tree: Tree, random_state=None) -> Tree:
             node.del_feature("cv")
         except (AttributeError, KeyError):
             pass
+    tree.dist = 0
+    for node in tree.iter_descendants():
+        node.dist = gctree.utils.hamming_distance(node.up.sequence, node.sequence)
     return tree
 
 
 # build a tree from a set of sequences and an adjacency dict.
-def build_tree(sequences, parents, counts=None, root="root"):
+def build_tree(
+    sequences: Dict[str, str], parents: Dict[str, str], counts=None, root="root"
+):
+    """Build an ete tree from sequences and parents dictionaries.
+
+    Args:
+        sequences: a dictionary mapping names to sequences
+        parents: a dictionary mapping parent node names to child node names
+        counts: a dictionary mapping node names to observed abundances. This argument
+            is no longer used in the main gctree inference pipeline (counts are assigned in DAG)
+            but remains for compatibility.
+        root: the name of the root node
+    """
     # build an ete tree
     # first a dictionary of disconnected nodes
     nodes = {}
@@ -229,18 +254,10 @@ def build_tree(sequences, parents, counts=None, root="root"):
         # remove possible unecessary unifurcation after rerooting
         if len(root_parent.children) == 1:
             root_parent.delete(prevent_nondicotomic=False)
-            root_parent.children[0].dist = hamming_distance(
+            root_parent.children[0].dist = gctree.utils.hamming_distance(
                 root_parent.children[0].sequence, nodes[root_id].sequence
             )
         tree = nodes[root_id]
-
-    # make random choices for ambiguous bases
-    tree = disambiguate(tree)
-
-    # compute branch lengths
-    tree.dist = 0  # no branch above root
-    for node in tree.iter_descendants():
-        node.dist = hamming_distance(node.sequence, node.up.sequence)
 
     return tree
 
@@ -263,20 +280,11 @@ def main(arg_list=None):
 
     if args.outputfile is None:
         args.outputfile = args.phylip_outfile + ".collapsed_forest.p"
-    trees = pp.parse_outfile(args.phylip_outfile, args.abundance_file, args.root)
-    if isinstance(trees[0], list):
-        print(trees[0][0])
-        print(bp.CollapsedTree(tree=trees[0][0]))
-        bootstraps = [
-            [bp.CollapsedTree(tree=tree) for tree in bootstrap] for bootstrap in trees
-        ]
-        pickle.dump(
-            [bp.CollapsedForest(forest=trees) for trees in bootstraps],
-            open(args.outputfile, "w"),
-        )
-    else:
-        trees = [bp.CollapsedTree(tree=tree) for tree in trees]
-        pickle.dump(bp.CollapsedForest(forest=trees), open(args.outputfile, "w"))
+    forest = bp.CollapsedForest(
+        *parse_outfile(args.phylip_outfile, args.abundance_file, args.root)
+    )
+    with open(args.outputfile, "wb") as fh:
+        pickle.dump(forest, fh)
 
 
 if __name__ == "__main__":

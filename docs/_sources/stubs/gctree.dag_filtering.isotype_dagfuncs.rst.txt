@@ -1,0 +1,6 @@
+gctree.dag\_filtering.isotype\_dagfuncs
+=======================================
+
+.. currentmodule:: gctree.dag_filtering
+
+.. autofunction:: isotype_dagfuncs

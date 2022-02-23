@@ -1,11 +1,15 @@
 r"""A module for incorporating isotype information in gctree inference."""
 
+from gctree.utils import hamming_distance
+
 import random
 import ete3
-from gctree.utils import hamming_distance
 import warnings
-from typing import Dict, Callable, Optional, Set, Sequence
+from typing import Dict, Callable, Optional, Set, Sequence, Mapping, Tuple, FrozenSet
 from functools import wraps
+import historydag as hdag
+
+default_isotype_order = ["IgM", "IgD", "IgG3", "IgG1", "IgG2", "IgE", "IgA"]
 
 
 def _assert_switching_order_match(
@@ -129,6 +133,14 @@ class Isotype:
     def __eq__(self, other: "Isotype") -> bool:
         return self.isotype == other.isotype
 
+    @_assert_switching_order_match
+    def __lt__(self, other: "Isotype") -> bool:
+        return self.isotype < other.isotype
+
+    @_assert_switching_order_match
+    def __gt__(self, other: "Isotype") -> bool:
+        return self.isotype > other.isotype
+
     def __hash__(self) -> int:
         return hash(self.__repr__())
 
@@ -176,7 +188,7 @@ def isotype_tree(
 
     Args:
         tree: ete3 Tree
-        newidmap: mapping of sequence IDs to isotypes, such as that output by :meth:`explode_idmap`.
+        newidmap: mapping of sequence IDs to isotypes, such as that output by :meth:`utils.explode_idmap`.
         isotype_names: list or other sequence of isotype names observed, in correct switching order.
 
     Returns:
@@ -188,7 +200,7 @@ def isotype_tree(
     _disambiguate_isotype(tree)
     _collapse_tree_by_sequence_and_isotype(tree)
     for node in tree.traverse():
-        node.name = node.name + " " + str(node.isotype)
+        node.name = str(node.name) + " " + str(node.isotype)
     for node in tree.iter_descendants():
         node.dist = hamming_distance(node.up.sequence, node.sequence)
     return tree
@@ -269,43 +281,6 @@ def _disambiguate_isotype(
             pass
 
 
-def explode_idmap(
-    idmap: Dict[str, Set[str]], isotype_map: Dict[str, str]
-) -> Dict[str, Dict[str, Set[str]]]:
-    """Uses provided mapping of original sequence IDs to observed isotypes to
-    'explode' the provided mapping of unique sequence IDs to original sequence
-    IDs.
-
-    Args:
-        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
-        isotype_map: A dictionary mapping original IDs to observed isotype names
-
-    Returns:
-        A dictionary mapping unique sequence IDs to dictionaries, mapping isotype names to sets of original sequence IDs.
-    """
-    newidmap = {}
-    for id, cell_ids in idmap.items():
-        isotypeset = set()
-        for cell_id in cell_ids:
-            try:
-                isotypeset.add(isotype_map[cell_id])
-            except KeyError:
-                warnings.warn(
-                    f"Sequence ID {id} has original sequence id {cell_id} "
-                    "for which no observed isotype was provided. "
-                    "Isotype will be assumed ambiguous if observed."
-                )
-                isotype_map[cell_id] = "?"
-                isotypeset.add("?")
-        newidmap[id] = {
-            isotype: {
-                cell_id for cell_id in cell_ids if isotype_map[cell_id] == isotype
-            }
-            for isotype in isotypeset
-        }
-    return newidmap
-
-
 def _add_observed_isotypes(
     tree: ete3.Tree,
     newidmap: Dict[str, str],
@@ -371,3 +346,123 @@ def _collapse_tree_by_sequence_and_isotype(tree: ete3.TreeNode):
             node.up.abundance += node.abundance
             node.up.name = node.name
             node.delete(prevent_nondicotomic=False)
+
+
+def explode_idmap(
+    idmap: Dict[str, Set[str]], isotype_map: Dict[str, str]
+) -> Dict[str, Dict[str, Set[str]]]:
+    """Uses provided mapping of original sequence IDs to observed isotypes to
+    'explode' the provided mapping of unique sequence IDs to original sequence
+    IDs.
+
+    Args:
+        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
+        isotype_map: A dictionary mapping original IDs to observed isotype names
+
+    Returns:
+        A dictionary mapping unique sequence IDs to dictionaries, mapping isotype names to sets of original sequence IDs.
+    """
+    newidmap = {}
+    for id, cell_ids in idmap.items():
+        isotypeset = set()
+        for cell_id in cell_ids:
+            try:
+                isotypeset.add(isotype_map[cell_id])
+            except KeyError:
+                warnings.warn(
+                    f"Sequence ID {id} has original sequence id {cell_id} "
+                    "for which no observed isotype was provided. "
+                    "Isotype will be assumed ambiguous if observed."
+                )
+                isotype_map[cell_id] = "?"
+                isotypeset.add("?")
+        newidmap[id] = {
+            isotype: {
+                cell_id for cell_id in cell_ids if isotype_map[cell_id] == isotype
+            }
+            for isotype in isotypeset
+        }
+    return newidmap
+
+
+def _isotype_dagfuncs(
+    isotypemap: Mapping[str, str] = None,
+    isotypemap_file: str = None,
+    idmap: Mapping[str, Set[str]] = None,
+    idmap_file: str = None,
+    isotype_names: Sequence[str] = None,
+) -> hdag.utils.AddFuncDict:
+    """Return functions for filtering by isotype parsimony score on the history
+    DAG.
+
+    Isotype parsimony of a tree is the minimum number of allowed isotype transitions
+    required along all edges.
+
+    Args:
+        isotypemap: A dictionary mapping original IDs to observed isotype names
+        isotypemap_file: A csv file providing an `isotypemap`
+        idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
+        idmap_file: A csv file providing an `idmap`
+        isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to isotype parsimony.
+        Weight format is ``(score, isotypeset)``, where ``score`` is isotype parsimony as a float,
+        and ``isotypeset`` is a frozenset containing isotypes used internally for computing parsimony score.
+    """
+    if isotype_names is None:
+        isotype_names = default_isotype_order
+    if isotypemap_file and isotypemap is None:
+        with open(isotypemap_file, "r") as fh:
+            isotypemap = dict(map(lambda x: x.strip(), line.split(",")) for line in fh)
+    elif isotypemap_file is None:
+        raise ValueError("Either isotypemap or isotypemap_file is required")
+
+    if idmap is None:
+        if idmap_file is None:
+            raise TypeError("either idmap or idmap_file is required")
+        else:
+            with open(idmap_file, "r") as fh:
+                idmap = {}
+                for line in fh:
+                    seqid, cell_ids = line.rstrip().split(",")
+                    cell_idset = {cell_id for cell_id in cell_ids.split(":") if cell_id}
+                    if len(cell_idset) > 0:
+                        idmap[seqid] = cell_idset
+    newidmap = explode_idmap(idmap, isotypemap)
+    newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
+
+    def distance_func(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
+        if n2.is_leaf():
+            seqid = n2.attr["name"]
+            if seqid in newidmap:
+                isoset = frozenset(newisotype(name) for name in newidmap[seqid].keys())
+            else:
+                isoset = frozenset()
+        else:
+            isoset = frozenset()
+        return hdag.utils.IntState(0, state=isoset)
+
+    def sumweights(weights: Sequence[Tuple[float, FrozenSet[Isotype]]]):
+        ps = [int(i) for i in weights]
+        ts = [item for i in weights for item in i.state]
+        if ts:
+            newt = frozenset({min(ts)})
+        else:
+            newt = frozenset()
+        return hdag.utils.IntState(
+            sum(isotype_distance(list(newt)[0], el) for el in ts) + sum(ps),
+            state=newt,
+        )
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: hdag.utils.IntState(0, state=frozenset()),
+            "edge_weight_func": distance_func,
+            "accum_func": sumweights,
+        },
+        name="Isotype Pars.",
+    )

@@ -1,75 +1,33 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>gctree.mutation_model &mdash; gctree  documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-
-    
+    <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../../index.html">
-          
-
-          
-            
             <img src="../../_static/logo.png" class="logo" alt="Logo"/>
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -77,18 +35,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
@@ -114,71 +61,34 @@
 <li class="toctree-l1"><a class="reference internal" href="../../developer.html#todo-list">Todo list</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">gctree</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="../index.html">Module code</a> &raquo;</li>
-        
       <li>gctree.mutation_model</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for gctree.mutation_model</h1><div class="highlight"><pre>
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Mutation models.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">gctree.utils</span> <span class="k">as</span> <span class="nn">utils</span>
 
 <span class="kn">from</span> <span class="nn">ete3</span> <span class="kn">import</span> <span class="n">TreeNode</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -186,7 +96,8 @@
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">import</span> <span class="nn">scipy</span>
 <span class="kn">from</span> <span class="nn">Bio.Seq</span> <span class="kn">import</span> <span class="n">Seq</span>
-<span class="kn">from</span> <span class="nn">gctree.utils</span> <span class="kn">import</span> <span class="n">hamming_distance</span>
+<span class="kn">import</span> <span class="nn">historydag</span> <span class="k">as</span> <span class="nn">hdag</span>
+<span class="kn">from</span> <span class="nn">multiset</span> <span class="kn">import</span> <span class="n">FrozenMultiset</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Callable</span>
 
 
@@ -242,20 +153,8 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_disambiguate</span><span class="p">(</span><span class="n">sequence</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;generator of all possible nt sequences implied by a sequence</span>
-<span class="sd">        containing Ns.&quot;&quot;&quot;</span>
-        <span class="c1"># find the first N nucleotide</span>
-        <span class="n">N_index</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
-        <span class="c1"># if there is no N nucleotide, yield the input sequence</span>
-        <span class="k">if</span> <span class="n">N_index</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">sequence</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">n_replace</span> <span class="ow">in</span> <span class="s2">&quot;ACGT&quot;</span><span class="p">:</span>
-                <span class="c1"># ooooh, recursion</span>
-                <span class="c1"># NOTE: in python3 we could simply use &quot;yield from...&quot; instead of this loop</span>
-                <span class="k">for</span> <span class="n">sequence_recurse</span> <span class="ow">in</span> <span class="n">MutationModel</span><span class="o">.</span><span class="n">_disambiguate</span><span class="p">(</span>
-                    <span class="n">sequence</span><span class="p">[:</span><span class="n">N_index</span><span class="p">]</span> <span class="o">+</span> <span class="n">n_replace</span> <span class="o">+</span> <span class="n">sequence</span><span class="p">[</span><span class="n">N_index</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
-                <span class="p">):</span>
-                    <span class="k">yield</span> <span class="n">sequence_recurse</span>
+<span class="sd">        containing ambiguous bases.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MutationModel.mutability"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutability">[docs]</a>    <span class="k">def</span> <span class="nf">mutability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kmer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a central base of :math:`k`-mer, along with</span>
@@ -485,7 +384,9 @@
                                 <span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">lambda0</span><span class="o">=</span><span class="n">lambda0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span>
                             <span class="p">)</span>
                         <span class="n">child</span> <span class="o">=</span> <span class="n">TreeNode</span><span class="p">()</span>
-                        <span class="n">child</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">hamming_distance</span><span class="p">(</span><span class="n">mutated_sequence</span><span class="p">,</span> <span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+                        <span class="n">child</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">hamming_distance</span><span class="p">(</span>
+                            <span class="n">mutated_sequence</span><span class="p">,</span> <span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span>
+                        <span class="p">)</span>
                         <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span> <span class="n">mutated_sequence</span><span class="p">)</span>
                         <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;abundance&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
                         <span class="n">child</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;terminated&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -560,49 +461,172 @@
 
         <span class="c1"># return the uncollapsed tree</span>
         <span class="k">return</span> <span class="n">tree</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">_accum</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Iterates through possible disambiguations of sequence, recursively.</span>
+
+<span class="sd">    Recursion-depth-limited by number of ambiguity codes in sequence,</span>
+<span class="sd">    not sequence length.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sequence</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">base</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sequence</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">bases</span><span class="p">:</span>
+                <span class="n">_accum</span> <span class="o">+=</span> <span class="n">base</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">newbase</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">ambiguous_dna_values</span><span class="p">[</span><span class="n">base</span><span class="p">]:</span>
+                    <span class="k">yield from</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span>
+                        <span class="n">sequence</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:],</span> <span class="n">_accum</span><span class="o">=</span><span class="p">(</span><span class="n">_accum</span> <span class="o">+</span> <span class="n">newbase</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">return</span>
+    <span class="k">yield</span> <span class="n">_accum</span>
+
+
+<span class="k">def</span> <span class="nf">_mutability_dagfuncs</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return functions for counting mutability parsimony on the history DAG.</span>
+
+<span class="sd">    Mutability parsimony of a tree is the sum over all edges in the tree</span>
+<span class="sd">    of mutability distances between parent and child node sequences.</span>
+
+<span class="sd">    The mutability distance from an ancestral sequence to a target sequence is the sum of</span>
+<span class="sd">    :math:`-log(mutability * p)` over all sites which do match, where :math:`mutability`</span>
+<span class="sd">    is the mutation frequency of the k-mer surrounding the mutated base</span>
+<span class="sd">    (in the ancestral sequence), and :math:`p` is the transition probability to the new</span>
+<span class="sd">    base in the target sequence. Notice that this so-called distance is not symmetric.</span>
+
+<span class="sd">    These functions may not be stable numerically, but we expect every tree to have</span>
+<span class="sd">    a unique mutability parsimony score for non-degenerate mutability models, so</span>
+<span class="sd">    so this shouldn&#39;t matter in practice.</span>
+
+<span class="sd">    Arguments are passed to :meth:`mutation_model.MutationModel` constructor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments</span>
+<span class="sd">        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,</span>
+<span class="sd">        or :meth:`historydag.HistoryDag.optimal_weight_annotate`</span>
+<span class="sd">        methods to trim or annotate a :meth:`historydag.HistoryDag` according to mutability model parsimony.</span>
+<span class="sd">        Weight format is ``float``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mutation_model</span> <span class="o">=</span> <span class="n">MutationModel</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">_mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">)</span>
+
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">access_field</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">)</span>
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">ignore_ualabel</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">access_field</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dist</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span> <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">},</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Mut. Pars.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_mutability_distance_precursors</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">MutationModel</span><span class="p">):</span>
+    <span class="c1"># Caching could be moved to the MutationModel class instead.</span>
+    <span class="n">context_model</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">context_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">k</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">k</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="c1"># Build all sequences with (when k=5) one or two Ns on either end</span>
+    <span class="n">templates</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">left</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="n">left</span> <span class="o">-</span> <span class="n">right</span><span class="p">),</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">right</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">left</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">right</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">left</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">right</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="p">]</span>
+
+    <span class="n">kmers_to_compute</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">leftns</span> <span class="o">+</span> <span class="n">stub</span> <span class="o">+</span> <span class="n">rightns</span>
+        <span class="k">for</span> <span class="n">leftns</span><span class="p">,</span> <span class="n">ambig_stub</span><span class="p">,</span> <span class="n">rightns</span> <span class="ow">in</span> <span class="n">templates</span>
+        <span class="k">for</span> <span class="n">stub</span> <span class="ow">in</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span><span class="n">ambig_stub</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="c1"># Cache all these mutabilities in context_model also</span>
+    <span class="n">context_model</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="n">kmer</span><span class="p">:</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">mutability</span><span class="p">(</span><span class="n">kmer</span><span class="p">)</span> <span class="k">for</span> <span class="n">kmer</span> <span class="ow">in</span> <span class="n">kmers_to_compute</span><span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="nd">@utils</span><span class="o">.</span><span class="n">check_distance_arguments</span>
+    <span class="k">def</span> <span class="nf">mutpairs</span><span class="p">(</span><span class="n">seq1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seq2</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">ns</span> <span class="o">=</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">seq1N</span> <span class="o">=</span> <span class="n">ns</span> <span class="o">+</span> <span class="n">seq1</span> <span class="o">+</span> <span class="n">ns</span>
+        <span class="n">seq2N</span> <span class="o">=</span> <span class="n">ns</span> <span class="o">+</span> <span class="n">seq2</span> <span class="o">+</span> <span class="n">ns</span>
+        <span class="n">mut_idxs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">index</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">base1</span><span class="p">,</span> <span class="n">base2</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">seq1N</span><span class="p">,</span> <span class="n">seq2N</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">base1</span> <span class="o">!=</span> <span class="n">base2</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">FrozenMultiset</span><span class="p">((</span><span class="n">seq1N</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">h</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">seq2N</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mut_idxs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_minus_logp</span><span class="p">(</span><span class="n">pairs</span><span class="p">:</span> <span class="n">FrozenMultiset</span><span class="p">):</span>
+        <span class="c1"># I have chosen to multiply substitution rate for central base</span>
+        <span class="c1"># with rate of new base. Not sure if this is a good choice.</span>
+        <span class="k">if</span> <span class="n">pairs</span><span class="p">:</span>
+            <span class="c1"># for floating point behavior</span>
+            <span class="n">pairs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">pairs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="n">p_arr</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">mult</span>
+                <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">context_model</span><span class="p">[</span><span class="n">mer</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">context_model</span><span class="p">[</span><span class="n">mer</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">newbase</span><span class="p">])</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">mer</span><span class="p">,</span> <span class="n">newbase</span><span class="p">),</span> <span class="n">mult</span> <span class="ow">in</span> <span class="n">pairs</span>
+            <span class="p">]</span>
+            <span class="k">return</span> <span class="o">-</span><span class="nb">sum</span><span class="p">(</span><span class="n">p_arr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">MutationModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a fast distance function based on passed mutation_model.</span>
+
+<span class="sd">    First, caches computed mutabilities for k-mers with k // 2 N&#39;s on either end. This</span>
+<span class="sd">    is pretty fast for k=5, but the distance function should be created once</span>
+<span class="sd">    and reused.</span>
+
+<span class="sd">    The returned distance function sums :math:`-log(mutability * p)` over all</span>
+<span class="sd">    sites which do match between its two sequence arguments, where ``mutability``</span>
+<span class="sd">    is the mutation frequency of the k-mer surrounding the mutated base (in the</span>
+<span class="sd">    first sequence argument) and ``p`` is the transition probability to the new</span>
+<span class="sd">    base.</span>
+
+<span class="sd">    Note that, in particular, this function is not symmetric on its  arguments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span> <span class="o">=</span> <span class="n">_mutability_distance_precursors</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">sum_minus_logp</span><span class="p">(</span><span class="n">mutpairs</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">distance</span>
 </pre></div>
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2020, William DeWitt.
-
-    </p>
+    <p>&#169; Copyright 2020, William DeWitt.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

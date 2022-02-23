@@ -1,4 +1,7 @@
+from gctree.isotyping import _isotype_dagfuncs
+import gctree.branching_processes as bp
 import gctree.isotyping as iso
+import gctree.phylip_parse as pp
 import ete3
 
 testtrees = [
@@ -7,6 +10,15 @@ testtrees = [
     ("((((A2)?,(G2,G3)?)?,G2,(A2,A2)?)?)M;", 5.0),
     ("((((A2)?,(G2,A2)?)?,G2,(A2,A2)?)?)M;", 4.0),
 ]
+
+trees_seqcounts1 = pp.parse_outfile(
+    "tests/example_output/original/small_outfile",
+    abundance_file="tests/example_output/original/abundances.csv",
+    root="GL",
+)
+
+forest = bp.CollapsedForest(*trees_seqcounts1)
+dag = forest._forest
 
 
 def test_isotype_disambiguate():
@@ -23,3 +35,20 @@ def test_isotype_disambiguate():
             )
             == weight
         )
+
+
+def test_trim_byisotype():
+    kwargs = _isotype_dagfuncs(
+        isotypemap_file="example/isotypemap.txt",
+        idmap_file="tests/example_output/original/idmap.txt",
+    )
+    # isotypemap_file=None,
+    # idmap=None,
+    # idmap_file=None,
+    # isotype_names=None,
+    tdag = dag.copy()
+    c = tdag.weight_count(**kwargs)
+    key = min(c)
+    count = c[key]
+    tdag.trim_optimal_weight(**kwargs, optimal_func=min)
+    assert tdag.weight_count(**kwargs) == {key: count}

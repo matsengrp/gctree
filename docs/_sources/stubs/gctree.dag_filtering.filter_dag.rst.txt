@@ -1,0 +1,6 @@
+gctree.dag\_filtering.filter\_dag
+=================================
+
+.. currentmodule:: gctree.dag_filtering
+
+.. autofunction:: filter_dag

@@ -1,7 +1,6 @@
 # ignore mac finder system file
 .DS_Store
 
-.sconsign.dblite
 .ipynb_checkpoints
 *.pyc
 ._*
@@ -113,9 +112,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-
-# scons
-.sconsign.dblite
 
 # sphinx autodoc
 docsrc/stubs

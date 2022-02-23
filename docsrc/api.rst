@@ -5,7 +5,7 @@ Python API for the ``gctree`` package
 Classes
 -------
 
-Top level classes.
+Top level classes, promoted from the ``branching_processes`` module.
 
 .. autosummary::
     :toctree: stubs
@@ -24,3 +24,4 @@ Modules
     mutation_model
     utils
     isotyping
+    branching_processes

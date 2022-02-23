@@ -16,8 +16,13 @@
    .. autosummary::
       :nosignatures:
    
+      ~CollapsedForest.filter_trees
+      ~CollapsedForest.iter_topology_classes
+      ~CollapsedForest.likelihood_rankplot
       ~CollapsedForest.ll
       ~CollapsedForest.mle
+      ~CollapsedForest.n_topologies
+      ~CollapsedForest.sample_tree
       ~CollapsedForest.simulate
    
    

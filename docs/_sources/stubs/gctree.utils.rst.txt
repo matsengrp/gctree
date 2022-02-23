@@ -15,6 +15,7 @@
       :toctree:
       :nosignatures:
    
+      check_distance_arguments
       hamming_distance
    
    
