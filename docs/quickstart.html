@@ -229,14 +229,16 @@ Note: if you want to rerun the above <code class="docutils literal notranslate">
 <p>We’re now ready to run <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> to use abundance data (in <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>) to rank the equally parsimonious trees (in <code class="docutils literal notranslate"><span class="pre">outfile</span></code>).
 We can use the optional argument <code class="docutils literal notranslate"><span class="pre">--frame</span></code> to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.</p>
 <p>If working in a headless environment, <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> must be run with a tool
-like <code class="docutils literal notranslate"><span class="pre">xvfb-run</span></code> to provide an X server for rendering the output trees.</p>
+like <code class="docutils literal notranslate"><span class="pre">xvfb-run</span></code> to provide an X server for rendering the output trees.
+This may also require telling matplotlib to use a headless backend with <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">MPLBACKEND=agg</span></code>.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose | tee gctree.inference.log
 number of trees with integer branch lengths: 703
 number of unique collapsed topologies, ignoring inferred ancestral sequences: 679
-params: (0.4961832069242958, 0.36445206621349757)
-stats for optimal trees:
-alleles	logLikelihood		isotype_parsimony	mutability_parsimony
-48	-78.00393661325725	0			0	
+Parameters: (0.4961832069242958, 0.36445206621349757)
+
+Stats for optimal trees:
+tree     	Log Likelihood	Alleles       
+1         	-78.00393661	48        
 Degenerate ranking criteria: trimmed history DAG contains 3 unique trees, with 3 unique collapsed topologies.
 A representative of each topology will be sampled randomly for rendering.
 ...
@@ -245,9 +247,7 @@ A representative of each topology will be sampled randomly for rendering.
 <p>A large number of output files with the basename <code class="docutils literal notranslate"><span class="pre">gctree.out.*</span></code> are also created.
 The SVG image file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.abundance_rank.svg</span></code> shows a distribution of genotype abundances in the original data:</p>
 <a class="reference internal image-reference" href="_images/gctree.out.inference.abundance_rank.svg"><img alt="_images/gctree.out.inference.abundance_rank.svg" src="_images/gctree.out.inference.abundance_rank.svg" width="600" /></a>
-<p>The SVG image file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.likelihood_rank.svg</span></code> is a rank plot of likelihood over the set of maximum parsimony trees:</p>
-<a class="reference internal image-reference" href="_images/gctree.out.inference.likelihood_rank.svg"><img alt="_images/gctree.out.inference.likelihood_rank.svg" src="_images/gctree.out.inference.likelihood_rank.svg" width="600" /></a>
-<p>Then there are files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.svg</span></code> and <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.nk</span></code> containing an SVG tree image and newick tree file. If more than one parsimony tree is optimal, then up to ten optimal trees will be sampled randomly, and the corresponding files will be numbered arbitrarily.
+<p>Then there are files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.svg</span></code> and <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.nk</span></code> containing an SVG tree image and newick tree file. If more than one parsimony tree is optimal, then up to ten optimal trees will be sampled randomly, and the corresponding files will be numbered <strong>arbitrarily</strong>.
 For example here is the top ranked tree <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.svg</span></code>:</p>
 <a class="reference internal image-reference" href="_images/gctree.out.inference.1.svg"><img alt="_images/gctree.out.inference.1.svg" src="_images/gctree.out.inference.1.svg" width="1000" /></a>
 <p>You will also see Python pickle files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].p</span></code> containing a <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gctree.CollapsedTree</span></code></a> object for each optimal tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.render" title="gctree.CollapsedTree.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gctree.CollapsedTree.render()</span></code></a>).</p>
@@ -260,22 +260,76 @@ lexicographically, first maximizing likelihood, then minimizing isotype
 parsimony and mutabilities, if such information is provided.
 Ranking priorities can be adjusted using the argument <code class="docutils literal notranslate"><span class="pre">--priority_weights</span></code>.</p>
 <p>All parsimony trees found by dnapars, as well as branching process parameters
-are saved in the file <code class="docutils literal notranslate"><span class="pre">gctree.out.serialized_dag.p</span></code>. This file may be
-manipulated using <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code>. For example, to find the optimal tree
+are saved in the file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.parsimony_forest.p</span></code>, containing a <a class="reference internal" href="stubs/gctree.CollapsedForest.html#gctree.CollapsedForest" title="gctree.CollapsedForest"><code class="xref py py-class docutils literal notranslate"><span class="pre">gctree.CollapsedForest</span></code></a> object.
+This file may be manipulated using <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code>. For example, to find the optimal tree
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.serialized_dag.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --priority_weights 2 2 1 0 --tree_only --outbase newranking --verbose
-Skipping parameter fitting, loading provided history DAG
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
+Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Isotype parsimony will be used as a ranking criterion
 Mutation model parsimony will be used as a ranking criterion
-params: (0.4961832069242958, 0.36445206621349757)
-stats for optimal trees:
-alleles	logLikelihood		isotype_parsimony	mutability_parsimony	treescore
-50	-84.18310979882017	25.0			65.37094021694551	1.7907416516380583
+Parameters: (0.4961832069242958, 0.36445206621349757)
+
+Stats for optimal trees:
+tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
+1         	-78.00393661	28        	66.45251202	48        	112.6491878
 </pre></div>
 </div>
-<p>All inference output is written unless we include the argument <code class="docutils literal notranslate"><span class="pre">--tree_only</span></code>, in which case only files related to the optimal trees are written. The argument <code class="docutils literal notranslate"><span class="pre">--outbase</span></code> optionally specifies how the new output files should be named.</p>
+<p>By default, only the files listed above will be generated, with the optional argument <code class="docutils literal notranslate"><span class="pre">--outbase</span></code> specifying how the output files should be named.</p>
 <a class="reference internal image-reference" href="_images/newranking.inference.1.svg"><img alt="_images/newranking.inference.1.svg" src="_images/newranking.inference.1.svg" width="1000" /></a>
+<p>For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees,use the argument <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code>.</p>
+<a class="reference internal image-reference" href="_images/newranking.tree_stats.pairplot.png"><img alt="_images/newranking.tree_stats.pairplot.png" src="_images/newranking.tree_stats.pairplot.png" style="width: 1000px;" /></a>
+<p>Sometimes ranked trees are too numerous, and generating the output of <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code> would require too many resources. For a summary of the collection of trees used for ranking, the argument <code class="docutils literal notranslate"><span class="pre">--summarize_forest</span></code> is provided. Most importantly, this option summarizes how much less likely the top ranked tree is, compared to the most likely tree being ranked, for example to validate coefficients passed to <code class="docutils literal notranslate"><span class="pre">--ranking_coeffs</span></code>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat newranking.forest_summary.log
+
+Among trees with min Log Likelihood of: -92.15528744
+	Isotype Pars. range: 24 to 24
+	Mut. Pars. range: 71.58051182571175 to 71.58051182571175
+	Alleles range: 53 to 53
+
+Among trees with max Log Likelihood of: -78.00393661
+	Isotype Pars. range: 28 to 28
+	Mut. Pars. range: 66.45251202469834 to 68.93267315188115
+	Alleles range: 48 to 48
+
+Among trees with min Isotype Pars. of: 23
+	Log Likelihood range: -90.94295234 to -87.98896459
+	Mut. Pars. range: 67.7015314815307 to 72.04836178596884
+	Alleles range: 51 to 52
+
+Among trees with max Isotype Pars. of: 28
+	Log Likelihood range: -83.8653921 to -78.00393661
+	Mut. Pars. range: 65.83694196283365 to 72.02357793840056
+	Alleles range: 48 to 50
+
+Among trees with min Mut. Pars. of: 63.94500901504557
+	Log Likelihood range: -80.46148748 to -80.46148748
+	Isotype Pars. range: 27 to 27
+	Alleles range: 49 to 49
+
+Among trees with max Mut. Pars. of: 76.08641624712236
+	Log Likelihood range: -85.28172209 to -85.28172209
+	Isotype Pars. range: 25 to 25
+	Alleles range: 50 to 50
+
+Among trees with min Alleles of: 48
+	Log Likelihood range: -82.14344157 to -78.00393661
+	Isotype Pars. range: 26 to 28
+	Mut. Pars. range: 66.45251202469834 to 74.06179332549455
+
+Among trees with max Alleles of: 53
+	Log Likelihood range: -92.15528744 to -90.28220403
+	Isotype Pars. range: 24 to 25
+	Mut. Pars. range: 71.58051182571175 to 72.97479723796525
+
+
+Parameters: (0.4961832069242958, 0.36445206621349757)
+
+Highest ranked tree: loss from best value:
+tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       
+1         	       0.0	5         	2.50750301	0
+</pre></div>
+</div>
 </section>
 <section id="isotype">
 <h2>isotype<a class="headerlink" href="#isotype" title="Permalink to this headline"></a></h2>
@@ -283,12 +337,10 @@ alleles	logLikelihood		isotype_parsimony	mutability_parsimony	treescore
 inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
 sequences to their observed isotypes (like <code class="docutils literal notranslate"><span class="pre">example/isotypemap.txt</span></code>) is required.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ isotype gctree.out.inference.parsimony_forest.p gctree.inference.log idmap.txt ../example/isotypemap.txt --out_directory isotyped
-Parameters:	(0.4961832069242958, 0.36445206621349757)
-index	 ll			 original node count	 isotype parsimony	 new node count
-1	 -78.00393661325725	 48			 28.0			 50
-2	 -78.00393661325725	 48			 28.0			 50
-3	 -78.00393661325725	 48			 28.0			 50
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ isotype idmap.txt ../example/isotypemap.txt --trees gctree.out.inference.1.p newranking.inference.1.p --out_directory isotyped
+name			 original node count	 isotype parsimony	 new node count
+gctree.out.inference.1.p		 48			 28.0			 50
+newranking.inference.1.p		 48			 28.0			 50
 ...
 </pre></div>
 </div>

@@ -78,6 +78,7 @@ We can use the optional argument ``--frame`` to indicate the coding frame of the
 
 If working in a headless environment, ``gctree infer`` must be run with a tool
 like ``xvfb-run`` to provide an X server for rendering the output trees.
+This may also require telling matplotlib to use a headless backend with ``export MPLBACKEND=agg``.
 
 .. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 --verbose | tee gctree.inference.log
   :shell:
@@ -112,13 +113,23 @@ This file may be manipulated using ``gctree infer``. For example, to find the op
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:
 
-.. command-output:: gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --priority_weights 2 2 1 0 --outbase newranking --verbose
+.. command-output:: gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
    :shell:
 
-By default, only the files listed above will be generated, with the optional argument ``--outbase`` specifying how the output files should be named. For a summary of the collection of trees used for ranking, the argument ``--summarize_forest`` is provided. For detailed information about each tree used for ranking, use the argument ``--tree_stats``.
+By default, only the files listed above will be generated, with the optional argument ``--outbase`` specifying how the output files should be named.
 
 .. image:: newranking.inference.1.svg
    :width: 1000
+
+For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees,use the argument ``--tree_stats``.
+
+.. image:: newranking.tree_stats.pairplot.png
+   :width: 1000
+
+Sometimes ranked trees are too numerous, and generating the output of ``--tree_stats`` would require too many resources. For a summary of the collection of trees used for ranking, the argument ``--summarize_forest`` is provided. Most importantly, this option summarizes how much less likely the top ranked tree is, compared to the most likely tree being ranked, for example to validate coefficients passed to ``--ranking_coeffs``.
+
+.. command-output:: cat newranking.forest_summary.log
+   :shell:
 
 
 isotype
@@ -129,7 +140,7 @@ inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
 sequences to their observed isotypes (like ``example/isotypemap.txt``) is required.
 
-.. command-output:: isotype gctree.inference.log idmap.txt ../example/isotypemap.txt --trees gctree.out.inference.1.p newranking.inference.1.p --out_directory isotyped
+.. command-output:: isotype idmap.txt ../example/isotypemap.txt --trees gctree.out.inference.1.p newranking.inference.1.p --out_directory isotyped
   :shell:
   :ellipsis: 10
 

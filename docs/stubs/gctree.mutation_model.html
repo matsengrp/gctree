@@ -16,12 +16,12 @@
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="gctree.mutation_model.sequence_disambiguations" href="gctree.mutation_model.sequence_disambiguations.html" />
+    <link rel="next" title="gctree.mutation_model.MutationModel" href="gctree.mutation_model.MutationModel.html" />
     <link rel="prev" title="gctree.CollapsedForest" href="gctree.CollapsedForest.html" /> 
 </head>
 
@@ -59,13 +59,12 @@
 <li class="toctree-l1"><a class="reference internal" href="../api.html">Classes</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html#modules">Modules</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">gctree.mutation_model</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="gctree.mutation_model.sequence_disambiguations.html">gctree.mutation_model.sequence_disambiguations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gctree.mutation_model.MutationModel.html">gctree.mutation_model.MutationModel</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gctree.utils.html">gctree.utils</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gctree.isotyping.html">gctree.isotyping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gctree.dag_filtering.html">gctree.dag_filtering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.branching_processes.html">gctree.branching_processes</a></li>
 </ul>
 </li>
 </ul>
@@ -127,18 +126,6 @@
 <section id="module-gctree.mutation_model">
 <span id="gctree-mutation-model"></span><h1>gctree.mutation_model<a class="headerlink" href="#module-gctree.mutation_model" title="Permalink to this headline"></a></h1>
 <p>Mutation models.</p>
-<p class="rubric">Functions</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="gctree.mutation_model.sequence_disambiguations.html#gctree.mutation_model.sequence_disambiguations" title="gctree.mutation_model.sequence_disambiguations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sequence_disambiguations</span></code></a></p></td>
-<td><p>Iterates through possible disambiguations of sequence, recursively.</p></td>
-</tr>
-</tbody>
-</table>
 <p class="rubric">Classes</p>
 <table class="longtable docutils align-default">
 <colgroup>
@@ -247,14 +234,6 @@ mutate the same position multiple times.</p>
 
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="gctree.mutation_model.sequence_disambiguations">
-<span class="sig-prename descclassname"><span class="pre">gctree.mutation_model.</span></span><span class="sig-name descname"><span class="pre">sequence_disambiguations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_accum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/mutation_model.html#sequence_disambiguations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.mutation_model.sequence_disambiguations" title="Permalink to this definition"></a></dt>
-<dd><p>Iterates through possible disambiguations of sequence, recursively.</p>
-<p>Recursion-depth-limited by number of ambiguity codes in sequence,
-not sequence length.</p>
-</dd></dl>
-
 </section>
 
 
@@ -262,7 +241,7 @@ not sequence length.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="gctree.CollapsedForest.html" class="btn btn-neutral float-left" title="gctree.CollapsedForest" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="gctree.mutation_model.sequence_disambiguations.html" class="btn btn-neutral float-right" title="gctree.mutation_model.sequence_disambiguations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="gctree.mutation_model.MutationModel.html" class="btn btn-neutral float-right" title="gctree.mutation_model.MutationModel" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -877,7 +877,7 @@ def requires_dag(func):
 class CollapsedForest:
     r"""A collection of trees.
 
-    We can intialize with a list of trees, each an instance of :class:`ete3.Tree`, or we can simulate the forest later.
+    We can intialize with a list of trees, each an instance of :class:`ete3.Tree` or :class:`CollapsedTree`, or we can simulate the forest later.
 
     Attributes:
         n_trees: number of trees in forest
@@ -889,7 +889,9 @@ class CollapsedForest:
     """
 
     def __init__(
-        self, forest: List[ete3.Tree] = None, sequence_counts: Mapping[str, int] = None
+        self,
+        forest: List[Union[CollapsedTree, ete3.Tree]] = None,
+        sequence_counts: Mapping[str, int] = None,
     ):
         if forest is not None:
             if len(forest) == 0:
@@ -899,7 +901,7 @@ class CollapsedForest:
                     "an abundance dictionary must be provided to the keyword argument sequence_counts"
                 )
             if isinstance(forest[0], CollapsedTree):
-                forest = [ctree.tree for tree in forest]
+                forest = [ctree.tree for ctree in forest]
             elif not isinstance(forest[0], ete3.Tree):
                 raise ValueError(
                     "If provided, `forest` argument should contain a list of ete3 trees or CollapsedTrees."

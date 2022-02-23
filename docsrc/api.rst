@@ -24,5 +24,4 @@ Modules
     mutation_model
     utils
     isotyping
-    dag_filtering
     branching_processes

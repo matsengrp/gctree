@@ -16,8 +16,8 @@
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -122,25 +122,28 @@
 <h1>gctree.CollapsedForest<a class="headerlink" href="#gctree-collapsedforest" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="gctree.CollapsedForest">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.</span></span><span class="sig-name descname"><span class="pre">CollapsedForest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedForest" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.</span></span><span class="sig-name descname"><span class="pre">CollapsedForest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_counts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedForest" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>A collection of <a class="reference internal" href="gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a></p>
-<p>We can intialize with a list of trees, each an instance of <a class="reference internal" href="gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>, or we can simulate the forest later.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="gctree.CollapsedForest.forest">
-<span class="sig-name descname"><span class="pre">forest</span></span><a class="headerlink" href="#gctree.CollapsedForest.forest" title="Permalink to this definition"></a></dt>
-<dd><p>list of trees</p>
-</dd></dl>
-
+<p>A collection of trees.</p>
+<p>We can intialize with a list of trees, each an instance of <code class="xref py py-class docutils literal notranslate"><span class="pre">ete3.Tree</span></code> or <a class="reference internal" href="gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>, or we can simulate the forest later.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gctree.CollapsedForest.n_trees">
 <span class="sig-name descname"><span class="pre">n_trees</span></span><a class="headerlink" href="#gctree.CollapsedForest.n_trees" title="Permalink to this definition"></a></dt>
 <dd><p>number of trees in forest</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gctree.CollapsedForest.parameters">
+<span class="sig-name descname"><span class="pre">parameters</span></span><a class="headerlink" href="#gctree.CollapsedForest.parameters" title="Permalink to this definition"></a></dt>
+<dd><p>fit branching process parameters, if mle has been run, otherwise None</p>
+</dd></dl>
+
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>forest</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>]]) – list of <a class="reference internal" href="gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a></p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>forest</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference internal" href="gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">TreeNode</span></code>]]]) – list of <code class="xref py py-class docutils literal notranslate"><span class="pre">ete3.Tree</span></code></p></li>
+<li><p><strong>sequence_counts</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]]) – a mapping of observed sequences to observed abundances</p></li>
+</ul>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
@@ -150,13 +153,28 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.CollapsedForest.ll" title="gctree.CollapsedForest.ll"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ll</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.CollapsedForest.filter_trees" title="gctree.CollapsedForest.filter_trees"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_trees</span></code></a></p></td>
+<td><p>Filter trees according to specified criteria.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.CollapsedForest.iter_topology_classes" title="gctree.CollapsedForest.iter_topology_classes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">iter_topology_classes</span></code></a></p></td>
+<td><p>Sort trees by topology class</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.CollapsedForest.likelihood_rankplot" title="gctree.CollapsedForest.likelihood_rankplot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood_rankplot</span></code></a></p></td>
+<td><p>save a rank plot of likelihoods to the file <cite>[outbase].inference.likelihood_rank.[img_type]</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.CollapsedForest.ll" title="gctree.CollapsedForest.ll"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ll</span></code></a></p></td>
 <td><p>Log likelihood of branching process parameters <span class="math notranslate nohighlight">\((p, q)\)</span> given tree topologies <span class="math notranslate nohighlight">\(T_1, \dots, T_n\)</span> and corresponding genotype abundances vectors <span class="math notranslate nohighlight">\(A_1, \dots, A_n\)</span> for each of <span class="math notranslate nohighlight">\(n\)</span> trees in the forest.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gctree.CollapsedForest.mle" title="gctree.CollapsedForest.mle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mle</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.CollapsedForest.mle" title="gctree.CollapsedForest.mle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mle</span></code></a></p></td>
 <td><p>Maximum likelihood estimate of <span class="math notranslate nohighlight">\((p, q)\)</span>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.CollapsedForest.simulate" title="gctree.CollapsedForest.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.CollapsedForest.n_topologies" title="gctree.CollapsedForest.n_topologies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_topologies</span></code></a></p></td>
+<td><p>Count the number of topology classes, ignoring internal node sequences</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.CollapsedForest.sample_tree" title="gctree.CollapsedForest.sample_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample_tree</span></code></a></p></td>
+<td><p>Sample a random CollapsedTree from the forest</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.CollapsedForest.simulate" title="gctree.CollapsedForest.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a></p></td>
 <td><p>Simulate a forest of collapsed trees.</p></td>
 </tr>
 </tbody>
@@ -211,13 +229,99 @@
 \[(p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>kwargs</strong> – keyword arguments passed along to the log likelihood <a class="reference internal" href="gctree.CollapsedTree.html#gctree.CollapsedTree.ll" title="gctree.CollapsedTree.ll"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CollapsedTree.ll()</span></code></a></p>
+<dd class="field-odd"><p><strong>kwargs</strong> – keyword arguments passed along to the log likelihood <a class="reference internal" href="#gctree.CollapsedForest.ll" title="gctree.CollapsedForest.ll"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CollapsedForest.ll()</span></code></a></p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]</p>
 </dd>
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>Tuple <span class="math notranslate nohighlight">\((p, q)\)</span> with estimated branching probability and estimated mutation probability</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.CollapsedForest.filter_trees">
+<span class="sig-name descname"><span class="pre">filter_trees</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranking_coeffs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutability_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">substitution_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotypemap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotypemap_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idmap_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotype_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outbase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gctree.out'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">summarize_forest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tree_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.filter_trees"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedForest.filter_trees" title="Permalink to this definition"></a></dt>
+<dd><p>Filter trees according to specified criteria.</p>
+<p>Trim the forest to minimize a linear
+combination of branching process likelihood, isotype parsimony score,
+mutability parsimony score, and number of alleles, with coefficients
+provided in the argument <a href="#id1"><span class="problematic" id="id2">``</span></a>ranking_coeffs`, in that order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ranking_coeffs</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]) – A list or tuple of coefficients for prioritizing tree weights.
+The order of coefficients is: isotype parsimony score, mutability parsimony score,
+and number of alleles. A coefficient of <code class="docutils literal notranslate"><span class="pre">-1</span></code> will be applied to branching process
+likelihood.
+If ranking_coeffs is not provided, trees will be ranked lexicographically
+by likelihood, then by other traits, in the same order.</p></li>
+<li><p><strong>mutability_file</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – A mutability model</p></li>
+<li><p><strong>substitution_file</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – A substitution model</p></li>
+<li><p><strong>isotypemap</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]) – A mapping of sequences to isotypes</p></li>
+<li><p><strong>isotypemap</strong> – A dictionary mapping original IDs to observed isotype names</p></li>
+<li><p><strong>isotypemap_file</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – A csv file providing an <cite>isotypemap</cite></p></li>
+<li><p><strong>idmap</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]]) – A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences</p></li>
+<li><p><strong>idmap_file</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – A csv file providing an <cite>idmap</cite></p></li>
+<li><p><strong>isotype_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]) – A sequence of isotype names containing values in <cite>isotypemap</cite>, in the correct switching order</p></li>
+<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – print information about trimming</p></li>
+<li><p><strong>outbase</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – file name stem for a file with information for each tree in the DAG.</p></li>
+<li><p><strong>summarize_forest</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – whether to write a summary of the forest to file <cite>[outbase].forest_summary.log</cite></p></li>
+<li><p><strong>tree_stats</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – whether to write stats for each tree in the forest to file <cite>[outbase].tree_stats.log</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="gctree.branching_processes.CollapsedForest.html#gctree.branching_processes.CollapsedForest" title="gctree.branching_processes.CollapsedForest"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedForest</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The trimmed forest, containing all optimal trees according to the specified criteria, and a tuple
+of data about the trees in that forest, with format (ll, isotype parsimony, mutability parsimony, alleles).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.CollapsedForest.likelihood_rankplot">
+<span class="sig-name descname"><span class="pre">likelihood_rankplot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outbase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'svg'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.likelihood_rankplot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedForest.likelihood_rankplot" title="Permalink to this definition"></a></dt>
+<dd><p>save a rank plot of likelihoods to the file <cite>[outbase].inference.likelihood_rank.[img_type]</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.CollapsedForest.n_topologies">
+<span class="sig-name descname"><span class="pre">n_topologies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.n_topologies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedForest.n_topologies" title="Permalink to this definition"></a></dt>
+<dd><p>Count the number of topology classes, ignoring internal node sequences</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.CollapsedForest.iter_topology_classes">
+<span class="sig-name descname"><span class="pre">iter_topology_classes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.iter_topology_classes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedForest.iter_topology_classes" title="Permalink to this definition"></a></dt>
+<dd><p>Sort trees by topology class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>A generator of CollapsedForest objects, each containing trees with the same topology,</dt><dd><p>ignoring internal node labels. CollapsedForests will be yielded in reverse-order
+of the number of trees in each topology class, so that each CollapsedForest will
+contain at least as many trees as the one that follows.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.CollapsedForest.sample_tree">
+<span class="sig-name descname"><span class="pre">sample_tree</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.sample_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedForest.sample_tree" title="Permalink to this definition"></a></dt>
+<dd><p>Sample a random CollapsedTree from the forest</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>

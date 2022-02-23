@@ -156,7 +156,7 @@ def main(arg_list=None):
     for sublist in tree_stats:
         sublist.append(isotype_parsimony(sublist[2].tree))
 
-    print("name\t\t original node count\t isotype parsimony\t new node count")
+    print("name\t\t\t original node count\t isotype parsimony\t new node count")
     for (
         filename,
         name,

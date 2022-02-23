@@ -63,7 +63,7 @@
 <li class="toctree-l2"><a class="reference internal" href="stubs/gctree.mutation_model.html">gctree.mutation_model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="stubs/gctree.utils.html">gctree.utils</a></li>
 <li class="toctree-l2"><a class="reference internal" href="stubs/gctree.isotyping.html">gctree.isotyping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="stubs/gctree.dag_filtering.html">gctree.dag_filtering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stubs/gctree.branching_processes.html">gctree.branching_processes</a></li>
 </ul>
 </li>
 </ul>
@@ -124,7 +124,7 @@
 <p>Python API for the <code class="docutils literal notranslate"><span class="pre">gctree</span></code> package</p>
 <section id="classes">
 <h1>Classes<a class="headerlink" href="#classes" title="Permalink to this headline"></a></h1>
-<p>Top level classes.</p>
+<p>Top level classes, promoted from the <code class="docutils literal notranslate"><span class="pre">branching_processes</span></code> module.</p>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
@@ -134,8 +134,8 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>([tree, allow_repeats])</p></td>
 <td><p>A collapsed tree, modeled as an infinite type Galton-Watson process run to extinction.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="stubs/gctree.CollapsedForest.html#gctree.CollapsedForest" title="gctree.CollapsedForest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CollapsedForest</span></code></a>([forest])</p></td>
-<td><p>A collection of <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/gctree.CollapsedForest.html#gctree.CollapsedForest" title="gctree.CollapsedForest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CollapsedForest</span></code></a>([forest, sequence_counts])</p></td>
+<td><p>A collection of trees.</p></td>
 </tr>
 </tbody>
 </table>
@@ -157,8 +157,8 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="stubs/gctree.isotyping.html#module-gctree.isotyping" title="gctree.isotyping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isotyping</span></code></a></p></td>
 <td><p>A module for incorporating isotype information in gctree inference.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="stubs/gctree.dag_filtering.html#module-gctree.dag_filtering" title="gctree.dag_filtering"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dag_filtering</span></code></a></p></td>
-<td><p>Functions for choosing optimal trees according to flexible criteria.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="stubs/gctree.branching_processes.html#module-gctree.branching_processes" title="gctree.branching_processes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">branching_processes</span></code></a></p></td>
+<td><p>This module contains classes for simulation and inference for a binary branching process with mutation in which the tree is collapsed to nodes that count the number of clonal leaves of each type.</p></td>
 </tr>
 </tbody>
 </table>

@@ -96,6 +96,8 @@
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">import</span> <span class="nn">scipy</span>
 <span class="kn">from</span> <span class="nn">Bio.Seq</span> <span class="kn">import</span> <span class="n">Seq</span>
+<span class="kn">import</span> <span class="nn">historydag</span> <span class="k">as</span> <span class="nn">hdag</span>
+<span class="kn">from</span> <span class="nn">multiset</span> <span class="kn">import</span> <span class="n">FrozenMultiset</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Callable</span>
 
 
@@ -152,7 +154,7 @@
     <span class="k">def</span> <span class="nf">_disambiguate</span><span class="p">(</span><span class="n">sequence</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;generator of all possible nt sequences implied by a sequence</span>
 <span class="sd">        containing ambiguous bases.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MutationModel.mutability"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutability">[docs]</a>    <span class="k">def</span> <span class="nf">mutability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kmer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a central base of :math:`k`-mer, along with</span>
@@ -461,7 +463,7 @@
         <span class="k">return</span> <span class="n">tree</span></div></div>
 
 
-<div class="viewcode-block" id="sequence_disambiguations"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.sequence_disambiguations.html#gctree.mutation_model.sequence_disambiguations">[docs]</a><span class="k">def</span> <span class="nf">sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">_accum</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">_accum</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Iterates through possible disambiguations of sequence, recursively.</span>
 
 <span class="sd">    Recursion-depth-limited by number of ambiguity codes in sequence,</span>
@@ -473,11 +475,131 @@
                 <span class="n">_accum</span> <span class="o">+=</span> <span class="n">base</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">newbase</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">ambiguous_dna_values</span><span class="p">[</span><span class="n">base</span><span class="p">]:</span>
-                    <span class="k">yield from</span> <span class="n">sequence_disambiguations</span><span class="p">(</span>
+                    <span class="k">yield from</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span>
                         <span class="n">sequence</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:],</span> <span class="n">_accum</span><span class="o">=</span><span class="p">(</span><span class="n">_accum</span> <span class="o">+</span> <span class="n">newbase</span><span class="p">)</span>
                     <span class="p">)</span>
                 <span class="k">return</span>
-    <span class="k">yield</span> <span class="n">_accum</span></div>
+    <span class="k">yield</span> <span class="n">_accum</span>
+
+
+<span class="k">def</span> <span class="nf">_mutability_dagfuncs</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return functions for counting mutability parsimony on the history DAG.</span>
+
+<span class="sd">    Mutability parsimony of a tree is the sum over all edges in the tree</span>
+<span class="sd">    of mutability distances between parent and child node sequences.</span>
+
+<span class="sd">    The mutability distance from an ancestral sequence to a target sequence is the sum of</span>
+<span class="sd">    :math:`-log(mutability * p)` over all sites which do match, where :math:`mutability`</span>
+<span class="sd">    is the mutation frequency of the k-mer surrounding the mutated base</span>
+<span class="sd">    (in the ancestral sequence), and :math:`p` is the transition probability to the new</span>
+<span class="sd">    base in the target sequence. Notice that this so-called distance is not symmetric.</span>
+
+<span class="sd">    These functions may not be stable numerically, but we expect every tree to have</span>
+<span class="sd">    a unique mutability parsimony score for non-degenerate mutability models, so</span>
+<span class="sd">    so this shouldn&#39;t matter in practice.</span>
+
+<span class="sd">    Arguments are passed to :meth:`mutation_model.MutationModel` constructor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments</span>
+<span class="sd">        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,</span>
+<span class="sd">        or :meth:`historydag.HistoryDag.optimal_weight_annotate`</span>
+<span class="sd">        methods to trim or annotate a :meth:`historydag.HistoryDag` according to mutability model parsimony.</span>
+<span class="sd">        Weight format is ``float``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mutation_model</span> <span class="o">=</span> <span class="n">MutationModel</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">_mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">)</span>
+
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">access_field</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">)</span>
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">ignore_ualabel</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">access_field</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dist</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span> <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">},</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Mut. Pars.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_mutability_distance_precursors</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">MutationModel</span><span class="p">):</span>
+    <span class="c1"># Caching could be moved to the MutationModel class instead.</span>
+    <span class="n">context_model</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">context_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">k</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">k</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="c1"># Build all sequences with (when k=5) one or two Ns on either end</span>
+    <span class="n">templates</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">left</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="n">left</span> <span class="o">-</span> <span class="n">right</span><span class="p">),</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">right</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">left</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">right</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">left</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">right</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="p">]</span>
+
+    <span class="n">kmers_to_compute</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">leftns</span> <span class="o">+</span> <span class="n">stub</span> <span class="o">+</span> <span class="n">rightns</span>
+        <span class="k">for</span> <span class="n">leftns</span><span class="p">,</span> <span class="n">ambig_stub</span><span class="p">,</span> <span class="n">rightns</span> <span class="ow">in</span> <span class="n">templates</span>
+        <span class="k">for</span> <span class="n">stub</span> <span class="ow">in</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span><span class="n">ambig_stub</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="c1"># Cache all these mutabilities in context_model also</span>
+    <span class="n">context_model</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="n">kmer</span><span class="p">:</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">mutability</span><span class="p">(</span><span class="n">kmer</span><span class="p">)</span> <span class="k">for</span> <span class="n">kmer</span> <span class="ow">in</span> <span class="n">kmers_to_compute</span><span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="nd">@utils</span><span class="o">.</span><span class="n">check_distance_arguments</span>
+    <span class="k">def</span> <span class="nf">mutpairs</span><span class="p">(</span><span class="n">seq1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seq2</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">ns</span> <span class="o">=</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">seq1N</span> <span class="o">=</span> <span class="n">ns</span> <span class="o">+</span> <span class="n">seq1</span> <span class="o">+</span> <span class="n">ns</span>
+        <span class="n">seq2N</span> <span class="o">=</span> <span class="n">ns</span> <span class="o">+</span> <span class="n">seq2</span> <span class="o">+</span> <span class="n">ns</span>
+        <span class="n">mut_idxs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">index</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">base1</span><span class="p">,</span> <span class="n">base2</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">seq1N</span><span class="p">,</span> <span class="n">seq2N</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">base1</span> <span class="o">!=</span> <span class="n">base2</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">FrozenMultiset</span><span class="p">((</span><span class="n">seq1N</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">h</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">seq2N</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">mut_idxs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sum_minus_logp</span><span class="p">(</span><span class="n">pairs</span><span class="p">:</span> <span class="n">FrozenMultiset</span><span class="p">):</span>
+        <span class="c1"># I have chosen to multiply substitution rate for central base</span>
+        <span class="c1"># with rate of new base. Not sure if this is a good choice.</span>
+        <span class="k">if</span> <span class="n">pairs</span><span class="p">:</span>
+            <span class="c1"># for floating point behavior</span>
+            <span class="n">pairs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">pairs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="n">p_arr</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">mult</span>
+                <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">context_model</span><span class="p">[</span><span class="n">mer</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">context_model</span><span class="p">[</span><span class="n">mer</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">newbase</span><span class="p">])</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">mer</span><span class="p">,</span> <span class="n">newbase</span><span class="p">),</span> <span class="n">mult</span> <span class="ow">in</span> <span class="n">pairs</span>
+            <span class="p">]</span>
+            <span class="k">return</span> <span class="o">-</span><span class="nb">sum</span><span class="p">(</span><span class="n">p_arr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">MutationModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a fast distance function based on passed mutation_model.</span>
+
+<span class="sd">    First, caches computed mutabilities for k-mers with k // 2 N&#39;s on either end. This</span>
+<span class="sd">    is pretty fast for k=5, but the distance function should be created once</span>
+<span class="sd">    and reused.</span>
+
+<span class="sd">    The returned distance function sums :math:`-log(mutability * p)` over all</span>
+<span class="sd">    sites which do match between its two sequence arguments, where ``mutability``</span>
+<span class="sd">    is the mutation frequency of the k-mer surrounding the mutated base (in the</span>
+<span class="sd">    first sequence argument) and ``p`` is the transition probability to the new</span>
+<span class="sd">    base.</span>
+
+<span class="sd">    Note that, in particular, this function is not symmetric on its  arguments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span> <span class="o">=</span> <span class="n">_mutability_distance_precursors</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">sum_minus_logp</span><span class="p">(</span><span class="n">mutpairs</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">distance</span>
 </pre></div>
 
            </div>

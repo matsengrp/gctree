@@ -506,7 +506,7 @@ def get_parser():
             "Input files for inference. If two filenames are passed, the first shall be a "
             "dnapars outfile (verbose output with sequences at each site), and the second "
             "shall be an abundance file containing allele frequencies (sequence counts) in "
-            "the format: 'SeqID, Nobs'. If a single filename is passed, it shall be the name "
+            "the format: ``SeqID, Nobs``. If a single filename is passed, it shall be the name "
             "of a pickled history DAG object created by gctree."
         ),
     )
@@ -597,8 +597,9 @@ def get_parser():
         help=(
             "List of coefficients for ranking trees by a linear combination of traits. "
             "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
-            "A coefficient of -1 will be applied to branching process likelihood."
-            "If not provided, trees will be ranked lexicographically by traits in that order, ignoring number of alleles."
+            "A coefficient of -1 will be applied to branching process likelihood. "
+            "If not provided, trees will be ranked lexicographically by likelihood, "
+            "isotype parsimony, and mutability parsimony in that order."
         ),
     )
     parser_infer.add_argument(
