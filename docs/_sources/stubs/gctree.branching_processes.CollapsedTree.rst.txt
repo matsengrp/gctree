@@ -1,0 +1,34 @@
+gctree.branching\_processes.CollapsedTree
+=========================================
+
+.. currentmodule:: gctree.branching_processes
+
+.. autoclass:: CollapsedTree
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~CollapsedTree.compare
+      ~CollapsedTree.feature_colormap
+      ~CollapsedTree.ll
+      ~CollapsedTree.local_branching
+      ~CollapsedTree.mle
+      ~CollapsedTree.newick
+      ~CollapsedTree.render
+      ~CollapsedTree.simulate
+      ~CollapsedTree.support
+      ~CollapsedTree.write
+   
+   
+
+   
+   
+   
