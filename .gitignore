@@ -114,4 +114,4 @@ venv.bak/
 .mypy_cache/
 
 # sphinx autodoc
-docsrc/stubs
+docs/stubs
