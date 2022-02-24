@@ -1505,10 +1505,13 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
     # Assume all trees have fixed root sequence and fixed leaf sequences
     def get_sequence(node):
         if any(base not in gctree.utils.bases for base in node.sequence):
-            raise ValueError(f"Unrecognized base found in node '{node.name}'. "
-                             "Ambiguous bases are not permitted in observed sequences.")
+            raise ValueError(
+                f"Unrecognized base found in node '{node.name}'. "
+                "Ambiguous bases are not permitted in observed sequences."
+            )
         else:
             return node.sequence
+
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
 
     sequence_counts = sequence_counts.copy()
