@@ -1503,7 +1503,16 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
     # Assume all trees have fixed root sequence and fixed leaf sequences
-    leaf_seqs = {node.sequence for node in trees[0].get_leaves()}
+    def get_sequence(node):
+        if any(base not in gctree.utils.bases for base in node.sequence):
+            raise ValueError(
+                f"Unrecognized base found in node '{node.name}'. "
+                "Ambiguous bases are not permitted in observed sequences."
+            )
+        else:
+            return node.sequence
+
+    leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
 
     sequence_counts = sequence_counts.copy()
     if from_copy:
@@ -1546,9 +1555,9 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
             "Parsimony trees have too many ambiguities for disambiguation in history DAG. "
             "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
         )
-        trees = [disambiguate(tree) for tree in trees]
+        distrees = [disambiguate(tree) for tree in trees]
         dag = hdag.history_dag_from_etes(
-            trees,
+            distrees,
             ["sequence"],
             attr_func=lambda n: {
                 "name": n.name,
