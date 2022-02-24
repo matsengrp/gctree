@@ -1,6 +1,0 @@
-gctree.mutation\_model.sequence\_disambiguations
-================================================
-
-.. currentmodule:: gctree.mutation_model
-
-.. autofunction:: sequence_disambiguations

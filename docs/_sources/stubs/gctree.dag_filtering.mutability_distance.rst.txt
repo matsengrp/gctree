@@ -1,6 +1,0 @@
-gctree.dag\_filtering.mutability\_distance
-==========================================
-
-.. currentmodule:: gctree.dag_filtering
-
-.. autofunction:: mutability_distance

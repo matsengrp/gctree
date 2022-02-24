@@ -1,6 +1,0 @@
-gctree.isotyping.isotype\_tree
-==============================
-
-.. currentmodule:: gctree.isotyping
-
-.. autofunction:: isotype_tree

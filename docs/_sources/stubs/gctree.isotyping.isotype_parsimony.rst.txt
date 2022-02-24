@@ -1,6 +1,0 @@
-gctree.isotyping.isotype\_parsimony
-===================================
-
-.. currentmodule:: gctree.isotyping
-
-.. autofunction:: isotype_parsimony
