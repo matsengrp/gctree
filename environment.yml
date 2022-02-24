@@ -4,8 +4,6 @@ channels:
   - defaults
   - bioconda
 dependencies:
-  - scons
-  - nestly
   - phylip
   - pip
   - pip:

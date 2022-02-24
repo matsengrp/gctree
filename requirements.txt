@@ -9,4 +9,5 @@ sphinx-click
 sphinx-autodoc-typehints
 sphinxcontrib-programoutput
 nbsphinx
+jupyter
 pandoc
