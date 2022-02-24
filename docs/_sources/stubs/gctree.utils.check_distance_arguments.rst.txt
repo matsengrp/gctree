@@ -1,6 +1,0 @@
-gctree.utils.check\_distance\_arguments
-=======================================
-
-.. currentmodule:: gctree.utils
-
-.. autofunction:: check_distance_arguments

@@ -1,6 +1,0 @@
-gctree.dag\_filtering.mutability\_dagfuncs
-==========================================
-
-.. currentmodule:: gctree.dag_filtering
-
-.. autofunction:: mutability_dagfuncs

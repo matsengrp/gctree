@@ -19,9 +19,6 @@ lint:
 	flake8 . --count --max-complexity=30 --max-line-length=127 --statistics
 
 docs:
-	make -C docsrc html
-
-deploy:
-	make -C docsrc github
+	make -C docs html
 
 .PHONY: install test format lint deploy docs

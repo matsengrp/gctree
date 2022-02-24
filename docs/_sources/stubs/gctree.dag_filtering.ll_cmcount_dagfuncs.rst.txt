@@ -1,6 +1,0 @@
-gctree.dag\_filtering.ll\_cmcount\_dagfuncs
-===========================================
-
-.. currentmodule:: gctree.dag_filtering
-
-.. autofunction:: ll_cmcount_dagfuncs
