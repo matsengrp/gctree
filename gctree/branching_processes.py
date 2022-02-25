@@ -1109,6 +1109,17 @@ class CollapsedForest:
             if verbose:
                 print("Isotype parsimony will not be used as a ranking criterion")
         else:
+            # Check for missing isotype data in all but root node, and fake root-adjacent leaf node
+            if any(
+                not node.attr["isotype"]
+                for node in self._forest.preorder()
+                if not node.is_root() and node.attr["name"] != ""
+            ):
+                warnings.warn(
+                    "Some isotype data may be missing, or `add_isotypes` wasn't called "
+                    "on this CollapsedForest instance. Isotype parsimony scores may be incorrect."
+                )
+
             iso_funcs = _isotype_dagfuncs()
         if mutability_file and substitution_file:
             mut_funcs = _mutability_dagfuncs(
