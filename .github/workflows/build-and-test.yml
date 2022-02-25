@@ -19,6 +19,11 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
 
+      - name: Install X11 dependencies on MacOS (needed for Qt in ETE)
+        if: runner.os == 'macOS'
+        run: |
+          brew --cask install xquartz
+
       - name: Install miniconda and create environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -29,6 +34,8 @@ jobs:
           auto-update-conda: true
 
       - name: Lint
+        # NOTE: must specify the shell so that conda init updates bashrc see:
+        #      https://github.com/conda-incubator/setup-miniconda#IMPORTANT
         shell: bash -l {0}
         run: |
           make lint
@@ -44,6 +51,7 @@ jobs:
           make test
 
       - name: Test docs build
+        if: runner.os == 'macOS'
         shell: bash -l {0}
         run: |
           make docs

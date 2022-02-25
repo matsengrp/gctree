@@ -24,6 +24,9 @@ jobs:
           auto-update-conda: true
 
       - name: Build 🔧
+        # NOTE: must specify the shell so that conda init updates bashrc see:
+        #      https://github.com/conda-incubator/setup-miniconda#IMPORTANT
+        shell: bash -l {0}
         run: |
           make docs
 
