@@ -520,7 +520,8 @@ def get_parser():
             "dnapars outfile (verbose output with sequences at each site), and the second "
             "shall be an abundance file containing allele frequencies (sequence counts) in "
             "the format: ``SeqID, Nobs``. If a single filename is passed, it shall be the name "
-            "of a pickled history DAG object created by gctree."
+            "of a pickled history DAG object created by gctree. A new pickled forest will be "
+            "output only if new annotations (such as isotypes) are added."
         ),
     )
     parser_infer.add_argument(
