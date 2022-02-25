@@ -459,7 +459,7 @@ def _isotype_annotation_dagfuncs(
 
     if idmap is None:
         if idmap_file is None:
-            raise TypeError("either idmap or idmap_file is required")
+            raise TypeError("either idmap or idmap_file is required for isotyping")
         else:
             with open(idmap_file, "r") as fh:
                 idmap = {}

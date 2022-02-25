@@ -932,6 +932,7 @@ class CollapsedForest:
         self._cm_countlist = None
         self._ctrees = None
         self.parameters = None
+        self.is_isotyped = False
 
     def simulate(self, p: np.float64, q: np.float64, n_trees: int):
         r"""Simulate a forest of collapsed trees. Overwrites existing forest attribute.
@@ -1104,11 +1105,11 @@ class CollapsedForest:
             },
             name="",
         )
-        if ignore_isotype:
+        if ignore_isotype or not self.is_isotyped:
             iso_funcs = placeholder_dagfuncs
-            if verbose:
-                print("Isotype parsimony will not be used as a ranking criterion")
         else:
+            if verbose:
+                print("Isotype parsimony will be used as a ranking criterion")
             # Check for missing isotype data in all but root node, and fake root-adjacent leaf node
             if any(
                 not node.attr["isotype"]
@@ -1116,12 +1117,14 @@ class CollapsedForest:
                 if not node.is_root() and node.attr["name"] != ""
             ):
                 warnings.warn(
-                    "Some isotype data may be missing, or `add_isotypes` wasn't called "
-                    "on this CollapsedForest instance. Isotype parsimony scores may be incorrect."
+                    "Some isotype data seems to be missing. Isotype parsimony scores may be incorrect."
                 )
 
             iso_funcs = _isotype_dagfuncs()
         if mutability_file and substitution_file:
+            if verbose:
+                print("Mutation model parsimony will be used as a ranking criterion")
+
             mut_funcs = _mutability_dagfuncs(
                 mutability_file=mutability_file, substitution_file=substitution_file
             )
@@ -1335,6 +1338,7 @@ class CollapsedForest:
         isotype_names: Sequence[str] = None,
     ):
         """Adds isotype annotations, including inferred ancestral isotypes, to all nodes in stored trees."""
+        self.is_isotyped = True
 
         iso_funcs = _isotype_annotation_dagfuncs(
             isotypemap_file=isotypemap_file,

@@ -156,6 +156,14 @@ def test(args):
 
 def infer(args):
     """inference subprogram."""
+
+    def isotype_add(forest):
+        forest.add_isotypes(
+            isotypemap_file=args.isotype_mapfile,
+            idmap_file=args.idmapfile,
+            isotype_names=args.isotype_names,
+        )
+
     if len(args.infiles) == 2:
         forest = bp.CollapsedForest(
             *pp.parse_outfile(args.infiles[0], args.infiles[1], args.root)
@@ -170,6 +178,9 @@ def infer(args):
                 forest.n_topologies(),
             )
         forest.mle(marginal=True)
+        # Add isotypes to forest
+        if args.isotype_mapfile:
+            isotype_add(forest)
         with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
             pickle.dump(forest, f)
 
@@ -180,22 +191,14 @@ def infer(args):
             )
         with open(args.infiles[0], "rb") as fh:
             forest = pickle.load(fh)
+        # Add isotypes to forest and re-pickle if necessary
+        if args.isotype_mapfile:
+            isotype_add(forest)
+            with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
+                pickle.dump(forest, f)
     else:
         raise ValueError(
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
-        )
-
-    if args.verbose and args.mutability and args.substitution:
-        print("Mutation model parsimony will be used as a ranking criterion")
-
-    # Add isotypes to forest
-    if args.isotype_mapfile:
-        if args.verbose:
-            print("Isotype parsimony will be used as a ranking criterion")
-        forest.add_isotypes(
-            isotypemap_file=args.isotype_mapfile,
-            idmap_file=args.idmapfile,
-            isotype_names=args.isotype_names,
         )
 
     # Filter the forest according to specified criteria, and along the way,
