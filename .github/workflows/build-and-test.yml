@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install X11 dependencies on MacOS (needed for Qt in ETE)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macos-latest'
         run: |
           brew --cask install xquartz
 
@@ -51,7 +51,7 @@ jobs:
           make test
 
       - name: Test docs build
-        if: runner.os == 'macOS'
+        if: runner.os == 'macos-latest'
         shell: bash -l {0}
         run: |
           make docs
