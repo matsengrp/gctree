@@ -17,16 +17,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - uses: conda-incubator/setup-miniconda@v2
       with:
+        activate-environment: gctree
+        environment-file: environment.yml
         python-version: ${{ matrix.python-version }}
-
-    - name: Install
-      run: |
-        python -m pip install --upgrade pip
-        make install
-
+        auto-activate-base: false
+        auto-update-conda: true
     - name: Lint
       run: |
         make lint
