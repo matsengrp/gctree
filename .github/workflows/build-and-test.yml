@@ -22,7 +22,7 @@ jobs:
       - name: Install X11 dependencies on MacOS (needed for Qt in ETE)
         if: matrix.os == 'macos-latest'
         run: |
-          brew --cask install xquartz
+          brew install --cask xquartz
 
       - name: Install miniconda and create environment
         uses: conda-incubator/setup-miniconda@v2
