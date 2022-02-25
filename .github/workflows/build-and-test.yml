@@ -27,11 +27,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           auto-activate-base: false
           auto-update-conda: true
-
-      - name: Activate conda environment
-        run: |
-          conda activate gctree
-          which python
+      - run: |
+          conda info
+          conda list
 
       - name: Lint
         run: |
