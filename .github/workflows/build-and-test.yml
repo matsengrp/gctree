@@ -27,22 +27,23 @@ jobs:
           python-version: ${{ matrix.python-version }}
           auto-activate-base: false
           auto-update-conda: true
-      - run: |
-          conda info
-          conda list
 
       - name: Lint
+        shell: bash -l {0}
         run: |
           make lint
 
       - name: Check format with black
+        shell: bash -l {0}
         run: |
           black --check gctree
 
       - name: Test
+        shell: bash -l {0}
         run: |
           make test
 
       - name: Test docs build
+        shell: bash -l {0}
         run: |
           make docs
