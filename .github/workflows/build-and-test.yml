@@ -23,6 +23,10 @@ jobs:
 #         if: matrix.os == 'macos-latest'
 #         run: |
 #           brew install --cask xquartz
+      - name: Install Xvfb on Ubuntu (needed for Qt in ETE)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get install xvfb
 
       - name: Install miniconda and create environment
         uses: conda-incubator/setup-miniconda@v2
@@ -50,8 +54,16 @@ jobs:
         run: |
           make test
 
-      - name: Test docs build
-        if: matrix.os == 'macos-latest'
+#       - name: Test docs build macos
+#         if: matrix.os == 'macos-latest'
+#         shell: bash -l {0}
+#         run: |
+#           make docs
+          
+      - name: Test docs build ubuntu
+        if: matrix.os == 'ubuntu-latest'
         shell: bash -l {0}
         run: |
-          make docs
+          xvfb-run -a make docs
+        env:
+          MPLBACKEND: agg
