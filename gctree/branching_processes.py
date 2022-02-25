@@ -7,10 +7,11 @@ count the number of clonal leaves of each type.
 from __future__ import annotations
 
 import gctree.utils
-from gctree.isotyping import _isotype_dagfuncs
+from gctree.isotyping import _isotype_dagfuncs, _isotype_annotation_dagfuncs
 from gctree.mutation_model import _mutability_dagfuncs
 from gctree.phylip_parse import disambiguate
 
+from frozendict import frozendict
 import pandas as pd
 import seaborn as sns
 import numpy as np
@@ -76,6 +77,7 @@ class CollapsedTree:
             for node in self.tree.get_descendants(strategy="postorder"):
                 if node.dist == 0:
                     node.up.abundance = max(node.abundance, node.up.abundance)
+                    node.up.isotype = node.isotype
                     if isinstance(node.name, str):
                         node_set = set([node.name])
                     else:
@@ -1056,11 +1058,7 @@ class CollapsedForest:
         ranking_coeffs: Sequence[float] = None,
         mutability_file: str = None,
         substitution_file: str = None,
-        isotypemap: Mapping[str, str] = None,
-        isotypemap_file: str = None,
-        idmap: Mapping[str, Set[str]] = None,
-        idmap_file: str = None,
-        isotype_names: Sequence[str] = None,
+        ignore_isotype: bool = False,
         verbose: bool = False,
         outbase: str = "gctree.out",
         summarize_forest: bool = False,
@@ -1082,12 +1080,8 @@ class CollapsedForest:
                 by likelihood, then by other traits, in the same order.
             mutability_file: A mutability model
             substitution_file: A substitution model
-            isotypemap: A mapping of sequences to isotypes
-            isotypemap: A dictionary mapping original IDs to observed isotype names
-            isotypemap_file: A csv file providing an `isotypemap`
-            idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences
-            idmap_file: A csv file providing an `idmap`
-            isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order
+            ignore_isotype: Ignore isotype parsimony when ranking. By default, isotype information added with
+                :meth:``add_isotypes`` will be used to compute isotype parsimony, which is used in ranking.
             verbose: print information about trimming
             outbase: file name stem for a file with information for each tree in the DAG.
             summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`
@@ -1101,18 +1095,29 @@ class CollapsedForest:
         if self.parameters is None:
             self.mle(marginal=True)
         p, q = self.parameters
-        kwargls = _get_dagweight_funcs(
-            self.parameters,
-            isotypemap_file=isotypemap_file,
-            isotypemap=isotypemap,
-            idmap_file=idmap_file,
-            idmap=idmap,
-            isotype_names=isotype_names,
-            mutability_file=mutability_file,
-            substitution_file=substitution_file,
-            verbose=verbose,
+        ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
+        placeholder_dagfuncs = hdag.utils.AddFuncDict(
+            {
+                "start_func": lambda n: 0,
+                "edge_weight_func": lambda n1, n2: 0,
+                "accum_func": sum,
+            },
+            name="",
         )
-        ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs = kwargls
+        if ignore_isotype:
+            iso_funcs = placeholder_dagfuncs
+            if verbose:
+                print("Isotype parsimony will not be used as a ranking criterion")
+        else:
+            iso_funcs = _isotype_dagfuncs()
+        if mutability_file and substitution_file:
+            mut_funcs = _mutability_dagfuncs(
+                mutability_file=mutability_file, substitution_file=substitution_file
+            )
+        else:
+            mut_funcs = placeholder_dagfuncs
+        allele_funcs = _allele_dagfuncs()
+        kwargls = (ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs)
         if ranking_coeffs:
             if len(ranking_coeffs) != 3:
                 raise ValueError(
@@ -1309,6 +1314,33 @@ class CollapsedForest:
             tdag.trim_topology(ctopology, collapse_leaves=True)
             yield self._trimmed_self(tdag)
 
+    @requires_dag
+    def add_isotypes(
+        self,
+        isotypemap: Mapping[str, str] = None,
+        isotypemap_file: str = None,
+        idmap: Mapping[str, Set[str]] = None,
+        idmap_file: str = None,
+        isotype_names: Sequence[str] = None,
+    ):
+        """Adds isotype annotations, including inferred ancestral isotypes, to all nodes in stored trees."""
+
+        iso_funcs = _isotype_annotation_dagfuncs(
+            isotypemap_file=isotypemap_file,
+            isotypemap=isotypemap,
+            idmap_file=idmap_file,
+            idmap=idmap,
+            isotype_names=isotype_names,
+        )
+
+        def optimal_func(weightlist):
+            # all weights (frozendicts containing isotypes) are equal
+            return weightlist[0]
+
+        self._forest.optimal_weight_annotate(**iso_funcs, optimal_func=optimal_func)
+        for node in self._forest.preorder(skip_root=True):
+            node.attr["isotype"] = node._dp_data
+
     def sample_tree(self) -> CollapsedTree:
         """Sample a random CollapsedTree from the forest"""
         if self._ctrees is not None:
@@ -1349,7 +1381,10 @@ class CollapsedForest:
         etetree = clade_tree.to_ete(
             name_func=lambda n: n.attr["name"],
             features=["sequence"],
-            feature_funcs={"abundance": lambda n: n.attr["abundance"]},
+            feature_funcs={
+                "abundance": lambda n: n.attr["abundance"],
+                "isotype": lambda n: n.attr["isotype"],
+            },
         )
 
         # Remove dummy leaf added below root for hDAG compatibility
@@ -1542,6 +1577,7 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
         ["sequence"],
         attr_func=lambda n: {
             "name": n.name,
+            "isotype": frozendict(),
         },
     )
     # If there are too many ambiguities at too many nodes, disambiguation will
@@ -1561,6 +1597,7 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
             ["sequence"],
             attr_func=lambda n: {
                 "name": n.name,
+                "isotype": frozendict(),
             },
         )
     dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
@@ -1714,48 +1751,3 @@ def _allele_dagfuncs() -> hdag.utils.AddFuncDict:
         },
         name="Alleles",
     )
-
-
-def _get_dagweight_funcs(
-    parameters,
-    isotypemap_file=None,
-    isotypemap=None,
-    idmap_file=None,
-    idmap=None,
-    isotype_names=None,
-    mutability_file=None,
-    substitution_file=None,
-    verbose=False,
-):
-    p, q = parameters
-    placeholder_dagfuncs = hdag.utils.AddFuncDict(
-        {
-            "start_func": lambda n: 0,
-            "edge_weight_func": lambda n1, n2: 0,
-            "accum_func": sum,
-        },
-        name="",
-    )
-    try:
-        iso_funcs = _isotype_dagfuncs(
-            isotypemap_file=isotypemap_file,
-            isotypemap=isotypemap,
-            idmap_file=idmap_file,
-            idmap=idmap,
-            isotype_names=isotype_names,
-        )
-        if verbose:
-            print("Isotype parsimony will be used as a ranking criterion")
-    except ValueError:
-        iso_funcs = placeholder_dagfuncs
-    ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
-    if mutability_file and substitution_file:
-        if verbose:
-            print("Mutation model parsimony will be used as a ranking criterion")
-        mut_funcs = _mutability_dagfuncs(
-            mutability_file=mutability_file, substitution_file=substitution_file
-        )
-    else:
-        mut_funcs = placeholder_dagfuncs
-    allele_funcs = _allele_dagfuncs()
-    return (ll_dagfuncs, iso_funcs, mut_funcs, allele_funcs)

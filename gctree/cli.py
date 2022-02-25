@@ -185,6 +185,19 @@ def infer(args):
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
         )
 
+    if args.verbose and args.mutability and args.substitution:
+        print("Mutation model parsimony will be used as a ranking criterion")
+
+    # Add isotypes to forest
+    if args.isotype_mapfile:
+        if args.verbose:
+            print("Isotype parsimony will be used as a ranking criterion")
+        forest.add_isotypes(
+            isotypemap_file=args.isotype_mapfile,
+            idmap_file=args.idmapfile,
+            isotype_names=args.isotype_names,
+        )
+
     # Filter the forest according to specified criteria, and along the way,
     # write a log file containing stats for all trees in the forest:
     trimmed_forest, _ = forest.filter_trees(
@@ -195,9 +208,6 @@ def infer(args):
         tree_stats=args.tree_stats,
         mutability_file=args.mutability,
         substitution_file=args.substitution,
-        isotypemap_file=args.isotype_mapfile,
-        idmap_file=args.idmapfile,
-        isotype_names=args.isotype_names,
     )
 
     if args.verbose:
