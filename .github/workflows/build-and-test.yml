@@ -19,14 +19,15 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
 
-#       - name: Install X11 dependencies on MacOS (needed for Qt in ETE)
-#         if: matrix.os == 'macos-latest'
-#         run: |
-#           brew install --cask xquartz
-      - name: Install Xvfb on Ubuntu (needed for Qt in ETE)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install X11 dependencies on MacOS (needed for Qt in ETE)
+        if: matrix.os == 'macos-latest'
         run: |
-          sudo apt-get install xvfb
+          brew install xquartz --cask
+
+      # - name: Install Xvfb on Ubuntu (needed for Qt in ETE)
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo apt-get install xvfb
 
       - name: Install miniconda and create environment
         uses: conda-incubator/setup-miniconda@v2
@@ -54,17 +55,17 @@ jobs:
         run: |
           make test
 
-#       - name: Test docs build macos
-#         if: matrix.os == 'macos-latest'
-#         shell: bash -l {0}
-#         run: |
-#           make docs
-          
-      - name: Test docs build ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      - name: Test docs build macos
+        if: matrix.os == 'macos-latest'
         shell: bash -l {0}
         run: |
-          xvfb-run -a make docs
-        env:
-          MPLBACKEND: agg
-          TMPDIR: /tmp
+          make docs
+
+      # - name: Test docs build ubuntu
+      #   if: matrix.os == 'ubuntu-latest'
+      #   shell: bash -l {0}
+      #   run: |
+      #     xvfb-run -a make docs
+      #   env:
+      #     MPLBACKEND: agg
+      #     TMPDIR: /tmp
