@@ -22,7 +22,7 @@ jobs:
       - name: Install X11 dependencies on MacOS (needed for Qt in ETE)
         if: matrix.os == 'macos-latest'
         run: |
-          brew install xquartz --cask
+          brew install xquartz
 
       # - name: Install Xvfb on Ubuntu (needed for Qt in ETE)
       #   if: matrix.os == 'ubuntu-latest'
