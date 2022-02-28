@@ -1,0 +1,6 @@
+gctree.branching\_processes.requires\_dag
+=========================================
+
+.. currentmodule:: gctree.branching_processes
+
+.. autofunction:: requires_dag

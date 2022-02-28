@@ -1,0 +1,28 @@
+gctree.mutation\_model.MutationModel
+====================================
+
+.. currentmodule:: gctree.mutation_model
+
+.. autoclass:: MutationModel
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~MutationModel.mutabilities
+      ~MutationModel.mutability
+      ~MutationModel.mutate
+      ~MutationModel.simulate
+   
+   
+
+   
+   
+   

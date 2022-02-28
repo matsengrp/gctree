@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gctree &mdash; gctree  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Classes" href="api.html" />
+    <link rel="prev" title="Custom tree visualization" href="rendering-demo.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html">
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cite.html">Citing gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rendering-demo.html">Custom tree visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">gctree</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Sub-commands:">Sub-commands:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#test">test</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#infer">infer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Named Arguments_repeat1">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#simulate">simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Positional Arguments_repeat1">Positional Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Named Arguments_repeat2">Named Arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#parsimony-utilities">Parsimony utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#deduplicate">deduplicate</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#mkconfig">mkconfig</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#phylip-parse">phylip_parse</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#isotype">isotype</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#modules">Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer.html">Open source code repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer.html#developer-tools">Developer tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer.html#todo-list">Todo list</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gctree</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>gctree</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="gctree">
+<h1>gctree<a class="headerlink" href="#gctree" title="Permalink to this headline"></a></h1>
+<p>The primary gctree command.</p>
+<p><p>genotype collapsed tree inference and simulation</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">gctree</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">{</span><span class="n">test</span><span class="p">,</span><span class="n">infer</span><span class="p">,</span><span class="n">simulate</span><span class="p">}</span> <span class="o">...</span>
+</pre></div>
+</div>
+<section id="Sub-commands:">
+<h2>Sub-commands:<a class="headerlink" href="#Sub-commands:" title="Permalink to this headline"></a></h2>
+<section id="test">
+<h3>test<a class="headerlink" href="#test" title="Permalink to this headline"></a></h3>
+<p>run tests on library functions</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">test</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
+</pre></div>
+</div>
+<section id="Named Arguments">
+<h4>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline"></a></h4>
+<dl class="option-list">
+<dt><kbd>--outbase</kbd></dt>
+<dd><p>output file base name</p>
+</dd>
+<dt><kbd>--img_type</kbd></dt>
+<dd><p>output image file type</p>
+</dd>
+<dt><kbd>--verbose</kbd></dt>
+<dd><p>flag for verbose messaging</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="infer">
+<h3>infer<a class="headerlink" href="#infer" title="Permalink to this headline"></a></h3>
+<p>likelihood ranking of parsimony trees</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">infer</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">colormapfile</span> <span class="n">COLORMAPFILE</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">chain_split</span> <span class="n">CHAIN_SPLIT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame2</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">positionmapfile</span> <span class="n">POSITIONMAPFILE</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">positionmapfile2</span> <span class="n">POSITIONMAPFILE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">isotype_mapfile</span> <span class="n">ISOTYPE_MAPFILE</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">isotype_names</span> <span class="n">ISOTYPE_NAMES</span> <span class="p">[</span><span class="n">ISOTYPE_NAMES</span> <span class="o">...</span><span class="p">]]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">mutability</span> <span class="n">MUTABILITY</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">substitution</span> <span class="n">SUBSTITUTION</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">ranking_coeffs</span> <span class="n">RANKING_COEFFS</span> <span class="n">RANKING_COEFFS</span> <span class="n">RANKING_COEFFS</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">summarize_forest</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">tree_stats</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+             <span class="n">infiles</span> <span class="p">[</span><span class="n">infiles</span> <span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<section id="Positional Arguments">
+<h4>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline"></a></h4>
+<dl class="option-list">
+<dt><kbd>infiles</kbd></dt>
+<dd><p>Input files for inference. If two filenames are passed, the first shall be a dnapars outfile (verbose output with sequences at each site), and the second shall be an abundance file containing allele frequencies (sequence counts) in the format: <code class="docutils literal notranslate"><span class="pre">SeqID,</span> <span class="pre">Nobs</span></code>. If a single filename is passed, it shall be the name of a pickled history DAG object created by gctree.</p>
+</dd>
+</dl>
+</section>
+<section id="Named Arguments_repeat1">
+<h4>Named Arguments<a class="headerlink" href="#Named Arguments_repeat1" title="Permalink to this headline"></a></h4>
+<dl class="option-list">
+<dt><kbd>--root</kbd></dt>
+<dd><p>name of root sequence (outgroup root), default <code class="docutils literal notranslate"><span class="pre">&quot;root&quot;</span></code></p>
+</dd>
+<dt><kbd>--colormapfile</kbd></dt>
+<dd><p>File containing color map in the tab-separated format: <code class="docutils literal notranslate"><span class="pre">&quot;SeqID</span> <span class="pre">color&quot;</span></code></p>
+</dd>
+<dt><kbd>--chain_split</kbd></dt>
+<dd><p>when using concatenated heavy and light chains, this is the 0-based index at which the 2nd chain begins, needed for determining coding frame in both chains</p>
+</dd>
+<dt><kbd>--frame2</kbd></dt>
+<dd><p>Possible choices: 1, 2, 3</p>
+<p>codon frame for the second chain when using the <code class="docutils literal notranslate"><span class="pre">chain_split</span></code> option</p>
+</dd>
+<dt><kbd>--positionmapfile</kbd></dt>
+<dd><p>file containing a list of position numbers (e.g. IMGT) corresponding to indices in sequence</p>
+</dd>
+<dt><kbd>--positionmapfile2</kbd></dt>
+<dd><p>positionmapfile for the 2nd chain when using the <code class="docutils literal notranslate"><span class="pre">chain_split</span></code> option</p>
+</dd>
+<dt><kbd>--idmapfile</kbd></dt>
+<dd><p>filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate. For use by isotype ranking.</p>
+</dd>
+<dt><kbd>--isotype_mapfile</kbd></dt>
+<dd><p>filename for a csv file mapping original sequence ids to observed isotypes. For example, each line should have the format ‘somesequence_id, some_isotype’.</p>
+</dd>
+<dt><kbd>--isotype_names</kbd></dt>
+<dd><p>A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated. Default is equivalent to providing the argument <code class="docutils literal notranslate"><span class="pre">--isotype_names</span> <span class="pre">IgM</span> <span class="pre">IgD</span> <span class="pre">IgG3</span> <span class="pre">IgG1</span> <span class="pre">IgG2</span> <span class="pre">IgE</span> <span class="pre">IgA</span></code></p>
+</dd>
+<dt><kbd>--mutability</kbd></dt>
+<dd><p>Path to mutability model file. If –mutability and –substitution are both provided, they will be used to rank trees after likelihood and isotype parsimony.</p>
+</dd>
+<dt><kbd>--substitution</kbd></dt>
+<dd><p>Path to substitution model file. If –mutability and –substitution are both provided, they will be used to rank trees after likelihood and isotype parsimony.</p>
+</dd>
+<dt><kbd>--ranking_coeffs</kbd></dt>
+<dd><p>List of coefficients for ranking trees by a linear combination of traits. Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. A coefficient of -1 will be applied to branching process likelihood. If not provided, trees will be ranked lexicographically by likelihood, isotype parsimony, and mutability parsimony in that order.</p>
+</dd>
+<dt><kbd>--summarize_forest</kbd></dt>
+<dd><p>write a file <cite>[outbase].forest_summary.log</cite> with a summary of traits for trees in the forest.</p>
+</dd>
+<dt><kbd>--tree_stats</kbd></dt>
+<dd><p>write a file <cite>[outbase].tree_stats.log</cite> with stats for all trees in the forest. For large forests, this is slow and memory intensive.</p>
+</dd>
+<dt><kbd>--outbase</kbd></dt>
+<dd><p>output file base name</p>
+</dd>
+<dt><kbd>--img_type</kbd></dt>
+<dd><p>output image file type</p>
+</dd>
+<dt><kbd>--verbose</kbd></dt>
+<dd><p>flag for verbose messaging</p>
+</dd>
+<dt><kbd>--frame</kbd></dt>
+<dd><p>Possible choices: 1, 2, 3</p>
+<p>codon frame</p>
+</dd>
+<dt><kbd>--idlabel</kbd></dt>
+<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="simulate">
+<h3>simulate<a class="headerlink" href="#simulate" title="Permalink to this headline"></a></h3>
+<p>Neutral, and target selective, model gctree simulation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">simulate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sequence2</span> <span class="n">SEQUENCE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="k">lambda</span> <span class="n">LAMBDA_</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">lambda0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">T</span> <span class="n">T</span> <span class="p">[</span><span class="n">T</span> <span class="o">...</span><span class="p">]]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">seed</span> <span class="n">SEED</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">target_dist</span> <span class="n">TARGET_DIST</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">plotAA</span> <span class="n">PLOTAA</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
+                <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
+                <span class="n">sequence</span> <span class="n">mutability</span> <span class="n">substitution</span>
+</pre></div>
+</div>
+<section id="Positional Arguments_repeat1">
+<h4>Positional Arguments<a class="headerlink" href="#Positional Arguments_repeat1" title="Permalink to this headline"></a></h4>
+<dl class="option-list">
+<dt><kbd>sequence</kbd></dt>
+<dd><p>seed root nucleotide sequence</p>
+</dd>
+<dt><kbd>mutability</kbd></dt>
+<dd><p>path to mutability model file</p>
+</dd>
+<dt><kbd>substitution</kbd></dt>
+<dd><p>path to substitution model file</p>
+</dd>
+</dl>
+</section>
+<section id="Named Arguments_repeat2">
+<h4>Named Arguments<a class="headerlink" href="#Named Arguments_repeat2" title="Permalink to this headline"></a></h4>
+<dl class="option-list">
+<dt><kbd>--sequence2</kbd></dt>
+<dd><p>Second seed root nucleotide sequence. For simulating heavy/light chain co-evolution.</p>
+</dd>
+<dt><kbd>--lambda</kbd></dt>
+<dd><p>poisson branching parameter</p>
+</dd>
+<dt><kbd>--lambda0</kbd></dt>
+<dd><p>List of one or two elements with the baseline mutation rates. Space separated input values. First element belonging to seed sequence one and optionally the next to sequence 2. If only one rate is provided for two sequences, this rate will be used on both.</p>
+</dd>
+<dt><kbd>--n</kbd></dt>
+<dd><p>cells downsampled</p>
+</dd>
+<dt><kbd>--N</kbd></dt>
+<dd><p>target simulation size</p>
+</dd>
+<dt><kbd>--T</kbd></dt>
+<dd><p>observation time, if None we run until termination and take all leaves</p>
+</dd>
+<dt><kbd>--seed</kbd></dt>
+<dd><p>integer random seed</p>
+</dd>
+<dt><kbd>--target_dist</kbd></dt>
+<dd><p>The number of non-synonymous mutations the target should be away from the root.</p>
+</dd>
+<dt><kbd>--plotAA</kbd></dt>
+<dd><p>Plot trees with collapsing and coloring on amino acid level.</p>
+</dd>
+<dt><kbd>--outbase</kbd></dt>
+<dd><p>output file base name</p>
+</dd>
+<dt><kbd>--img_type</kbd></dt>
+<dd><p>output image file type</p>
+</dd>
+<dt><kbd>--verbose</kbd></dt>
+<dd><p>flag for verbose messaging</p>
+</dd>
+<dt><kbd>--frame</kbd></dt>
+<dd><p>Possible choices: 1, 2, 3</p>
+<p>codon frame</p>
+</dd>
+<dt><kbd>--idlabel</kbd></dt>
+<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+</section>
+<section id="parsimony-utilities">
+<h1>Parsimony utilities<a class="headerlink" href="#parsimony-utilities" title="Permalink to this headline"></a></h1>
+<p>Additional command line uilities for processing data for genotype collapse,
+inferring parsimony trees with phylip, and prepping parsimony trees for analysis
+with gctree.</p>
+<section id="deduplicate">
+<h2>deduplicate<a class="headerlink" href="#deduplicate" title="Permalink to this headline"></a></h2>
+<p><p>Deduplicate sequences in a fasta file, write to stdout in phylip format, and create a few other files (see arguments). Headers must be a unique ID of less than or equal to 10 ASCII characters. An additional sequence representing the outgroup/root must be included (even if one or more observed sequences are identical to it).</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">deduplicate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">abundance_file</span> <span class="n">ABUNDANCE_FILE</span><span class="p">]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">idmapfile</span> <span class="n">IDMAPFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">id_abundances</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">colorfile</span> <span class="n">COLORFILE</span><span class="p">]</span>
+                   <span class="p">[</span><span class="o">--</span><span class="n">colormap</span> <span class="n">COLORMAP</span><span class="p">]</span>
+                   <span class="n">infile</span> <span class="p">[</span><span class="n">infile</span> <span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<section id="Positional Arguments">
+<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline"></a></h3>
+<dl class="option-list">
+<dt><kbd>infile</kbd></dt>
+<dd><p>Fasta file with less than or equal to 10 characters unique header ID. Because dnapars will name internal nodes by integers a node name must includeat least one non number character (unless using the id_abundances option).</p>
+</dd>
+</dl>
+</section>
+<section id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline"></a></h3>
+<dl class="option-list">
+<dt><kbd>--abundance_file</kbd></dt>
+<dd><p>filename for the output file containing the counts.</p>
+</dd>
+<dt><kbd>--idmapfile</kbd></dt>
+<dd><p>filename for the output file containing the map of new unique ids to original seq ids.</p>
+</dd>
+<dt><kbd>--id_abundances</kbd></dt>
+<dd><p>flag to interpret integer ids in input as abundances</p>
+</dd>
+<dt><kbd>--root</kbd></dt>
+<dd><p>ID of the root sequence in fasta file. This ID will be used as the unique id for the root sequence, and any observed sequences matching the root sequence.</p>
+</dd>
+<dt><kbd>--frame</kbd></dt>
+<dd><p>Possible choices: 1, 2, 3</p>
+<p>codon frame</p>
+</dd>
+<dt><kbd>--colorfile</kbd></dt>
+<dd><p>optional input csv filename for colors of each cell.</p>
+</dd>
+<dt><kbd>--colormap</kbd></dt>
+<dd><p>optional output filename for colors map.</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="mkconfig">
+<h2>mkconfig<a class="headerlink" href="#mkconfig" title="Permalink to this headline"></a></h2>
+<p><p>Read a PHYLIP-format file and produce an appropriate config file for passing
+to <cite>dnapars</cite>.</p>
+<p><cite>dnapars</cite> doesn’t play very well in a
+pipeline.  It prompts the user for configuration information and reads
+responses from stdin.  The config file generated by this script is
+meant to mimic the responses to the expected prompts.</p>
+<p>Typical usage is,</p>
+<blockquote>
+<div><p>$ mkconfig sequence.phy &gt; dnapars.cfg
+$ dnapars &lt; dnapars.cfg</p>
+</div></blockquote>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">mkconfig</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">quick</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap</span> <span class="n">BOOTSTRAP</span><span class="p">]</span> <span class="n">phylip</span> <span class="n">treeprog</span>
+</pre></div>
+</div>
+<section id="Positional Arguments">
+<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline"></a></h3>
+<dl class="option-list">
+<dt><kbd>phylip</kbd></dt>
+<dd><p>PHYLIP input</p>
+</dd>
+<dt><kbd>treeprog</kbd></dt>
+<dd><p>dnapars, dnaml, or seqboot</p>
+</dd>
+</dl>
+</section>
+<section id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline"></a></h3>
+<dl class="option-list">
+<dt><kbd>--quick</kbd></dt>
+<dd><p>quicker (less thourough) dnapars</p>
+</dd>
+<dt><kbd>--bootstrap</kbd></dt>
+<dd><p>input is seqboot output with this many samples</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="phylip-parse">
+<h2>phylip_parse<a class="headerlink" href="#phylip-parse" title="Permalink to this headline"></a></h2>
+<p><p>Given an outputfile from one of the PHYLIP tools - <cite>dnaml</cite> or <cite>dnapars</cite> -
+produce a CollapsedForest containing the trees in that outputfile.</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">phylip_parse</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outputfile</span> <span class="n">OUTPUTFILE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span>
+                    <span class="n">phylip_outfile</span> <span class="n">abundance_file</span>
+</pre></div>
+</div>
+<section id="Positional Arguments">
+<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline"></a></h3>
+<dl class="option-list">
+<dt><kbd>phylip_outfile</kbd></dt>
+<dd><p>dnaml outfile (verbose output with inferred ancestral sequences, option 5).</p>
+</dd>
+<dt><kbd>abundance_file</kbd></dt>
+<dd><p>count file</p>
+</dd>
+</dl>
+</section>
+<section id="Named Arguments">
+<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline"></a></h3>
+<dl class="option-list">
+<dt><kbd>--outputfile</kbd></dt>
+<dd><p>output file.</p>
+</dd>
+<dt><kbd>--root</kbd></dt>
+<dd><p>root sequence id</p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+<section id="isotype">
+<h1>isotype<a class="headerlink" href="#isotype" title="Permalink to this headline"></a></h1>
+<p><p>Given gctree inference outputs, and a file mapping original
+sequence names (the original sequence ids referenced as values in
+<cite>idmapfile</cite>) with format “Original SeqID, Isotype”, this utility</p>
+<ul class="simple">
+<li><p>Adds observed isotypes to each observed node in the collapsed
+trees output by gctree inference. If cells with the same sequence
+but different isotypes are observed, then collapsed tree nodes
+must be ‘exploded’ into new nodes with the appropriate isotypes
+and abundances. Each unique sequence ID generated by gctree is
+prepended to its observed isotype, and a new <cite>isotyped.idmap</cite>
+mapping these new sequence IDs to original sequence IDs is 
+written in the output directory.</p></li>
+<li><p>Resolves isotypes of unobserved ancestral genotypes in a way
+that minimizes isotype switching and obeys isotype switching
+order. If observed isotypes of an observed internal node and its
+children violate switching order, then the observed internal node
+is replaced with an unobserved node with the same sequence, and
+the observed internal node is placed as a child leaf. This
+procedure always allows switching order conflicts to be resolved,
+and should usually increase isotype transitions required in the
+resulting tree.</p></li>
+<li><p>Renders each new collapsed tree with colors and labels
+reflecting observed or inferred isotypes, and writes a fasta and
+newick file just like the gctree inference pipeline.</p></li>
+<li><p>Prints for each collapsed tree, the original branching process
+log likelihood, the original node count, the isotype parsimony
+score, and the new node count after isotype additions. The
+isotype parsimony score is just a count of how many isotype
+transitions are required along tree edges. Changes in node count
+after isotype additions indicate that either observed nodes had
+to be exploded based on observed isotypes, or isotype switching
+order violations required internal nodes to be expanded as leaf
+nodes.</p></li>
+</ul>
+<p>This tool doesn’t make any judgements about which tree is best.
+Tree output order is the same as in gctree inference: ranking is
+by log likelihood before isotype additions. A determination of
+which is the best tree is left to the user, based on likelihoods,
+isotype parsimony score, and changes in the number of nodes after
+isotype additions.</p>
+</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">isotype</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">trees</span> <span class="n">TREES</span> <span class="p">[</span><span class="n">TREES</span> <span class="o">...</span><span class="p">]]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">isotype_names</span> <span class="n">ISOTYPE_NAMES</span> <span class="p">[</span><span class="n">ISOTYPE_NAMES</span> <span class="o">...</span><span class="p">]]</span>
+               <span class="p">[</span><span class="o">--</span><span class="n">out_directory</span> <span class="n">OUT_DIRECTORY</span><span class="p">]</span>
+               <span class="n">idmapfile</span> <span class="n">isotype_mapfile</span>
+</pre></div>
+</div>
+<section id="Positional Arguments">
+<h2>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline"></a></h2>
+<dl class="option-list">
+<dt><kbd>idmapfile</kbd></dt>
+<dd><p>filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.</p>
+</dd>
+<dt><kbd>isotype_mapfile</kbd></dt>
+<dd><p>filename for a csv file mapping original sequence ids to observed isotypes. For example, each line should have the format ‘somesequence_id, some_isotype’.</p>
+</dd>
+</dl>
+</section>
+<section id="Named Arguments">
+<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline"></a></h2>
+<dl class="option-list">
+<dt><kbd>--trees</kbd></dt>
+<dd><p>filenames for collapsed tree pickle files output by gctree inference</p>
+</dd>
+<dt><kbd>--isotype_names</kbd></dt>
+<dd><p>A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated. Default is equivalent to providing the argument <code class="docutils literal notranslate"><span class="pre">--isotype_names</span> <span class="pre">IgM</span> <span class="pre">IgD</span> <span class="pre">IgG3</span> <span class="pre">IgG1</span> <span class="pre">IgG2</span> <span class="pre">IgE</span> <span class="pre">IgA</span></code></p>
+</dd>
+<dt><kbd>--out_directory</kbd></dt>
+<dd><p>Directory in which to place output. Default is working directory.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="rendering-demo.html" class="btn btn-neutral float-left" title="Custom tree visualization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="Classes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, William DeWitt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

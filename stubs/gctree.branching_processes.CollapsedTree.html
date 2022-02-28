@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gctree.branching_processes.CollapsedTree &mdash; gctree  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Open source code repository" href="../developer.html" />
+    <link rel="prev" title="gctree.branching_processes.CollapsedForest" href="gctree.branching_processes.CollapsedForest.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html">
+            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cite.html">Citing gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rendering-demo.html">Custom tree visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html">gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html#parsimony-utilities">Parsimony utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli.html#isotype">isotype</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../api.html">Classes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html#modules">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gctree.mutation_model.html">gctree.mutation_model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.utils.html">gctree.utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.isotyping.html">gctree.isotyping</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gctree.branching_processes.html">gctree.branching_processes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.requires_dag.html">gctree.branching_processes.requires_dag</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.CollapsedForest.html">gctree.branching_processes.CollapsedForest</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gctree.branching_processes.CollapsedTree</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html">Open source code repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html#developer-tools">Developer tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html#todo-list">Todo list</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gctree</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../api.html">Classes</a> &raquo;</li>
+          <li><a href="gctree.branching_processes.html">gctree.branching_processes</a> &raquo;</li>
+      <li>gctree.branching_processes.CollapsedTree</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="gctree-branching-processes-collapsedtree">
+<h1>gctree.branching_processes.CollapsedTree<a class="headerlink" href="#gctree-branching-processes-collapsedtree" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.branching_processes.</span></span><span class="sig-name descname"><span class="pre">CollapsedTree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_repeats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A collapsed tree, modeled as an infinite type Galton-Watson process run
+to extinction.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.tree">
+<span class="sig-name descname"><span class="pre">tree</span></span><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.tree" title="Permalink to this definition"></a></dt>
+<dd><p><a class="reference external" href="http://etetoolkit.org/docs/latest/reference/reference_tree.html#ete3.TreeNode" title="(in ETE Toolkit v3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ete3.TreeNode</span></code></a> object with <code class="docutils literal notranslate"><span class="pre">abundance</span></code> node features</p>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tree</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TreeNode</span></code>]) – ete3 tree with <code class="docutils literal notranslate"><span class="pre">abundance</span></code> node features. Nonzero abundances expected on leaves, and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.</p></li>
+<li><p><strong>allow_repeats</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.compare" title="gctree.branching_processes.CollapsedTree.compare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare</span></code></a></p></td>
+<td><p>Compare this tree to the other tree.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.feature_colormap" title="gctree.branching_processes.CollapsedTree.feature_colormap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_colormap</span></code></a></p></td>
+<td><p>Generate a colormap based on a continuous tree feature.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.ll" title="gctree.branching_processes.CollapsedTree.ll"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ll</span></code></a></p></td>
+<td><p>Log likelihood of branching process parameters <span class="math notranslate nohighlight">\((p, q)\)</span> given tree topology <span class="math notranslate nohighlight">\(T\)</span> and genotype abundances <span class="math notranslate nohighlight">\(A\)</span>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.local_branching" title="gctree.branching_processes.CollapsedTree.local_branching"><code class="xref py py-obj docutils literal notranslate"><span class="pre">local_branching</span></code></a></p></td>
+<td><p>Add local branching statistics (Neher et al. 2014) as tree node features to the ETE tree attribute.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.mle" title="gctree.branching_processes.CollapsedTree.mle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mle</span></code></a></p></td>
+<td><p>Maximum likelihood estimate of <span class="math notranslate nohighlight">\((p, q)\)</span>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.newick" title="gctree.branching_processes.CollapsedTree.newick"><code class="xref py py-obj docutils literal notranslate"><span class="pre">newick</span></code></a></p></td>
+<td><p>Write to newick file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.render" title="gctree.branching_processes.CollapsedTree.render"><code class="xref py py-obj docutils literal notranslate"><span class="pre">render</span></code></a></p></td>
+<td><p>Render to tree image file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.simulate" title="gctree.branching_processes.CollapsedTree.simulate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simulate</span></code></a></p></td>
+<td><p>Simulate a collapsed tree as an infinite type Galton-Watson process run to extintion, with branching probability <span class="math notranslate nohighlight">\(p\)</span> and mutation probability <span class="math notranslate nohighlight">\(q\)</span>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.support" title="gctree.branching_processes.CollapsedTree.support"><code class="xref py py-obj docutils literal notranslate"><span class="pre">support</span></code></a></p></td>
+<td><p>Compute support from a list of bootstrap <a class="reference internal" href="#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a> objects, and add to tree attibute.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gctree.branching_processes.CollapsedTree.write" title="gctree.branching_processes.CollapsedTree.write"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write</span></code></a></p></td>
+<td><p>Serialize to pickle file.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.ll">
+<span class="sig-name descname"><span class="pre">ll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.ll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.ll" title="Permalink to this definition"></a></dt>
+<dd><p>Log likelihood of branching process parameters <span class="math notranslate nohighlight">\((p, q)\)</span> given tree topology <span class="math notranslate nohighlight">\(T\)</span> and genotype abundances <span class="math notranslate nohighlight">\(A\)</span>.</p>
+<div class="math notranslate nohighlight">
+\[\ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>) – branching probability</p></li>
+<li><p><strong>q</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>) – mutation probability</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Log likelihood <span class="math notranslate nohighlight">\(\ell(p, q; T, A)\)</span> and its gradient <span class="math notranslate nohighlight">\(\nabla\ell(p, q; T, A)\)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.mle">
+<span class="sig-name descname"><span class="pre">mle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.mle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.mle" title="Permalink to this definition"></a></dt>
+<dd><p>Maximum likelihood estimate of <span class="math notranslate nohighlight">\((p, q)\)</span>.</p>
+<div class="math notranslate nohighlight">
+\[(p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – keyword arguments passed along to the log likelihood <a class="reference internal" href="#gctree.branching_processes.CollapsedTree.ll" title="gctree.branching_processes.CollapsedTree.ll"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CollapsedTree.ll()</span></code></a></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Tuple <span class="math notranslate nohighlight">\((p, q)\)</span> with estimated branching probability and estimated mutation probability</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.simulate">
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.simulate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.simulate" title="Permalink to this definition"></a></dt>
+<dd><p>Simulate a collapsed tree as an infinite type Galton-Watson process
+run to extintion, with branching probability <span class="math notranslate nohighlight">\(p\)</span> and mutation
+probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites existing tree attribute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>) – branching probability</p></li>
+<li><p><strong>q</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>) – mutation probability</p></li>
+<li><p><strong>root</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – flag indicating simulation is being run from the root of the tree, so we should update tree attributes (should usually be <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.render">
+<span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">branch_margin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colormap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chain_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_map2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_support</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.render"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.render" title="Permalink to this definition"></a></dt>
+<dd><p>Render to tree image file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>outfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – file name to render to, filetype inferred from suffix, .svg for color</p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – branch length scale in pixels (set automatically if <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
+<li><p><strong>branch_margin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – additional leaf branch separation margin, in pixels, to scale tree width</p></li>
+<li><p><strong>node_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – size of nodes in pixels (set according to abundance if <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
+<li><p><strong>idlabel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – label nodes with seq ids, and write sequences of all nodes to a fasta file with same base name as <code class="docutils literal notranslate"><span class="pre">outfile</span></code></p></li>
+<li><p><strong>colormap</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>]) – dictionary mapping node names to color names or to dictionaries of color frequencies</p></li>
+<li><p><strong>frame</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – coding frame for annotating amino acid substitutions</p></li>
+<li><p><strong>position_map</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>]) – mapping of position names for sequence indices, to be used with substitution annotations and the <code class="docutils literal notranslate"><span class="pre">frame</span></code> argument</p></li>
+<li><p><strong>chain_split</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – if sequences are a concatenation two gene sequences, this is the index at which the 2nd one starts (requires <code class="docutils literal notranslate"><span class="pre">frame</span></code> and <code class="docutils literal notranslate"><span class="pre">frame2</span></code> arguments)</p></li>
+<li><p><strong>frame2</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – coding frame for 2nd sequence when using <code class="docutils literal notranslate"><span class="pre">chain_split</span></code></p></li>
+<li><p><strong>position_map2</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>]) – like <code class="docutils literal notranslate"><span class="pre">position_map</span></code>, but for 2nd sequence when using <code class="docutils literal notranslate"><span class="pre">chain_split</span></code></p></li>
+<li><p><strong>show_support</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – annotate bootstrap support if available</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.feature_colormap">
+<span class="sig-name descname"><span class="pre">feature_colormap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.feature_colormap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.feature_colormap" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a colormap based on a continuous tree feature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – feature name (all nodes in tree attribute must have this feature)</p></li>
+<li><p><strong>cmap</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – any matplotlib color palette: <a class="reference external" href="https://matplotlib.org/stable/gallery/color/colormap_reference.html">https://matplotlib.org/stable/gallery/color/colormap_reference.html</a></p></li>
+<li><p><strong>vmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – minimum value for colormap (default to minimum of the feature over the tree)</p></li>
+<li><p><strong>vmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – maximum value for colormap (default to maximum of the feature over the tree)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Dictionary of node names to hex color strings, which may be used as the colormap in <a class="reference internal" href="gctree.CollapsedTree.html#gctree.CollapsedTree.render" title="gctree.CollapsedTree.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gctree.CollapsedTree.render()</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.write" title="Permalink to this definition"></a></dt>
+<dd><p>Serialize to pickle file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – file name (.p suffix recommended)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.newick">
+<span class="sig-name descname"><span class="pre">newick</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.newick"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.newick" title="Permalink to this definition"></a></dt>
+<dd><p>Write to newick file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – file name (.nk suffix recommended)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.compare">
+<span class="sig-name descname"><span class="pre">compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'identity'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.compare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.compare" title="Permalink to this definition"></a></dt>
+<dd><p>Compare this tree to the other tree.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tree2</strong> (<a class="reference internal" href="#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>) – another object of this type</p></li>
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – comparison type (<code class="docutils literal notranslate"><span class="pre">identity</span></code>, <code class="docutils literal notranslate"><span class="pre">MRCA</span></code>, or <code class="docutils literal notranslate"><span class="pre">RF</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>tree difference</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.support">
+<span class="sig-name descname"><span class="pre">support</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bootstrap_trees_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compatibility</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.support"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.support" title="Permalink to this definition"></a></dt>
+<dd><p>Compute support from a list of bootstrap <a class="reference internal" href="#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a> objects, and add to tree attibute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bootstrap_trees_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>]) – List of trees</p></li>
+<li><p><strong>weights</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]]) – weights for each tree, perhaps for weighting parsimony degenerate trees</p></li>
+<li><p><strong>compatibility</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – counts trees that don’t disconfirm the split.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gctree.branching_processes.CollapsedTree.local_branching">
+<span class="sig-name descname"><span class="pre">local_branching</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.local_branching"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedTree.local_branching" title="Permalink to this definition"></a></dt>
+<dd><p>Add local branching statistics (Neher et al. 2014) as tree node
+features to the ETE tree attribute.
+After execution, all nodes will have new features <code class="docutils literal notranslate"><span class="pre">LBI</span></code>
+(local branching index) and <code class="docutils literal notranslate"><span class="pre">LBR</span></code> (local branching ratio, below Vs
+above the node)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tau</strong> – decay timescale for exponential filter</p></li>
+<li><p><strong>tau0</strong> – effective branch length for branches with zero mutations</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gctree.branching_processes.CollapsedForest.html" class="btn btn-neutral float-left" title="gctree.branching_processes.CollapsedForest" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../developer.html" class="btn btn-neutral float-right" title="Open source code repository" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, William DeWitt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

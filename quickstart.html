@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quickstart &mdash; gctree  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Custom tree visualization" href="rendering-demo.html" />
+    <link rel="prev" title="Citing gctree" href="cite.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html">
+            <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cite.html">Citing gctree</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#input-data">Input data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deduplication-and-sequence-abundances">Deduplication and sequence abundances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parsimony-trees">Parsimony trees</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gctree">gctree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#isotype">isotype</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="rendering-demo.html">Custom tree visualization</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">gctree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html#parsimony-utilities">Parsimony utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html#isotype">isotype</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#modules">Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer.html">Open source code repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer.html#developer-tools">Developer tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer.html#todo-list">Todo list</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gctree</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Quickstart</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline"></a></h1>
+<p>In this minimal example we show how to use gctree commands to rank parsimony trees from PHYLIP’s dnapars program.
+See the CLI and API docs for complete documentation of command options, included many not used here.</p>
+<p>The data in this example were published in <a class="reference external" href="http://science.sciencemag.org/content/351/6277/1048">Tas et al. 2016. Visualizing Antibody Affinity Maturation in Germinal Centers. Science 351 (6277)</a> and shown in Fig. 4 (lymph node 2, germinal center 1).</p>
+<a class="reference internal image-reference" href="_images/gc1.png"><img alt="_images/gc1.png" src="_images/gc1.png" style="width: 200px;" /></a>
+<section id="input-data">
+<h2>Input data<a class="headerlink" href="#input-data" title="Permalink to this headline"></a></h2>
+<p>We start with a fasta alignment file.
+The file <code class="docutils literal notranslate"><span class="pre">../example/150228_Clone_3-8.fasta</span></code> contains heavy chain V gene sequences from
+germinal B cells sorted from a brainbow mouse using multicolor fate mapping.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ tail -30 ../example/150228_Clone_3-8.fasta
+&gt;VIBM1S4HBJ
+ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
+tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
+atggggtacataagcttcagtggtagcacttactacaatccatctctcaaaagtcgaatc
+tccatcactcgagacacatccaagaaccagtactacctgcagttgaattctgtgactact
+gaggacacagccacatattactgt
+&gt;VIBM1S4HKJ
+ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
+tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
+atggggtacataagcttcagtggtagcacttactacaatccatctctcaaaagtcgaatc
+tccatcactcgagacacatccaagaaccagtactacctgcagttgaattctgtgactact
+gaggacacagccacatattactgt
+&gt;VIBM1S4HDJ
+ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
+tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
+atggggtacataagcttcagtggtagcacttactacaatccatctctcaaaagtcgaatc
+tccatcactcgagacacatccaagaaccagtactacctgcagttgaattctgtgactact
+gaggacacagccacatattactgt
+&gt;VIBM1S4HCJ
+ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
+tccatcaccagtggttactggaactggatccggaagttcccagggaatagacttgagtac
+atggggtacataagcttcagtggtagcacttactacaatccatctctcaaaagtcgaatc
+tccatcactcgagacacatccaagaaccagtactacctgcagttgaattctgtgactact
+gaggacacagccacatattactgt
+&gt;GL
+ggacctagcctcgtgaaaccttctcagactctgtccctcacctgttctgtcactggcgac
+tccatcaccagtggttactggaactggatccggaaattcccagggaataaacttgagtac
+atggggtacataagctacagtggtagcacttactacaatccatctctcaaaagtcgaatc
+tccatcactcgagacacatccaagaaccagtactacctgcagttgaattctgtgactact
+gaggacacagccacatattactgt
+</pre></div>
+</div>
+<p>In this file the sequence with id <code class="docutils literal notranslate"><span class="pre">GL</span></code> is the naive germline sequence, and represents the root of the tree.
+It does not refer to an observed sequence, but is included to outgroup root the tree!
+Generally this input fasta file should also contain all observed sequences with duplication (some of which may be identical to the root/outgroup sequence).
+It is also possible to provide some observed sequences with integers ids to be interpreted as abundances, as in the sequence named <code class="docutils literal notranslate"><span class="pre">17</span></code> above.</p>
+</section>
+<section id="deduplication-and-sequence-abundances">
+<h2>Deduplication and sequence abundances<a class="headerlink" href="#deduplication-and-sequence-abundances" title="Permalink to this headline"></a></h2>
+<p>First we deduplicate the sequences and convert to phylip alignment format, and also determine sequence abundances.
+The <code class="docutils literal notranslate"><span class="pre">deduplicate</span></code> command writes the phylip alignment of unique sequences to stdout (which we redirect to a file here).
+The argument <code class="docutils literal notranslate"><span class="pre">--root</span></code> indicates the root id.
+The flag <code class="docutils literal notranslate"><span class="pre">--id_abundances</span></code> can be used to indicate that integer sequence ids should be interepreted as abundances.
+The argument <code class="docutils literal notranslate"><span class="pre">--abundance_file</span></code> indicates that sequence abundance information should be written to the specified <code class="docutils literal notranslate"><span class="pre">csv</span></code> file.
+The argument <code class="docutils literal notranslate"><span class="pre">--idmapfile</span></code> allows us to specify a filename for the output
+file containing a mapping of new, unique sequence IDs to original sequence IDs
+from the fasta file.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ deduplicate ../example/150228_Clone_3-8.fasta --root GL --abundance_file abundances.csv --idmapfile idmap.txt &gt; deduplicated.phylip
+</pre></div>
+</div>
+<p>We now have files <code class="docutils literal notranslate"><span class="pre">deduplicated.phylip</span></code> and <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ head deduplicated.phylip
+ 43 264
+GL         GGACCTAGCC TCGTGAAACC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+seq1       GGACCTAGCC TCGTGAAACC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+seq2       GGACCTAGCC TCGTGAAACC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+seq3       GGACCTAGCC TCGTGAAACC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+seq4       GGACCTAGCC TCGTGAAACC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+seq5       GGACCTAGCC TCGTGAAACC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+seq6       GGACCTAGCC TCGTGAAACC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+seq7       GGACCTAGCC TCGTGAAATC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+seq8       GGACCTAGCC TCGTGAAACC TTCTCAGACT CTGTCCCTCA CCTGTTCTGT
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ head abundances.csv
+GL,0
+seq1,1
+seq2,1
+seq3,1
+seq4,1
+seq5,1
+seq6,1
+seq7,1
+seq8,1
+seq9,3
+</pre></div>
+</div>
+</section>
+<section id="parsimony-trees">
+<h2>Parsimony trees<a class="headerlink" href="#parsimony-trees" title="Permalink to this headline"></a></h2>
+<p>We use PHYLIP’s <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> program (see install docs page) to generate a set of maximum parsimony trees for the deduplicated sequences.
+PHYLIP is an interactive command line tool, so we will automatically generate a config file to feed it input, instead of using it interactively.</p>
+<p>We generate a config file for <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> based on our deduplicated alignment using the <code class="docutils literal notranslate"><span class="pre">mkconfig</span></code> command.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ mkconfig deduplicated.phylip dnapars &gt; dnapars.cfg
+</pre></div>
+</div>
+<p>Run <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> using this config file, redirecting stdout to a log file.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ dnapars &lt; dnapars.cfg &gt; dnapars.log
+...
+</pre></div>
+</div>
+<p>You now have two new files, <code class="docutils literal notranslate"><span class="pre">outfile</span></code> and <code class="docutils literal notranslate"><span class="pre">outtree</span></code>.
+Note: if you want to rerun the above <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> command, you must delete these two files first!</p>
+</section>
+<section id="gctree">
+<h2>gctree<a class="headerlink" href="#gctree" title="Permalink to this headline"></a></h2>
+<p>We’re now ready to run <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> to use abundance data (in <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>) to rank the equally parsimonious trees (in <code class="docutils literal notranslate"><span class="pre">outfile</span></code>).
+We can use the optional argument <code class="docutils literal notranslate"><span class="pre">--frame</span></code> to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.</p>
+<p>If working in a headless environment, <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> must be run with a tool
+like <code class="docutils literal notranslate"><span class="pre">xvfb-run</span></code> to provide an X server for rendering the output trees.
+This may also require telling matplotlib to use a headless backend with <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">MPLBACKEND=agg</span></code>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to &#39;/tmp/runtime-runner&#39;
+number of trees with integer branch lengths: 703
+number of unique collapsed topologies, ignoring inferred ancestral sequences: 679
+Parameters: (0.4961832069242958, 0.36445206621349757)
+
+Stats for optimal trees:
+tree     	Log Likelihood	Alleles       
+1         	-78.00393661	48        
+Degenerate ranking criteria: trimmed history DAG contains 3 unique trees, with 3 unique collapsed topologies.
+A representative of each topology will be sampled randomly for rendering.
+...
+</pre></div>
+</div>
+<p>A large number of output files with the basename <code class="docutils literal notranslate"><span class="pre">gctree.out.*</span></code> are also created.
+The SVG image file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.abundance_rank.svg</span></code> shows a distribution of genotype abundances in the original data:</p>
+<a class="reference internal image-reference" href="gctree.out.inference.abundance_rank.svg"><img alt="gctree.out.inference.abundance_rank.svg" src="gctree.out.inference.abundance_rank.svg" width="600" /></a>
+<p>Then there are files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.svg</span></code> and <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.nk</span></code> containing an SVG tree image and newick tree file. If more than one parsimony tree is optimal, then up to ten optimal trees will be sampled randomly, and the corresponding files will be numbered <strong>arbitrarily</strong>.
+For example here is the top ranked tree <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.svg</span></code>:</p>
+<a class="reference internal image-reference" href="gctree.out.inference.1.svg"><img alt="gctree.out.inference.1.svg" src="gctree.out.inference.1.svg" width="1000" /></a>
+<p>You will also see Python pickle files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].p</span></code> containing a <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gctree.CollapsedTree</span></code></a> object for each optimal tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.render" title="gctree.CollapsedTree.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gctree.CollapsedTree.render()</span></code></a>).</p>
+<p>Criteria other than branching process likelihoods can be used to break ties
+between trees. Providing arguments <code class="docutils literal notranslate"><span class="pre">--isotype_mapfile</span></code> and
+<code class="docutils literal notranslate"><span class="pre">--idmapfile</span></code> will allow trees to be ranked by isotype parsimony. Providing
+arguments <code class="docutils literal notranslate"><span class="pre">--mutability</span></code> and <code class="docutils literal notranslate"><span class="pre">--substitution</span></code> allows trees to be ranked
+according to a context-sensitive mutation model. By default, trees are ranked
+lexicographically, first maximizing likelihood, then minimizing isotype
+parsimony and mutabilities, if such information is provided.
+Ranking priorities can be adjusted using the argument <code class="docutils literal notranslate"><span class="pre">--priority_weights</span></code>.</p>
+<p>All parsimony trees found by dnapars, as well as branching process parameters
+are saved in the file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.parsimony_forest.p</span></code>, containing a <a class="reference internal" href="stubs/gctree.CollapsedForest.html#gctree.CollapsedForest" title="gctree.CollapsedForest"><code class="xref py py-class docutils literal notranslate"><span class="pre">gctree.CollapsedForest</span></code></a> object.
+This file may be manipulated using <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code>. For example, to find the optimal tree
+according to a linear combination of likelihood, isotype parsimony,
+mutabilities, and alleles:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to &#39;/tmp/runtime-runner&#39;
+Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
+Isotype parsimony will be used as a ranking criterion
+Mutation model parsimony will be used as a ranking criterion
+Parameters: (0.4961832069242958, 0.36445206621349757)
+
+Stats for optimal trees:
+tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
+1         	-78.00393661	28        	66.45251202	48        	112.6491878
+</pre></div>
+</div>
+<p>By default, only the files listed above will be generated, with the optional argument <code class="docutils literal notranslate"><span class="pre">--outbase</span></code> specifying how the output files should be named.</p>
+<a class="reference internal image-reference" href="newranking.inference.1.svg"><img alt="newranking.inference.1.svg" src="newranking.inference.1.svg" width="1000" /></a>
+<p>For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees,use the argument <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code>.</p>
+<a class="reference internal image-reference" href="newranking.tree_stats.pairplot.png"><img alt="newranking.tree_stats.pairplot.png" src="newranking.tree_stats.pairplot.png" style="width: 1000px;" /></a>
+<p>Sometimes ranked trees are too numerous, and generating the output of <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code> would require too many resources. For a summary of the collection of trees used for ranking, the argument <code class="docutils literal notranslate"><span class="pre">--summarize_forest</span></code> is provided. Most importantly, this option summarizes how much less likely the top ranked tree is, compared to the most likely tree being ranked, for example to validate coefficients passed to <code class="docutils literal notranslate"><span class="pre">--ranking_coeffs</span></code>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat newranking.forest_summary.log
+
+Among trees with min Log Likelihood of: -92.15528744
+	Isotype Pars. range: 24 to 24
+	Mut. Pars. range: 71.58051182571174 to 71.58051182571174
+	Alleles range: 53 to 53
+
+Among trees with max Log Likelihood of: -78.00393661
+	Isotype Pars. range: 28 to 28
+	Mut. Pars. range: 66.45251202469834 to 68.93267315188115
+	Alleles range: 48 to 48
+
+Among trees with min Isotype Pars. of: 23
+	Log Likelihood range: -90.94295234 to -87.98896459
+	Mut. Pars. range: 67.70153148153068 to 72.04836178596884
+	Alleles range: 51 to 52
+
+Among trees with max Isotype Pars. of: 28
+	Log Likelihood range: -83.8653921 to -78.00393661
+	Mut. Pars. range: 65.83694196283363 to 72.02357793840056
+	Alleles range: 48 to 50
+
+Among trees with min Mut. Pars. of: 63.945009015045585
+	Log Likelihood range: -80.46148748 to -80.46148748
+	Isotype Pars. range: 27 to 27
+	Alleles range: 49 to 49
+
+Among trees with max Mut. Pars. of: 76.08641624712234
+	Log Likelihood range: -85.28172209 to -85.28172209
+	Isotype Pars. range: 25 to 25
+	Alleles range: 50 to 50
+
+Among trees with min Alleles of: 48
+	Log Likelihood range: -82.14344157 to -78.00393661
+	Isotype Pars. range: 26 to 28
+	Mut. Pars. range: 66.45251202469834 to 74.06179332549453
+
+Among trees with max Alleles of: 53
+	Log Likelihood range: -92.15528744 to -90.28220403
+	Isotype Pars. range: 24 to 25
+	Mut. Pars. range: 71.58051182571174 to 72.97479723796525
+
+
+Parameters: (0.4961832069242958, 0.36445206621349757)
+
+Highest ranked tree: loss from best value:
+tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       
+1         	       0.0	5         	2.50750301	0
+</pre></div>
+</div>
+</section>
+<section id="isotype">
+<h2>isotype<a class="headerlink" href="#isotype" title="Permalink to this headline"></a></h2>
+<p>If we would like to add observed isotype data to trees output by gctree
+inference, we can now do so.
+In addition to the outputs from gctree, a file mapping original IDs of observed
+sequences to their observed isotypes (like <code class="docutils literal notranslate"><span class="pre">example/isotypemap.txt</span></code>) is required.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ isotype idmap.txt ../example/isotypemap.txt --trees gctree.out.inference.1.p newranking.inference.1.p --out_directory isotyped
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to &#39;/tmp/runtime-runner&#39;
+name			 original node count	 isotype parsimony	 new node count
+gctree.out.inference.1.p		 48			 28.0			 50
+newranking.inference.1.p		 48			 28.0			 50
+...
+</pre></div>
+</div>
+<p>Trees originally output by gctree are re-rendered with revised labels and node
+colors corresponding to observed or inferred isotypes.
+For example, here is the top ranked tree above, with isotypes added:</p>
+<a class="reference internal image-reference" href="isotyped/gctree.out.1.isotype_parsimony.28.svg"><img alt="isotyped/gctree.out.1.isotype_parsimony.28.svg" src="isotyped/gctree.out.1.isotype_parsimony.28.svg" width="1000" /></a>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cite.html" class="btn btn-neutral float-left" title="Citing gctree" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="rendering-demo.html" class="btn btn-neutral float-right" title="Custom tree visualization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, William DeWitt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
