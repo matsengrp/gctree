@@ -28,7 +28,11 @@ jobs:
         #      https://github.com/conda-incubator/setup-miniconda#IMPORTANT
         shell: bash -l {0}
         run: |
+          export QT_QPA_PLATFORM=offscreen
           make docs
+        env:
+          MPLBACKEND: agg
+          TMPDIR: /tmp
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.2.2
