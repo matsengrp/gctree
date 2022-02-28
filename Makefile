@@ -19,6 +19,8 @@ lint:
 	flake8 . --count --max-complexity=30 --max-line-length=127 --statistics
 
 docs:
+	rm -f docs/outfile docs/outtree # remove phylip dnapars output
 	make -C docs html
+	make -C docs html # need it again to get images from quickstart commands
 
 .PHONY: install test format lint deploy docs

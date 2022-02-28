@@ -31,6 +31,7 @@ jobs:
           make docs
         env:
           QT_QPA_PLATFORM: offscreen
+          XDG_RUNTIME_DIR: /tmp/runtime-runner
           MPLBACKEND: agg
 
       - name: Deploy 🚀
