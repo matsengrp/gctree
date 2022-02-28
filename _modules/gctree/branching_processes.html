@@ -1148,6 +1148,7 @@
         <span class="n">mutability_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">substitution_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">ignore_isotype</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">chain_split</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">outbase</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gctree.out&quot;</span><span class="p">,</span>
         <span class="n">summarize_forest</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1171,6 +1172,8 @@
 <span class="sd">            substitution_file: A substitution model</span>
 <span class="sd">            ignore_isotype: Ignore isotype parsimony when ranking. By default, isotype information added with</span>
 <span class="sd">                :meth:``add_isotypes`` will be used to compute isotype parsimony, which is used in ranking.</span>
+<span class="sd">            chain_split: The index at which non-adjacent sequences are concatenated, for calculating</span>
+<span class="sd">                mutability parsimony.</span>
 <span class="sd">            verbose: print information about trimming</span>
 <span class="sd">            outbase: file name stem for a file with information for each tree in the DAG.</span>
 <span class="sd">            summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`</span>
@@ -1214,7 +1217,9 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mutation model parsimony will be used as a ranking criterion&quot;</span><span class="p">)</span>
 
             <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">_mutability_dagfuncs</span><span class="p">(</span>
-                <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span> <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span>
+                <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span>
+                <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span><span class="p">,</span>
+                <span class="n">splits</span><span class="o">=</span><span class="p">[]</span> <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">chain_split</span><span class="p">],</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">placeholder_dagfuncs</span>
