@@ -45,14 +45,11 @@ jobs:
         run: |
           make test
 
-      - name: Test docs build with xvfb -a
-        uses: GabrielBB/xvfb-action@v1
+      - name: Install XVFB (needed for Qt in ETE), and test docs build
         if: matrix.os == 'ubuntu-latest'
-        shell: bash -l {0}
-        with:
-          env:
-            MPLBACKEND: agg
-            TMPDIR: /tmp
-          working-directory: ./
-          options: -a
-          run: make docs
+        run: |
+          sudo apt-get install xvfb
+          xvfb-run -a make docs
+        env:
+          MPLBACKEND: agg
+          TMPDIR: /tmp
