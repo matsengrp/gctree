@@ -394,7 +394,9 @@ def _sequence_disambiguations(sequence, _accum=""):
     yield _accum
 
 
-def _mutability_dagfuncs(*args, splits: List[int] = [], **kwargs) -> hdag.utils.AddFuncDict:
+def _mutability_dagfuncs(
+    *args, splits: List[int] = [], **kwargs
+) -> hdag.utils.AddFuncDict:
     """Return functions for counting mutability parsimony on the history DAG.
 
     Mutability parsimony of a tree is the sum over all edges in the tree
@@ -438,7 +440,9 @@ def _mutability_dagfuncs(*args, splits: List[int] = [], **kwargs) -> hdag.utils.
     )
 
 
-def _mutability_distance_precursors(mutation_model: MutationModel, splits: List[int] = []):
+def _mutability_distance_precursors(
+    mutation_model: MutationModel, splits: List[int] = []
+):
     chunk_idxs = list(zip([0] + splits, splits + [None]))
     # Caching could be moved to the MutationModel class instead.
     context_model = mutation_model.context_model.copy()
@@ -463,8 +467,8 @@ def _mutability_distance_precursors(mutation_model: MutationModel, splits: List[
     )
 
     def add_ns(seq: str):
-        ns = 'N' * h
-        chunks = [seq[start: end] for start, end in chunk_idxs]
+        ns = "N" * h
+        chunks = [seq[start:end] for start, end in chunk_idxs]
         return ns + ns.join(chunks) + ns
 
     @utils.check_distance_arguments
@@ -514,7 +518,9 @@ def _mutability_distance(mutation_model: MutationModel, splits=[]):
 
     Note that, in particular, this function is not symmetric on its  arguments.
     """
-    mutpairs, sum_minus_logp = _mutability_distance_precursors(mutation_model, splits=splits)
+    mutpairs, sum_minus_logp = _mutability_distance_precursors(
+        mutation_model, splits=splits
+    )
 
     def distance(seq1, seq2):
         return sum_minus_logp(mutpairs(seq1, seq2))

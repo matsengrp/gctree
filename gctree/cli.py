@@ -211,7 +211,7 @@ def infer(args):
         tree_stats=args.tree_stats,
         mutability_file=args.mutability,
         substitution_file=args.substitution,
-        chain_split=args.chain_split
+        chain_split=args.chain_split,
     )
 
     if args.verbose:

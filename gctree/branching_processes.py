@@ -1131,7 +1131,7 @@ class CollapsedForest:
             mut_funcs = _mutability_dagfuncs(
                 mutability_file=mutability_file,
                 substitution_file=substitution_file,
-                splits = [] if chain_split is None else [chain_split]
+                splits=[] if chain_split is None else [chain_split],
             )
         else:
             mut_funcs = placeholder_dagfuncs
