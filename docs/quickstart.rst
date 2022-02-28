@@ -64,7 +64,6 @@ Run ``dnapars`` using this config file, redirecting stdout to a log file.
 
 .. command-output:: dnapars < dnapars.cfg > dnapars.log
   :shell:
-  :ellipsis: 0
 
 You now have two new files, ``outfile`` and ``outtree``.
 Note: if you want to rerun the above ``dnapars`` command, you must delete these two files first!
@@ -76,9 +75,10 @@ gctree
 We're now ready to run ``gctree infer`` to use abundance data (in ``abundances.csv``) to rank the equally parsimonious trees (in ``outfile``).
 We can use the optional argument ``--frame`` to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.
 
-If working in a headless environment, ``gctree infer`` must be run with a tool
-like ``xvfb-run`` to provide an X server for rendering the output trees.
-This may also require telling matplotlib to use a headless backend with ``export MPLBACKEND=agg``.
+.. note::
+  If working in a headless environment, ``gctree infer`` must be run with a tool
+  like ``xvfb-run`` to provide an X server for rendering the output trees.
+  This may also require telling matplotlib to use a headless backend with ``export MPLBACKEND=agg``.
 
 .. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 --verbose
   :shell:
