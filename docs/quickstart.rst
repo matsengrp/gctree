@@ -148,5 +148,5 @@ Trees originally output by gctree are re-rendered with revised labels and node
 colors corresponding to observed or inferred isotypes.
 For example, here is the top ranked tree above, with isotypes added:
 
-.. image:: isotyped/gctree.out.1.isotype_parsimony.28.svg
+.. image:: isotyped/gctree.out.inference.1.p.isotype_parsimony.28.svg
   :width: 1000
