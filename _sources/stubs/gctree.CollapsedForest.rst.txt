@@ -16,6 +16,7 @@
    .. autosummary::
       :nosignatures:
    
+      ~CollapsedForest.add_isotypes
       ~CollapsedForest.filter_trees
       ~CollapsedForest.iter_topology_classes
       ~CollapsedForest.likelihood_rankplot

@@ -95,10 +95,11 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span> <span class="nn">gctree.utils</span>
-<span class="kn">from</span> <span class="nn">gctree.isotyping</span> <span class="kn">import</span> <span class="n">_isotype_dagfuncs</span>
+<span class="kn">from</span> <span class="nn">gctree.isotyping</span> <span class="kn">import</span> <span class="n">_isotype_dagfuncs</span><span class="p">,</span> <span class="n">_isotype_annotation_dagfuncs</span>
 <span class="kn">from</span> <span class="nn">gctree.mutation_model</span> <span class="kn">import</span> <span class="n">_mutability_dagfuncs</span>
 <span class="kn">from</span> <span class="nn">gctree.phylip_parse</span> <span class="kn">import</span> <span class="n">disambiguate</span>
 
+<span class="kn">from</span> <span class="nn">frozendict</span> <span class="kn">import</span> <span class="n">frozendict</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -164,6 +165,7 @@
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_descendants</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">isotype</span>
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                         <span class="n">node_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
                     <span class="k">else</span><span class="p">:</span>
@@ -1017,7 +1019,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cm_countlist</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ctrees</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="kc">None</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_isotyped</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.simulate"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">n_trees</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a forest of collapsed trees. Overwrites existing forest attribute.</span>
@@ -1144,11 +1147,7 @@
         <span class="n">ranking_coeffs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">mutability_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">substitution_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">isotypemap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">isotypemap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">idmap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">idmap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ignore_isotype</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">outbase</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gctree.out&quot;</span><span class="p">,</span>
         <span class="n">summarize_forest</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1170,12 +1169,8 @@
 <span class="sd">                by likelihood, then by other traits, in the same order.</span>
 <span class="sd">            mutability_file: A mutability model</span>
 <span class="sd">            substitution_file: A substitution model</span>
-<span class="sd">            isotypemap: A mapping of sequences to isotypes</span>
-<span class="sd">            isotypemap: A dictionary mapping original IDs to observed isotype names</span>
-<span class="sd">            isotypemap_file: A csv file providing an `isotypemap`</span>
-<span class="sd">            idmap: A dictionary mapping unique sequence IDs to sets of original IDs of observed sequences</span>
-<span class="sd">            idmap_file: A csv file providing an `idmap`</span>
-<span class="sd">            isotype_names: A sequence of isotype names containing values in `isotypemap`, in the correct switching order</span>
+<span class="sd">            ignore_isotype: Ignore isotype parsimony when ranking. By default, isotype information added with</span>
+<span class="sd">                :meth:``add_isotypes`` will be used to compute isotype parsimony, which is used in ranking.</span>
 <span class="sd">            verbose: print information about trimming</span>
 <span class="sd">            outbase: file name stem for a file with information for each tree in the DAG.</span>
 <span class="sd">            summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`</span>
@@ -1189,18 +1184,42 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mle</span><span class="p">(</span><span class="n">marginal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="n">kwargls</span> <span class="o">=</span> <span class="n">_get_dagweight_funcs</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
-            <span class="n">isotypemap_file</span><span class="o">=</span><span class="n">isotypemap_file</span><span class="p">,</span>
-            <span class="n">isotypemap</span><span class="o">=</span><span class="n">isotypemap</span><span class="p">,</span>
-            <span class="n">idmap_file</span><span class="o">=</span><span class="n">idmap_file</span><span class="p">,</span>
-            <span class="n">idmap</span><span class="o">=</span><span class="n">idmap</span><span class="p">,</span>
-            <span class="n">isotype_names</span><span class="o">=</span><span class="n">isotype_names</span><span class="p">,</span>
-            <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span>
-            <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span><span class="p">,</span>
-            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="n">ll_dagfuncs</span> <span class="o">=</span> <span class="n">_ll_genotype_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+        <span class="n">placeholder_dagfuncs</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">ll_dagfuncs</span><span class="p">,</span> <span class="n">iso_funcs</span><span class="p">,</span> <span class="n">mut_funcs</span><span class="p">,</span> <span class="n">allele_funcs</span> <span class="o">=</span> <span class="n">kwargls</span>
+        <span class="k">if</span> <span class="n">ignore_isotype</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_isotyped</span><span class="p">:</span>
+            <span class="n">iso_funcs</span> <span class="o">=</span> <span class="n">placeholder_dagfuncs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Isotype parsimony will be used as a ranking criterion&quot;</span><span class="p">)</span>
+            <span class="c1"># Check for missing isotype data in all but root node, and fake root-adjacent leaf node</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;isotype&quot;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">preorder</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_root</span><span class="p">()</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
+            <span class="p">):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;Some isotype data seems to be missing. Isotype parsimony scores may be incorrect.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="n">iso_funcs</span> <span class="o">=</span> <span class="n">_isotype_dagfuncs</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">mutability_file</span> <span class="ow">and</span> <span class="n">substitution_file</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mutation model parsimony will be used as a ranking criterion&quot;</span><span class="p">)</span>
+
+            <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">_mutability_dagfuncs</span><span class="p">(</span>
+                <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span> <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">placeholder_dagfuncs</span>
+        <span class="n">allele_funcs</span> <span class="o">=</span> <span class="n">_allele_dagfuncs</span><span class="p">()</span>
+        <span class="n">kwargls</span> <span class="o">=</span> <span class="p">(</span><span class="n">ll_dagfuncs</span><span class="p">,</span> <span class="n">iso_funcs</span><span class="p">,</span> <span class="n">mut_funcs</span><span class="p">,</span> <span class="n">allele_funcs</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">ranking_coeffs</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ranking_coeffs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -1397,6 +1416,34 @@
             <span class="n">tdag</span><span class="o">.</span><span class="n">trim_topology</span><span class="p">(</span><span class="n">ctopology</span><span class="p">,</span> <span class="n">collapse_leaves</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trimmed_self</span><span class="p">(</span><span class="n">tdag</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="CollapsedForest.add_isotypes"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.add_isotypes">[docs]</a>    <span class="nd">@requires_dag</span>
+    <span class="k">def</span> <span class="nf">add_isotypes</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">isotypemap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">isotypemap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idmap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idmap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds isotype annotations, including inferred ancestral isotypes, to all nodes in stored trees.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_isotyped</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">iso_funcs</span> <span class="o">=</span> <span class="n">_isotype_annotation_dagfuncs</span><span class="p">(</span>
+            <span class="n">isotypemap_file</span><span class="o">=</span><span class="n">isotypemap_file</span><span class="p">,</span>
+            <span class="n">isotypemap</span><span class="o">=</span><span class="n">isotypemap</span><span class="p">,</span>
+            <span class="n">idmap_file</span><span class="o">=</span><span class="n">idmap_file</span><span class="p">,</span>
+            <span class="n">idmap</span><span class="o">=</span><span class="n">idmap</span><span class="p">,</span>
+            <span class="n">isotype_names</span><span class="o">=</span><span class="n">isotype_names</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">optimal_func</span><span class="p">(</span><span class="n">weightlist</span><span class="p">):</span>
+            <span class="c1"># all weights (frozendicts containing isotypes) are equal</span>
+            <span class="k">return</span> <span class="n">weightlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span><span class="o">**</span><span class="n">iso_funcs</span><span class="p">,</span> <span class="n">optimal_func</span><span class="o">=</span><span class="n">optimal_func</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">preorder</span><span class="p">(</span><span class="n">skip_root</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;isotype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">_dp_data</span></div>
+
 <div class="viewcode-block" id="CollapsedForest.sample_tree"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.sample_tree">[docs]</a>    <span class="k">def</span> <span class="nf">sample_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CollapsedTree</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Sample a random CollapsedTree from the forest&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctrees</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1437,7 +1484,10 @@
         <span class="n">etetree</span> <span class="o">=</span> <span class="n">clade_tree</span><span class="o">.</span><span class="n">to_ete</span><span class="p">(</span>
             <span class="n">name_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
             <span class="n">features</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">],</span>
-            <span class="n">feature_funcs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;abundance&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">]},</span>
+            <span class="n">feature_funcs</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;abundance&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;isotype&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;isotype&quot;</span><span class="p">],</span>
+            <span class="p">},</span>
         <span class="p">)</span>
 
         <span class="c1"># Remove dummy leaf added below root for hDAG compatibility</span>
@@ -1630,6 +1680,7 @@
         <span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">],</span>
         <span class="n">attr_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;isotype&quot;</span><span class="p">:</span> <span class="n">frozendict</span><span class="p">(),</span>
         <span class="p">},</span>
     <span class="p">)</span>
     <span class="c1"># If there are too many ambiguities at too many nodes, disambiguation will</span>
@@ -1649,6 +1700,7 @@
             <span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">],</span>
             <span class="n">attr_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;isotype&quot;</span><span class="p">:</span> <span class="n">frozendict</span><span class="p">(),</span>
             <span class="p">},</span>
         <span class="p">)</span>
     <span class="n">dag</span><span class="o">.</span><span class="n">explode_nodes</span><span class="p">(</span><span class="n">expand_func</span><span class="o">=</span><span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">sequence_resolutions</span><span class="p">)</span>
@@ -1802,51 +1854,6 @@
         <span class="p">},</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alleles&quot;</span><span class="p">,</span>
     <span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">_get_dagweight_funcs</span><span class="p">(</span>
-    <span class="n">parameters</span><span class="p">,</span>
-    <span class="n">isotypemap_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">isotypemap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">idmap_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">idmap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">isotype_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">mutability_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">substitution_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">parameters</span>
-    <span class="n">placeholder_dagfuncs</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
-        <span class="p">{</span>
-            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
-        <span class="p">},</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">iso_funcs</span> <span class="o">=</span> <span class="n">_isotype_dagfuncs</span><span class="p">(</span>
-            <span class="n">isotypemap_file</span><span class="o">=</span><span class="n">isotypemap_file</span><span class="p">,</span>
-            <span class="n">isotypemap</span><span class="o">=</span><span class="n">isotypemap</span><span class="p">,</span>
-            <span class="n">idmap_file</span><span class="o">=</span><span class="n">idmap_file</span><span class="p">,</span>
-            <span class="n">idmap</span><span class="o">=</span><span class="n">idmap</span><span class="p">,</span>
-            <span class="n">isotype_names</span><span class="o">=</span><span class="n">isotype_names</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Isotype parsimony will be used as a ranking criterion&quot;</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-        <span class="n">iso_funcs</span> <span class="o">=</span> <span class="n">placeholder_dagfuncs</span>
-    <span class="n">ll_dagfuncs</span> <span class="o">=</span> <span class="n">_ll_genotype_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">mutability_file</span> <span class="ow">and</span> <span class="n">substitution_file</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mutation model parsimony will be used as a ranking criterion&quot;</span><span class="p">)</span>
-        <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">_mutability_dagfuncs</span><span class="p">(</span>
-            <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span> <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">placeholder_dagfuncs</span>
-    <span class="n">allele_funcs</span> <span class="o">=</span> <span class="n">_allele_dagfuncs</span><span class="p">()</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">ll_dagfuncs</span><span class="p">,</span> <span class="n">iso_funcs</span><span class="p">,</span> <span class="n">mut_funcs</span><span class="p">,</span> <span class="n">allele_funcs</span><span class="p">)</span>
 </pre></div>
 
            </div>
