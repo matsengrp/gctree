@@ -211,6 +211,7 @@ def infer(args):
         tree_stats=args.tree_stats,
         mutability_file=args.mutability,
         substitution_file=args.substitution,
+        chain_split=args.chain_split,
     )
 
     if args.verbose:
@@ -536,7 +537,8 @@ def get_parser():
         default=None,
         help=(
             "when using concatenated heavy and light chains, this is the 0-based"
-            " index at which the 2nd chain begins, needed for determining coding frame in both chains"
+            " index at which the 2nd chain begins, needed for determining coding frame in both chains,"
+            " and also to correctly calculate mutability parsimony."
         ),
     )
     parser_infer.add_argument(
