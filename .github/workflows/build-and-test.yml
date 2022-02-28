@@ -32,24 +32,20 @@ jobs:
         # NOTE: must specify the shell so that conda init updates bashrc see:
         #      https://github.com/conda-incubator/setup-miniconda#IMPORTANT
         shell: bash -l {0}
-        run: |
-          make lint
+        run: make lint
 
       - name: Check format with black
         shell: bash -l {0}
-        run: |
-          black --check gctree
+        run: black --check gctree
 
       - name: Test
         shell: bash -l {0}
-        run: |
-          make test
+        run: make test
 
-      - name: Install XVFB (needed for Qt in ETE), and test docs build
+      - name: Test docs build
         if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get install xvfb
-          xvfb-run -a make docs
+        shell: bash -l {0}
+        run: xvfb-run -a make docs
         env:
           MPLBACKEND: agg
           TMPDIR: /tmp
