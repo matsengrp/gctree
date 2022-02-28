@@ -46,9 +46,9 @@ jobs:
           make test
 
       - name: Test docs build with xvfb -a
+        uses: GabrielBB/xvfb-action@v1
         if: matrix.os == 'ubuntu-latest'
         shell: bash -l {0}
-        uses: GabrielBB/xvfb-action@v1
         with:
           env:
             MPLBACKEND: agg
