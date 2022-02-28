@@ -36,6 +36,7 @@ setuptools.setup(
         "scipy",
         "seaborn",
         "multiset",
+        "frozendict",
         "historydag"
     ],
 )

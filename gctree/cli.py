@@ -156,6 +156,14 @@ def test(args):
 
 def infer(args):
     """inference subprogram."""
+
+    def isotype_add(forest):
+        forest.add_isotypes(
+            isotypemap_file=args.isotype_mapfile,
+            idmap_file=args.idmapfile,
+            isotype_names=args.isotype_names,
+        )
+
     if len(args.infiles) == 2:
         forest = bp.CollapsedForest(
             *pp.parse_outfile(args.infiles[0], args.infiles[1], args.root)
@@ -170,6 +178,9 @@ def infer(args):
                 forest.n_topologies(),
             )
         forest.mle(marginal=True)
+        # Add isotypes to forest
+        if args.isotype_mapfile:
+            isotype_add(forest)
         with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
             pickle.dump(forest, f)
 
@@ -180,6 +191,11 @@ def infer(args):
             )
         with open(args.infiles[0], "rb") as fh:
             forest = pickle.load(fh)
+        # Add isotypes to forest and re-pickle if necessary
+        if args.isotype_mapfile:
+            isotype_add(forest)
+            with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
+                pickle.dump(forest, f)
     else:
         raise ValueError(
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
@@ -195,9 +211,6 @@ def infer(args):
         tree_stats=args.tree_stats,
         mutability_file=args.mutability,
         substitution_file=args.substitution,
-        isotypemap_file=args.isotype_mapfile,
-        idmap_file=args.idmapfile,
-        isotype_names=args.isotype_names,
     )
 
     if args.verbose:
@@ -507,7 +520,8 @@ def get_parser():
             "dnapars outfile (verbose output with sequences at each site), and the second "
             "shall be an abundance file containing allele frequencies (sequence counts) in "
             "the format: ``SeqID, Nobs``. If a single filename is passed, it shall be the name "
-            "of a pickled history DAG object created by gctree."
+            "of a pickled history DAG object created by gctree. A new pickled forest will be "
+            "output only if new annotations (such as isotypes) are added."
         ),
     )
     parser_infer.add_argument(

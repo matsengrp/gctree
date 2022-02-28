@@ -1,4 +1,4 @@
-from gctree.isotyping import _isotype_dagfuncs
+from gctree.isotyping import _isotype_dagfuncs, _isotype_annotation_dagfuncs
 import gctree.branching_processes as bp
 import gctree.isotyping as iso
 import gctree.phylip_parse as pp
@@ -38,7 +38,7 @@ def test_isotype_disambiguate():
 
 
 def test_trim_byisotype():
-    kwargs = _isotype_dagfuncs(
+    kwargs = _isotype_annotation_dagfuncs(
         isotypemap_file="example/isotypemap.txt",
         idmap_file="tests/example_output/original/idmap.txt",
     )
@@ -47,6 +47,11 @@ def test_trim_byisotype():
     # idmap_file=None,
     # isotype_names=None,
     tdag = dag.copy()
+    tdag.optimal_weight_annotate(**kwargs, optimal_func=lambda l: l[0])
+    for node in tdag.preorder():
+        if node.attr is not None:
+            node.attr["isotype"] = node._dp_data
+    kwargs = _isotype_dagfuncs()
     c = tdag.weight_count(**kwargs)
     key = min(c)
     count = c[key]

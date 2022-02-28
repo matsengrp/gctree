@@ -5,9 +5,10 @@ from gctree.utils import hamming_distance
 import random
 import ete3
 import warnings
-from typing import Dict, Callable, Optional, Set, Sequence, Mapping, Tuple, FrozenSet
+from typing import Dict, Callable, Optional, Set, Sequence, Mapping, Tuple
 from functools import wraps
 import historydag as hdag
+from frozendict import frozendict
 
 default_isotype_order = ["IgM", "IgD", "IgG3", "IgG1", "IgG2", "IgE", "IgA"]
 
@@ -385,18 +386,53 @@ def explode_idmap(
     return newidmap
 
 
-def _isotype_dagfuncs(
+def _isotype_dagfuncs() -> hdag.utils.AddFuncDict:
+    """Return functions for filtering by isotype parsimony score on the history
+    DAG.
+
+    The DAG on which these functions is run should have key ``isotype`` in their attr dictionaries.
+    The :meth:``CollapsedForest.add_isotypes`` method can be used to achieve this.
+    If isotypes aren't added, these functions will return a weight of 0 for all trees.
+
+    Isotype parsimony of a tree is the minimum number of allowed isotype transitions
+    required along all edges.
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to isotype parsimony.
+        Weight type is ``int``."""
+
+    def edge_weight_func(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
+        if n1.is_root():
+            return 0
+        else:
+            n1isos = n1.attr["isotype"]
+            n2isos = n2.attr["isotype"]
+            if not n1isos or not n2isos:
+                return 0
+            n1iso = list(n1isos.keys())[0]
+            return int(sum(isotype_distance(n1iso, n2iso) for n2iso in n2isos.keys()))
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: 0,
+            "edge_weight_func": edge_weight_func,
+            "accum_func": sum,
+        },
+        name="Isotype Pars.",
+    )
+
+
+def _isotype_annotation_dagfuncs(
     isotypemap: Mapping[str, str] = None,
     isotypemap_file: str = None,
     idmap: Mapping[str, Set[str]] = None,
     idmap_file: str = None,
     isotype_names: Sequence[str] = None,
 ) -> hdag.utils.AddFuncDict:
-    """Return functions for filtering by isotype parsimony score on the history
-    DAG.
-
-    Isotype parsimony of a tree is the minimum number of allowed isotype transitions
-    required along all edges.
+    """Return functions for annotating history DAG nodes with inferred isotypes.
 
     Args:
         isotypemap: A dictionary mapping original IDs to observed isotype names
@@ -410,8 +446,8 @@ def _isotype_dagfuncs(
         to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
         or :meth:`historydag.HistoryDag.optimal_weight_annotate`
         methods to trim or annotate a :meth:`historydag.HistoryDag` according to isotype parsimony.
-        Weight format is ``(score, isotypeset)``, where ``score`` is isotype parsimony as a float,
-        and ``isotypeset`` is a frozenset containing isotypes used internally for computing parsimony score.
+        Weight format is ``frozendict[Isotype, int]``, where the value is the count of observed isotypes, and 0
+        for unobserved (internal) nodes.
     """
     if isotype_names is None:
         isotype_names = default_isotype_order
@@ -423,7 +459,7 @@ def _isotype_dagfuncs(
 
     if idmap is None:
         if idmap_file is None:
-            raise TypeError("either idmap or idmap_file is required")
+            raise TypeError("either idmap or idmap_file is required for isotyping")
         else:
             with open(idmap_file, "r") as fh:
                 idmap = {}
@@ -435,34 +471,30 @@ def _isotype_dagfuncs(
     newidmap = explode_idmap(idmap, isotypemap)
     newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
 
-    def distance_func(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
-        if n2.is_leaf():
-            seqid = n2.attr["name"]
-            if seqid in newidmap:
-                isoset = frozenset(newisotype(name) for name in newidmap[seqid].keys())
-            else:
-                isoset = frozenset()
+    def start_func(n: hdag.HistoryDagNode):
+        seqid = n.attr["name"]
+        if seqid in newidmap:
+            return frozendict(
+                {
+                    newisotype(name): len(oldidset)
+                    for name, oldidset in newidmap[seqid].items()
+                }
+            )
         else:
-            isoset = frozenset()
-        return hdag.utils.IntState(0, state=isoset)
+            return frozendict()
 
-    def sumweights(weights: Sequence[Tuple[float, FrozenSet[Isotype]]]):
-        ps = [int(i) for i in weights]
-        ts = [item for i in weights for item in i.state]
+    def sumweights(weights: Sequence[Tuple[float, frozendict]]):
+        ts = [item for i in weights for item in i.keys()]
         if ts:
-            newt = frozenset({min(ts)})
+            return frozendict({min(ts): 0})
         else:
-            newt = frozenset()
-        return hdag.utils.IntState(
-            sum(isotype_distance(list(newt)[0], el) for el in ts) + sum(ps),
-            state=newt,
-        )
+            return frozendict()
 
     return hdag.utils.AddFuncDict(
         {
-            "start_func": lambda n: hdag.utils.IntState(0, state=frozenset()),
-            "edge_weight_func": distance_func,
+            "start_func": start_func,
+            "edge_weight_func": lambda n1, n2: frozendict(),
             "accum_func": sumweights,
         },
-        name="Isotype Pars.",
+        name="Inferred Isotype",
     )
