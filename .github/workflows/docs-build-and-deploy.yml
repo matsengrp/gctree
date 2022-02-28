@@ -28,9 +28,9 @@ jobs:
         #      https://github.com/conda-incubator/setup-miniconda#IMPORTANT
         shell: bash -l {0}
         run: |
-          export QT_QPA_PLATFORM=offscreen
           make docs
         env:
+          QT_QPA_PLATFORM: offscreen
           MPLBACKEND: agg
           TMPDIR: /tmp
 
