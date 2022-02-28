@@ -77,8 +77,12 @@ We can use the optional argument ``--frame`` to indicate the coding frame of the
 
 .. note::
   If working in a headless environment, ``gctree infer`` must be run with a tool
-  like ``xvfb-run`` to provide an X server for rendering the output trees.
-  This may also require telling matplotlib to use a headless backend with ``export MPLBACKEND=agg``.
+  like XVFB to provide an X server for rendering the output trees.
+  Prepend the gctree command with ``xvfb-run -a ``.
+  Alternatively, we have had success setting the following environment variables instead of using XVFB:
+  ``export QT_QPA_PLATFORM=offscreen``,
+  ``export XDG_RUNTIME_DIR=/tmp/runtime-runner``.
+  You may also want to tell matplotlib to use a headless backend with ``export MPLBACKEND=agg``.
 
 .. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 --verbose
   :shell:
