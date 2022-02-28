@@ -1060,6 +1060,7 @@ class CollapsedForest:
         mutability_file: str = None,
         substitution_file: str = None,
         ignore_isotype: bool = False,
+        chain_split: int = None,
         verbose: bool = False,
         outbase: str = "gctree.out",
         summarize_forest: bool = False,
@@ -1083,6 +1084,8 @@ class CollapsedForest:
             substitution_file: A substitution model
             ignore_isotype: Ignore isotype parsimony when ranking. By default, isotype information added with
                 :meth:``add_isotypes`` will be used to compute isotype parsimony, which is used in ranking.
+            chain_split: The index at which non-adjacent sequences are concatenated, for calculating
+                mutability parsimony.
             verbose: print information about trimming
             outbase: file name stem for a file with information for each tree in the DAG.
             summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`

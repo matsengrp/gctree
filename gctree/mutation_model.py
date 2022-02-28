@@ -394,7 +394,7 @@ def _sequence_disambiguations(sequence, _accum=""):
     yield _accum
 
 
-def _mutability_dagfuncs(*args, **kwargs) -> hdag.utils.AddFuncDict:
+def _mutability_dagfuncs(*args, splits: List[int] = [], **kwargs) -> hdag.utils.AddFuncDict:
     """Return functions for counting mutability parsimony on the history DAG.
 
     Mutability parsimony of a tree is the sum over all edges in the tree
@@ -410,7 +410,10 @@ def _mutability_dagfuncs(*args, **kwargs) -> hdag.utils.AddFuncDict:
     a unique mutability parsimony score for non-degenerate mutability models, so
     so this shouldn't matter in practice.
 
-    Arguments are passed to :meth:`mutation_model.MutationModel` constructor.
+    Args:
+        splits: A list of indices at which sequences are concatenated, but are not
+            adjacent in the genome.
+        Other arguments are passed to :meth:`mutation_model.MutationModel` constructor.
 
     Returns:
         A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
@@ -421,7 +424,7 @@ def _mutability_dagfuncs(*args, **kwargs) -> hdag.utils.AddFuncDict:
     """
 
     mutation_model = MutationModel(*args, **kwargs)
-    dist = _mutability_distance(mutation_model)
+    dist = _mutability_distance(mutation_model, splits=splits)
 
     @hdag.utils.access_field("label")
     @hdag.utils.ignore_ualabel(0)
@@ -435,7 +438,8 @@ def _mutability_dagfuncs(*args, **kwargs) -> hdag.utils.AddFuncDict:
     )
 
 
-def _mutability_distance_precursors(mutation_model: MutationModel):
+def _mutability_distance_precursors(mutation_model: MutationModel, splits: List[int] = []):
+    chunk_idxs = list(zip([0] + splits, splits + [None]))
     # Caching could be moved to the MutationModel class instead.
     context_model = mutation_model.context_model.copy()
     k = mutation_model.k
@@ -458,11 +462,15 @@ def _mutability_distance_precursors(mutation_model: MutationModel):
         {kmer: mutation_model.mutability(kmer) for kmer in kmers_to_compute}
     )
 
+    def add_ns(seq: str):
+        ns = 'N' * h
+        chunks = [seq[start: end] for start, end in chunk_idxs]
+        return ns + ns.join(chunks) + ns
+
     @utils.check_distance_arguments
     def mutpairs(seq1: str, seq2: str):
-        ns = "N" * h
-        seq1N = ns + seq1 + ns
-        seq2N = ns + seq2 + ns
+        seq1N = add_ns(seq1)
+        seq2N = add_ns(seq2)
         mut_idxs = [
             index
             for index, (base1, base2) in enumerate(zip(seq1N, seq2N))
@@ -491,7 +499,7 @@ def _mutability_distance_precursors(mutation_model: MutationModel):
     return (mutpairs, sum_minus_logp)
 
 
-def _mutability_distance(mutation_model: MutationModel):
+def _mutability_distance(mutation_model: MutationModel, splits=[]):
     """Returns a fast distance function based on passed mutation_model.
 
     First, caches computed mutabilities for k-mers with k // 2 N's on either end. This
@@ -506,7 +514,7 @@ def _mutability_distance(mutation_model: MutationModel):
 
     Note that, in particular, this function is not symmetric on its  arguments.
     """
-    mutpairs, sum_minus_logp = _mutability_distance_precursors(mutation_model)
+    mutpairs, sum_minus_logp = _mutability_distance_precursors(mutation_model, splits=splits)
 
     def distance(seq1, seq2):
         return sum_minus_logp(mutpairs(seq1, seq2))
