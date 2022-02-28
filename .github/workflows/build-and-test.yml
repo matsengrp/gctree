@@ -13,28 +13,42 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: [3.7]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2
 
-    - name: Install
-      run: |
-        python -m pip install --upgrade pip
-        make install
+      - name: Install Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
 
-    - name: Lint
-      run: |
-        make lint
+      - name: Install miniconda and create environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: gctree
+          environment-file: environment.yml
+          python-version: ${{ matrix.python-version }}
+          auto-activate-base: false
+          auto-update-conda: true
 
-    - name: Check format with black
-      run: |
-        black --check gctree
+      - name: Lint
+        # NOTE: must specify the shell so that conda init updates bashrc see:
+        #      https://github.com/conda-incubator/setup-miniconda#IMPORTANT
+        shell: bash -l {0}
+        run: make lint
 
-    - name: Test
-      run: |
-        make test
+      - name: Check format with black
+        shell: bash -l {0}
+        run: black --check gctree
+
+      - name: Test
+        shell: bash -l {0}
+        run: make test
+
+      - name: Test docs build
+        shell: bash -l {0}
+        run: |
+          make docs
+        env:
+          QT_QPA_PLATFORM: offscreen
+          MPLBACKEND: agg

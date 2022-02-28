@@ -80,7 +80,7 @@ If working in a headless environment, ``gctree infer`` must be run with a tool
 like ``xvfb-run`` to provide an X server for rendering the output trees.
 This may also require telling matplotlib to use a headless backend with ``export MPLBACKEND=agg``.
 
-.. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 --verbose | tee gctree.inference.log
+.. command-output:: gctree infer outfile abundances.csv --root GL --frame 1 --verbose
   :shell:
   :ellipsis: 10
 

@@ -4,9 +4,8 @@ channels:
   - defaults
   - bioconda
 dependencies:
-  - scons
-  - nestly
   - phylip
   - pip
   - pip:
     - . # installs gctree package from current directory "."
+    - -r requirements.txt
