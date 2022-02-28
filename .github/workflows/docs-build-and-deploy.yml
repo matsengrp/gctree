@@ -32,7 +32,6 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
           MPLBACKEND: agg
-          TMPDIR: /tmp
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.2.2
