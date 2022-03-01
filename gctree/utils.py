@@ -7,7 +7,7 @@ ambiguous_dna_values = Bio.Data.IUPACData.ambiguous_dna_values.copy()
 ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
 
 
-def check_distance_arguments(distance):
+def _check_distance_arguments(distance):
     @wraps(distance)
     def new_distance(seq1: str, seq2: str, *args, **kwargs):
         if len(seq1) != len(seq2):
@@ -19,7 +19,7 @@ def check_distance_arguments(distance):
     return new_distance
 
 
-@check_distance_arguments
+@_check_distance_arguments
 def hamming_distance(seq1: str, seq2: str) -> int:
     r"""Hamming distance between two sequences of equal length.
 
