@@ -230,13 +230,17 @@ We can use the optional argument <code class="docutils literal notranslate"><spa
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If working in a headless environment, <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> must be run with a tool
-like <code class="docutils literal notranslate"><span class="pre">xvfb-run</span></code> to provide an X server for rendering the output trees.
-This may also require telling matplotlib to use a headless backend with <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">MPLBACKEND=agg</span></code>.</p>
+like XVFB to provide an X server for rendering the output trees.
+Prepend the gctree command with <code class="docutils literal notranslate"><span class="pre">xvfb-run</span> <span class="pre">-a</span> <span class="pre">``.</span>
+<span class="pre">Alternatively,</span> <span class="pre">we</span> <span class="pre">have</span> <span class="pre">had</span> <span class="pre">success</span> <span class="pre">setting</span> <span class="pre">the</span> <span class="pre">following</span> <span class="pre">environment</span> <span class="pre">variables</span> <span class="pre">instead</span> <span class="pre">of</span> <span class="pre">using</span> <span class="pre">XVFB:</span>
+<span class="pre">``export</span> <span class="pre">QT_QPA_PLATFORM=offscreen</span></code>,
+<code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">XDG_RUNTIME_DIR=/tmp/runtime-runner</span></code>.
+You may also want to tell matplotlib to use a headless backend with <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">MPLBACKEND=agg</span></code>.</p>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose
 number of trees with integer branch lengths: 703
 number of unique collapsed topologies, ignoring inferred ancestral sequences: 679
-Parameters: (0.4961832069242958, 0.36445206621349757)
+Parameters: (0.4961832069242959, 0.36445206621349757)
 
 Stats for optimal trees:
 tree     	Log Likelihood	Alleles       
@@ -270,7 +274,7 @@ mutabilities, and alleles:</p>
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Isotype parsimony will be used as a ranking criterion
 Mutation model parsimony will be used as a ranking criterion
-Parameters: (0.4961832069242958, 0.36445206621349757)
+Parameters: (0.4961832069242959, 0.36445206621349757)
 
 Stats for optimal trees:
 tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
@@ -325,7 +329,7 @@ Among trees with max Alleles of: 53
 	Mut. Pars. range: 71.58051182571175 to 72.97479723796525
 
 
-Parameters: (0.4961832069242958, 0.36445206621349757)
+Parameters: (0.4961832069242959, 0.36445206621349757)
 
 Highest ranked tree: loss from best value:
 tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       

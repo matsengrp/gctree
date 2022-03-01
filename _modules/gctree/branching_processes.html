@@ -951,7 +951,7 @@
             <span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="requires_dag"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.requires_dag.html#gctree.requires_dag">[docs]</a><span class="k">def</span> <span class="nf">requires_dag</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_requires_dag</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
     <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -961,7 +961,7 @@
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">wrapper</span></div>
+    <span class="k">return</span> <span class="n">wrapper</span>
 
 
 <div class="viewcode-block" id="CollapsedForest"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest">[docs]</a><span class="k">class</span> <span class="nc">CollapsedForest</span><span class="p">:</span>
@@ -1141,7 +1141,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">_mle_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span></div>
 
-<div class="viewcode-block" id="CollapsedForest.filter_trees"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.filter_trees">[docs]</a>    <span class="nd">@requires_dag</span>
+<div class="viewcode-block" id="CollapsedForest.filter_trees"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.filter_trees">[docs]</a>    <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">filter_trees</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">ranking_coeffs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1396,12 +1396,12 @@
         <span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="s2">&quot;.inference.likelihood_rank.&quot;</span> <span class="o">+</span> <span class="n">img_type</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="CollapsedForest.n_topologies"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.n_topologies">[docs]</a>    <span class="nd">@requires_dag</span>
+<div class="viewcode-block" id="CollapsedForest.n_topologies"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.n_topologies">[docs]</a>    <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">n_topologies</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Count the number of topology classes, ignoring internal node sequences&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">count_topologies</span><span class="p">(</span><span class="n">collapse_leaves</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="CollapsedForest.iter_topology_classes"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.iter_topology_classes">[docs]</a>    <span class="nd">@requires_dag</span>
+<div class="viewcode-block" id="CollapsedForest.iter_topology_classes"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.iter_topology_classes">[docs]</a>    <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">iter_topology_classes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sort trees by topology class</span>
 
@@ -1421,7 +1421,7 @@
             <span class="n">tdag</span><span class="o">.</span><span class="n">trim_topology</span><span class="p">(</span><span class="n">ctopology</span><span class="p">,</span> <span class="n">collapse_leaves</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trimmed_self</span><span class="p">(</span><span class="n">tdag</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="CollapsedForest.add_isotypes"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.add_isotypes">[docs]</a>    <span class="nd">@requires_dag</span>
+<div class="viewcode-block" id="CollapsedForest.add_isotypes"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.add_isotypes">[docs]</a>    <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">add_isotypes</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">isotypemap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

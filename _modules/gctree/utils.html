@@ -95,7 +95,7 @@
 <span class="n">ambiguous_dna_values</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;?&quot;</span><span class="p">:</span> <span class="s2">&quot;GATC-&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span> <span class="s2">&quot;-&quot;</span><span class="p">})</span>
 
 
-<div class="viewcode-block" id="check_distance_arguments"><a class="viewcode-back" href="../../stubs/gctree.utils.check_distance_arguments.html#gctree.utils.check_distance_arguments">[docs]</a><span class="k">def</span> <span class="nf">check_distance_arguments</span><span class="p">(</span><span class="n">distance</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_check_distance_arguments</span><span class="p">(</span><span class="n">distance</span><span class="p">):</span>
     <span class="nd">@wraps</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">new_distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seq2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">seq2</span><span class="p">):</span>
@@ -104,10 +104,10 @@
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">new_distance</span></div>
+    <span class="k">return</span> <span class="n">new_distance</span>
 
 
-<div class="viewcode-block" id="hamming_distance"><a class="viewcode-back" href="../../stubs/gctree.utils.hamming_distance.html#gctree.utils.hamming_distance">[docs]</a><span class="nd">@check_distance_arguments</span>
+<div class="viewcode-block" id="hamming_distance"><a class="viewcode-back" href="../../stubs/gctree.utils.hamming_distance.html#gctree.utils.hamming_distance">[docs]</a><span class="nd">@_check_distance_arguments</span>
 <span class="k">def</span> <span class="nf">hamming_distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seq2</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Hamming distance between two sequences of equal length.</span>
 
