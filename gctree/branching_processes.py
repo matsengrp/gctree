@@ -863,7 +863,7 @@ class CollapsedTree:
             )
 
 
-def requires_dag(func):
+def _requires_dag(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         if self._forest is None:
@@ -1053,7 +1053,7 @@ class CollapsedForest:
         self.parameters = _mle_helper(self.ll, **kwargs)
         return self.parameters
 
-    @requires_dag
+    @_requires_dag
     def filter_trees(
         self,
         ranking_coeffs: Sequence[float] = None,
@@ -1308,12 +1308,12 @@ class CollapsedForest:
         )
         plt.savefig(outbase + ".inference.likelihood_rank." + img_type)
 
-    @requires_dag
+    @_requires_dag
     def n_topologies(self) -> int:
         """Count the number of topology classes, ignoring internal node sequences"""
         return self._forest.count_topologies(collapse_leaves=True)
 
-    @requires_dag
+    @_requires_dag
     def iter_topology_classes(self):
         """Sort trees by topology class
 
@@ -1333,7 +1333,7 @@ class CollapsedForest:
             tdag.trim_topology(ctopology, collapse_leaves=True)
             yield self._trimmed_self(tdag)
 
-    @requires_dag
+    @_requires_dag
     def add_isotypes(
         self,
         isotypemap: Mapping[str, str] = None,

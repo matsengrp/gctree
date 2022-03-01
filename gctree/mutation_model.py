@@ -471,7 +471,7 @@ def _mutability_distance_precursors(
         chunks = [seq[start:end] for start, end in chunk_idxs]
         return ns + ns.join(chunks) + ns
 
-    @utils.check_distance_arguments
+    @utils._check_distance_arguments
     def mutpairs(seq1: str, seq2: str):
         seq1N = add_ns(seq1)
         seq2N = add_ns(seq2)
