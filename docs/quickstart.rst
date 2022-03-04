@@ -78,7 +78,7 @@ We can use the optional argument ``--frame`` to indicate the coding frame of the
 .. note::
   If working in a headless environment, ``gctree infer`` must be run with a tool
   like XVFB to provide an X server for rendering the output trees.
-  Prepend the gctree command with ``xvfb-run -a ``.
+  Prepend the gctree command with ``xvfb-run -a``.
   Alternatively, we have had success setting the following environment variables instead of using XVFB:
   ``export QT_QPA_PLATFORM=offscreen``,
   ``export XDG_RUNTIME_DIR=/tmp/runtime-runner``.
