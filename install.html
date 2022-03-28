@@ -119,13 +119,18 @@
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
 <section id="gctree">
 <h2>gctree<a class="headerlink" href="#gctree" title="Permalink to this headline"></a></h2>
+<p>The preferred way to install gctree is with Conda:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda create -n gctree <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.9
+conda activate gctree
+conda install -c conda-forge gctree
+</pre></div>
+</div>
+<p>This method installs all dependencies, including the PHYLIP package (see below)</p>
+<p>You may install using pip instead:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install gctree
 </pre></div>
 </div>
-<div class="admonition-todo admonition" id="id1">
-<p class="admonition-title">Todo</p>
-<p>setup Conda install</p>
-</div>
+<p>However, you will then need to separately install PHYLIP, as described below:</p>
 </section>
 <section id="phylip">
 <h2>PHYLIP<a class="headerlink" href="#phylip" title="Permalink to this headline"></a></h2>
