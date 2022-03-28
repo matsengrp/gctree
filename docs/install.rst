@@ -3,14 +3,23 @@ Installation
 
 gctree
 ======
+The preferred way to install gctree is with Conda:
+
+.. code-block:: bash
+
+  conda create -n gctree python=3.9
+  conda activate gctree
+  conda install -c conda-forge gctree
+
+This method installs all dependencies, including the PHYLIP package (see below)
+
+You may install using pip instead:
 
 .. code-block:: bash
 
   pip install gctree
 
-
-.. todo::
-  setup Conda install
+However, you will then need to separately install PHYLIP, as described below:
 
 
 PHYLIP
