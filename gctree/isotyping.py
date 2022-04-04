@@ -3,9 +3,10 @@ r"""A module for incorporating isotype information in gctree inference."""
 from gctree.utils import hamming_distance
 
 import random
+import scipy
 import ete3
 import warnings
-from typing import Dict, Callable, Optional, Set, Sequence, Mapping, Tuple
+from typing import Dict, Callable, Optional, Set, List, Sequence, Mapping, Tuple
 from functools import wraps
 import historydag as hdag
 from frozendict import frozendict
@@ -45,8 +46,8 @@ class IsotypeTemplate:
 
     def __init__(
         self,
-        isotype_order: Sequence[str],
-        weight_matrix: Optional[Sequence[Sequence[float]]] = None,
+        isotype_order: List[str],
+        weight_matrix: Optional[List[List[float]]] = None,
     ):
         n = len(isotype_order)
         if weight_matrix is None:
@@ -158,6 +159,18 @@ class Isotype:
             ]
         else:
             return [self.copy()]
+
+    def mutate(self, lambda0=0.01):
+        """Returns a new isotype object, which may be of the same class, or may be
+        a later class.
+        """
+        newisotype = self.copy()
+        if scipy.random.poisson(lambda0) > 0:
+            n = len(self.order) - newisotype.isotype
+            if n != 1:
+                newisotype.isotype = self.isotype + scipy.random.randint(1, n)
+        return newisotype
+
 
 
 def isotype_tree(

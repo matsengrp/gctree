@@ -1,6 +1,7 @@
 r"""Mutation models."""
 
 import gctree.utils as utils
+import gctree.isotyping as isotyping
 
 from ete3 import TreeNode
 import numpy as np
@@ -210,6 +211,8 @@ class MutationModel:
         T: int = None,
         n: int = None,
         verbose: bool = False,
+        isotype_lambda: np.float64 = 0.01,
+        isotypes: List[str] = None,
     ) -> TreeNode:
         r"""Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.
 
@@ -224,6 +227,8 @@ class MutationModel:
             T: maximum generation time
             n: sample size
             verbose: print more messages
+            isotype_lambda: transition rate for isotype switching
+            isotypes: names of possible isotypes, in the correct switching order
         """
         # Checking the validity of the input parameters:
         if N is not None and T is not None:
@@ -233,10 +238,16 @@ class MutationModel:
         if N is not None and n is not None and n > N:
             raise ValueError("n ({}) must not larger than N ({})".format(n, N))
 
+        if isotypes is None:
+            isotypes = isotyping.default_isotype_order
+        _template = isotyping.IsotypeTemplate(isotypes)
+        naive_isotype = _template.new(isotypes[0])
+
         # Planting the tree:
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature("sequence", sequence)
+        tree.add_feature("isotype", naive_isotype)
         tree.add_feature("terminated", False)
         tree.add_feature("abundance", 0)
         tree.add_feature("time", 0)
@@ -248,6 +259,7 @@ class MutationModel:
                 child = TreeNode()
                 child.dist = 0
                 child.add_feature("sequence", sequence)
+                child.add_feature("isotype", naive_isotype)
                 child.add_feature("abundance", 0)
                 child.add_feature("terminated", False)
                 child.add_feature("time", 0)
@@ -264,6 +276,7 @@ class MutationModel:
         ):
             if verbose:
                 print("At time:", t)
+                print(f"There are {leaves_unterminated} non-extinct lineages")
             t += 1
             list_of_leaves = list(tree.iter_leaves())
             random.shuffle(list_of_leaves)
@@ -300,6 +313,7 @@ class MutationModel:
                             mutated_sequence, leaf.sequence
                         )
                         child.add_feature("sequence", mutated_sequence)
+                        child.add_feature("isotype", leaf.isotype.mutate(isotype_lambda))
                         child.add_feature("abundance", 0)
                         child.add_feature("terminated", False)
                         child.add_feature("time", t)
@@ -328,14 +342,15 @@ class MutationModel:
                             leaves_unterminated, n
                         )
                     )
-                for (
-                    leaf
-                ) in (
-                    final_leaves
-                ):  # No need to down-sample, this was already done in the simulation loop
+                # No need to down-sample, this was already done in the simulation loop
+                for leaf in final_leaves:
                     leaf.abundance = 1
+            if verbose:
+                print("After time sampling,")
+                print(f"{len([node for node in tree.traverse() if node.abundance > 0])} observed nodes in tree")
         # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
+        print(len(final_leaves))
         # by default, downsample to the target simulation size
         if n is not None and len(final_leaves) >= n:
             for leaf in random.sample(final_leaves, n):
@@ -354,11 +369,17 @@ class MutationModel:
             )
         else:
             raise RuntimeError("Unknown option.")
+        if verbose:
+            print("After all sampling,")
+            print(f"{len([node for node in tree.traverse() if node.abundance > 0])} observed nodes in tree")
 
         # prune away lineages that are unobserved
         for node in tree.iter_descendants():
             if sum(node2.abundance for node2 in node.traverse()) == 0:
                 node.detach()
+
+        if verbose:
+            print(f"After pruning unobserved lineages, {len(tree.get_leaves())} leaves in tree")
 
         # # remove unobserved unifurcations
         # for node in tree.iter_descendants():
