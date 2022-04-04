@@ -313,7 +313,9 @@ class MutationModel:
                             mutated_sequence, leaf.sequence
                         )
                         child.add_feature("sequence", mutated_sequence)
-                        child.add_feature("isotype", leaf.isotype.mutate(isotype_lambda))
+                        child.add_feature(
+                            "isotype", leaf.isotype.mutate(isotype_lambda)
+                        )
                         child.add_feature("abundance", 0)
                         child.add_feature("terminated", False)
                         child.add_feature("time", t)
@@ -347,7 +349,9 @@ class MutationModel:
                     leaf.abundance = 1
             if verbose:
                 print("After time sampling,")
-                print(f"{len([node for node in tree.traverse() if node.abundance > 0])} observed nodes in tree")
+                print(
+                    f"{len([node for node in tree.traverse() if node.abundance > 0])} observed nodes in tree"
+                )
         # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         print(len(final_leaves))
@@ -371,7 +375,9 @@ class MutationModel:
             raise RuntimeError("Unknown option.")
         if verbose:
             print("After all sampling,")
-            print(f"{len([node for node in tree.traverse() if node.abundance > 0])} observed nodes in tree")
+            print(
+                f"{len([node for node in tree.traverse() if node.abundance > 0])} observed nodes in tree"
+            )
 
         # prune away lineages that are unobserved
         for node in tree.iter_descendants():
@@ -379,7 +385,9 @@ class MutationModel:
                 node.detach()
 
         if verbose:
-            print(f"After pruning unobserved lineages, {len(tree.get_leaves())} leaves in tree")
+            print(
+                f"After pruning unobserved lineages, {len(tree.get_leaves())} leaves in tree"
+            )
 
         # # remove unobserved unifurcations
         # for node in tree.iter_descendants():

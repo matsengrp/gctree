@@ -172,7 +172,6 @@ class Isotype:
         return newisotype
 
 
-
 def isotype_tree(
     tree: ete3.TreeNode,
     newidmap: Dict[str, Dict[str, str]],
