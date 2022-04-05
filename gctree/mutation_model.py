@@ -211,7 +211,7 @@ class MutationModel:
         T: List[int] = None,
         n: int = None,
         verbose: bool = False,
-        isotype_lambda: np.float64 = 0.01,
+        isotype_lambda: np.float64 = 0,
         isotypes: List[str] = None,
     ) -> TreeNode:
         r"""Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.
