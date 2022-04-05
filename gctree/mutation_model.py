@@ -349,7 +349,6 @@ class MutationModel:
                     leaf.abundance = 1
         # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
-        print(len(final_leaves))
         # by default, downsample to the target simulation size
         if n is not None and len(final_leaves) >= n:
             for leaf in random.sample(final_leaves, n):
