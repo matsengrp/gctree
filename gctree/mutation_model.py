@@ -208,7 +208,7 @@ class MutationModel:
         frame: int = None,
         N_init: int = 1,
         N: int = None,
-        T: int = None,
+        T: List[int] = None,
         n: int = None,
         verbose: bool = False,
         isotype_lambda: np.float64 = 0.01,
@@ -224,7 +224,7 @@ class MutationModel:
             frame: coding frame of starting position(s)
             N_init: initial naive abundnace
             N: maximum population size
-            T: maximum generation time
+            T: A list of sampling times, in which the maximum value is the maximum generation time
             n: sample size
             verbose: print more messages
             isotype_lambda: transition rate for isotype switching
@@ -276,7 +276,7 @@ class MutationModel:
         ):
             if verbose:
                 print("At time:", t)
-                print(f"There are {leaves_unterminated} non-extinct lineages")
+                print(f"There are {leaves_unterminated} extant lineages")
             t += 1
             list_of_leaves = list(tree.iter_leaves())
             random.shuffle(list_of_leaves)
@@ -347,11 +347,6 @@ class MutationModel:
                 # No need to down-sample, this was already done in the simulation loop
                 for leaf in final_leaves:
                     leaf.abundance = 1
-            if verbose:
-                print("After time sampling,")
-                print(
-                    f"{len([node for node in tree.traverse() if node.abundance > 0])} observed nodes in tree"
-                )
         # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
         print(len(final_leaves))
@@ -373,21 +368,11 @@ class MutationModel:
             )
         else:
             raise RuntimeError("Unknown option.")
-        if verbose:
-            print("After all sampling,")
-            print(
-                f"{len([node for node in tree.traverse() if node.abundance > 0])} observed nodes in tree"
-            )
 
         # prune away lineages that are unobserved
         for node in tree.iter_descendants():
             if sum(node2.abundance for node2 in node.traverse()) == 0:
                 node.detach()
-
-        if verbose:
-            print(
-                f"After pruning unobserved lineages, {len(tree.get_leaves())} leaves in tree"
-            )
 
         # # remove unobserved unifurcations
         # for node in tree.iter_descendants():
