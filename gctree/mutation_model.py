@@ -228,7 +228,9 @@ class MutationModel:
             T: A list of sampling times, in which the maximum value is the maximum generation time
             n: sample size
             verbose: print more messages
-            isotype_lambda: transition rate for isotype switching
+            isotype_p: transition probability for isotype switching
+            isotype_transition_probabilities: an array or nested list containing isotype targeting distributions
+                as rows. Passed to :meth:`gctree.mutation_model.Isotype.mutate`.
             isotypes: names of possible isotypes, in the correct switching order
         """
         # Checking the validity of the input parameters:

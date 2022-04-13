@@ -179,6 +179,8 @@ class Isotype:
                 entries in each row. That is, the new isotype will be the current
                 isotype with probability (1-p), and otherwise will be chosen uniformly
                 from among the remaining isotypes in the switching sequence.
+        Returns:
+            A new isotype object of a possibly different isotype class.
         """
         n = len(self.order)
         if transition_probabilities is None:
