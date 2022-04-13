@@ -211,7 +211,8 @@ class MutationModel:
         T: List[int] = None,
         n: int = None,
         verbose: bool = False,
-        isotype_lambda: np.float64 = 0,
+        isotype_p: np.float64 = 0,
+        isotype_transition_probabilities: List[List[np.float64]] = None,
         isotypes: List[str] = None,
     ) -> TreeNode:
         r"""Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.
@@ -314,7 +315,11 @@ class MutationModel:
                         )
                         child.add_feature("sequence", mutated_sequence)
                         child.add_feature(
-                            "isotype", leaf.isotype.mutate(isotype_lambda)
+                            "isotype",
+                            leaf.isotype.mutate(
+                                p=isotype_p,
+                                transition_probabilities=isotype_transition_probabilities,
+                            ),
                         )
                         child.add_feature("abundance", 0)
                         child.add_feature("terminated", False)

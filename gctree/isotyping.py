@@ -3,7 +3,6 @@ r"""A module for incorporating isotype information in gctree inference."""
 from gctree.utils import hamming_distance
 
 import random
-import scipy
 import ete3
 import warnings
 from typing import Dict, Callable, Optional, Set, List, Sequence, Mapping, Tuple
@@ -96,7 +95,7 @@ class Isotype:
     """
 
     # From https://doi.org/10.7554/eLife.16578.012, for humans:
-    # order = ["M", "G3", "A1", "G2", "G4", "E", "A2"]
+    # order = ["M", "G3", "G1", "A1", "G2", "G4", "E", "A2"]
 
     def __init__(
         self,
@@ -160,15 +159,47 @@ class Isotype:
         else:
             return [self.copy()]
 
-    def mutate(self, lambda0=0.01):
+    def mutate(self, p=0.01, transition_probabilities=None):
         """Returns a new isotype object, which may be of the same class, or may be
         a later class.
+
+        Returns a copy of this isotype with probability ``(1-p)``. Otherwise, draws
+        the new isotype from among the remaining states in the switching
+        order, according to ``self.weight_matrix``.
+
+        If ``transition_probabilities`` is provided, the value of p is ignored.
+
+        Args:
+            p: class switching probability
+            transition_probabilities: A square matrix with rows corresponding to
+                initial isotypes and columns corresponding to target isotypes, in
+                which rows will be interpreted as probability distributions on target
+                isotypes. If not provided, an upper triangular matrix
+                with (1-p) on the diagonal and equal values for all other nonzero
+                entries in each row. That is, the new isotype will be the current
+                isotype with probability (1-p), and otherwise will be chosen uniformly
+                from among the remaining isotypes in the switching sequence.
         """
+        n = len(self.order)
+        if transition_probabilities is None:
+            # construct the row we want from the default transition matrix
+            transition_probabilities_row = [
+                (
+                    0
+                    if i < self.isotype
+                    else (1 - p)
+                    if i == self.isotype and i < n - 1
+                    else 1
+                    if i == self.isotype and i == n - 1
+                    else (p / (n - self.isotype - 1))
+                )
+                for i in range(n)
+            ]
+        else:
+            transition_probabilities_row = transition_probabilities[self.isotype]
+        newidx = random.choices(range(n), weights=transition_probabilities_row)[0]
         newisotype = self.copy()
-        if scipy.random.poisson(lambda0) > 0:
-            n = len(self.order) - newisotype.isotype
-            if n != 1:
-                newisotype.isotype = self.isotype + scipy.random.randint(1, n)
+        newisotype.isotype = newidx
         return newisotype
 
 
