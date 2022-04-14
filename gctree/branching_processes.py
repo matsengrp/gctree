@@ -1145,7 +1145,8 @@ class CollapsedForest:
             coeffs = [-1] + list(ranking_coeffs)
 
             def minfunckey(weighttuple):
-                """Weighttuple will have (ll, isotypepars, mutabilitypars, alleles)"""
+                """Weighttuple will have (ll, isotypepars, mutabilitypars,
+                alleles)"""
                 return sum(
                     [
                         priority * float(weight)
@@ -1156,7 +1157,8 @@ class CollapsedForest:
         else:
 
             def minfunckey(weighttuple):
-                """Weighttuple will have (ll, isotypepars, mutabilitypars, alleles)"""
+                """Weighttuple will have (ll, isotypepars, mutabilitypars,
+                alleles)"""
                 # Sort output by likelihood, then isotype parsimony, then mutability score
                 return (-weighttuple[0],) + weighttuple[1:-1]
 
@@ -1281,7 +1283,8 @@ class CollapsedForest:
         return (self._trimmed_self(trimdag), best_weighttuple)
 
     def likelihood_rankplot(self, outbase, p, q, img_type="svg"):
-        """save a rank plot of likelihoods to the file `[outbase].inference.likelihood_rank.[img_type]`."""
+        """save a rank plot of likelihoods to the file
+        `[outbase].inference.likelihood_rank.[img_type]`."""
         ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
         if self._forest is not None:
             dag_l = list(
@@ -1310,18 +1313,20 @@ class CollapsedForest:
 
     @_requires_dag
     def n_topologies(self) -> int:
-        """Count the number of topology classes, ignoring internal node sequences"""
+        """Count the number of topology classes, ignoring internal node
+        sequences."""
         return self._forest.count_topologies(collapse_leaves=True)
 
     @_requires_dag
     def iter_topology_classes(self):
-        """Sort trees by topology class
+        """Sort trees by topology class.
 
         Returns:
             A generator of CollapsedForest objects, each containing trees with the same topology,
                 ignoring internal node labels. CollapsedForests will be yielded in reverse-order
                 of the number of trees in each topology class, so that each CollapsedForest will
-                contain at least as many trees as the one that follows."""
+                contain at least as many trees as the one that follows.
+        """
         topology_dagfuncs = hdag.utils.make_newickcountfuncs(
             internal_labels=False, collapse_leaves=True
         )
@@ -1342,7 +1347,8 @@ class CollapsedForest:
         idmap_file: str = None,
         isotype_names: Sequence[str] = None,
     ):
-        """Adds isotype annotations, including inferred ancestral isotypes, to all nodes in stored trees."""
+        """Adds isotype annotations, including inferred ancestral isotypes, to
+        all nodes in stored trees."""
         self.is_isotyped = True
 
         iso_funcs = _isotype_annotation_dagfuncs(
@@ -1362,7 +1368,7 @@ class CollapsedForest:
             node.attr["isotype"] = node._dp_data
 
     def sample_tree(self) -> CollapsedTree:
-        """Sample a random CollapsedTree from the forest"""
+        """Sample a random CollapsedTree from the forest."""
         if self._ctrees is not None:
             return random.choice(self._ctrees)
         elif self._forest is not None:
@@ -1371,8 +1377,9 @@ class CollapsedForest:
             raise ValueError("Cannot sample trees from an empty forest")
 
     def _trimmed_self(self, dag):
-        """Create a new CollapsedForest object from a subset of the current one's
-        history DAG, properly initializing validation_stats and n_trees"""
+        """Create a new CollapsedForest object from a subset of the current
+        one's history DAG, properly initializing validation_stats and
+        n_trees."""
         newforest = CollapsedForest()
         newforest._validation_stats = self._validation_stats.copy()
         newforest.n_trees = dag.count_trees()
@@ -1384,7 +1391,8 @@ class CollapsedForest:
         self,
         clade_tree: hdag.HistoryDag,
     ) -> CollapsedTree:
-        """Create and validate :meth:`CollapsedTree` object from tree-shaped history DAG.
+        """Create and validate :meth:`CollapsedTree` object from tree-shaped
+        history DAG.
 
         Uses self._validation_stats dictionary, if available, for validation. Dictionary keys are:
             root: The expected root name for the resulting tree (for validation)
@@ -1397,7 +1405,8 @@ class CollapsedForest:
             clade_tree: A tree-shaped history DAG, like that returned by :meth:`historydag.HistoryDag.sample`
 
         Returns:
-            :meth:`CollapsedTree` object matching the topology of ``clade_tree``, but fully collapsed."""
+            :meth:`CollapsedTree` object matching the topology of ``clade_tree``, but fully collapsed.
+        """
         etetree = clade_tree.to_ete(
             name_func=lambda n: n.attr["name"],
             features=["sequence"],
@@ -1721,7 +1730,8 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
         """The _ll_genotype weight of the target node, unless it should be
         collapsed, then 0.
 
-        Expects DAG to have abundances added so that each node has "abundance" key in attr dict.
+        Expects DAG to have abundances added so that each node has
+        "abundance" key in attr dict.
         """
         if n2.is_leaf() and n2.label == n1.label:
             return hdag.utils.FloatState(0.0, state=Decimal(0.0))

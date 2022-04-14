@@ -561,9 +561,11 @@ def get_parser():
         "--idmapfile",
         default=None,
         type=str,
-        help="input filename for a csv file mapping sequence names to original sequence ids. "
-        "For use by isotype ranking. ",
-        "Such a file can be produced by ``deduplicate`` when it is provided the ``--idmapfile`` option. "
+        help=(
+            "input filename for a csv file mapping sequence names to original sequence ids. "
+            "For use by isotype ranking. "
+            "Such a file can be produced by ``deduplicate`` when it is provided the ``--idmapfile`` option. "
+        ),
     )
     parser_infer.add_argument(
         "--isotype_mapfile",
@@ -721,7 +723,7 @@ def get_parser():
             action="store_true",
             help=r"label nodes with their sequence ids in output tree images, "
             "and write a fasta alignment mapping those sequence ids to sequences. "
-            "This is the easiest way to access inferred ancestral sequences."
+            "This is the easiest way to access inferred ancestral sequences.",
         )
 
     return parser
