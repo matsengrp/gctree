@@ -11,7 +11,7 @@ The preferred way to install gctree is with Conda:
   conda activate gctree
   conda install -c conda-forge gctree
 
-This method installs all dependencies, including the PHYLIP package (see below)
+You will likely also want to install PHYLIP (see below)
 
 Pip install
 ===========
@@ -22,20 +22,7 @@ You may install using pip instead:
 
   pip install gctree
 
-However, you will then need to separately install PHYLIP:
-
-PHYLIP Installation
--------------------
-
-The original use case for gctree is to use genotype abundance information to
-rank degenerate maximum parsimony trees. For this, you will need Joe
-Felsenstein's PHYLIP package
-(https://evolution.genetics.washington.edu/phylip.html).
-If you are working in a Conda environment, PHYLIP can be installed with
-
-.. code-block:: bash
-
-  conda install -c bioconda phylip
+However, you will then need to separately install PHYLIP
 
 
 Docker build
@@ -61,3 +48,18 @@ Or use the image interactively with, for example:
 .. code-block:: bash
 
    docker run -i -t gctree bash
+
+
+PHYLIP Installation
+===================
+
+The original use case for gctree is to use genotype abundance information to
+rank degenerate maximum parsimony trees. For this, you will need Joe
+Felsenstein's PHYLIP package
+(https://evolution.genetics.washington.edu/phylip.html).
+If you are working in a Conda environment, PHYLIP can be installed with
+
+.. code-block:: bash
+
+  conda install -c bioconda phylip
+
