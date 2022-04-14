@@ -43,11 +43,9 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#anaconda-install">Anaconda install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pip-install">Pip install</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#phylip-installation">PHYLIP Installation</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#pip-install">Pip install</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#docker-build">Docker build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#phylip-installation">PHYLIP Installation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="cite.html">Citing gctree</a></li>
@@ -129,7 +127,7 @@ conda activate gctree
 conda install -c conda-forge gctree
 </pre></div>
 </div>
-<p>This method installs all dependencies, including the PHYLIP package (see below)</p>
+<p>You will likely also want to install PHYLIP (see below)</p>
 </section>
 <section id="pip-install">
 <h2>Pip install<a class="headerlink" href="#pip-install" title="Permalink to this headline"></a></h2>
@@ -137,18 +135,7 @@ conda install -c conda-forge gctree
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install gctree
 </pre></div>
 </div>
-<p>However, you will then need to separately install PHYLIP:</p>
-<section id="phylip-installation">
-<h3>PHYLIP Installation<a class="headerlink" href="#phylip-installation" title="Permalink to this headline"></a></h3>
-<p>The original use case for gctree is to use genotype abundance information to
-rank degenerate maximum parsimony trees. For this, you will need Joe
-Felsenstein’s PHYLIP package
-(<a class="reference external" href="https://evolution.genetics.washington.edu/phylip.html">https://evolution.genetics.washington.edu/phylip.html</a>).
-If you are working in a Conda environment, PHYLIP can be installed with</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c bioconda phylip
-</pre></div>
-</div>
-</section>
+<p>However, you will then need to separately install PHYLIP</p>
 </section>
 <section id="docker-build">
 <h2>Docker build<a class="headerlink" href="#docker-build" title="Permalink to this headline"></a></h2>
@@ -165,6 +152,17 @@ docker build gctree -t gctree
 </div>
 <p>Or use the image interactively with, for example:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker run -i -t gctree bash
+</pre></div>
+</div>
+</section>
+<section id="phylip-installation">
+<h2>PHYLIP Installation<a class="headerlink" href="#phylip-installation" title="Permalink to this headline"></a></h2>
+<p>The original use case for gctree is to use genotype abundance information to
+rank degenerate maximum parsimony trees. For this, you will need Joe
+Felsenstein’s PHYLIP package
+(<a class="reference external" href="https://evolution.genetics.washington.edu/phylip.html">https://evolution.genetics.washington.edu/phylip.html</a>).
+If you are working in a Conda environment, PHYLIP can be installed with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c bioconda phylip
 </pre></div>
 </div>
 </section>
