@@ -173,10 +173,6 @@ def infer(args):
 
         if args.verbose:
             print("number of trees with integer branch lengths:", forest.n_trees)
-            print(
-                "number of unique collapsed topologies, ignoring inferred ancestral sequences:",
-                forest.n_topologies(),
-            )
         forest.mle(marginal=True)
         # Add isotypes to forest
         if args.isotype_mapfile:
@@ -565,8 +561,9 @@ def get_parser():
         "--idmapfile",
         default=None,
         type=str,
-        help="filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate."
-        " For use by isotype ranking.",
+        help="input filename for a csv file mapping sequence names to original sequence ids. "
+        "For use by isotype ranking. ",
+        "Such a file can be produced by ``deduplicate`` when it is provided the ``--idmapfile`` option. "
     )
     parser_infer.add_argument(
         "--isotype_mapfile",
@@ -722,9 +719,9 @@ def get_parser():
         subparser.add_argument(
             "--idlabel",
             action="store_true",
-            help=r"flag for labeling the sequence ids of the nodes in the "
-            "output tree images, also write associated fasta alignment "
-            "if ``True``",
+            help=r"label nodes with their sequence ids in output tree images, "
+            "and write a fasta alignment mapping those sequence ids to sequences. "
+            "This is the easiest way to access inferred ancestral sequences."
         )
 
     return parser

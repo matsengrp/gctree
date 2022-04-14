@@ -136,10 +136,15 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
                 trees.append([])
             else:
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
+    if len(trees) == 0:
+        raise RuntimeError(f"No trees found in '{outfile}'")
     if disambiguate:
         # Disambiguate sets node.dist for all nodes in disambiguated trees
         trees = [disambiguate(tree) for tree in trees]
-    sequence_counts = {sequences[name]: count for name, count in counts.items()}
+    if counts is None:
+        sequence_counts = None
+    else:
+        sequence_counts = {sequences[name]: count for name, count in counts.items()}
     return (trees, sequence_counts)
 
 
@@ -246,7 +251,10 @@ def build_tree(
             tree = nodes[name]
     # reroot on root
     if root is not None:
-        root_id = [node for node in nodes if root in node][0]
+        try:
+            root_id = [node for node in nodes if root in node][0]
+        except IndexError:
+            raise RuntimeError(f"Provided root id '{root}' not found in dnapars tree.")
         assert len(nodes[root_id].children) == 0
         root_parent = nodes[root_id].up
         root_parent.remove_child(nodes[root_id])
