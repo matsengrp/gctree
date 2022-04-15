@@ -402,7 +402,8 @@ def _isotype_dagfuncs() -> hdag.utils.AddFuncDict:
         to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
         or :meth:`historydag.HistoryDag.optimal_weight_annotate`
         methods to trim or annotate a :meth:`historydag.HistoryDag` according to isotype parsimony.
-        Weight type is ``int``."""
+        Weight type is ``int``.
+    """
 
     def edge_weight_func(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
         if n1.is_root():
@@ -432,7 +433,8 @@ def _isotype_annotation_dagfuncs(
     idmap_file: str = None,
     isotype_names: Sequence[str] = None,
 ) -> hdag.utils.AddFuncDict:
-    """Return functions for annotating history DAG nodes with inferred isotypes.
+    """Return functions for annotating history DAG nodes with inferred
+    isotypes.
 
     Args:
         isotypemap: A dictionary mapping original IDs to observed isotype names
