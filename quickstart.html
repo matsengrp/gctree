@@ -164,8 +164,7 @@ gaggacacagccacatattactgt
 </div>
 <p>In this file the sequence with id <code class="docutils literal notranslate"><span class="pre">GL</span></code> is the naive germline sequence, and represents the root of the tree.
 It does not refer to an observed sequence, but is included to outgroup root the tree!
-Generally this input fasta file should also contain all observed sequences with duplication (some of which may be identical to the root/outgroup sequence).
-It is also possible to provide some observed sequences with integers ids to be interpreted as abundances, as in the sequence named <code class="docutils literal notranslate"><span class="pre">17</span></code> above.</p>
+This input fasta file should also contain all observed sequences with duplication (some of which may be identical to the root/outgroup sequence).</p>
 </section>
 <section id="deduplication-and-sequence-abundances">
 <h2>Deduplication and sequence abundances<a class="headerlink" href="#deduplication-and-sequence-abundances" title="Permalink to this headline"></a></h2>
@@ -239,8 +238,7 @@ You may also want to tell matplotlib to use a headless backend with <code class=
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose
 number of trees with integer branch lengths: 703
-number of unique collapsed topologies, ignoring inferred ancestral sequences: 679
-Parameters: (0.4961832069242959, 0.3644520662134975)
+Parameters: (0.49618320692429585, 0.36445206621349757)
 
 Stats for optimal trees:
 tree     	Log Likelihood	Alleles       
@@ -274,7 +272,7 @@ mutabilities, and alleles:</p>
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Isotype parsimony will be used as a ranking criterion
 Mutation model parsimony will be used as a ranking criterion
-Parameters: (0.4961832069242959, 0.3644520662134975)
+Parameters: (0.49618320692429585, 0.36445206621349757)
 
 Stats for optimal trees:
 tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
@@ -329,7 +327,7 @@ Among trees with max Alleles of: 53
 	Mut. Pars. range: 71.58051182571174 to 72.97479723796525
 
 
-Parameters: (0.4961832069242959, 0.3644520662134975)
+Parameters: (0.49618320692429585, 0.36445206621349757)
 
 Highest ranked tree: loss from best value:
 tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       

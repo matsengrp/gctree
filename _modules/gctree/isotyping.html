@@ -490,7 +490,8 @@
 <span class="sd">        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,</span>
 <span class="sd">        or :meth:`historydag.HistoryDag.optimal_weight_annotate`</span>
 <span class="sd">        methods to trim or annotate a :meth:`historydag.HistoryDag` according to isotype parsimony.</span>
-<span class="sd">        Weight type is ``int``.&quot;&quot;&quot;</span>
+<span class="sd">        Weight type is ``int``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">edge_weight_func</span><span class="p">(</span><span class="n">n1</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">n1</span><span class="o">.</span><span class="n">is_root</span><span class="p">():</span>
@@ -520,7 +521,8 @@
     <span class="n">idmap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return functions for annotating history DAG nodes with inferred isotypes.</span>
+    <span class="sd">&quot;&quot;&quot;Return functions for annotating history DAG nodes with inferred</span>
+<span class="sd">    isotypes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        isotypemap: A dictionary mapping original IDs to observed isotype names</span>

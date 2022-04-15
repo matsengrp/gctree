@@ -482,13 +482,15 @@ of data about the trees in that forest, with format (ll, isotype parsimony, muta
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.branching_processes.CollapsedForest.likelihood_rankplot">
 <span class="sig-name descname"><span class="pre">likelihood_rankplot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outbase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'svg'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.likelihood_rankplot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedForest.likelihood_rankplot" title="Permalink to this definition"></a></dt>
-<dd><p>save a rank plot of likelihoods to the file <cite>[outbase].inference.likelihood_rank.[img_type]</cite>.</p>
+<dd><p>save a rank plot of likelihoods to the file
+<cite>[outbase].inference.likelihood_rank.[img_type]</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.branching_processes.CollapsedForest.n_topologies">
 <span class="sig-name descname"><span class="pre">n_topologies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.n_topologies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedForest.n_topologies" title="Permalink to this definition"></a></dt>
-<dd><p>Count the number of topology classes, ignoring internal node sequences</p>
+<dd><p>Count the number of topology classes, ignoring internal node
+sequences.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
@@ -499,7 +501,7 @@ of data about the trees in that forest, with format (ll, isotype parsimony, muta
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.branching_processes.CollapsedForest.iter_topology_classes">
 <span class="sig-name descname"><span class="pre">iter_topology_classes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.iter_topology_classes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedForest.iter_topology_classes" title="Permalink to this definition"></a></dt>
-<dd><p>Sort trees by topology class</p>
+<dd><p>Sort trees by topology class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p><dl class="simple">
@@ -516,13 +518,14 @@ contain at least as many trees as the one that follows.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.branching_processes.CollapsedForest.add_isotypes">
 <span class="sig-name descname"><span class="pre">add_isotypes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">isotypemap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotypemap_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idmap_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotype_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.add_isotypes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedForest.add_isotypes" title="Permalink to this definition"></a></dt>
-<dd><p>Adds isotype annotations, including inferred ancestral isotypes, to all nodes in stored trees.</p>
+<dd><p>Adds isotype annotations, including inferred ancestral isotypes, to
+all nodes in stored trees.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.branching_processes.CollapsedForest.sample_tree">
 <span class="sig-name descname"><span class="pre">sample_tree</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedForest.sample_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.CollapsedForest.sample_tree" title="Permalink to this definition"></a></dt>
-<dd><p>Sample a random CollapsedTree from the forest</p>
+<dd><p>Sample a random CollapsedTree from the forest.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a></p>

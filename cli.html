@@ -229,7 +229,7 @@
 <dd><p>positionmapfile for the 2nd chain when using the <code class="docutils literal notranslate"><span class="pre">chain_split</span></code> option</p>
 </dd>
 <dt><kbd>--idmapfile</kbd></dt>
-<dd><p>filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate. For use by isotype ranking.</p>
+<dd><p>input filename for a csv file mapping sequence names to original sequence ids. For use by isotype ranking. Such a file can be produced by <code class="docutils literal notranslate"><span class="pre">deduplicate</span></code> when it is provided the <code class="docutils literal notranslate"><span class="pre">--idmapfile</span></code> option.</p>
 </dd>
 <dt><kbd>--isotype_mapfile</kbd></dt>
 <dd><p>filename for a csv file mapping original sequence ids to observed isotypes. For example, each line should have the format ‘somesequence_id, some_isotype’.</p>
@@ -266,7 +266,7 @@
 <p>codon frame</p>
 </dd>
 <dt><kbd>--idlabel</kbd></dt>
-<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+<dd><p>label nodes with their sequence ids in output tree images, and write a fasta alignment mapping those sequence ids to sequences. This is the easiest way to access inferred ancestral sequences.</p>
 </dd>
 </dl>
 </section>
@@ -340,7 +340,7 @@
 <p>codon frame</p>
 </dd>
 <dt><kbd>--idlabel</kbd></dt>
-<dd><p>flag for labeling the sequence ids of the nodes in the output tree images, also write associated fasta alignment if <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+<dd><p>label nodes with their sequence ids in output tree images, and write a fasta alignment mapping those sequence ids to sequences. This is the easiest way to access inferred ancestral sequences.</p>
 </dd>
 </dl>
 </section>

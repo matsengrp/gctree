@@ -21,9 +21,7 @@ germinal B cells sorted from a brainbow mouse using multicolor fate mapping.
 
 In this file the sequence with id ``GL`` is the naive germline sequence, and represents the root of the tree.
 It does not refer to an observed sequence, but is included to outgroup root the tree!
-Generally this input fasta file should also contain all observed sequences with duplication (some of which may be identical to the root/outgroup sequence).
-It is also possible to provide some observed sequences with integers ids to be interpreted as abundances, as in the sequence named ``17`` above.
-
+This input fasta file should also contain all observed sequences with duplication (some of which may be identical to the root/outgroup sequence).
 
 Deduplication and sequence abundances
 =====================================
