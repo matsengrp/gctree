@@ -1,10 +1,15 @@
 r"""Utility functions."""
-from functools import wraps
+from functools import wraps, reduce
 import Bio.Data.IUPACData
+import operator
+from typing import Sequence, Any
+
+Multiplicable = Any
 
 bases = "AGCT-"
 ambiguous_dna_values = Bio.Data.IUPACData.ambiguous_dna_values.copy()
 ambiguous_dna_values.update({"?": "GATC-", "-": "-"})
+ambiguous_dna_keys = {frozenset(val): key for key, val in ambiguous_dna_values.items()}
 
 
 def _check_distance_arguments(distance):
@@ -28,3 +33,6 @@ def hamming_distance(seq1: str, seq2: str) -> int:
         seq2: sequence 2
     """
     return sum(x != y for x, y in zip(seq1, seq2))
+
+def product(factors: Sequence[Multiplicable], f=operator.mul, identity=1) -> Multiplicable:
+    return reduce(f, factors, identity)
