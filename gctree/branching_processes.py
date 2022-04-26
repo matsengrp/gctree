@@ -1659,17 +1659,22 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
                 "An internal node not adjacent to a leaf with the same label was found with nonzero abundance."
             )
 
-    # give disambiguated sequences unique names
-    sequences = {
-        node.attr["name"]: node.label.sequence for node in dag.preorder(skip_root=True)
+    ## give disambiguated sequences unique names
+    sequences = {node.label.sequence for node in dag.preorder(skip_root=True)}
+    # some internal nodes may have leaf sequences
+    leaf_sequence_d = {
+        node.label.sequence: node.attr["name"]
+        for node in dag.preorder(skip_root=True)
+        if node.is_leaf()
     }
-    n_max = max([int(name) for name in sequences.keys() if name.isdigit()])
-    namedict = {sequence: name for name, sequence in sequences.items()}
+    # build dictionary of unique names, preserving leaf names
+    name_d = {
+        seq: (leaf_sequence_d[seq] if seq in leaf_sequence_d else str(idx))
+        for idx, seq in enumerate(sequences)
+    }
+    # apply new names to DAG nodes
     for node in dag.preorder(skip_root=True):
-        if node.label.sequence not in namedict:
-            n_max += 1
-            namedict[node.label.sequence] = str(n_max)
-            node.attr["name"] = str(n_max)
+        node.attr["name"] = name_d[node.label.sequence]
     return dag
 
 
