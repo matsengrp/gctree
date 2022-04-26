@@ -27,6 +27,7 @@ from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 import pickle
 import functools
+import operator
 import collections as coll
 import historydag as hdag
 import multiset
@@ -1613,7 +1614,38 @@ def _make_dag(trees, from_copy=True):
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
     # Assume all trees have fixed root sequence and fixed leaf sequences
+
+    # disambiguate leaves: disambiguate each tree and transplant disambiguated
+    # leaf sequences to tree with ambiguous internal sequences
+    def is_ambiguous(sequence):
+        return any(base not in gctree.utils.bases for base in sequence)
+
+    if any(is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
+        for tree in trees:
+            leaf_sequences = {}
+            for node in tree.traverse():
+                node.add_feature("original_sequence", node.sequence)
+            disambiguate(tree)
+
+            to_delete = []
+            for node in tree.traverse():
+                # remove nodes with duplicate disambiguated sequence
+                if node.is_leaf():
+                    if node.sequence in leaf_sequences:
+                        to_delete.append(node)
+                        leaf_sequences[node.sequence].abundance += node.abundance
+                    else:
+                        leaf_sequences[node.sequence] = node
+                else:
+                    node.sequence = node.original_sequence
+            for node in to_delete:
+                parent = node.up
+                node.remove(prevent_nondicotomic=False)
+                if len(parent.children) < 2:
+                    parent.delete(prevent_nondicotomic=False)
+
     def get_sequence(node):
+        # TODO: remove this check now that it's handled above
         if any(base not in gctree.utils.bases for base in node.sequence):
             raise ValueError(
                 f"Unrecognized base found in node '{node.name}'. "
@@ -1623,6 +1655,10 @@ def _make_dag(trees, from_copy=True):
             return node.sequence
 
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
+    
+    # TODO: We are going to start storing abundances as a DAG label feature,
+    # and do away with sequence_counts. We'll need to translate this following
+    # logic about root unifurcations for this new situation.
 
     # Assume all trees have same observed nodes.
     sequence_counts = {
@@ -1635,6 +1671,7 @@ def _make_dag(trees, from_copy=True):
     if all(len(tree.children) > 1 for tree in trees):
         pass  # We're all good!
     elif trees[0].sequence not in leaf_seqs:
+        # There's root unifurcation, and the root isn't observed
         if trees[0].sequence not in sequence_counts:
             sequence_counts[trees[0].sequence] = 0
         for tree in trees:
