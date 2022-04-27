@@ -1485,9 +1485,14 @@ class CollapsedForest:
                     "observed nonroot sequences passed in leaf_seqs."
                 )
             # The maps from nodes to names and nodes to sequences are bijections
-            n_nodes = len(ctree.tree.traverse())
-            n_names = len({node.name for node in ctree.tree.traverse()})
-            n_seqs = len({node.sequence for node in ctree.tree.traverse()})
+            n_nodes = 0
+            names = set()
+            seqs = set()
+            for node in ctree.tree.traverse():
+                n_nodes += 1
+                names.add(node.name)
+                seqs.add(node.sequence)
+            n_names, n_seqs = len(names), len(seqs)
             if not (n_nodes == n_names and n_names == n_seqs):
                 raise RuntimeError(
                     "Multiple sequences with the same name, or multiple"
