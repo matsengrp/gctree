@@ -1683,6 +1683,8 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
         if node.is_leaf()
     }
     # add naive sequences, which are children of dagroot
+    # If fake root leaves have been added, they'll have the same sequence and
+    # name
     leaf_sequence_d.update(
         {node.label.sequence: node.attr["name"] for node in dag.dagroot.children()}
     )
