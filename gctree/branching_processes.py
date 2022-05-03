@@ -46,7 +46,10 @@ class CollapsedTree:
         tree: :class:`ete3.TreeNode` object with ``abundance`` node features
 
     Args:
-        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves, and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves,
+            and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed,
+            it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+            If a tree is provided, names of nodes with abundance 0 will not be preserved.
         allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.
     """
 
@@ -144,7 +147,9 @@ class CollapsedTree:
                     f"{rep_seq} sequences were found repeated."
                 )
             # a custom ladderize accounting for abundance and sequence to break
-            # ties in abundance
+            # ties in abundance. In same traversal fix unobserved node names
+            unobserved_count = 1
+            unobserved_dict = {}
             for node in self.tree.traverse(strategy="postorder"):
                 # add a partition feature and compute it recursively up tree
                 node.add_feature(
@@ -153,7 +158,14 @@ class CollapsedTree:
                 )
                 # sort children of this node based on partion and sequence
                 node.children.sort(key=lambda node: (node.partition, node.sequence))
-
+                # change node name if necessary
+                if node.abundance == 0 and not node.is_root():
+                    if node.sequence in unobserved_dict:
+                        node.name = unobserved_dict[node.sequence]
+                    else:
+                        node.name = str(unobserved_count)
+                        unobserved_count += 1
+                        unobserved_dict[node.sequence] = node.name
             self._build_cm_counts()
         else:
             self.tree = None
@@ -910,6 +922,7 @@ class CollapsedForest:
                 )
             # Collect stats for validation
             model_tree = disambiguate(forest[0].copy())
+            # include root in counts
             counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
             self._validation_stats = {
                 "counts": counts,
@@ -1422,12 +1435,13 @@ class CollapsedForest:
         ]
         assert len(dummyleaves) <= 1
         for leaf in dummyleaves:
-            leaf.delete()
+            leaf.delete(prevent_nondicotomic=False)
 
         ctree = CollapsedTree(etetree)
+
         # Here can do some validation on the tree:
-        # root name:
         if self._validation_stats is not None:
+            # root name:
             if self._validation_stats["root"] not in ctree.tree.name:
                 raise RuntimeError(
                     f"collapsed tree should have root name '{self._validation_stats['root']}' but has instead {ctree.tree.name}"
@@ -1455,7 +1469,10 @@ class CollapsedForest:
 
             # Parsimony:
             if self._validation_stats["parsimony_score"] != sum(
-                [node.dist for node in ctree.tree.traverse()]
+                [
+                    gctree.utils.hamming_distance(node.up.sequence, node.sequence)
+                    for node in ctree.tree.iter_descendants()
+                ]
             ):
                 raise RuntimeError(
                     "History DAG tree parsimony score does not match parsimony score provided"
@@ -1484,6 +1501,23 @@ class CollapsedForest:
                     "Observed nonroot sequences in history DAG tree don't match "
                     "observed nonroot sequences passed in leaf_seqs."
                 )
+            # The maps from nodes to names and nodes to sequences are bijections
+            n_nodes = 0
+            names = set()
+            seqs = set()
+            for node in ctree.tree.traverse():
+                n_nodes += 1
+                names.add(node.name)
+                seqs.add(node.sequence)
+            n_names, n_seqs = len(names), len(seqs)
+            if not (n_nodes == n_names and n_names == n_seqs):
+                raise RuntimeError(
+                    "Multiple sequences with the same name, or multiple"
+                    "names for the same sequence, observed in collapsed tree."
+                )
+        else:
+            warnings.warn("No validation was performed on tree")
+
         return ctree
 
     def __repr__(self):
@@ -1659,17 +1693,8 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
                 "An internal node not adjacent to a leaf with the same label was found with nonzero abundance."
             )
 
-    # give disambiguated sequences unique names
-    sequences = {
-        node.attr["name"]: node.label.sequence for node in dag.preorder(skip_root=True)
-    }
-    n_max = max([int(name) for name in sequences.keys() if name.isdigit()])
-    namedict = {sequence: name for name, sequence in sequences.items()}
-    for node in dag.preorder(skip_root=True):
-        if node.label.sequence not in namedict:
-            n_max += 1
-            namedict[node.label.sequence] = str(n_max)
-            node.attr["name"] = str(n_max)
+    # names on internal nodes are all messed up from disambiguation step, we'll
+    # fix them in CollapsedTree.__init__.
     return dag
 
 
