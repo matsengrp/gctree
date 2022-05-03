@@ -46,7 +46,10 @@ class CollapsedTree:
         tree: :class:`ete3.TreeNode` object with ``abundance`` node features
 
     Args:
-        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves, and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves,
+            and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed,
+            it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+            If a tree is provided, names of nodes with abundance 0 will not be preserved.
         allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.
     """
 
@@ -1691,7 +1694,7 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
             )
 
     # names on internal nodes are all messed up from disambiguation step, we'll
-    # fix them in _clade_tree_to_ctree.
+    # fix them in CollapsedTree.__init__.
     return dag
 
 
