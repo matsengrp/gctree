@@ -134,7 +134,10 @@
 <span class="sd">        tree: :class:`ete3.TreeNode` object with ``abundance`` node features</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves, and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.</span>
+<span class="sd">        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves,</span>
+<span class="sd">            and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed,</span>
+<span class="sd">            it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.</span>
+<span class="sd">            If a tree is provided, names of nodes with abundance 0 will not be preserved.</span>
 <span class="sd">        allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -232,7 +235,9 @@
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rep_seq</span><span class="si">}</span><span class="s2"> sequences were found repeated.&quot;</span>
                 <span class="p">)</span>
             <span class="c1"># a custom ladderize accounting for abundance and sequence to break</span>
-            <span class="c1"># ties in abundance</span>
+            <span class="c1"># ties in abundance. In same traversal fix unobserved node names</span>
+            <span class="n">unobserved_count</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">unobserved_dict</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
                 <span class="c1"># add a partition feature and compute it recursively up tree</span>
                 <span class="n">node</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span>
@@ -241,7 +246,14 @@
                 <span class="p">)</span>
                 <span class="c1"># sort children of this node based on partion and sequence</span>
                 <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">node</span><span class="p">:</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">partition</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">))</span>
-
+                <span class="c1"># change node name if necessary</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_root</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span> <span class="ow">in</span> <span class="n">unobserved_dict</span><span class="p">:</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">unobserved_dict</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">unobserved_count</span><span class="p">)</span>
+                        <span class="n">unobserved_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">unobserved_dict</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_build_cm_counts</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="kc">None</span></div>
@@ -998,6 +1010,7 @@
                 <span class="p">)</span>
             <span class="c1"># Collect stats for validation</span>
             <span class="n">model_tree</span> <span class="o">=</span> <span class="n">disambiguate</span><span class="p">(</span><span class="n">forest</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+            <span class="c1"># include root in counts</span>
             <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">()}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">counts</span><span class="p">,</span>
@@ -1510,12 +1523,13 @@
         <span class="p">]</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">dummyleaves</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
         <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">dummyleaves</span><span class="p">:</span>
-            <span class="n">leaf</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+            <span class="n">leaf</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">ctree</span> <span class="o">=</span> <span class="n">CollapsedTree</span><span class="p">(</span><span class="n">etetree</span><span class="p">)</span>
+
         <span class="c1"># Here can do some validation on the tree:</span>
-        <span class="c1"># root name:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># root name:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;root&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;collapsed tree should have root name &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s1">&#39;root&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; but has instead </span><span class="si">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -1543,7 +1557,10 @@
 
             <span class="c1"># Parsimony:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;parsimony_score&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">sum</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()]</span>
+                <span class="p">[</span>
+                    <span class="n">gctree</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">hamming_distance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">()</span>
+                <span class="p">]</span>
             <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="s2">&quot;History DAG tree parsimony score does not match parsimony score provided&quot;</span>
@@ -1572,6 +1589,23 @@
                     <span class="s2">&quot;Observed nonroot sequences in history DAG tree don&#39;t match &quot;</span>
                     <span class="s2">&quot;observed nonroot sequences passed in leaf_seqs.&quot;</span>
                 <span class="p">)</span>
+            <span class="c1"># The maps from nodes to names and nodes to sequences are bijections</span>
+            <span class="n">n_nodes</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="n">seqs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+                <span class="n">n_nodes</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">seqs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+            <span class="n">n_names</span><span class="p">,</span> <span class="n">n_seqs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">n_nodes</span> <span class="o">==</span> <span class="n">n_names</span> <span class="ow">and</span> <span class="n">n_names</span> <span class="o">==</span> <span class="n">n_seqs</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Multiple sequences with the same name, or multiple&quot;</span>
+                    <span class="s2">&quot;names for the same sequence, observed in collapsed tree.&quot;</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No validation was performed on tree&quot;</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">ctree</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1747,17 +1781,8 @@
                 <span class="s2">&quot;An internal node not adjacent to a leaf with the same label was found with nonzero abundance.&quot;</span>
             <span class="p">)</span>
 
-    <span class="c1"># give disambiguated sequences unique names</span>
-    <span class="n">sequences</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]:</span> <span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dag</span><span class="o">.</span><span class="n">preorder</span><span class="p">(</span><span class="n">skip_root</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="p">}</span>
-    <span class="n">n_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">sequences</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()])</span>
-    <span class="n">namedict</span> <span class="o">=</span> <span class="p">{</span><span class="n">sequence</span><span class="p">:</span> <span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">sequence</span> <span class="ow">in</span> <span class="n">sequences</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dag</span><span class="o">.</span><span class="n">preorder</span><span class="p">(</span><span class="n">skip_root</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">namedict</span><span class="p">:</span>
-            <span class="n">n_max</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="n">namedict</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">n_max</span><span class="p">)</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">n_max</span><span class="p">)</span>
+    <span class="c1"># names on internal nodes are all messed up from disambiguation step, we&#39;ll</span>
+    <span class="c1"># fix them in CollapsedTree.__init__.</span>
     <span class="k">return</span> <span class="n">dag</span>
 
 

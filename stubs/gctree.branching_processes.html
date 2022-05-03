@@ -158,7 +158,10 @@ to extinction.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>tree</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TreeNode</span></code>]) – ete3 tree with <code class="docutils literal notranslate"><span class="pre">abundance</span></code> node features. Nonzero abundances expected on leaves, and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed, it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.</p></li>
+<li><p><strong>tree</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TreeNode</span></code>]) – ete3 tree with <code class="docutils literal notranslate"><span class="pre">abundance</span></code> node features. Nonzero abundances expected on leaves,
+and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed,
+it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+If a tree is provided, names of nodes with abundance 0 will not be preserved.</p></li>
 <li><p><strong>allow_repeats</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.</p></li>
 </ul>
 </dd>

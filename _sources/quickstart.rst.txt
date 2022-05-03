@@ -152,3 +152,12 @@ For example, here is the top ranked tree above, with isotypes added:
 
 .. image:: isotyped/gctree.out.inference.1.p.isotype_parsimony.28.svg
   :width: 1000
+
+A note about node names
+=======================
+
+The names associated with unobserved nodes (for example, in trees rendered with
+`--idlabel`) are arbitrarily chosen, but are guaranteed to correspond
+bijectively with unobserved sequences. However, if gctree output contains
+multiple trees, **two unobserved nodes which share the same name but occur in
+different output trees will not in general possess the same unobserved sequence.**

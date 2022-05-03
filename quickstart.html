@@ -49,6 +49,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#parsimony-trees">Parsimony trees</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#gctree">gctree</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#isotype">isotype</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a-note-about-node-names">A note about node names</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="rendering-demo.html">Custom tree visualization</a></li>
@@ -238,7 +239,7 @@ You may also want to tell matplotlib to use a headless backend with <code class=
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose
 number of trees with integer branch lengths: 703
-Parameters: (0.49618320692429585, 0.36445206621349757)
+Parameters: (0.4961832069242959, 0.3644520662134975)
 
 Stats for optimal trees:
 tree     	Log Likelihood	Alleles       
@@ -272,7 +273,7 @@ mutabilities, and alleles:</p>
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Isotype parsimony will be used as a ranking criterion
 Mutation model parsimony will be used as a ranking criterion
-Parameters: (0.49618320692429585, 0.36445206621349757)
+Parameters: (0.4961832069242959, 0.3644520662134975)
 
 Stats for optimal trees:
 tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
@@ -327,7 +328,7 @@ Among trees with max Alleles of: 53
 	Mut. Pars. range: 71.58051182571174 to 72.97479723796525
 
 
-Parameters: (0.49618320692429585, 0.36445206621349757)
+Parameters: (0.4961832069242959, 0.3644520662134975)
 
 Highest ranked tree: loss from best value:
 tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       
@@ -352,6 +353,14 @@ newranking.inference.1.p		 48			 28.0			 50
 colors corresponding to observed or inferred isotypes.
 For example, here is the top ranked tree above, with isotypes added:</p>
 <a class="reference internal image-reference" href="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg"><img alt="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg" src="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg" width="1000" /></a>
+</section>
+<section id="a-note-about-node-names">
+<h2>A note about node names<a class="headerlink" href="#a-note-about-node-names" title="Permalink to this headline"></a></h2>
+<p>The names associated with unobserved nodes (for example, in trees rendered with
+<cite>–idlabel</cite>) are arbitrarily chosen, but are guaranteed to correspond
+bijectively with unobserved sequences. However, if gctree output contains
+multiple trees, <strong>two unobserved nodes which share the same name but occur in
+different output trees will not in general possess the same unobserved sequence.</strong></p>
 </section>
 </section>
 
