@@ -144,7 +144,9 @@ class CollapsedTree:
                     f"{rep_seq} sequences were found repeated."
                 )
             # a custom ladderize accounting for abundance and sequence to break
-            # ties in abundance
+            # ties in abundance. In same traversal fix unobserved node names
+            unobserved_count = 1
+            unobserved_dict = {}
             for node in self.tree.traverse(strategy="postorder"):
                 # add a partition feature and compute it recursively up tree
                 node.add_feature(
@@ -153,7 +155,14 @@ class CollapsedTree:
                 )
                 # sort children of this node based on partion and sequence
                 node.children.sort(key=lambda node: (node.partition, node.sequence))
-
+                # change node name if necessary
+                if node.abundance == 0 and not node.is_root():
+                    if node.sequence in unobserved_dict:
+                        node.name = unobserved_dict[node.sequence]
+                    else:
+                        node.name = str(unobserved_count)
+                        unobserved_count += 1
+                        unobserved_dict[node.sequence] = node.name
             self._build_cm_counts()
         else:
             self.tree = None
@@ -910,6 +919,7 @@ class CollapsedForest:
                 )
             # Collect stats for validation
             model_tree = disambiguate(forest[0].copy())
+            # include root in counts
             counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
             self._validation_stats = {
                 "counts": counts,
@@ -1422,12 +1432,13 @@ class CollapsedForest:
         ]
         assert len(dummyleaves) <= 1
         for leaf in dummyleaves:
-            leaf.delete()
+            leaf.delete(prevent_nondicotomic=False)
 
         ctree = CollapsedTree(etetree)
+
         # Here can do some validation on the tree:
-        # root name:
         if self._validation_stats is not None:
+            # root name:
             if self._validation_stats["root"] not in ctree.tree.name:
                 raise RuntimeError(
                     f"collapsed tree should have root name '{self._validation_stats['root']}' but has instead {ctree.tree.name}"
@@ -1455,7 +1466,10 @@ class CollapsedForest:
 
             # Parsimony:
             if self._validation_stats["parsimony_score"] != sum(
-                [node.dist for node in ctree.tree.traverse()]
+                [
+                    gctree.utils.hamming_distance(node.up.sequence, node.sequence)
+                    for node in ctree.tree.iter_descendants()
+                ]
             ):
                 raise RuntimeError(
                     "History DAG tree parsimony score does not match parsimony score provided"
@@ -1498,6 +1512,8 @@ class CollapsedForest:
                     "Multiple sequences with the same name, or multiple"
                     "names for the same sequence, observed in collapsed tree."
                 )
+        else:
+            warnings.warn("No validation was performed on tree")
 
         return ctree
 
@@ -1674,28 +1690,8 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
                 "An internal node not adjacent to a leaf with the same label was found with nonzero abundance."
             )
 
-    ## give disambiguated sequences unique names
-    sequences = {node.label.sequence for node in dag.preorder(skip_root=True)}
-    # some internal nodes may have leaf sequences
-    leaf_sequence_d = {
-        node.label.sequence: node.attr["name"]
-        for node in dag.preorder(skip_root=True)
-        if node.is_leaf()
-    }
-    # add naive sequences, which are children of dagroot
-    # If fake root leaves have been added, they'll have the same sequence and
-    # name
-    leaf_sequence_d.update(
-        {node.label.sequence: node.attr["name"] for node in dag.dagroot.children()}
-    )
-    # build dictionary of unique names, preserving leaf names
-    name_d = {
-        seq: (leaf_sequence_d[seq] if seq in leaf_sequence_d else str(idx))
-        for idx, seq in enumerate(sequences)
-    }
-    # apply new names to DAG nodes
-    for node in dag.preorder(skip_root=True):
-        node.attr["name"] = name_d[node.label.sequence]
+    # names on internal nodes are all messed up from disambiguation step, we'll
+    # fix them in _clade_tree_to_ctree.
     return dag
 
 
