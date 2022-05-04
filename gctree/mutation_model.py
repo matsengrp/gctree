@@ -1,6 +1,7 @@
 r"""Mutation models."""
 
 import gctree.utils as utils
+import gctree.isotyping as isotyping
 
 from ete3 import TreeNode
 import numpy as np
@@ -207,9 +208,12 @@ class MutationModel:
         frame: int = None,
         N_init: int = 1,
         N: int = None,
-        T: int = None,
+        T: List[int] = None,
         n: int = None,
         verbose: bool = False,
+        isotype_p: np.float64 = 0,
+        isotype_transition_probabilities: List[List[np.float64]] = None,
+        isotypes: List[str] = None,
     ) -> TreeNode:
         r"""Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.
 
@@ -221,9 +225,13 @@ class MutationModel:
             frame: coding frame of starting position(s)
             N_init: initial naive abundnace
             N: maximum population size
-            T: maximum generation time
+            T: A list of sampling times, in which the maximum value is the maximum generation time
             n: sample size
             verbose: print more messages
+            isotype_p: transition probability for isotype switching
+            isotype_transition_probabilities: an array or nested list containing isotype targeting distributions
+                as rows. Passed to :meth:`gctree.mutation_model.Isotype.mutate`.
+            isotypes: names of possible isotypes, in the correct switching order
         """
         # Checking the validity of the input parameters:
         if N is not None and T is not None:
@@ -233,10 +241,16 @@ class MutationModel:
         if N is not None and n is not None and n > N:
             raise ValueError("n ({}) must not larger than N ({})".format(n, N))
 
+        if isotypes is None:
+            isotypes = isotyping.default_isotype_order
+        _template = isotyping.IsotypeTemplate(isotypes)
+        naive_isotype = _template.new(isotypes[0])
+
         # Planting the tree:
         tree = TreeNode()
         tree.dist = 0
         tree.add_feature("sequence", sequence)
+        tree.add_feature("isotype", naive_isotype)
         tree.add_feature("terminated", False)
         tree.add_feature("abundance", 0)
         tree.add_feature("time", 0)
@@ -248,6 +262,7 @@ class MutationModel:
                 child = TreeNode()
                 child.dist = 0
                 child.add_feature("sequence", sequence)
+                child.add_feature("isotype", naive_isotype)
                 child.add_feature("abundance", 0)
                 child.add_feature("terminated", False)
                 child.add_feature("time", 0)
@@ -264,6 +279,7 @@ class MutationModel:
         ):
             if verbose:
                 print("At time:", t)
+                print(f"There are {leaves_unterminated} extant lineages")
             t += 1
             list_of_leaves = list(tree.iter_leaves())
             random.shuffle(list_of_leaves)
@@ -300,6 +316,13 @@ class MutationModel:
                             mutated_sequence, leaf.sequence
                         )
                         child.add_feature("sequence", mutated_sequence)
+                        child.add_feature(
+                            "isotype",
+                            leaf.isotype.mutate(
+                                p=isotype_p,
+                                transition_probabilities=isotype_transition_probabilities,
+                            ),
+                        )
                         child.add_feature("abundance", 0)
                         child.add_feature("terminated", False)
                         child.add_feature("time", t)
@@ -328,11 +351,8 @@ class MutationModel:
                             leaves_unterminated, n
                         )
                     )
-                for (
-                    leaf
-                ) in (
-                    final_leaves
-                ):  # No need to down-sample, this was already done in the simulation loop
+                # No need to down-sample, this was already done in the simulation loop
+                for leaf in final_leaves:
                     leaf.abundance = 1
         # Do the normal sampling of the last time step:
         final_leaves = [leaf for leaf in tree.iter_leaves() if leaf.time == t]
