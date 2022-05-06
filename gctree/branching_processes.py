@@ -922,8 +922,10 @@ class CollapsedForest:
                 )
             # Collect stats for validation
             model_tree = disambiguate(forest[0].copy())
-            # include root in counts
+            # include root in counts, since deduplicate will never let observed
+            # root be a leaf.
             counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
+            counts[model_tree.name] = model_tree.abundance
             self._validation_stats = {
                 "counts": counts,
                 "root": model_tree.name,
@@ -1442,6 +1444,22 @@ class CollapsedForest:
 
         ctree = CollapsedTree(etetree)
 
+        # Fix internal node names to be unique, and verify
+        # The maps from nodes to names and nodes to sequences are bijections
+        n_nodes = 0
+        names = set()
+        seqs = set()
+        for node in ctree.tree.traverse():
+            n_nodes += 1
+            names.add(node.name)
+            seqs.add(node.sequence)
+        n_names, n_seqs = len(names), len(seqs)
+        if not (n_nodes == n_names and n_names == n_seqs):
+            raise RuntimeError(
+                "Multiple sequences with the same name, or multiple"
+                "names for the same sequence, observed in collapsed tree."
+            )
+
         # Here can do some validation on the tree:
         if self._validation_stats is not None:
             # root name:
@@ -1503,20 +1521,6 @@ class CollapsedForest:
                 raise RuntimeError(
                     "Observed nonroot sequences in history DAG tree don't match "
                     "observed nonroot sequences passed in leaf_seqs."
-                )
-            # The maps from nodes to names and nodes to sequences are bijections
-            n_nodes = 0
-            names = set()
-            seqs = set()
-            for node in ctree.tree.traverse():
-                n_nodes += 1
-                names.add(node.name)
-                seqs.add(node.sequence)
-            n_names, n_seqs = len(names), len(seqs)
-            if not (n_nodes == n_names and n_names == n_seqs):
-                raise RuntimeError(
-                    "Multiple sequences with the same name, or multiple"
-                    "names for the same sequence, observed in collapsed tree."
                 )
         else:
             warnings.warn("No validation was performed on tree")
