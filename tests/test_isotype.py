@@ -17,7 +17,7 @@ trees_seqcounts1 = pp.parse_outfile(
     root="GL",
 )
 
-forest = bp.CollapsedForest(*trees_seqcounts1)
+forest = bp.CollapsedForest(trees_seqcounts1)
 dag = forest._forest
 
 

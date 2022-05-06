@@ -100,9 +100,7 @@ def parse_seqdict(fh, mode="dnaml"):
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
 def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False):
-    """parse phylip outfile, and return dnapars trees, a dictionary mapping
-    node names to sequences, and a dictionary mapping node names to observed
-    abundances."""
+    """parse phylip outfile, and return dnapars trees."""
     if abundance_file is not None:
         counts = {
             line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)
@@ -141,11 +139,7 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
     if disambiguate:
         # Disambiguate sets node.dist for all nodes in disambiguated trees
         trees = [disambiguate(tree) for tree in trees]
-    if counts is None:
-        sequence_counts = None
-    else:
-        sequence_counts = {sequences[name]: count for name, count in counts.items()}
-    return (trees, sequence_counts)
+    return trees
 
 
 def disambiguate(tree: Tree, random_state=None) -> Tree:
@@ -289,7 +283,7 @@ def main(arg_list=None):
     if args.outputfile is None:
         args.outputfile = args.phylip_outfile + ".collapsed_forest.p"
     forest = bp.CollapsedForest(
-        *parse_outfile(args.phylip_outfile, args.abundance_file, args.root)
+        parse_outfile(args.phylip_outfile, args.abundance_file, args.root)
     )
     with open(args.outputfile, "wb") as fh:
         pickle.dump(forest, fh)

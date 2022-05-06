@@ -30,32 +30,28 @@ def make_oldcforest(newforest):
     )
 
 
-trees_seqcounts1 = pp.parse_outfile(
+trees1 = pp.parse_outfile(
     "tests/example_output/original/small_outfile",
     abundance_file="tests/example_output/original/abundances.csv",
     root="GL",
 )
-# Sample trees
-trees1 = trees_seqcounts1[0]
 # Sample trees disambiguated
 trees1dis = [pp.disambiguate(tree.copy()) for tree in trees1]
-trees_seqcounts2 = pp.parse_outfile(
+trees2 = pp.parse_outfile(
     "tests/example_output/observed_root/small_outfile",
     abundance_file="tests/example_output/observed_root/abundances.csv",
     root="GL",
 )
-# Sample trees with observed root
-trees2 = trees_seqcounts2[0]
 # Sample trees with observed root disambiguated
 trees2dis = [pp.disambiguate(tree.copy()) for tree in trees2]
 
 # Ambiguous and disambiguated, lists of sample trees and their associated counts
-testtrees = [trees_seqcounts1, trees_seqcounts2]
-testtreesdis = [(trees1dis, trees_seqcounts1[1]), (trees2dis, trees_seqcounts2[1])]
+testtrees = [trees1, trees2]
+testtreesdis = [trees1dis, trees2dis]
 
 # The three kinds of CollapsedForests we're comparing:
 # new ones with hDAG
-newforests = [bp.CollapsedForest(*trees_seqcounts) for trees_seqcounts in testtrees]
+newforests = [bp.CollapsedForest(trees) for trees in testtrees]
 
 # new ones with a list of ctrees
 newforests_ctrees = []

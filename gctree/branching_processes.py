@@ -899,21 +899,15 @@ class CollapsedForest:
 
     Args:
         forest: list of :class:`ete3.Tree`
-        sequence_counts: a mapping of observed sequences to observed abundances
     """
 
     def __init__(
         self,
         forest: List[Union[CollapsedTree, ete3.Tree]] = None,
-        sequence_counts: Mapping[str, int] = None,
     ):
         if forest is not None:
             if len(forest) == 0:
                 raise ValueError("passed empty tree list")
-            if sequence_counts is None:
-                raise ValueError(
-                    "an abundance dictionary must be provided to the keyword argument sequence_counts"
-                )
             if isinstance(forest[0], CollapsedTree):
                 forest = [ctree.tree for ctree in forest]
             elif not isinstance(forest[0], ete3.Tree):
@@ -938,7 +932,7 @@ class CollapsedForest:
             # Making this a private variable so that trying to access forest
             # attribute as before won't just give a confusing type or
             # attribute error.
-            self._forest = _make_dag(forest, sequence_counts=sequence_counts)
+            self._forest = _make_dag(forest)
             self.n_trees = self._forest.count_trees()
         else:
             self._forest = None
@@ -1603,7 +1597,7 @@ def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.nda
     return logf, grad_ll_genotype
 
 
-def _make_dag(trees, sequence_counts={}, from_copy=True):
+def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
@@ -1619,7 +1613,8 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
 
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
 
-    sequence_counts = sequence_counts.copy()
+    # Assume all trees have same observed nodes.
+    sequence_counts = {node.sequence: node.abundance for node in trees[0].traverse() if node.abundance > 0}
     if from_copy:
         trees = [tree.copy() for tree in trees]
     if all(len(tree.children) > 1 for tree in trees):
