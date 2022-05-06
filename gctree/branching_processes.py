@@ -1597,7 +1597,11 @@ def _make_dag(trees, from_copy=True):
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
 
     # Assume all trees have same observed nodes.
-    sequence_counts = {node.sequence: node.abundance for node in trees[0].traverse() if node.abundance > 0}
+    sequence_counts = {
+        node.sequence: node.abundance
+        for node in trees[0].traverse()
+        if node.abundance > 0
+    }
     if from_copy:
         trees = [tree.copy() for tree in trees]
     if all(len(tree.children) > 1 for tree in trees):
