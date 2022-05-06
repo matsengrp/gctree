@@ -72,41 +72,29 @@ class CollapsedTree:
                 )
 
             # iterate over the tree below root and collapse edges of zero
-            # length if the node is a leaf and it's parent has nonzero
-            # abundance we combine taxa names to a set to acommodate
-            # bootstrap samples that result in repeated genotypes
+            # length.
             observed_genotypes = set((leaf.name for leaf in self.tree))
             observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy="postorder"):
                 if node.dist == 0:
+                    # if an abundance is nonzero, that's the right one.
                     node.up.abundance = max(node.abundance, node.up.abundance)
-                    node.up.isotype = node.isotype
-                    if isinstance(node.name, str):
-                        node_set = set([node.name])
-                    else:
-                        node_set = set(node.name)
-                    if isinstance(node.up.name, str):
-                        node_up_set = set([node.up.name])
-                    else:
-                        node_up_set = set(node.up.name)
-                    if node_up_set < observed_genotypes:
-                        if node_set < observed_genotypes:
-                            node.up.name = tuple(node_set | node_up_set)
-                            if len(node.up.name) == 1:
-                                node.up.name = node.up.name[0]
-                    elif node_set < observed_genotypes:
-                        node.up.name = tuple(node_set)
-                        if len(node.up.name) == 1:
-                            node.up.name = node.up.name[0]
+                    # if the isotypes are different, then adopting child
+                    # isotype will cause prohibited transitions
+                    node.up.isotype = {node.up.isotype, node.isotype}
+                    # if both names are in observed_genotypes, they're the same
+                    observed_name = {node.name, node.up.name} & observed_genotypes
+                    if len(observed_name) > 0:
+                        assert len(observed_name) == 1
+                        node.up.name = observed_name.pop()
+                    # otherwise, neither node is observed, and node.up.name can
+                    # remain unchanged
                     node.delete(prevent_nondicotomic=False)
 
             final_observed_genotypes = set()
             for node in self.tree.traverse():
                 if node.abundance > 0 or node == self.tree:
-                    for name in (
-                        (node.name,) if isinstance(node.name, str) else node.name
-                    ):
-                        final_observed_genotypes.add(name)
+                    final_observed_genotypes.add(node.name)
             if final_observed_genotypes != observed_genotypes:
                 raise RuntimeError(
                     "observed genotypes don't match after "
@@ -1467,15 +1455,10 @@ class CollapsedForest:
                 if node.name:
                     assert counts[node.name] == node.abundance
             for node in ctree.tree.traverse():
-                if isinstance(node.name, tuple):
-                    for name in node.name:
-                        if name in counts:
-                            assert node.abundance == counts[name]
+                if node.name in counts:
+                    assert counts[node.name] == node.abundance
                 else:
-                    if node.name in counts:
-                        assert counts[node.name] == node.abundance
-                    else:
-                        assert node.abundance == 0
+                    assert node.abundance == 0
 
             # unnamed_seq issue:
             for node in ctree.tree.traverse():
