@@ -1431,9 +1431,10 @@ class CollapsedForest:
 
         # Remove dummy leaf added below root for hDAG compatibility
         dummyleaves = [
-            node for node in etetree.children if node.is_leaf() and node.abundance == 0
+            node for node in etetree.children if node.is_leaf() and node.name == ''
         ]
-        assert len(dummyleaves) <= 1
+        if len(dummyleaves) > 1:
+            raise RuntimeError("Multiple temporary leaves found in tree. Does an observed sequence have name ''?")
         for leaf in dummyleaves:
             leaf.delete(prevent_nondicotomic=False)
 
