@@ -60,6 +60,14 @@ class CollapsedTree:
             self.tree = tree.copy()
             self.tree.dist = 0
 
+            def merge_isotype_dicts(parent_isotype, child_isotype):
+                # values are abundances and keys are isotypes.
+                for key, val in child_isotype:
+                    if key in parent_isotype:
+                        parent_isotype[key] = max(parent_isotype[key], val)
+                    else:
+                        parent_isotype[key] = val
+
             # remove unobserved internal unifurcations
             for node in self.tree.iter_descendants():
                 if node.abundance == 0 and len(node.children) == 1:
@@ -79,16 +87,26 @@ class CollapsedTree:
                 if node.dist == 0:
                     # if an abundance is nonzero, that's the right one.
                     node.up.abundance = max(node.abundance, node.up.abundance)
-                    # if the isotypes are different, then adopting child
-                    # isotype will cause prohibited transitions
-                    node.up.isotype = {node.up.isotype, node.isotype}
-                    # if both names are in observed_genotypes, they're the same
-                    observed_name = {node.name, node.up.name} & observed_genotypes
-                    if len(observed_name) > 0:
-                        assert len(observed_name) == 1
-                        node.up.name = observed_name.pop()
-                    # otherwise, neither node is observed, and node.up.name can
-                    # remain unchanged
+                    # isotype is dictionary with isotype as key and observed
+                    # abundance as value
+                    node.up.isotype = merge_isotype_dicts(node.up.isotype, node.isotype)
+                    if isinstance(node.name, str):
+                        node_set = set([node.name])
+                    else:
+                        node_set = set(node.name)
+                    if isinstance(node.up.name, str):
+                        node_up_set = set([node.up.name])
+                    else:
+                        node_up_set = set(node.up.name)
+                    if node_up_set < observed_genotypes:
+                        if node_set < observed_genotypes:
+                            node.up.name = tuple(node_set | node_up_set)
+                            if len(node.up.name) == 1:
+                                node.up.name = node.up.name[0]
+                    elif node_set < observed_genotypes:
+                        node.up.name = tuple(node_set)
+                        if len(node.up.name) == 1:
+                            node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
 
             final_observed_genotypes = set()
