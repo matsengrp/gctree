@@ -63,7 +63,7 @@ class CollapsedTree:
             def merge_isotype_dicts(parent_isotype, child_isotype):
                 # values are abundances and keys are isotypes.
                 parent_isotype = dict(parent_isotype)
-                for key, val in child_isotype:
+                for key, val in child_isotype.items():
                     if key in parent_isotype:
                         parent_isotype[key] = max(parent_isotype[key], val)
                     else:
@@ -112,6 +112,8 @@ class CollapsedTree:
                         if len(node.up.name) == 1:
                             node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
+                node.add_feature('inferred_isotype', min(node.isotype.keys()))
+            self.tree.add_feature('inferred_isotype', min(self.tree.isotype.keys()))
 
             final_observed_genotypes = set()
             for node in self.tree.traverse():
