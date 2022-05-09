@@ -1617,6 +1617,8 @@ def _make_dag(trees, from_copy=True):
 
     # disambiguate leaves: disambiguate each tree and transplant disambiguated
     # leaf sequences to tree with ambiguous internal sequences
+    if from_copy:
+        trees = [tree.copy() for tree in trees]
     def is_ambiguous(sequence):
         return any(base not in gctree.utils.bases for base in sequence)
 
@@ -1677,39 +1679,17 @@ def _make_dag(trees, from_copy=True):
 
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
     
-    # TODO: We are going to start storing abundances as a DAG label feature,
-    # and do away with sequence_counts. We'll need to translate this following
-    # logic about root unifurcations for this new situation.
 
-    # Assume all trees have same observed nodes.
-    sequence_counts = {
-        node.sequence: node.abundance
-        for node in trees[0].traverse()
-        if node.abundance > 0
-    }
-    if from_copy:
-        trees = [tree.copy() for tree in trees]
-    if all(len(tree.children) > 1 for tree in trees):
-        pass  # We're all good!
-    elif trees[0].sequence not in leaf_seqs:
-        # There's root unifurcation, and the root isn't observed
-        if trees[0].sequence not in sequence_counts:
-            sequence_counts[trees[0].sequence] = 0
-        for tree in trees:
+    # add pseudo-leaf below root, if necessary:
+    for tree in trees:
+        if len(tree.children) == 1:
             newleaf = tree.add_child(name="", dist=0)
-            newleaf.add_feature("sequence", trees[0].sequence)
+            newleaf.add_feature("sequence", tree.sequence)
             newleaf.add_feature("abundance", tree.abundance)
-            if tree.sequence != newleaf.sequence:
-                raise ValueError(
-                    "At least some trees unifurcate at root, but root sequence is not fixed."
-                )
-    else:
-        # This should never happen in parsimony setting, when internal edges
-        # are collapsed by sequence
-        raise RuntimeError(
-            "Root sequence observed, but the corresponding leaf is not a child of the root node. "
-            "Gctree inference may give nonsensical results. Are you sure these are parsimony trees?"
-        )
+            # if root is observed and there's already a leaf matching root,
+            # historydag will throw an error about non-unique leaves. That's
+            # good because we want all observed abundance of root sequence to
+            # be annotated on root, not a separate leaf.
 
     dag = hdag.history_dag_from_etes(
         trees,
