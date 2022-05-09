@@ -667,7 +667,7 @@ class CollapsedTree:
         Args:
             file_name: file name (.nk suffix recommended)
         """
-        self.tree.write(format=1, outfile=file_name)
+        self.tree.write(format=1, outfile=file_name, format_root_node=True)
 
     def compare(
         self, tree2: CollapsedTree, method: str = "identity"
