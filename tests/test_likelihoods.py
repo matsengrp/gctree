@@ -131,6 +131,7 @@ def test_newcounters():
 def test_newlikelihoods():
     """Make sure the likelihoods found by new CollapsedTree.ll agree with old"""
     p, q = 0.4, 0.6
+    ll_dagfuncs = bp._ll_genotype_dagfuncs(p, q)
 
     # new and old trees agree
     for newforest, newforest_ctrees, oldforest in allforests:
@@ -148,6 +149,8 @@ def test_newlikelihoods():
 
             assert ll_isclose(oldfll, newfll)
             assert ll_isclose(oldfll, newfctreell)
+        for dagll, treell in zip(sorted(newforest._forest.weight_count(**ll_dagfuncs).elements()), sorted(ctree.ll(p, q) for ctree in newforest)):
+            assert np.isclose(dagll, treell)
 
 
 def test_fit():
