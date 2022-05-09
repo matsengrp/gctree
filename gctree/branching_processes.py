@@ -62,11 +62,13 @@ class CollapsedTree:
 
             def merge_isotype_dicts(parent_isotype, child_isotype):
                 # values are abundances and keys are isotypes.
+                parent_isotype = dict(parent_isotype)
                 for key, val in child_isotype:
                     if key in parent_isotype:
                         parent_isotype[key] = max(parent_isotype[key], val)
                     else:
                         parent_isotype[key] = val
+                return frozendict(parent_isotype)
 
             # remove unobserved internal unifurcations
             for node in self.tree.iter_descendants():
