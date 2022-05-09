@@ -1665,7 +1665,6 @@ def _make_dag(trees, from_copy=True):
             for node in to_delete:
                 node.delete(prevent_nondicotomic=False)
 
-
     def get_sequence(node):
         # TODO: remove this check now that it's handled above
         if any(base not in gctree.utils.bases for base in node.sequence):
@@ -1699,6 +1698,7 @@ def _make_dag(trees, from_copy=True):
         for tree in trees:
             newleaf = tree.add_child(name="", dist=0)
             newleaf.add_feature("sequence", trees[0].sequence)
+            newleaf.add_feature("abundance", tree.abundance)
             if tree.sequence != newleaf.sequence:
                 raise ValueError(
                     "At least some trees unifurcate at root, but root sequence is not fixed."
@@ -1713,7 +1713,7 @@ def _make_dag(trees, from_copy=True):
 
     dag = hdag.history_dag_from_etes(
         trees,
-        ["sequence"],
+        ["sequence", "abundance"],
         attr_func=lambda n: {
             "name": n.name,
             "isotype": frozendict(),
@@ -1744,16 +1744,9 @@ def _make_dag(trees, from_copy=True):
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
     dag.convert_to_collapsed()
-    # Add abundances to attrs:
+    # Add abundances to attrs: TODO stop using attrs for abundance at all
     for node in dag.preorder(skip_root=True):
-        if node.label.sequence in sequence_counts:
-            node.attr["abundance"] = sequence_counts[node.label.sequence]
-        else:
-            if node.is_leaf():
-                raise ValueError(
-                    "sequence_counts dictionary should contain all leaf sequences"
-                )
-            node.attr["abundance"] = 0
+        node.attr["abundance"] = node.label.abundance
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
