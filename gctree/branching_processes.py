@@ -1621,28 +1621,50 @@ def _make_dag(trees, from_copy=True):
         return any(base not in gctree.utils.bases for base in sequence)
 
     if any(is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
+        warnings.warn("Some observed sequences are ambiguous. A disambiguation consistent"
+                      " with each dnapars tree will be chosen arbitrarily. Many alternative"
+                      " disambiguated leaf sequences may be possible.")
         for tree in trees:
             leaf_sequences = {}
             for node in tree.traverse():
                 node.add_feature("original_sequence", node.sequence)
-            disambiguate(tree)
+            disambig_tree = tree.copy()
+            node_map = {d_node: o_node for d_node, o_node in zip(disambig_tree.traverse(), tree.traverse())}
+            disambiguate(disambig_tree)
 
+            # remove duplicate leaves, and adjust abundances
+            leaf_seqs = {}
             to_delete = []
-            for node in tree.traverse():
-                # remove nodes with duplicate disambiguated sequence
-                if node.is_leaf():
-                    if node.sequence in leaf_sequences:
-                        to_delete.append(node)
-                        leaf_sequences[node.sequence].abundance += node.abundance
-                    else:
-                        leaf_sequences[node.sequence] = node
+            for leaf in disambig_tree.iter_leaves():
+                if leaf.sequence in leaf_seqs:
+                    leaf_seqs[leaf.sequence].append(leaf)
                 else:
-                    node.sequence = node.original_sequence
+                    leaf_seqs[leaf.sequence] = [leaf]
+            for sequence, leaf_list in leaf_seqs.items():
+                if len(leaf_list) > 1:
+                    rep_node = leaf_list[0]
+                    rep_node = sum(leaf.abundance for leaf in leaf_list)
+                    ancestor = leaf_list[0].get_common_ancestor(*leaf_list[1:])
+                    to_delete = leaf_list[1:]
+                    while to_delete:
+                        for node in to_delete:
+                            node_map[node].delete(prevent_nondicotomic=False)
+                            node.delete(prevent_nondicotomic=False)
+                        to_delete = [leaf for leaf in ancestor.iter_leaves()
+                                     if (leaf.sequence == sequence and leaf != rep_node)]
+            # transplant leaf sequences and abundances:
+            for node in disambig_tree.iter_leaves():
+                node_map[node].abundance = node.abundance
+                node_map[node].sequence = node.sequence
+            # remove some unifurcations
+            to_delete = []
+            for node in tree.iter_descendants():
+                if len(node.children) == 1:
+                    # this excludes leaves
+                    to_delete.append(node)
             for node in to_delete:
-                parent = node.up
-                node.remove(prevent_nondicotomic=False)
-                if len(parent.children) < 2:
-                    parent.delete(prevent_nondicotomic=False)
+                node.delete(prevent_nondicotomic=False)
+
 
     def get_sequence(node):
         # TODO: remove this check now that it's handled above
