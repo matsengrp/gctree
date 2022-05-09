@@ -69,7 +69,7 @@ class CollapsedTree:
                     else:
                         parent_isotype[key] = val
                 return frozendict(parent_isotype)
-
+            
             # remove unobserved internal unifurcations
             for node in self.tree.iter_descendants():
                 if node.abundance == 0 and len(node.children) == 1:
@@ -112,8 +112,8 @@ class CollapsedTree:
                         if len(node.up.name) == 1:
                             node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
-                node.add_feature('inferred_isotype', min(node.isotype.keys()))
-            self.tree.add_feature('inferred_isotype', min(self.tree.isotype.keys()))
+                node.add_feature("inferred_isotype", min(node.isotype.keys(), default=None))
+            self.tree.add_feature("inferred_isotype", min(self.tree.isotype.keys(), default=None))
 
             final_observed_genotypes = set()
             for node in self.tree.traverse():
