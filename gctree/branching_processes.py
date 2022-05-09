@@ -80,7 +80,9 @@ class CollapsedTree:
                 )
 
             # iterate over the tree below root and collapse edges of zero
-            # length.
+            # length if the node is a leaf and it's parent has nonzero
+            # abundance we combine taxa names to a set to acommodate
+            # bootstrap samples that result in repeated genotypes
             observed_genotypes = set((leaf.name for leaf in self.tree))
             observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy="postorder"):
