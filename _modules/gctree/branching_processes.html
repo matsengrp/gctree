@@ -148,6 +148,16 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="mi">0</span>
 
+            <span class="k">def</span> <span class="nf">merge_isotype_dicts</span><span class="p">(</span><span class="n">parent_isotype</span><span class="p">,</span> <span class="n">child_isotype</span><span class="p">):</span>
+                <span class="c1"># values are abundances and keys are isotypes.</span>
+                <span class="n">parent_isotype</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">parent_isotype</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">child_isotype</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">parent_isotype</span><span class="p">:</span>
+                        <span class="n">parent_isotype</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">parent_isotype</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">parent_isotype</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+                <span class="k">return</span> <span class="n">frozendict</span><span class="p">(</span><span class="n">parent_isotype</span><span class="p">)</span>
+
             <span class="c1"># remove unobserved internal unifurcations</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -167,8 +177,11 @@
             <span class="n">observed_genotypes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_descendants</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># if an abundance is nonzero, that&#39;s the right one.</span>
                     <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
-                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">isotype</span>
+                    <span class="c1"># isotype is dictionary with isotype as key and observed</span>
+                    <span class="c1"># abundance as value</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="n">merge_isotype_dicts</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">isotype</span><span class="p">)</span>
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                         <span class="n">node_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
                     <span class="k">else</span><span class="p">:</span>
@@ -187,14 +200,17 @@
                         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                             <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                     <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span>
+                    <span class="s2">&quot;inferred_isotype&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">isotype</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span>
+                <span class="s2">&quot;inferred_isotype&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">isotype</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="p">)</span>
 
             <span class="n">final_observed_genotypes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">node</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span>
-                        <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span>
-                    <span class="p">):</span>
-                        <span class="n">final_observed_genotypes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">final_observed_genotypes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">final_observed_genotypes</span> <span class="o">!=</span> <span class="n">observed_genotypes</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="s2">&quot;observed genotypes don&#39;t match after &quot;</span>
@@ -745,7 +761,7 @@
 <span class="sd">        Args:</span>
 <span class="sd">            file_name: file name (.nk suffix recommended)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="n">file_name</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="n">file_name</span><span class="p">,</span> <span class="n">format_root_node</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedTree.compare"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tree2</span><span class="p">:</span> <span class="n">CollapsedTree</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;identity&quot;</span>
@@ -987,21 +1003,15 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        forest: list of :class:`ete3.Tree`</span>
-<span class="sd">        sequence_counts: a mapping of observed sequences to observed abundances</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="CollapsedForest.__init__"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.html#gctree.CollapsedForest.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">forest</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">CollapsedTree</span><span class="p">,</span> <span class="n">ete3</span><span class="o">.</span><span class="n">Tree</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">sequence_counts</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">if</span> <span class="n">forest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;passed empty tree list&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">sequence_counts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;an abundance dictionary must be provided to the keyword argument sequence_counts&quot;</span>
-                <span class="p">)</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">CollapsedTree</span><span class="p">):</span>
                 <span class="n">forest</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span> <span class="k">for</span> <span class="n">ctree</span> <span class="ow">in</span> <span class="n">forest</span><span class="p">]</span>
             <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">forest</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ete3</span><span class="o">.</span><span class="n">Tree</span><span class="p">):</span>
@@ -1010,8 +1020,10 @@
                 <span class="p">)</span>
             <span class="c1"># Collect stats for validation</span>
             <span class="n">model_tree</span> <span class="o">=</span> <span class="n">disambiguate</span><span class="p">(</span><span class="n">forest</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
-            <span class="c1"># include root in counts</span>
+            <span class="c1"># include root in counts, since deduplicate will never let observed</span>
+            <span class="c1"># root be a leaf.</span>
             <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">()}</span>
+            <span class="n">counts</span><span class="p">[</span><span class="n">model_tree</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">abundance</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">counts</span><span class="p">,</span>
                 <span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -1024,7 +1036,7 @@
             <span class="c1"># Making this a private variable so that trying to access forest</span>
             <span class="c1"># attribute as before won&#39;t just give a confusing type or</span>
             <span class="c1"># attribute error.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span> <span class="o">=</span> <span class="n">_make_dag</span><span class="p">(</span><span class="n">forest</span><span class="p">,</span> <span class="n">sequence_counts</span><span class="o">=</span><span class="n">sequence_counts</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span> <span class="o">=</span> <span class="n">_make_dag</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">count_trees</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1519,13 +1531,32 @@
 
         <span class="c1"># Remove dummy leaf added below root for hDAG compatibility</span>
         <span class="n">dummyleaves</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">etetree</span><span class="o">.</span><span class="n">children</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">etetree</span><span class="o">.</span><span class="n">children</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
         <span class="p">]</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">dummyleaves</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dummyleaves</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Multiple temporary leaves found in tree. Does an observed sequence have name &#39;&#39;?&quot;</span>
+            <span class="p">)</span>
         <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">dummyleaves</span><span class="p">:</span>
             <span class="n">leaf</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">ctree</span> <span class="o">=</span> <span class="n">CollapsedTree</span><span class="p">(</span><span class="n">etetree</span><span class="p">)</span>
+
+        <span class="c1"># Fix internal node names to be unique, and verify</span>
+        <span class="c1"># The maps from nodes to names and nodes to sequences are bijections</span>
+        <span class="n">n_nodes</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">seqs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+            <span class="n">n_nodes</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">seqs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+        <span class="n">n_names</span><span class="p">,</span> <span class="n">n_seqs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">n_nodes</span> <span class="o">==</span> <span class="n">n_names</span> <span class="ow">and</span> <span class="n">n_names</span> <span class="o">==</span> <span class="n">n_seqs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Multiple sequences with the same name, or multiple&quot;</span>
+                <span class="s2">&quot;names for the same sequence, observed in collapsed tree.&quot;</span>
+            <span class="p">)</span>
 
         <span class="c1"># Here can do some validation on the tree:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1540,15 +1571,10 @@
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
                     <span class="k">assert</span> <span class="n">counts</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-                    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
-                            <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="n">counts</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">counts</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
-                        <span class="k">assert</span> <span class="n">counts</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span>
+                    <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span>
 
             <span class="c1"># unnamed_seq issue:</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
@@ -1588,20 +1614,6 @@
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="s2">&quot;Observed nonroot sequences in history DAG tree don&#39;t match &quot;</span>
                     <span class="s2">&quot;observed nonroot sequences passed in leaf_seqs.&quot;</span>
-                <span class="p">)</span>
-            <span class="c1"># The maps from nodes to names and nodes to sequences are bijections</span>
-            <span class="n">n_nodes</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-            <span class="n">seqs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
-                <span class="n">n_nodes</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-                <span class="n">seqs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
-            <span class="n">n_names</span><span class="p">,</span> <span class="n">n_seqs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">n_nodes</span> <span class="o">==</span> <span class="n">n_names</span> <span class="ow">and</span> <span class="n">n_names</span> <span class="o">==</span> <span class="n">n_seqs</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                    <span class="s2">&quot;Multiple sequences with the same name, or multiple&quot;</span>
-                    <span class="s2">&quot;names for the same sequence, observed in collapsed tree.&quot;</span>
                 <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No validation was performed on tree&quot;</span><span class="p">)</span>
@@ -1684,7 +1696,7 @@
     <span class="k">return</span> <span class="n">logf</span><span class="p">,</span> <span class="n">grad_ll_genotype</span>
 
 
-<span class="k">def</span> <span class="nf">_make_dag</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">sequence_counts</span><span class="o">=</span><span class="p">{},</span> <span class="n">from_copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_make_dag</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">from_copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Build a history DAG from ambiguous or disambiguated trees, whose nodes</span>
 <span class="sd">    have abundance, name, and sequence attributes.&quot;&quot;&quot;</span>
     <span class="c1"># preprocess trees so they&#39;re acceptable inputs</span>
@@ -1700,7 +1712,12 @@
 
     <span class="n">leaf_seqs</span> <span class="o">=</span> <span class="p">{</span><span class="n">get_sequence</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_leaves</span><span class="p">()}</span>
 
-    <span class="n">sequence_counts</span> <span class="o">=</span> <span class="n">sequence_counts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="c1"># Assume all trees have same observed nodes.</span>
+    <span class="n">sequence_counts</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="p">}</span>
     <span class="k">if</span> <span class="n">from_copy</span><span class="p">:</span>
         <span class="n">trees</span> <span class="o">=</span> <span class="p">[</span><span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">):</span>
