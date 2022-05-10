@@ -30,32 +30,28 @@ def make_oldcforest(newforest):
     )
 
 
-trees_seqcounts1 = pp.parse_outfile(
+trees1 = pp.parse_outfile(
     "tests/example_output/original/small_outfile",
     abundance_file="tests/example_output/original/abundances.csv",
     root="GL",
 )
-# Sample trees
-trees1 = trees_seqcounts1[0]
 # Sample trees disambiguated
 trees1dis = [pp.disambiguate(tree.copy()) for tree in trees1]
-trees_seqcounts2 = pp.parse_outfile(
+trees2 = pp.parse_outfile(
     "tests/example_output/observed_root/small_outfile",
     abundance_file="tests/example_output/observed_root/abundances.csv",
     root="GL",
 )
-# Sample trees with observed root
-trees2 = trees_seqcounts2[0]
 # Sample trees with observed root disambiguated
 trees2dis = [pp.disambiguate(tree.copy()) for tree in trees2]
 
 # Ambiguous and disambiguated, lists of sample trees and their associated counts
-testtrees = [trees_seqcounts1, trees_seqcounts2]
-testtreesdis = [(trees1dis, trees_seqcounts1[1]), (trees2dis, trees_seqcounts2[1])]
+testtrees = [trees1, trees2]
+testtreesdis = [trees1dis, trees2dis]
 
 # The three kinds of CollapsedForests we're comparing:
 # new ones with hDAG
-newforests = [bp.CollapsedForest(*trees_seqcounts) for trees_seqcounts in testtrees]
+newforests = [bp.CollapsedForest(trees) for trees in testtrees]
 
 # new ones with a list of ctrees
 newforests_ctrees = []
@@ -135,6 +131,7 @@ def test_newcounters():
 def test_newlikelihoods():
     """Make sure the likelihoods found by new CollapsedTree.ll agree with old"""
     p, q = 0.4, 0.6
+    ll_dagfuncs = bp._ll_genotype_dagfuncs(p, q)
 
     # new and old trees agree
     for newforest, newforest_ctrees, oldforest in allforests:
@@ -152,6 +149,8 @@ def test_newlikelihoods():
 
             assert ll_isclose(oldfll, newfll)
             assert ll_isclose(oldfll, newfctreell)
+        for dagll, treell in zip(sorted(newforest._forest.weight_count(**ll_dagfuncs).elements()), sorted(ctree.ll(p, q) for ctree in newforest)):
+            assert np.isclose(dagll, treell)
 
 
 def test_fit():

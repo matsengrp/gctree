@@ -166,7 +166,7 @@ def infer(args):
 
     if len(args.infiles) == 2:
         forest = bp.CollapsedForest(
-            *pp.parse_outfile(args.infiles[0], args.infiles[1], args.root)
+            pp.parse_outfile(args.infiles[0], args.infiles[1], args.root)
         )
         if forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")

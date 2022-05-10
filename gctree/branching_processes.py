@@ -60,6 +60,16 @@ class CollapsedTree:
             self.tree = tree.copy()
             self.tree.dist = 0
 
+            def merge_isotype_dicts(parent_isotype, child_isotype):
+                # values are abundances and keys are isotypes.
+                parent_isotype = dict(parent_isotype)
+                for key, val in child_isotype.items():
+                    if key in parent_isotype:
+                        parent_isotype[key] = max(parent_isotype[key], val)
+                    else:
+                        parent_isotype[key] = val
+                return frozendict(parent_isotype)
+
             # remove unobserved internal unifurcations
             for node in self.tree.iter_descendants():
                 if node.abundance == 0 and len(node.children) == 1:
@@ -79,8 +89,11 @@ class CollapsedTree:
             observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy="postorder"):
                 if node.dist == 0:
+                    # if an abundance is nonzero, that's the right one.
                     node.up.abundance = max(node.abundance, node.up.abundance)
-                    node.up.isotype = node.isotype
+                    # isotype is dictionary with isotype as key and observed
+                    # abundance as value
+                    node.up.isotype = merge_isotype_dicts(node.up.isotype, node.isotype)
                     if isinstance(node.name, str):
                         node_set = set([node.name])
                     else:
@@ -99,14 +112,17 @@ class CollapsedTree:
                         if len(node.up.name) == 1:
                             node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
+                node.add_feature(
+                    "inferred_isotype", min(node.isotype.keys(), default=None)
+                )
+            self.tree.add_feature(
+                "inferred_isotype", min(self.tree.isotype.keys(), default=None)
+            )
 
             final_observed_genotypes = set()
             for node in self.tree.traverse():
                 if node.abundance > 0 or node == self.tree:
-                    for name in (
-                        (node.name,) if isinstance(node.name, str) else node.name
-                    ):
-                        final_observed_genotypes.add(name)
+                    final_observed_genotypes.add(node.name)
             if final_observed_genotypes != observed_genotypes:
                 raise RuntimeError(
                     "observed genotypes don't match after "
@@ -657,7 +673,7 @@ class CollapsedTree:
         Args:
             file_name: file name (.nk suffix recommended)
         """
-        self.tree.write(format=1, outfile=file_name)
+        self.tree.write(format=1, outfile=file_name, format_root_node=True)
 
     def compare(
         self, tree2: CollapsedTree, method: str = "identity"
@@ -899,21 +915,15 @@ class CollapsedForest:
 
     Args:
         forest: list of :class:`ete3.Tree`
-        sequence_counts: a mapping of observed sequences to observed abundances
     """
 
     def __init__(
         self,
         forest: List[Union[CollapsedTree, ete3.Tree]] = None,
-        sequence_counts: Mapping[str, int] = None,
     ):
         if forest is not None:
             if len(forest) == 0:
                 raise ValueError("passed empty tree list")
-            if sequence_counts is None:
-                raise ValueError(
-                    "an abundance dictionary must be provided to the keyword argument sequence_counts"
-                )
             if isinstance(forest[0], CollapsedTree):
                 forest = [ctree.tree for ctree in forest]
             elif not isinstance(forest[0], ete3.Tree):
@@ -922,8 +932,10 @@ class CollapsedForest:
                 )
             # Collect stats for validation
             model_tree = disambiguate(forest[0].copy())
-            # include root in counts
+            # include root in counts, since deduplicate will never let observed
+            # root be a leaf.
             counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
+            counts[model_tree.name] = model_tree.abundance
             self._validation_stats = {
                 "counts": counts,
                 "root": model_tree.name,
@@ -936,7 +948,7 @@ class CollapsedForest:
             # Making this a private variable so that trying to access forest
             # attribute as before won't just give a confusing type or
             # attribute error.
-            self._forest = _make_dag(forest, sequence_counts=sequence_counts)
+            self._forest = _make_dag(forest)
             self.n_trees = self._forest.count_trees()
         else:
             self._forest = None
@@ -1431,13 +1443,32 @@ class CollapsedForest:
 
         # Remove dummy leaf added below root for hDAG compatibility
         dummyleaves = [
-            node for node in etetree.children if node.is_leaf() and node.abundance == 0
+            node for node in etetree.children if node.is_leaf() and node.name == ""
         ]
-        assert len(dummyleaves) <= 1
+        if len(dummyleaves) > 1:
+            raise RuntimeError(
+                "Multiple temporary leaves found in tree. Does an observed sequence have name ''?"
+            )
         for leaf in dummyleaves:
             leaf.delete(prevent_nondicotomic=False)
 
         ctree = CollapsedTree(etetree)
+
+        # Fix internal node names to be unique, and verify
+        # The maps from nodes to names and nodes to sequences are bijections
+        n_nodes = 0
+        names = set()
+        seqs = set()
+        for node in ctree.tree.traverse():
+            n_nodes += 1
+            names.add(node.name)
+            seqs.add(node.sequence)
+        n_names, n_seqs = len(names), len(seqs)
+        if not (n_nodes == n_names and n_names == n_seqs):
+            raise RuntimeError(
+                "Multiple sequences with the same name, or multiple"
+                "names for the same sequence, observed in collapsed tree."
+            )
 
         # Here can do some validation on the tree:
         if self._validation_stats is not None:
@@ -1452,15 +1483,10 @@ class CollapsedForest:
                 if node.name:
                     assert counts[node.name] == node.abundance
             for node in ctree.tree.traverse():
-                if isinstance(node.name, tuple):
-                    for name in node.name:
-                        if name in counts:
-                            assert node.abundance == counts[name]
+                if node.name in counts:
+                    assert counts[node.name] == node.abundance
                 else:
-                    if node.name in counts:
-                        assert counts[node.name] == node.abundance
-                    else:
-                        assert node.abundance == 0
+                    assert node.abundance == 0
 
             # unnamed_seq issue:
             for node in ctree.tree.traverse():
@@ -1500,20 +1526,6 @@ class CollapsedForest:
                 raise RuntimeError(
                     "Observed nonroot sequences in history DAG tree don't match "
                     "observed nonroot sequences passed in leaf_seqs."
-                )
-            # The maps from nodes to names and nodes to sequences are bijections
-            n_nodes = 0
-            names = set()
-            seqs = set()
-            for node in ctree.tree.traverse():
-                n_nodes += 1
-                names.add(node.name)
-                seqs.add(node.sequence)
-            n_names, n_seqs = len(names), len(seqs)
-            if not (n_nodes == n_names and n_names == n_seqs):
-                raise RuntimeError(
-                    "Multiple sequences with the same name, or multiple"
-                    "names for the same sequence, observed in collapsed tree."
                 )
         else:
             warnings.warn("No validation was performed on tree")
@@ -1596,7 +1608,7 @@ def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.nda
     return logf, grad_ll_genotype
 
 
-def _make_dag(trees, sequence_counts={}, from_copy=True):
+def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
@@ -1612,7 +1624,12 @@ def _make_dag(trees, sequence_counts={}, from_copy=True):
 
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
 
-    sequence_counts = sequence_counts.copy()
+    # Assume all trees have same observed nodes.
+    sequence_counts = {
+        node.sequence: node.abundance
+        for node in trees[0].traverse()
+        if node.abundance > 0
+    }
     if from_copy:
         trees = [tree.copy() for tree in trees]
     if all(len(tree.children) > 1 for tree in trees):
