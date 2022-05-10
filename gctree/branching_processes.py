@@ -95,6 +95,9 @@ class CollapsedTree:
                     # isotype is dictionary with isotype as key and observed
                     # abundance as value
                     node.up.isotype = merge_isotype_dicts(node.up.isotype, node.isotype)
+                    # original_ids is a set of observed ids corresponding to
+                    # each node
+                    node.up.original_ids = node.original_ids | node.up.original_ids
                     if isinstance(node.name, str):
                         node_set = set([node.name])
                     else:
@@ -932,7 +935,11 @@ class CollapsedForest:
                     "If provided, `forest` argument should contain a list of ete3 trees or CollapsedTrees."
                 )
             # Collect stats for validation
-            model_tree = disambiguate(forest[0].copy())
+            model_tree = forest[0].copy()
+            leaf_seqs = {
+                    node.sequence: node.name for node in model_tree.get_leaves()
+                }
+            model_tree = disambiguate(model_tree)
             # include root in counts, since deduplicate will never let observed
             # root be a leaf.
             counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
@@ -942,10 +949,9 @@ class CollapsedForest:
                 "root": model_tree.name,
                 "parsimony_score": sum([node.dist for node in model_tree.traverse()]),
                 "root_seq": model_tree.sequence,
-                "leaf_seqs": {
-                    node.sequence: node.name for node in model_tree.get_leaves()
-                },
             }
+            if not any(_is_ambiguous(key) for key in leaf_seqs):
+                self._validation_stats["leaf_seqs"] = leaf_seqs
             # Making this a private variable so that trying to access forest
             # attribute as before won't just give a confusing type or
             # attribute error.
@@ -1439,6 +1445,7 @@ class CollapsedForest:
             feature_funcs={
                 "abundance": lambda n: n.attr["abundance"],
                 "isotype": lambda n: n.attr["isotype"],
+                "original_ids": lambda n: n.attr["original_ids"],
             },
         )
 
@@ -1474,18 +1481,22 @@ class CollapsedForest:
         # Here can do some validation on the tree:
         if self._validation_stats is not None:
             # root name:
-            if self._validation_stats["root"] not in ctree.tree.name:
+            if self._validation_stats["root"] != ctree.tree.name:
                 raise RuntimeError(
                     f"collapsed tree should have root name '{self._validation_stats['root']}' but has instead {ctree.tree.name}"
                 )
             # counts:
             counts = self._validation_stats["counts"]
             for node in etetree.iter_leaves():
-                if node.name:
-                    assert counts[node.name] == node.abundance
+                assert sum(counts[og_id] for og_id in node.original_ids) == node.abundance
+                assert node.name in node.original_ids
             for node in ctree.tree.traverse():
                 if node.name in counts:
-                    assert counts[node.name] == node.abundance
+                    if node.is_root():
+                        assert node.abundance == counts[node.name]
+                    else:
+                        assert sum(counts[og_id] for og_id in node.original_ids) == node.abundance
+                        assert node.name in node.original_ids
                 else:
                     assert node.abundance == 0
 
@@ -1510,24 +1521,27 @@ class CollapsedForest:
                     "History DAG root node sequence does not match root sequence provided"
                 )
             # Leaf names:
-            leaf_seqs = self._validation_stats["leaf_seqs"]
-            # A dictionary of leaf sequences to leaf names
-            observed_set = {
-                node for node in ctree.tree.iter_descendants() if node.abundance > 0
-            }
-            for node in observed_set:
-                if not node.is_root() and leaf_seqs[node.sequence] != node.name:
+            if "leaf_seqs" in self._validation_stats:
+                # Will be intentionally missing if observed sequences had
+                # ambiguities.
+                leaf_seqs = self._validation_stats["leaf_seqs"]
+                # A dictionary of leaf sequences to leaf names
+                observed_set = {
+                    node for node in ctree.tree.iter_descendants() if node.abundance > 0
+                }
+                for node in observed_set:
+                    if not node.is_root() and leaf_seqs[node.sequence] != node.name:
+                        raise RuntimeError(
+                            "History DAG tree leaf names don't match sequences"
+                        )
+                observed_seqs = {node.sequence for node in observed_set}
+                nonroot_observed_seqs = observed_seqs - {ctree.tree.sequence}
+                nonroot_leaf_seqs = set(leaf_seqs.keys()) - {ctree.tree.sequence}
+                if nonroot_leaf_seqs != nonroot_observed_seqs:
                     raise RuntimeError(
-                        "History DAG tree leaf names don't match sequences"
+                        "Observed nonroot sequences in history DAG tree don't match "
+                        "observed nonroot sequences passed in leaf_seqs."
                     )
-            observed_seqs = {node.sequence for node in observed_set}
-            nonroot_observed_seqs = observed_seqs - {ctree.tree.sequence}
-            nonroot_leaf_seqs = set(leaf_seqs.keys()) - {ctree.tree.sequence}
-            if nonroot_leaf_seqs != nonroot_observed_seqs:
-                raise RuntimeError(
-                    "Observed nonroot sequences in history DAG tree don't match "
-                    "observed nonroot sequences passed in leaf_seqs."
-                )
         else:
             warnings.warn("No validation was performed on tree")
 
@@ -1609,27 +1623,29 @@ def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.nda
     return logf, grad_ll_genotype
 
 
+def _is_ambiguous(sequence):
+    return any(base not in gctree.utils.bases for base in sequence)
+
 def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
     # Assume all trees have fixed root sequence and fixed leaf sequences
 
-    # disambiguate leaves: disambiguate each tree and transplant disambiguated
-    # leaf sequences to tree with ambiguous internal sequences
     if from_copy:
         trees = [tree.copy() for tree in trees]
-    def is_ambiguous(sequence):
-        return any(base not in gctree.utils.bases for base in sequence)
 
-    if any(is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
+    # disambiguate leaves: disambiguate each tree and transplant disambiguated
+    # leaf sequences to tree with ambiguous internal sequences
+
+    if any(_is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
         warnings.warn("Some observed sequences are ambiguous. A disambiguation consistent"
                       " with each dnapars tree will be chosen arbitrarily. Many alternative"
                       " disambiguated leaf sequences may be possible.")
         for tree in trees:
             leaf_sequences = {}
-            for node in tree.traverse():
-                node.add_feature("original_sequence", node.sequence)
+            for node in tree.iter_leaves():
+                node.add_feature("original_ids", {node.name})
             disambig_tree = tree.copy()
             node_map = {d_node: o_node for d_node, o_node in zip(disambig_tree.traverse(), tree.traverse())}
             disambiguate(disambig_tree)
@@ -1645,7 +1661,8 @@ def _make_dag(trees, from_copy=True):
             for sequence, leaf_list in leaf_seqs.items():
                 if len(leaf_list) > 1:
                     rep_node = leaf_list[0]
-                    rep_node = sum(leaf.abundance for leaf in leaf_list)
+                    rep_node.abundance = sum(leaf.abundance for leaf in leaf_list)
+                    rep_node.original_ids = {seq_id for node in leaf_list for seq_id in node.original_ids}
                     ancestor = leaf_list[0].get_common_ancestor(*leaf_list[1:])
                     to_delete = leaf_list[1:]
                     while to_delete:
@@ -1658,6 +1675,7 @@ def _make_dag(trees, from_copy=True):
             for node in disambig_tree.iter_leaves():
                 node_map[node].abundance = node.abundance
                 node_map[node].sequence = node.sequence
+                node_map[node].original_ids = node.original_ids
             # remove some unifurcations
             to_delete = []
             for node in tree.iter_descendants():
@@ -1668,11 +1686,10 @@ def _make_dag(trees, from_copy=True):
                 node.delete(prevent_nondicotomic=False)
 
     def get_sequence(node):
-        # TODO: remove this check now that it's handled above
+        # TODO: remove this check now that it's handled above?
         if any(base not in gctree.utils.bases for base in node.sequence):
-            raise ValueError(
+            raise RuntimeError(
                 f"Unrecognized base found in node '{node.name}'. "
-                "Ambiguous bases are not permitted in observed sequences."
             )
         else:
             return node.sequence
@@ -1691,14 +1708,21 @@ def _make_dag(trees, from_copy=True):
             # good because we want all observed abundance of root sequence to
             # be annotated on root, not a separate leaf.
 
-    dag = hdag.history_dag_from_etes(
-        trees,
-        ["sequence", "abundance"],
-        attr_func=lambda n: {
-            "name": n.name,
-            "isotype": frozendict(),
-        },
-    )
+    def trees_to_dag(trees):
+        return hdag.history_dag_from_etes(
+            trees,
+            ["sequence", "abundance"],
+            attr_func=lambda n: {
+                "name": n.name,
+                "original_ids": (n.original_ids
+                                 if "original_ids" in n.features
+                                 else {n.name} if n.is_leaf()
+                                 else set()),
+                "isotype": frozendict(),
+            },
+        )
+
+    dag = trees_to_dag(trees)
     # If there are too many ambiguities at too many nodes, disambiguation will
     # hang. Need to have an alternative (disambiguate each tree before putting in dag):
     if (
@@ -1711,14 +1735,7 @@ def _make_dag(trees, from_copy=True):
             "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
         )
         distrees = [disambiguate(tree) for tree in trees]
-        dag = hdag.history_dag_from_etes(
-            distrees,
-            ["sequence"],
-            attr_func=lambda n: {
-                "name": n.name,
-                "isotype": frozendict(),
-            },
-        )
+        dag = trees_to_dag(distrees)
     dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
     # Look for (even) more trees:
     dag.add_all_allowed_edges(adjacent_labels=True)
