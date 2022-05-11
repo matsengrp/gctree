@@ -12,7 +12,7 @@ def make_oldctree(tree):
     etetree = tree.to_ete(
         name_func=lambda n: n.attr["name"],
         features=["sequence"],
-        feature_funcs={"abundance": lambda n: n.attr["abundance"]},
+        feature_funcs={"abundance": lambda n: n.label.abundance},
     )
     for node in etetree.traverse():
         if not node.is_leaf():
