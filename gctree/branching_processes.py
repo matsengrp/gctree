@@ -27,7 +27,6 @@ from Bio import AlignIO
 from Bio.Phylo.TreeConstruction import MultipleSeqAlignment
 import pickle
 import functools
-import operator
 import collections as coll
 import historydag as hdag
 import multiset
@@ -1635,10 +1634,6 @@ def _make_dag(trees, from_copy=True):
     if from_copy:
         trees = [tree.copy() for tree in trees]
 
-    ### for testing
-    counts_test = {node.sequence: node.abundance for node in trees[0].iter_leaves()}
-    counts_test[trees[0].sequence] = trees[0].abundance
-
     # disambiguate leaves: disambiguate each tree and transplant disambiguated
     # leaf sequences to tree with ambiguous internal sequences
 
@@ -1649,7 +1644,6 @@ def _make_dag(trees, from_copy=True):
             " disambiguated leaf sequences may be possible."
         )
         for tree in trees:
-            leaf_sequences = {}
             for node in tree.iter_leaves():
                 node.add_feature("original_ids", {node.name})
             disambig_tree = tree.copy()
@@ -1699,24 +1693,11 @@ def _make_dag(trees, from_copy=True):
             for node in to_delete:
                 node.delete(prevent_nondicotomic=False)
 
-    def get_sequence(node):
-        # TODO: remove this check now that it's handled above?
-        if any(base not in gctree.utils.bases for base in node.sequence):
-            raise RuntimeError(f"Unrecognized base found in node '{node.name}'. ")
-        else:
-            return node.sequence
-
-    leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
-
     # add pseudo-leaf below root in all trees:
     for tree in trees:
         newleaf = tree.add_child(name=tree.name, dist=0)
         newleaf.add_feature("sequence", tree.sequence)
         newleaf.add_feature("abundance", tree.abundance)
-        # if root is observed and there's already a leaf matching root,
-        # historydag will throw an error about non-unique leaves. That's
-        # good because we want all observed abundance of root sequence to
-        # be annotated on root, not a separate leaf.
 
     def trees_to_dag(trees):
         return hdag.history_dag_from_etes(
