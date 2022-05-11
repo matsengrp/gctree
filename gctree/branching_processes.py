@@ -1762,14 +1762,10 @@ def _make_dag(trees, from_copy=True):
         if node.is_leaf():
             for parent in node.parents:
                 if parent.label.sequence == node.label.sequence:
-                    parent.attr["abundance"] = node.label.abundance
-                    parent.attr["_leaf_equivalent"] = True
-        if "abundance" not in node.attr:
-            node.attr["abundance"] = node.label.abundance
-        if "_leaf_equivalent" not in node.attr:
-            node.attr["_leaf_equivalent"] = False
-    dag.dagroot.attr["_leaf_equivalent"] = False
+                    parent.label = node.label
 
+    for node in dag.preorder(skip_root=True):
+        node.attr["abundance"] = node.label.abundance
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
@@ -1793,7 +1789,7 @@ def _cmcounter_dagfuncs():
             return multiset.FrozenMultiset()
         else:
             m = len(n2.clades)
-            if n2.attr["_leaf_equivalent"]:
+            if frozenset({n2.label}) in n2.clades:
                 m -= 1
             return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
 
@@ -1843,7 +1839,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
         Expects DAG to have abundances added so that each node has
         "abundance" key in attr dict.
         """
-        if n2.is_leaf() and n2.label == n1.label:
+        if n2.is_leaf() and n2.label.sequence == n1.label.sequence:
             return hdag.utils.FloatState(0.0, state=Decimal(0.0))
         else:
             m = len(n2.clades)
