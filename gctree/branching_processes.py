@@ -936,9 +936,7 @@ class CollapsedForest:
                 )
             # Collect stats for validation
             model_tree = forest[0].copy()
-            leaf_seqs = {
-                    node.sequence: node.name for node in model_tree.get_leaves()
-                }
+            leaf_seqs = {node.sequence: node.name for node in model_tree.get_leaves()}
             model_tree = disambiguate(model_tree)
             # include root in counts, since deduplicate will never let observed
             # root be a leaf.
@@ -1453,17 +1451,6 @@ class CollapsedForest:
             },
         )
 
-        # Remove dummy leaf added below root for hDAG compatibility
-        dummyleaves = [
-            node for node in etetree.children if node.is_leaf() and node.name == ""
-        ]
-        if len(dummyleaves) > 1:
-            raise RuntimeError(
-                "Multiple temporary leaves found in tree. Does an observed sequence have name ''?"
-            )
-        for leaf in dummyleaves:
-            leaf.delete(prevent_nondicotomic=False)
-
         ctree = CollapsedTree(etetree)
 
         # Fix internal node names to be unique, and verify
@@ -1492,14 +1479,19 @@ class CollapsedForest:
             # counts:
             counts = self._validation_stats["counts"]
             for node in etetree.iter_leaves():
-                assert sum(counts[og_id] for og_id in node.original_ids) == node.abundance
+                assert (
+                    sum(counts[og_id] for og_id in node.original_ids) == node.abundance
+                )
                 assert node.name in node.original_ids
             for node in ctree.tree.traverse():
                 if node.name in counts:
                     if node.is_root():
                         assert node.abundance == counts[node.name]
                     else:
-                        assert sum(counts[og_id] for og_id in node.original_ids) == node.abundance
+                        assert (
+                            sum(counts[og_id] for og_id in node.original_ids)
+                            == node.abundance
+                        )
                         assert node.name in node.original_ids
                 else:
                     assert node.abundance == 0
@@ -1630,6 +1622,7 @@ def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.nda
 def _is_ambiguous(sequence):
     return any(base not in gctree.utils.bases for base in sequence)
 
+
 def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
@@ -1647,15 +1640,20 @@ def _make_dag(trees, from_copy=True):
     # leaf sequences to tree with ambiguous internal sequences
 
     if any(_is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
-        warnings.warn("Some observed sequences are ambiguous. A disambiguation consistent"
-                      " with each dnapars tree will be chosen arbitrarily. Many alternative"
-                      " disambiguated leaf sequences may be possible.")
+        warnings.warn(
+            "Some observed sequences are ambiguous. A disambiguation consistent"
+            " with each dnapars tree will be chosen arbitrarily. Many alternative"
+            " disambiguated leaf sequences may be possible."
+        )
         for tree in trees:
             leaf_sequences = {}
             for node in tree.iter_leaves():
                 node.add_feature("original_ids", {node.name})
             disambig_tree = tree.copy()
-            node_map = {d_node: o_node for d_node, o_node in zip(disambig_tree.traverse(), tree.traverse())}
+            node_map = {
+                d_node: o_node
+                for d_node, o_node in zip(disambig_tree.traverse(), tree.traverse())
+            }
             disambiguate(disambig_tree)
 
             # remove duplicate leaves, and adjust abundances
@@ -1670,15 +1668,20 @@ def _make_dag(trees, from_copy=True):
                 if len(leaf_list) > 1:
                     rep_node = leaf_list[0]
                     rep_node.abundance = sum(leaf.abundance for leaf in leaf_list)
-                    rep_node.original_ids = {seq_id for node in leaf_list for seq_id in node.original_ids}
+                    rep_node.original_ids = {
+                        seq_id for node in leaf_list for seq_id in node.original_ids
+                    }
                     ancestor = leaf_list[0].get_common_ancestor(*leaf_list[1:])
                     to_delete = leaf_list[1:]
                     while to_delete:
                         for node in to_delete:
                             node_map[node].delete(prevent_nondicotomic=False)
                             node.delete(prevent_nondicotomic=False)
-                        to_delete = [leaf for leaf in ancestor.iter_leaves()
-                                     if (leaf.sequence == sequence and leaf != rep_node)]
+                        to_delete = [
+                            leaf
+                            for leaf in ancestor.iter_leaves()
+                            if (leaf.sequence == sequence and leaf != rep_node)
+                        ]
             # transplant leaf sequences and abundances:
             for node in disambig_tree.iter_leaves():
                 node_map[node].abundance = node.abundance
@@ -1696,14 +1699,11 @@ def _make_dag(trees, from_copy=True):
     def get_sequence(node):
         # TODO: remove this check now that it's handled above?
         if any(base not in gctree.utils.bases for base in node.sequence):
-            raise RuntimeError(
-                f"Unrecognized base found in node '{node.name}'. "
-            )
+            raise RuntimeError(f"Unrecognized base found in node '{node.name}'. ")
         else:
             return node.sequence
 
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
-    
 
     # add pseudo-leaf below root in all trees:
     for tree in trees:
@@ -1725,10 +1725,13 @@ def _make_dag(trees, from_copy=True):
             label_functions={"abundance": lambda n: n.abundance if n.is_leaf() else 0},
             attr_func=lambda n: {
                 "name": n.name,
-                "original_ids": (n.original_ids
-                                 if "original_ids" in n.features
-                                 else {n.name} if n.is_leaf()
-                                 else set()),
+                "original_ids": (
+                    n.original_ids
+                    if "original_ids" in n.features
+                    else {n.name}
+                    if n.is_leaf()
+                    else set()
+                ),
                 "isotype": frozendict(),
             },
         )
@@ -1752,10 +1755,7 @@ def _make_dag(trees, from_copy=True):
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
     for node in dag.preorder(skip_root=True):
-        if (
-            node.label.abundance != 0
-            and not node.is_leaf()
-        ):
+        if node.label.abundance != 0 and not node.is_leaf():
             raise RuntimeError(
                 f"An internal node {node.attr['name']} was found with nonzero abundance {node.label.abundance}"
             )

@@ -34,5 +34,8 @@ def hamming_distance(seq1: str, seq2: str) -> int:
     """
     return sum(x != y for x, y in zip(seq1, seq2))
 
-def product(factors: Sequence[Multiplicable], f=operator.mul, identity=1) -> Multiplicable:
+
+def product(
+    factors: Sequence[Multiplicable], f=operator.mul, identity=1
+) -> Multiplicable:
     return reduce(f, factors, identity)
