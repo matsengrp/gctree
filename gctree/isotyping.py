@@ -475,6 +475,18 @@ def _isotype_annotation_dagfuncs(
 
     def start_func(n: hdag.HistoryDagNode):
         seqid = n.attr["name"]
+        iso_dict = {}
+        for seqid in n.attr["original_ids"]:
+            if seqid in newidmap:
+                for key, val in newidmap[seqid].items():
+                    isotype = newisotype(key)
+                    if isotype in iso_dict:
+                        iso_dict[isotype] = iso_dict[isotype] + len(val)
+                    else:
+                        iso_dict[isotype] = len(val)
+        # if this isn't a leaf, original_ids is empty and the returned dict
+        # will be empty.
+        return frozendict(iso_dict)
         if seqid in newidmap:
             return frozendict(
                 {

@@ -1144,10 +1144,11 @@ class CollapsedForest:
             if verbose:
                 print("Isotype parsimony will be used as a ranking criterion")
             # Check for missing isotype data in all but root node, and fake root-adjacent leaf node
+            rootname = list(self._forest.dagroot.children())[0].attr["name"]
             if any(
                 not node.attr["isotype"]
                 for node in self._forest.preorder()
-                if not node.is_root() and node.attr["name"] != ""
+                if not node.is_root() and node.attr["name"] != rootname
             ):
                 warnings.warn(
                     "Some isotype data seems to be missing. Isotype parsimony scores may be incorrect."
@@ -1441,6 +1442,8 @@ class CollapsedForest:
         # collapsing takes care of all uncollapsed leaves. This works for
         # observed root because all trees have added pseudo leaf with root name
         # and abundance.
+        # original_ids is a set of original leaf node ids, or empty if node is
+        # not a leaf.
         etetree = clade_tree.to_ete(
             name_func=lambda n: n.attr["name"],
             features=["sequence"],
@@ -1716,9 +1719,6 @@ def _make_dag(trees, from_copy=True):
         # be annotated on root, not a separate leaf.
 
     def trees_to_dag(trees):
-        # abundance will only be nonzero on leaf node labels, but will be in attributes
-        # of all nodes? Can we name pseudo leaf the same as root, but leave
-        # root abundance 0 and have gctree collapsing take care of it all?
         return hdag.history_dag_from_etes(
             trees,
             ["sequence"],
