@@ -1443,7 +1443,7 @@ class CollapsedForest:
             name_func=lambda n: n.attr["name"],
             features=["sequence"],
             feature_funcs={
-                "abundance": lambda n: n.attr["abundance"],
+                "abundance": lambda n: n.label.abundance if n.is_leaf() else 0,
                 "isotype": lambda n: n.attr["isotype"],
                 "original_ids": lambda n: n.attr["original_ids"],
             },
@@ -1764,9 +1764,6 @@ def _make_dag(trees, from_copy=True):
                 if parent.label.sequence == node.label.sequence:
                     parent.label = node.label
 
-    for node in dag.preorder(skip_root=True):
-        node.attr["abundance"] = node.label.abundance
-
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
             f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.hamming_parsimony_count()}"
@@ -1791,7 +1788,7 @@ def _cmcounter_dagfuncs():
             m = len(n2.clades)
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
+            return multiset.FrozenMultiset([(n2.label.abundance, m)])
 
     def accum_func(cmsetlist: List[multiset.FrozenMultiset]):
         st = multiset.FrozenMultiset()
@@ -1837,7 +1834,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
         collapsed, then 0.
 
         Expects DAG to have abundances added so that each node has
-        "abundance" key in attr dict.
+        abundance feature on label.
         """
         if n2.is_leaf() and n2.label.sequence == n1.label.sequence:
             return hdag.utils.FloatState(0.0, state=Decimal(0.0))
@@ -1846,7 +1843,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
             # Check if this edge should be collapsed, and reduce mutant descendants
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            c = n2.attr["abundance"]
+            c = n2.label.abundance
             if n1.is_root() and c == 0 and m == 1:
                 # Add pseudocount for unobserved root unifurcation
                 c = 1
