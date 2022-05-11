@@ -1635,6 +1635,10 @@ def _make_dag(trees, from_copy=True):
     if from_copy:
         trees = [tree.copy() for tree in trees]
 
+    ### for testing
+    counts_test = {node.sequence: node.abundance for node in trees[0].iter_leaves()}
+    counts_test[trees[0].sequence] = trees[0].abundance
+
     # disambiguate leaves: disambiguate each tree and transplant disambiguated
     # leaf sequences to tree with ambiguous internal sequences
 
@@ -1697,21 +1701,24 @@ def _make_dag(trees, from_copy=True):
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
     
 
-    # add pseudo-leaf below root, if necessary:
+    # add pseudo-leaf below root in all trees:
     for tree in trees:
-        if len(tree.children) == 1:
-            newleaf = tree.add_child(name="", dist=0)
-            newleaf.add_feature("sequence", tree.sequence)
-            newleaf.add_feature("abundance", tree.abundance)
-            # if root is observed and there's already a leaf matching root,
-            # historydag will throw an error about non-unique leaves. That's
-            # good because we want all observed abundance of root sequence to
-            # be annotated on root, not a separate leaf.
+        newleaf = tree.add_child(name=tree.name, dist=0)
+        newleaf.add_feature("sequence", tree.sequence)
+        newleaf.add_feature("abundance", tree.abundance)
+        # if root is observed and there's already a leaf matching root,
+        # historydag will throw an error about non-unique leaves. That's
+        # good because we want all observed abundance of root sequence to
+        # be annotated on root, not a separate leaf.
 
     def trees_to_dag(trees):
+        # abundance will only be nonzero on leaf node labels, but will be in attributes
+        # of all nodes? Can we name pseudo leaf the same as root, but leave
+        # root abundance 0 and have gctree collapsing take care of it all?
         return hdag.history_dag_from_etes(
             trees,
-            ["sequence", "abundance"],
+            ["sequence"],
+            label_functions={"abundance": lambda n: n.abundance if n.is_leaf() else 0},
             attr_func=lambda n: {
                 "name": n.name,
                 "original_ids": (n.original_ids
@@ -1740,24 +1747,34 @@ def _make_dag(trees, from_copy=True):
     # Look for (even) more trees:
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
+    for node in dag.preorder(skip_root=True):
+        if (
+            node.label.abundance != 0
+            and not node.is_leaf()
+        ):
+            raise RuntimeError(
+                f"An internal node {node.attr['name']} was found with nonzero abundance {node.label.abundance}"
+            )
     dag.convert_to_collapsed()
     # Add abundances to attrs: TODO stop using attrs for abundance at all
+    dag.recompute_parents()
     for node in dag.preorder(skip_root=True):
-        node.attr["abundance"] = node.label.abundance
+        if node.is_leaf():
+            for parent in node.parents:
+                if parent.label.sequence == node.label.sequence:
+                    parent.attr["abundance"] = node.label.abundance
+                    parent.attr["_leaf_equivalent"] = True
+        if "abundance" not in node.attr:
+            node.attr["abundance"] = node.label.abundance
+        if "_leaf_equivalent" not in node.attr:
+            node.attr["_leaf_equivalent"] = False
+    dag.dagroot.attr["_leaf_equivalent"] = False
+
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
             f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.hamming_parsimony_count()}"
         )
-    for node in dag.preorder(skip_root=True):
-        if (
-            node.attr["abundance"] != 0
-            and not node.is_leaf()
-            and frozenset({node.label}) not in node.clades
-        ):
-            raise RuntimeError(
-                "An internal node not adjacent to a leaf with the same label was found with nonzero abundance."
-            )
 
     # names on internal nodes are all messed up from disambiguation step, we'll
     # fix them in CollapsedTree.__init__.
@@ -1769,12 +1786,14 @@ def _cmcounter_dagfuncs():
     the DAG."""
 
     def edge_weight_func(n1, n2):
-        if n1.label == n2.label and n2.is_leaf():
+        # We cannot use "_leaf_equivalent" because we want to know if
+        # _this edge_ is _the_ uncollapsed leaf adjacent edge.
+        if n2.is_leaf() and n1.label.sequence == n2.label.sequence:
             # Then this is a leaf-adjacent node with nonzero abundance
             return multiset.FrozenMultiset()
         else:
             m = len(n2.clades)
-            if frozenset({n2.label}) in n2.clades:
+            if n2.attr["_leaf_equivalent"]:
                 m -= 1
             return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
 
