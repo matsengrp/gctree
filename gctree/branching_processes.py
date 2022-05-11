@@ -1439,6 +1439,10 @@ class CollapsedForest:
         Returns:
             :meth:`CollapsedTree` object matching the topology of ``clade_tree``, but fully collapsed.
         """
+        # Allow only leaf nodes to have nonzero abundance, so that ctree
+        # collapsing takes care of all uncollapsed leaves. This works for
+        # observed root because all trees have added pseudo leaf with root name
+        # and abundance.
         etetree = clade_tree.to_ete(
             name_func=lambda n: n.attr["name"],
             features=["sequence"],
@@ -1756,8 +1760,10 @@ def _make_dag(trees, from_copy=True):
                 f"An internal node {node.attr['name']} was found with nonzero abundance {node.label.abundance}"
             )
     dag.convert_to_collapsed()
-    # Add abundances to attrs: TODO stop using attrs for abundance at all
     dag.recompute_parents()
+    # Only leaf nodes have nonzero abundance now, so all internal edges are
+    # collapsed by sequence. Now labels with correct abundances are placed on
+    # leaf-adjacent nodes that will be collapsed by sequence.
     for node in dag.preorder(skip_root=True):
         if node.is_leaf():
             for parent in node.parents:
@@ -1779,8 +1785,6 @@ def _cmcounter_dagfuncs():
     the DAG."""
 
     def edge_weight_func(n1, n2):
-        # We cannot use "_leaf_equivalent" because we want to know if
-        # _this edge_ is _the_ uncollapsed leaf adjacent edge.
         if n2.is_leaf() and n1.label.sequence == n2.label.sequence:
             # Then this is a leaf-adjacent node with nonzero abundance
             return multiset.FrozenMultiset()
