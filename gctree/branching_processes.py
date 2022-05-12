@@ -94,7 +94,9 @@ class CollapsedTree:
                     # isotype is dictionary with isotype as key and observed
                     # abundance as value
                     if "isotype" in node.features:
-                        node.up.isotype = merge_isotype_dicts(node.up.isotype, node.isotype)
+                        node.up.isotype = merge_isotype_dicts(
+                            node.up.isotype, node.isotype
+                        )
                     # original_ids is a set of observed ids corresponding to
                     # each node
                     if "original_ids" in node.features:
