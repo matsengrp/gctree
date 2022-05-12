@@ -1485,18 +1485,18 @@ class CollapsedForest:
                     sum(counts[og_id] for og_id in node.original_ids) == node.abundance
                 )
                 assert node.name in node.original_ids
+            tree_abundance = 0
             for node in ctree.tree.traverse():
+                tree_abundance += node.abundance
                 if node.name in counts:
-                    if node.is_root():
-                        assert node.abundance == counts[node.name]
-                    else:
-                        assert (
-                            sum(counts[og_id] for og_id in node.original_ids)
-                            == node.abundance
-                        )
-                        assert node.name in node.original_ids
+                    assert (
+                        sum(counts[og_id] for og_id in node.original_ids)
+                        == node.abundance
+                    )
+                    assert node.name in node.original_ids
                 else:
                     assert node.abundance == 0
+            assert tree_abundance == sum(counts.values())
 
             # unnamed_seq issue:
             for node in ctree.tree.traverse():
@@ -1637,6 +1637,16 @@ def _make_dag(trees, from_copy=True):
     # disambiguate leaves: disambiguate each tree and transplant disambiguated
     # leaf sequences to tree with ambiguous internal sequences
 
+    # add pseudo-leaf below root in all trees:
+    # This is done first in case root is ambiguous, and gets merged with
+    # another ambiguous leaf node after disambiguation.
+    rootname = trees[0].name   # all root nodes must have the same name
+    for tree in trees:
+        newleaf = tree.add_child(name=tree.name, dist=0)
+        newleaf.add_feature("sequence", tree.sequence)
+        newleaf.add_feature("abundance", tree.abundance)
+
+
     if any(_is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
         warnings.warn(
             "Some observed sequences are ambiguous. A disambiguation consistent"
@@ -1663,13 +1673,19 @@ def _make_dag(trees, from_copy=True):
                     leaf_seqs[leaf.sequence] = [leaf]
             for sequence, leaf_list in leaf_seqs.items():
                 if len(leaf_list) > 1:
-                    rep_node = leaf_list[0]
+                    # Always choose root pseudo-leaf to represent nodes, if
+                    # possible
+                    _leaf_list_names = {node.name: node for node in leaf_list}
+                    if rootname in _leaf_list_names:
+                        rep_node = _leaf_list_names.pop(rootname)
+                    else:
+                        rep_node = _leaf_list_names.pop(leaf_list[0].name)
+                    to_delete = list(_leaf_list_names.values())
                     rep_node.abundance = sum(leaf.abundance for leaf in leaf_list)
                     rep_node.original_ids = {
                         seq_id for node in leaf_list for seq_id in node.original_ids
                     }
-                    ancestor = leaf_list[0].get_common_ancestor(*leaf_list[1:])
-                    to_delete = leaf_list[1:]
+                    ancestor = rep_node.get_common_ancestor(*to_delete)
                     while to_delete:
                         for node in to_delete:
                             node_map[node].delete(prevent_nondicotomic=False)
@@ -1692,12 +1708,6 @@ def _make_dag(trees, from_copy=True):
                     to_delete.append(node)
             for node in to_delete:
                 node.delete(prevent_nondicotomic=False)
-
-    # add pseudo-leaf below root in all trees:
-    for tree in trees:
-        newleaf = tree.add_child(name=tree.name, dist=0)
-        newleaf.add_feature("sequence", tree.sequence)
-        newleaf.add_feature("abundance", tree.abundance)
 
     def trees_to_dag(trees):
         return hdag.history_dag_from_etes(
@@ -1723,11 +1733,11 @@ def _make_dag(trees, from_copy=True):
     if (
         dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
         / dag.count_trees()
-        > 500000000
+        > 5000000
     ):
         warnings.warn(
-            "Parsimony trees have too many ambiguities for disambiguation in history DAG. "
-            "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
+            "Parsimony trees have too many ambiguities for disambiguation in all possible ways. "
+            "Disambiguating trees individually. Gctree may find fewer parsimony trees."
         )
         distrees = [disambiguate(tree) for tree in trees]
         dag = trees_to_dag(distrees)
