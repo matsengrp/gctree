@@ -123,7 +123,7 @@ class Isotype:
 
     def iso_string(self) -> str:
         if self.isotype is None:
-            return '?'
+            return "?"
         else:
             return self.order[self.isotype]
 

@@ -1640,12 +1640,11 @@ def _make_dag(trees, from_copy=True):
     # add pseudo-leaf below root in all trees:
     # This is done first in case root is ambiguous, and gets merged with
     # another ambiguous leaf node after disambiguation.
-    rootname = trees[0].name   # all root nodes must have the same name
+    rootname = trees[0].name  # all root nodes must have the same name
     for tree in trees:
         newleaf = tree.add_child(name=tree.name, dist=0)
         newleaf.add_feature("sequence", tree.sequence)
         newleaf.add_feature("abundance", tree.abundance)
-
 
     if any(_is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
         warnings.warn(
