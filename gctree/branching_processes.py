@@ -93,10 +93,12 @@ class CollapsedTree:
                     node.up.abundance = max(node.abundance, node.up.abundance)
                     # isotype is dictionary with isotype as key and observed
                     # abundance as value
-                    node.up.isotype = merge_isotype_dicts(node.up.isotype, node.isotype)
+                    if "isotype" in node.features:
+                        node.up.isotype = merge_isotype_dicts(node.up.isotype, node.isotype)
                     # original_ids is a set of observed ids corresponding to
                     # each node
-                    node.up.original_ids = node.original_ids | node.up.original_ids
+                    if "original_ids" in node.features:
+                        node.up.original_ids = node.original_ids | node.up.original_ids
                     if isinstance(node.name, str):
                         node_set = set([node.name])
                     else:
@@ -115,12 +117,15 @@ class CollapsedTree:
                         if len(node.up.name) == 1:
                             node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
-                node.add_feature(
-                    "inferred_isotype", min(node.isotype.keys(), default=None)
+
+                if "isotype" in node.features:
+                    node.add_feature(
+                        "inferred_isotype", min(node.isotype.keys(), default=None)
+                    )
+            if "isotype" in node.features:
+                self.tree.add_feature(
+                    "inferred_isotype", min(self.tree.isotype.keys(), default=None)
                 )
-            self.tree.add_feature(
-                "inferred_isotype", min(self.tree.isotype.keys(), default=None)
-            )
 
             final_observed_genotypes = set()
             for node in self.tree.traverse():
