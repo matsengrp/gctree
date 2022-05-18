@@ -123,8 +123,6 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span>
 
-<span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span>
-
 
 <div class="viewcode-block" id="CollapsedTree"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree">[docs]</a><span class="k">class</span> <span class="nc">CollapsedTree</span><span class="p">:</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;A collapsed tree, modeled as an infinite type Galton-Watson process run</span>
@@ -448,7 +446,8 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">logf_result</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dlogfdp_result</span><span class="p">,</span> <span class="n">dlogfdq_result</span><span class="p">]))</span>
 
-<div class="viewcode-block" id="CollapsedTree.ll"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.ll">[docs]</a>    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span>
+<div class="viewcode-block" id="CollapsedTree.ll"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.ll">[docs]</a>    <span class="nd">@np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
         <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
@@ -928,7 +927,8 @@
                     <span class="n">compatibility_</span> <span class="o">+=</span> <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1</span>
             <span class="n">node</span><span class="o">.</span><span class="n">support</span> <span class="o">=</span> <span class="n">compatibility_</span> <span class="k">if</span> <span class="n">compatibility</span> <span class="k">else</span> <span class="n">support</span></div>
 
-<div class="viewcode-block" id="CollapsedTree.local_branching"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.local_branching">[docs]</a>    <span class="k">def</span> <span class="nf">local_branching</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tau0</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<div class="viewcode-block" id="CollapsedTree.local_branching"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.local_branching">[docs]</a>    <span class="nd">@np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">local_branching</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tau0</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Add local branching statistics (Neher et al. 2014) as tree node</span>
 <span class="sd">        features to the ETE tree attribute.</span>
 <span class="sd">        After execution, all nodes will have new features ``LBI``</span>
@@ -1064,7 +1064,8 @@
             <span class="n">coll</span><span class="o">.</span><span class="n">Counter</span><span class="p">([</span><span class="n">tree</span><span class="o">.</span><span class="n">_cm_counts</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctrees</span><span class="p">])</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="CollapsedForest.ll"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.ll">[docs]</a>    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span>
+<div class="viewcode-block" id="CollapsedForest.ll"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.ll">[docs]</a>    <span class="nd">@np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">ll</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
         <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
