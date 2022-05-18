@@ -180,8 +180,9 @@ def test_validate_ll_genotype():
         for c in range(c_max):
             for m in range(m_max):
                 if c > 0 or m > 1:
-                    true_res = OldCollapsedTree._ll_genotype(c, m, *params)
-                    res = bp.CollapsedTree._ll_genotype(c, m, *params)
+                    with np.errstate(all='raise'):
+                        true_res = OldCollapsedTree._ll_genotype(c, m, *params)
+                        res = bp.CollapsedTree._ll_genotype(c, m, *params)
                     assert np.isclose(true_res[0], res[0])
                     assert np.isclose(true_res[1][0], res[1][0])
                     assert np.isclose(true_res[1][1], res[1][1])
@@ -192,4 +193,5 @@ def test_recursion_depth():
     recursion depth issues"""
     bp.CollapsedTree._ll_genotype.cache_clear()
     bp.CollapsedTree._max_ll_cache = {}
-    bp.CollapsedTree._ll_genotype(2, 500, 0.4, 0.6)
+    with np.errstate(all='raise'):
+        bp.CollapsedTree._ll_genotype(2, 500, 0.4, 0.6)

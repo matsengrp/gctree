@@ -35,8 +35,6 @@ import matplotlib.pyplot as plt
 from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence
 from decimal import Decimal
 
-np.seterr(all="raise")
-
 
 class CollapsedTree:
     r"""A collapsed tree, modeled as an infinite type Galton-Watson process run
@@ -360,6 +358,7 @@ class CollapsedTree:
 
         return (logf_result, np.array([dlogfdp_result, dlogfdq_result]))
 
+    @np.errstate(all="raise")
     def ll(
         self,
         p: np.float64,
@@ -840,6 +839,7 @@ class CollapsedTree:
                     compatibility_ += weights[i] if weights is not None else 1
             node.support = compatibility_ if compatibility else support
 
+    @np.errstate(all="raise")
     def local_branching(self, tau=1, tau0=0.1):
         r"""Add local branching statistics (Neher et al. 2014) as tree node
         features to the ETE tree attribute.
@@ -976,6 +976,7 @@ class CollapsedForest:
             coll.Counter([tree._cm_counts for tree in self._ctrees]).items()
         )
 
+    @np.errstate(all="raise")
     def ll(
         self,
         p: np.float64,
