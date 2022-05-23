@@ -1522,11 +1522,15 @@ class CollapsedForest:
                     "History DAG tree parsimony score does not match parsimony score provided"
                 )
             # Root sequence is a possible disambiguation of root:
-            if any(base not in gctree.utils.ambiguous_dna_values[ambig_base]
-                   for base, ambig_base in zip(ctree.tree.sequence, self._validation_stats["root_seq"])):
+            if any(
+                base not in gctree.utils.ambiguous_dna_values[ambig_base]
+                for base, ambig_base in zip(
+                    ctree.tree.sequence, self._validation_stats["root_seq"]
+                )
+            ):
                 raise RuntimeError(
                     "History DAG root node sequence does not match root sequence provided\n"
-                    "found: " + ctree.tree.sequence + '\n'
+                    "found: " + ctree.tree.sequence + "\n"
                     "expected: " + self._validation_stats["root_seq"]
                 )
             # Leaf names:
@@ -1752,6 +1756,7 @@ def _make_dag(trees, from_copy=True):
                 return False
         except OverflowError:
             return True
+
     if test_explode_individually():
         warnings.warn(
             "Parsimony trees have too many ambiguities for disambiguation in all possible ways. "
