@@ -943,6 +943,7 @@ class CollapsedForest:
             # Collect stats for validation
             model_tree = forest[0].copy()
             leaf_seqs = {node.sequence: node.name for node in model_tree.get_leaves()}
+            root_seq = model_tree.sequence
             model_tree = disambiguate(model_tree)
             # include root in counts, since deduplicate will never let observed
             # root be a leaf.
@@ -952,7 +953,7 @@ class CollapsedForest:
                 "counts": counts,
                 "root": model_tree.name,
                 "parsimony_score": sum([node.dist for node in model_tree.traverse()]),
-                "root_seq": model_tree.sequence,
+                "root_seq": root_seq,
             }
             if not any(_is_ambiguous(key) for key in leaf_seqs):
                 self._validation_stats["leaf_seqs"] = leaf_seqs
@@ -1520,10 +1521,13 @@ class CollapsedForest:
                 raise RuntimeError(
                     "History DAG tree parsimony score does not match parsimony score provided"
                 )
-            # Root sequence:
-            if ctree.tree.sequence != self._validation_stats["root_seq"]:
+            # Root sequence is a possible disambiguation of root:
+            if any(base not in gctree.utils.ambiguous_dna_values[ambig_base]
+                   for base, ambig_base in zip(ctree.tree.sequence, self._validation_stats["root_seq"])):
                 raise RuntimeError(
-                    "History DAG root node sequence does not match root sequence provided"
+                    "History DAG root node sequence does not match root sequence provided\n"
+                    "found: " + ctree.tree.sequence + '\n'
+                    "expected: " + self._validation_stats["root_seq"]
                 )
             # Leaf names:
             if "leaf_seqs" in self._validation_stats:
@@ -1736,11 +1740,19 @@ def _make_dag(trees, from_copy=True):
     dag = trees_to_dag(trees)
     # If there are too many ambiguities at too many nodes, disambiguation will
     # hang. Need to have an alternative (disambiguate each tree before putting in dag):
-    if (
-        dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
-        / dag.count_trees()
-        > 5000000
-    ):
+    def test_explode_individually():
+        try:
+            if (
+                dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
+                / dag.count_trees()
+                > 5000000
+            ):
+                return True
+            else:
+                return False
+        except OverflowError:
+            return True
+    if test_explode_individually():
         warnings.warn(
             "Parsimony trees have too many ambiguities for disambiguation in all possible ways. "
             "Disambiguating trees individually. Gctree may find fewer parsimony trees."
