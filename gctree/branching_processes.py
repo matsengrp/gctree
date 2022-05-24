@@ -1668,6 +1668,9 @@ def _make_dag(trees, from_copy=True):
             " disambiguated leaf sequences may be possible."
         )
         for tree in trees:
+            print("NEW TREE:")
+            with open("curr_tree.p", "wb") as fh:
+                fh.write(pickle.dumps(tree))
             for node in tree.iter_leaves():
                 node.add_feature("original_ids", {node.name})
             disambig_tree = tree.copy()
@@ -1676,6 +1679,8 @@ def _make_dag(trees, from_copy=True):
                 for d_node, o_node in zip(disambig_tree.traverse(), tree.traverse())
             }
             disambiguate(disambig_tree)
+            with open("curr_disambig_tree.p", "wb") as fh:
+                fh.write(pickle.dumps(disambig_tree))
 
             # remove duplicate leaves, and adjust abundances
             leaf_seqs = {}
@@ -1685,10 +1690,12 @@ def _make_dag(trees, from_copy=True):
                     leaf_seqs[leaf.sequence].append(leaf)
                 else:
                     leaf_seqs[leaf.sequence] = [leaf]
+            print(leaf_seqs)
             for sequence, leaf_list in leaf_seqs.items():
                 if len(leaf_list) > 1:
                     # Always choose root pseudo-leaf to represent nodes, if
                     # possible
+                    ancestor = disambig_tree.get_common_ancestor(*leaf_list)
                     _leaf_list_names = {node.name: node for node in leaf_list}
                     if rootname in _leaf_list_names:
                         rep_node = _leaf_list_names.pop(rootname)
@@ -1699,8 +1706,8 @@ def _make_dag(trees, from_copy=True):
                     rep_node.original_ids = {
                         seq_id for node in leaf_list for seq_id in node.original_ids
                     }
-                    ancestor = rep_node.get_common_ancestor(*to_delete)
                     while to_delete:
+                        print(to_delete)
                         for node in to_delete:
                             node_map[node].delete(prevent_nondicotomic=False)
                             node.delete(prevent_nondicotomic=False)
@@ -1744,6 +1751,7 @@ def _make_dag(trees, from_copy=True):
     dag = trees_to_dag(trees)
     # If there are too many ambiguities at too many nodes, disambiguation will
     # hang. Need to have an alternative (disambiguate each tree before putting in dag):
+
     def test_explode_individually():
         try:
             if (
