@@ -31,7 +31,7 @@ def treeprint(tree: ete3.TreeNode):
 
 
 def sample(treestring, n=20):
-    ogt = ete3.TreeNode(newick=newick_tree2, format=1)
+    ogt = ete3.TreeNode(newick=treestring, format=1)
     print(ogt.sequence)
     newickset = set()
     for i in range(n):
