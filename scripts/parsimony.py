@@ -9,129 +9,6 @@ import pickle
 import numpy as np
 
 
-# bases = "AGCT"
-# base_vecs = {base: np.array([float('inf') if base != rbase else 0 for rbase in bases]) for base in bases}
-# base_vecs.update({'N': np.array([0, 0, 0, 0])})
-# delta_vecs = [np.array([int(i != j) for j in range(4)]) for i in range(4)]
-# transition_weights = [
-#     [0 if base == rbase else 1 for rbase in bases]
-#     for base in bases
-# ]
-
-delta_vectors = {
-    code: np.array(
-        [
-            0 if base in gctree.utils.ambiguous_dna_values[code] else 1
-            for base in gctree.utils.bases
-        ]
-    )
-    for code in gctree.utils.ambiguous_dna_values
-}
-code_vectors = {
-    code: np.array(
-        [
-            0 if base in gctree.utils.ambiguous_dna_values[code] else float("inf")
-            for base in gctree.utils.bases
-        ]
-    )
-    for code in gctree.utils.ambiguous_dna_values
-}
-cost_adjust = {
-    base: np.array([int(not i == j) for j in range(5)])
-    for i, base in enumerate(gctree.utils.bases)
-}
-
-# def sankoff(tree, random_state=None):
-#     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
-#     subtrees of consecutive ambiguity codes."""
-#     if random_state is None:
-#         random.seed(tree.write(format=1))
-#     else:
-#         random.setstate(random_state)
-#     seq_len = len(tree.sequence)
-
-#     # First pass of Sankoff: compute cost vectors
-#     for node in tree.traverse(strategy="postorder"):
-#         node.add_feature("cv",
-#                          np.array([delta_vectors[base].copy() for base in node.sequence]) +
-#                          sum([child.cv for child in node.children], start=np.array([[0] * 5] * seq_len)))
-#         print(node.sequence, node.cv)
-
-
-#     print("starting preorder pass")
-#     for node in tree.traverse(strategy="preorder"):
-#         # disallow bases that aren't compatible with existing bases
-#         node.cv = node.cv + [code_vectors[base] for base in node.sequence]
-#         # choose sequence
-#         newseq = []
-#         for cv_idx in range(len(node.cv)):
-#             cv = node.cv[cv_idx]
-#             min_cost = min(cv)
-#             min_indices = [idx for idx, cost in enumerate(cv) if cost == min_cost]
-#             newbase = gctree.utils.bases[random.choice(min_indices)]
-#             newseq.append(newbase)
-
-#         cost_adjust = np.array([delta_vectors[base] for base in newseq])
-#         for child in node.children:
-#             child.cv += cost_adjust
-#         node.sequence = ''.join(newseq)
-#     return tree
-
-
-def disambiguate(tree, random_state=None, remove_cvs=False, adj_dist=False):
-    """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
-    subtrees of consecutive ambiguity codes."""
-    seq_len = len(tree.sequence)
-    if random_state is None:
-        random.seed(tree.write(format=1))
-    else:
-        random.setstate(random_state)
-    # First pass of Sankoff: compute cost vectors
-    for node in tree.traverse(strategy="postorder"):
-        node.add_feature(
-            "cv", np.array([code_vectors[base].copy() for base in node.sequence])
-        )
-        if not node.is_leaf():
-            for idx in range(seq_len):
-                for i in range(5):
-                    for child in node.children:
-                        node.cv[idx][i] += min(
-                            [
-                                sum(v)
-                                for v in zip(
-                                    child.cv[idx], cost_adjust[gctree.utils.bases[i]]
-                                )
-                            ]
-                        )
-
-    # Second pass of Sankoff: choose bases
-    preorder = list(tree.traverse(strategy="preorder"))
-    for node in preorder:
-        new_seq = []
-        for idx in range(seq_len):
-            min_cost = min(node.cv[idx])
-            base_index = random.choice(
-                [i for i, val in enumerate(node.cv[idx]) if val == min_cost]
-            )
-            new_base = gctree.utils.bases[base_index]
-            new_seq.append(new_base)
-        # Adjust child cost vectors
-        for child in node.children:
-            child.cv += np.array([delta_vectors[base] for base in new_seq])
-        node.sequence = "".join(new_seq)
-
-    if remove_cvs:
-        for node in tree.traverse():
-            try:
-                node.del_feature("cv")
-            except (AttributeError, KeyError):
-                pass
-    if adj_dist:
-        tree.dist = 0
-        for node in tree.iter_descendants():
-            node.dist = gctree.utils.hamming_distance(node.up.sequence, node.sequence)
-    return tree
-
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def _cli():
@@ -189,7 +66,9 @@ def build_tree(
     tree = ete3.Tree(newickstring, format=newickformat)
     # all fasta entries should be same length
     seq_len = len(next(iter(fasta_map.values())))
-    ambig_seq = "N" * seq_len
+    # find characters for which there's no diversity:
+    ambig_seq = ''.join(list(charset := set(chars))[0] if len(charset) == 1 else "?"
+                        for chars in zip(*fasta_map.values()))
     for node in tree.traverse():
         if node.is_root() and reference_sequence is not None:
             node.add_feature("sequence", reference_sequence)
@@ -227,7 +106,7 @@ def parsimony_scores_from_files(*args, **kwargs):
     """returns the parsimony scores of trees specified by newick files and a fasta file.
     Arguments match `build_trees_from_files`."""
     trees = build_trees_from_files(*args, **kwargs)
-    trees = [disambiguate(tree) for tree in trees]
+    trees = [pp.disambiguate(tree) for tree in trees]
     return [parsimony_score(tree) for tree in trees]
 
 
@@ -302,7 +181,7 @@ def _cli_parsimony_score_from_files(
         treefiles,
     ):
         print(treepath)
-        print(parsimony_score(disambiguate(tree)))
+        print(parsimony_score(pp.disambiguate(tree)))
         if save_to_dag is not None:
             trees.append(tree)
     if save_to_dag is not None:
