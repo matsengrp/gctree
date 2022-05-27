@@ -8,6 +8,28 @@ import historydag as hdag
 import pickle
 import numpy as np
 
+delta_vectors = {
+    code: np.array(
+        [
+            0 if base in gctree.utils.ambiguous_dna_values[code] else 1
+            for base in gctree.utils.bases
+        ]
+    )
+    for code in gctree.utils.ambiguous_dna_values
+}
+code_vectors = {
+    code: np.array(
+        [
+            0 if base in gctree.utils.ambiguous_dna_values[code] else float("inf")
+            for base in gctree.utils.bases
+        ]
+    )
+    for code in gctree.utils.ambiguous_dna_values
+}
+cost_adjust = {
+    base: np.array([int(not i == j) for j in range(5)])
+    for i, base in enumerate(gctree.utils.bases)
+}
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -17,6 +39,76 @@ def _cli():
     using them to create a history DAG
     """
     pass
+
+
+def sankoff_upward(tree):
+    seq_len = len(tree.sequence)
+    adj_arr = np.array(
+        [
+            [
+                [0, 1, 1, 1, 1],
+                [1, 0, 1, 1, 1],
+                [1, 1, 0, 1, 1],
+                [1, 1, 1, 0, 1],
+                [1, 1, 1, 1, 0],
+            ]
+        ]
+        * seq_len
+    )
+    # First pass of Sankoff: compute cost vectors
+    for node in tree.traverse(strategy="postorder"):
+        node.add_feature(
+            "cv", np.array([code_vectors[base].copy() for base in node.sequence])
+        )
+        if not node.is_leaf():
+            child_costs = []
+            for child in node.children:
+                stacked_child_cv = np.stack((child.cv,) * 5, axis=1)
+                total_cost = adj_arr + stacked_child_cv
+                child_costs.append(np.min(total_cost, axis=2))
+            child_cost = np.sum(child_costs, axis=0)
+            node.cv = (
+                np.array([code_vectors[base] for base in node.sequence]) + child_cost
+            )
+    return np.sum(np.min(tree.cv, axis=1))
+
+
+def disambiguate(tree, random_state=None, remove_cvs=False, adj_dist=False):
+    """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
+    subtrees of consecutive ambiguity codes."""
+
+    seq_len = len(tree.sequence)
+    sankoff_upward(tree)
+    # Second pass of Sankoff: choose bases
+    preorder = list(tree.traverse(strategy="preorder"))
+    for node in preorder:
+        new_seq = []
+        for idx in range(seq_len):
+            min_cost = min(node.cv[idx])
+            base_index = random.choice(
+                [i for i, val in enumerate(node.cv[idx]) if val == min_cost]
+            )
+            new_base = gctree.utils.bases[base_index]
+            new_seq.append(new_base)
+        # Adjust child cost vectors
+        for child in node.children:
+            for idx, base in enumerate(new_seq):
+                dvec = delta_vectors[base]
+                for subidx in range(5):
+                    child.cv[idx][subidx] += dvec[subidx]
+        node.sequence = "".join(new_seq)
+
+    if remove_cvs:
+        for node in tree.traverse():
+            try:
+                node.del_feature("cv")
+            except (AttributeError, KeyError):
+                pass
+    if adj_dist:
+        tree.dist = 0
+        for node in tree.iter_descendants():
+            node.dist = gctree.utils.hamming_distance(node.up.sequence, node.sequence)
+    return tree
 
 
 def load_fasta(fastapath):
@@ -39,7 +131,7 @@ def load_fasta(fastapath):
                         "First non-blank line in fasta does not contain identifier"
                     )
                 else:
-                    fasta_map[seqid] += line.strip()
+                    fasta_map[seqid] += line.strip().upper()
     return fasta_map
 
 
@@ -66,9 +158,7 @@ def build_tree(
     tree = ete3.Tree(newickstring, format=newickformat)
     # all fasta entries should be same length
     seq_len = len(next(iter(fasta_map.values())))
-    # find characters for which there's no diversity:
-    ambig_seq = ''.join(list(charset := set(chars))[0] if len(charset) == 1 else "?"
-                        for chars in zip(*fasta_map.values()))
+    ambig_seq = "?" * seq_len
     for node in tree.traverse():
         if node.is_root() and reference_sequence is not None:
             node.add_feature("sequence", reference_sequence)
@@ -102,12 +192,34 @@ def parsimony_score(tree):
     )
 
 
-def parsimony_scores_from_files(*args, **kwargs):
+def parsimony_scores_from_topologies(newicks, fasta_map, **kwargs):
+    """returns a generator on parsimony scores of trees specified by newick strings and fasta.
+    additional keyword arguments are passed to `build_tree`."""
+    # eliminate characters for which there's no diversity:
+    informative_sites = [
+        idx for idx, chars in enumerate(zip(*fasta_map.values())) if len(set(chars)) > 1
+    ]
+    newfasta = {
+        key: "".join(oldseq[idx] for idx in informative_sites)
+        for key, oldseq in fasta_map.items()
+    }
+    yield from (
+        sankoff_upward(build_tree(newick, newfasta, **kwargs)) for newick in newicks
+    )
+
+
+def parsimony_scores_from_files(treefiles, fastafile, **kwargs):
     """returns the parsimony scores of trees specified by newick files and a fasta file.
     Arguments match `build_trees_from_files`."""
-    trees = build_trees_from_files(*args, **kwargs)
-    trees = [pp.disambiguate(tree) for tree in trees]
-    return [parsimony_score(tree) for tree in trees]
+    def load_newick(npath):
+        with open(npath, "r") as fh:
+            return fh.read()
+    
+    return parsimony_scores_from_topologies(
+        (load_newick(path) for path in treefiles),
+        load_fasta(fastafile),
+        **kwargs
+    )
 
 
 def build_dag_from_trees(trees):
@@ -168,25 +280,16 @@ def _cli_parsimony_score_from_files(
     save_to_dag,
 ):
     """Print the parsimony score of one or more newick files"""
-    fasta_map = load_fasta(fasta_file)
-    parsimony_counter = Counter()
-    trees = []
-    for tree, treepath in zip(
-        build_trees_from_files(
-            treefiles,
-            fasta_file,
-            reference_id=root_id,
-            ignore_internal_sequences=(not include_internal_sequences),
-        ),
+    pscore_gen = parsimony_scores_from_files(
         treefiles,
-    ):
+        fasta_file,
+        reference_id=root_id,
+        ignore_internal_sequences=(not include_internal_sequences),
+    )
+
+    for score, treepath in zip(pscore_gen, treefiles):
         print(treepath)
-        print(parsimony_score(pp.disambiguate(tree)))
-        if save_to_dag is not None:
-            trees.append(tree)
-    if save_to_dag is not None:
-        with open(save_to_dag, "wb") as fh:
-            fh.write(pickle.dumps(build_dag_from_trees(trees)))
+        print(score)
 
 
 def summarize_dag(dag):
