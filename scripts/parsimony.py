@@ -8,6 +8,14 @@ import historydag as hdag
 import pickle
 import numpy as np
 
+_yey = [
+    [0, 1, 1, 1, 1],
+    [1, 0, 1, 1, 1],
+    [1, 1, 0, 1, 1],
+    [1, 1, 1, 0, 1],
+    [1, 1, 1, 1, 0],
+]
+
 delta_vectors = {
     code: np.array(
         [
@@ -41,24 +49,35 @@ def _cli():
     pass
 
 
-def sankoff_upward(tree):
+def sankoff_upward(tree, gap_as_char=False):
+    """Compute Sankoff cost vectors at nodes in a postorder traversal,
+    and return best possible parsimony score of the tree.
+
+    Args:
+        gap_as_char: if True, the gap character ``-`` will be treated as a fifth character. Otherwise,
+            it will be treated the same as an ``N``."""
+    if gap_as_char:
+
+        def translate_base(char):
+            return char
+
+    else:
+
+        def translate_base(char):
+            if char == "-":
+                return "N"
+            else:
+                return char
+
     seq_len = len(tree.sequence)
-    adj_arr = np.array(
-        [
-            [
-                [0, 1, 1, 1, 1],
-                [1, 0, 1, 1, 1],
-                [1, 1, 0, 1, 1],
-                [1, 1, 1, 0, 1],
-                [1, 1, 1, 1, 0],
-            ]
-        ]
-        * seq_len
-    )
+    adj_arr = np.array([_yey] * seq_len)
     # First pass of Sankoff: compute cost vectors
     for node in tree.traverse(strategy="postorder"):
         node.add_feature(
-            "cv", np.array([code_vectors[base].copy() for base in node.sequence])
+            "cv",
+            np.array(
+                [code_vectors[translate_base(base)].copy() for base in node.sequence]
+            ),
         )
         if not node.is_leaf():
             child_costs = []
@@ -68,7 +87,8 @@ def sankoff_upward(tree):
                 child_costs.append(np.min(total_cost, axis=2))
             child_cost = np.sum(child_costs, axis=0)
             node.cv = (
-                np.array([code_vectors[base] for base in node.sequence]) + child_cost
+                np.array([code_vectors[translate_base(base)] for base in node.sequence])
+                + child_cost
             )
     return np.sum(np.min(tree.cv, axis=1))
 
@@ -76,26 +96,31 @@ def sankoff_upward(tree):
 def disambiguate(tree, random_state=None, remove_cvs=False, adj_dist=False):
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
     subtrees of consecutive ambiguity codes."""
+    if random_state is None:
+        random.seed(tree.write(format=1))
+    else:
+        random.setstate(random_state)
 
     seq_len = len(tree.sequence)
+    adj_arr = np.array([_yey] * seq_len)
     sankoff_upward(tree)
     # Second pass of Sankoff: choose bases
     preorder = list(tree.traverse(strategy="preorder"))
     for node in preorder:
         new_seq = []
+        base_indices = []
         for idx in range(seq_len):
             min_cost = min(node.cv[idx])
             base_index = random.choice(
                 [i for i, val in enumerate(node.cv[idx]) if val == min_cost]
             )
-            new_base = gctree.utils.bases[base_index]
-            new_seq.append(new_base)
+            base_indices.append(base_index)
+
         # Adjust child cost vectors
+        adj_vec = adj_arr[np.arange(seq_len), base_indices]
         for child in node.children:
-            for idx, base in enumerate(new_seq):
-                dvec = delta_vectors[base]
-                for subidx in range(5):
-                    child.cv[idx][subidx] += dvec[subidx]
+            child.cv += adj_vec
+        new_seq = [gctree.utils.bases[base_index] for base_index in base_indices]
         node.sequence = "".join(new_seq)
 
     if remove_cvs:
@@ -192,7 +217,7 @@ def parsimony_score(tree):
     )
 
 
-def parsimony_scores_from_topologies(newicks, fasta_map, **kwargs):
+def parsimony_scores_from_topologies(newicks, fasta_map, gap_as_char=False, **kwargs):
     """returns a generator on parsimony scores of trees specified by newick strings and fasta.
     additional keyword arguments are passed to `build_tree`."""
     # eliminate characters for which there's no diversity:
@@ -204,21 +229,22 @@ def parsimony_scores_from_topologies(newicks, fasta_map, **kwargs):
         for key, oldseq in fasta_map.items()
     }
     yield from (
-        sankoff_upward(build_tree(newick, newfasta, **kwargs)) for newick in newicks
+        sankoff_upward(build_tree(newick, newfasta, **kwargs), gap_as_char=gap_as_char)
+        for newick in newicks
     )
 
 
 def parsimony_scores_from_files(treefiles, fastafile, **kwargs):
     """returns the parsimony scores of trees specified by newick files and a fasta file.
-    Arguments match `build_trees_from_files`."""
+    Arguments match `build_trees_from_files`. Additional keyword arguments are passed to
+    ``parsimony_scores_from_topologies``."""
+
     def load_newick(npath):
         with open(npath, "r") as fh:
             return fh.read()
-    
+
     return parsimony_scores_from_topologies(
-        (load_newick(path) for path in treefiles),
-        load_fasta(fastafile),
-        **kwargs
+        (load_newick(path) for path in treefiles), load_fasta(fastafile), **kwargs
     )
 
 
@@ -271,6 +297,12 @@ def build_dag_from_trees(trees):
     default=None,
     help="Combine loaded and disambiguated trees into a history DAG, and save pickled DAG to provided path.",
 )
+@click.option(
+    "-g",
+    "--gap-as-char",
+    is_flag=True,
+    help="Treat gap character `-` as a fifth character. Otherwise treated as ambiguous `N`.",
+)
 def _cli_parsimony_score_from_files(
     treefiles,
     fasta_file,
@@ -278,12 +310,14 @@ def _cli_parsimony_score_from_files(
     newick_format,
     include_internal_sequences,
     save_to_dag,
+    gap_as_char,
 ):
     """Print the parsimony score of one or more newick files"""
     pscore_gen = parsimony_scores_from_files(
         treefiles,
         fasta_file,
         reference_id=root_id,
+        gap_as_char=gap_as_char,
         ignore_internal_sequences=(not include_internal_sequences),
     )
 
