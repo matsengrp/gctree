@@ -93,9 +93,21 @@ def sankoff_upward(tree, gap_as_char=False):
     return np.sum(np.min(tree.cv, axis=1))
 
 
-def disambiguate(tree, random_state=None, remove_cvs=False, adj_dist=False):
+def disambiguate(
+    tree, compute_cvs=True, random_state=None, remove_cvs=False, adj_dist=False
+):
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
-    subtrees of consecutive ambiguity codes."""
+    subtrees of consecutive ambiguity codes.
+
+    Args:
+        compute_cvs: If true, compute upward sankoff cost vectors. If ``sankoff_upward`` was
+            already run on the tree, this may be skipped.
+        random_state: A ``random`` module random state, returned by ``random.getstate()``. Output
+            from this function is otherwise deterministic.
+        remove_cvs: Remove sankoff cost vectors from tree nodes after disambiguation.
+        adj_dist: Recompute hamming parsimony distances on tree after disambiguation, and store them
+            in ``dist`` node attributes.
+    """
     if random_state is None:
         random.seed(tree.write(format=1))
     else:
@@ -103,7 +115,8 @@ def disambiguate(tree, random_state=None, remove_cvs=False, adj_dist=False):
 
     seq_len = len(tree.sequence)
     adj_arr = np.array([_yey] * seq_len)
-    sankoff_upward(tree)
+    if compute_cvs:
+        sankoff_upward(tree)
     # Second pass of Sankoff: choose bases
     preorder = list(tree.traverse(strategy="preorder"))
     for node in preorder:
@@ -219,7 +232,13 @@ def parsimony_score(tree):
 
 def parsimony_scores_from_topologies(newicks, fasta_map, gap_as_char=False, **kwargs):
     """returns a generator on parsimony scores of trees specified by newick strings and fasta.
-    additional keyword arguments are passed to `build_tree`."""
+    additional keyword arguments are passed to `build_tree`.
+
+    Args:
+        newicks: newick strings of trees whose parsimony scores will be computed
+        fasta_map: fasta data as a dictionary, as output by ``load_fasta``
+        gap_as_char: if True, gap characters `-` will be treated as a fifth character.
+            Otherwise, they will be synonymous with `N`'s."""
     # eliminate characters for which there's no diversity:
     informative_sites = [
         idx for idx, chars in enumerate(zip(*fasta_map.values())) if len(set(chars)) > 1
