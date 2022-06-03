@@ -8,23 +8,18 @@ import historydag as hdag
 import pickle
 import numpy as np
 
-_yey = [
-    [0, 1, 1, 1, 1],
-    [1, 0, 1, 1, 1],
-    [1, 1, 0, 1, 1],
-    [1, 1, 1, 0, 1],
-    [1, 1, 1, 1, 0],
-]
+_yey = np.array(
+    [
+        [0, 1, 1, 1, 1],
+        [1, 0, 1, 1, 1],
+        [1, 1, 0, 1, 1],
+        [1, 1, 1, 0, 1],
+        [1, 1, 1, 1, 0],
+    ]
+)
 
-delta_vectors = {
-    code: np.array(
-        [
-            0 if base in gctree.utils.ambiguous_dna_values[code] else 1
-            for base in gctree.utils.bases
-        ]
-    )
-    for code in gctree.utils.ambiguous_dna_values
-}
+# This is applicable even when diagonal entries in transition rate matrix are
+# nonzero, since it is only a mask on allowable sites based on each base.
 code_vectors = {
     code: np.array(
         [
@@ -33,10 +28,6 @@ code_vectors = {
         ]
     )
     for code in gctree.utils.ambiguous_dna_values
-}
-cost_adjust = {
-    base: np.array([int(not i == j) for j in range(5)])
-    for i, base in enumerate(gctree.utils.bases)
 }
 
 
@@ -49,13 +40,37 @@ def _cli():
     pass
 
 
-def sankoff_upward(tree, gap_as_char=False):
+def _get_adj_array(seq_len, transition_weights=None):
+    if transition_weights is None:
+        transition_weights = _yey
+    else:
+        transition_weights = np.array(transition_weights)
+
+    if transition_weights.shape == (5, 5):
+        adj_arr = np.array([transition_weights] * seq_len)
+    elif transition_weights.shape == (seq_len, 5, 5):
+        adj_arr = transition_weights
+    else:
+        raise RuntimeError(
+            "Transition weight matrix must have shape (5, 5) or (sequence_length, 5, 5)."
+        )
+    return adj_arr
+
+
+def sankoff_upward(tree, gap_as_char=False, transition_weights=None):
     """Compute Sankoff cost vectors at nodes in a postorder traversal,
     and return best possible parsimony score of the tree.
 
     Args:
         gap_as_char: if True, the gap character ``-`` will be treated as a fifth character. Otherwise,
-            it will be treated the same as an ``N``."""
+            it will be treated the same as an ``N``.
+        transition_weights: A 5x5 transition weight matrix, with base order `AGCT-`.
+            Rows contain targeting weights. That is, the first row contains the transition weights
+            from `A` to each possible target base. Alternatively, a sequence-length array of these
+            transition weight matrices, if transition weights vary by-site. By default, a constant
+            weight matrix will be used containing 1 in all off-diagonal positions, equivalent
+            to Hamming parsimony.
+    """
     if gap_as_char:
 
         def translate_base(char):
@@ -69,8 +84,8 @@ def sankoff_upward(tree, gap_as_char=False):
             else:
                 return char
 
-    seq_len = len(tree.sequence)
-    adj_arr = np.array([_yey] * seq_len)
+    adj_arr = _get_adj_array(len(tree.sequence), transition_weights=transition_weights)
+
     # First pass of Sankoff: compute cost vectors
     for node in tree.traverse(strategy="postorder"):
         node.add_feature(
@@ -94,7 +109,13 @@ def sankoff_upward(tree, gap_as_char=False):
 
 
 def disambiguate(
-    tree, compute_cvs=True, random_state=None, remove_cvs=False, adj_dist=False
+    tree,
+    compute_cvs=True,
+    random_state=None,
+    remove_cvs=False,
+    adj_dist=False,
+    gap_as_char=False,
+    transition_weights=None,
 ):
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
     subtrees of consecutive ambiguity codes.
@@ -107,6 +128,14 @@ def disambiguate(
         remove_cvs: Remove sankoff cost vectors from tree nodes after disambiguation.
         adj_dist: Recompute hamming parsimony distances on tree after disambiguation, and store them
             in ``dist`` node attributes.
+        gap_as_char: if True, the gap character ``-`` will be treated as a fifth character. Otherwise,
+            it will be treated the same as an ``N``.
+        transition_weights: A 5x5 transition weight matrix, with base order `AGCT-`.
+            Rows contain targeting weights. That is, the first row contains the transition weights
+            from `A` to each possible target base. Alternatively, a sequence-length array of these
+            transition weight matrices, if transition weights vary by-site. By default, a constant
+            weight matrix will be used containing 1 in all off-diagonal positions, equivalent
+            to Hamming parsimony.
     """
     if random_state is None:
         random.seed(tree.write(format=1))
@@ -114,9 +143,9 @@ def disambiguate(
         random.setstate(random_state)
 
     seq_len = len(tree.sequence)
-    adj_arr = np.array([_yey] * seq_len)
+    adj_arr = _get_adj_array(len(tree.sequence), transition_weights=transition_weights)
     if compute_cvs:
-        sankoff_upward(tree)
+        sankoff_upward(tree, gap_as_char=gap_as_char)
     # Second pass of Sankoff: choose bases
     preorder = list(tree.traverse(strategy="preorder"))
     for node in preorder:
