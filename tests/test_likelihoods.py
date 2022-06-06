@@ -149,7 +149,10 @@ def test_newlikelihoods():
 
             assert ll_isclose(oldfll, newfll)
             assert ll_isclose(oldfll, newfctreell)
-        for dagll, treell in zip(sorted(newforest._forest.weight_count(**ll_dagfuncs).elements()), sorted(ctree.ll(p, q) for ctree in newforest)):
+        for dagll, treell in zip(
+            sorted(newforest._forest.weight_count(**ll_dagfuncs).elements()),
+            sorted(ctree.ll(p, q) for ctree in newforest),
+        ):
             assert np.isclose(dagll, treell)
 
 
@@ -180,7 +183,7 @@ def test_validate_ll_genotype():
         for c in range(c_max):
             for m in range(m_max):
                 if c > 0 or m > 1:
-                    with np.errstate(all='raise'):
+                    with np.errstate(all="raise"):
                         true_res = OldCollapsedTree._ll_genotype(c, m, *params)
                         res = bp.CollapsedTree._ll_genotype(c, m, *params)
                     assert np.isclose(true_res[0], res[0])
@@ -193,5 +196,5 @@ def test_recursion_depth():
     recursion depth issues"""
     bp.CollapsedTree._ll_genotype.cache_clear()
     bp.CollapsedTree._max_ll_cache = {}
-    with np.errstate(all='raise'):
+    with np.errstate(all="raise"):
         bp.CollapsedTree._ll_genotype(2, 500, 0.4, 0.6)
