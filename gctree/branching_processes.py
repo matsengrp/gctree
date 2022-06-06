@@ -46,9 +46,9 @@ class CollapsedTree:
         tree: :class:`ete3.TreeNode` object with ``abundance`` node features
 
     Args:
-        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves,
-            and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed,
-            it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+        tree: ete3 tree with ``abundance`` node features. If uncollapsed,
+            it will be collapsed along branches with no mutations.
+            Can be ommitted on initializaion, and later simulated.
             If a tree is provided, names of nodes with abundance 0 will not be preserved.
         allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.
     """
@@ -85,7 +85,9 @@ class CollapsedTree:
             # length if the node is a leaf and it's parent has nonzero
             # abundance we combine taxa names to a set to acommodate
             # bootstrap samples that result in repeated genotypes
-            observed_genotypes = set((leaf.name for leaf in self.tree))
+            observed_genotypes = set(
+                node.name for node in self.tree.traverse() if node.abundance
+            )
             observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy="postorder"):
                 if node.dist == 0:
