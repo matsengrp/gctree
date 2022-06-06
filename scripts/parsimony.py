@@ -30,6 +30,11 @@ code_vectors = {
     for code in gctree.utils.ambiguous_dna_values
 }
 
+ambiguous_codes_from_vecs = {
+    tuple(0 if base in base_set else 1 for base in gctree.utils.bases): code
+    for code, base_set in gctree.utils.ambiguous_dna_values.items()
+}
+
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def _cli():
@@ -139,7 +144,8 @@ def disambiguate(
             to Hamming parsimony.
         min_ambiguities: If True, leaves ambiguities in reconstructed sequences, expressing which
             bases are possible at each site in a maximally parsimonious disambiguation of the given
-            topology. Otherwise, sequences are resolved in one possible way, and include no ambiguities.
+            topology. In the history DAG paper, this is known as a strictly min-weight ambiguous labeling.
+            Otherwise, sequences are resolved in one possible way, and include no ambiguities.
     """
     if random_state is None:
         random.seed(tree.write(format=1))
@@ -153,20 +159,26 @@ def disambiguate(
     # Second pass of Sankoff: choose bases
     preorder = list(tree.traverse(strategy="preorder"))
     for node in preorder:
-        new_seq = []
-        base_indices = []
-        for idx in range(seq_len):
-            min_cost = min(node.cv[idx])
-            base_index = random.choice(
-                [i for i, val in enumerate(node.cv[idx]) if val == min_cost]
-            )
-            base_indices.append(base_index)
+        if min_ambiguities:
+            adj_vec = node.cv != np.stack((node.cv.min(axis=1),) * 5, axis=1)
+            new_seq = [
+                ambiguous_codes_from_vecs[tuple(map(float, row))] for row in adj_vec
+            ]
+        else:
+            base_indices = []
+            for idx in range(seq_len):
+                min_cost = min(node.cv[idx])
+                base_index = random.choice(
+                    [i for i, val in enumerate(node.cv[idx]) if val == min_cost]
+                )
+                base_indices.append(base_index)
+
+            adj_vec = adj_arr[np.arange(seq_len), base_indices]
+            new_seq = [gctree.utils.bases[base_index] for base_index in base_indices]
 
         # Adjust child cost vectors
-        adj_vec = adj_arr[np.arange(seq_len), base_indices]
         for child in node.children:
             child.cv += adj_vec
-        new_seq = [gctree.utils.bases[base_index] for base_index in base_indices]
         node.sequence = "".join(new_seq)
 
     if remove_cvs:
@@ -355,6 +367,12 @@ def build_dag_from_trees(trees):
     is_flag=True,
     help="Treat gap character `-` as a fifth character. Otherwise treated as ambiguous `N`.",
 )
+@click.option(
+    "-a",
+    "--preserve-ambiguities",
+    is_flag=True,
+    help="Do not disambiguate fully, but rather preserve ambiguities to express all maximally parsimonious assignments at each site.",
+)
 def _cli_parsimony_score_from_files(
     treefiles,
     fasta_file,
@@ -363,6 +381,7 @@ def _cli_parsimony_score_from_files(
     include_internal_sequences,
     save_to_dag,
     gap_as_char,
+    preserve_ambiguities,
 ):
     """Print the parsimony score of one or more newick files"""
     pscore_gen = parsimony_scores_from_files(
@@ -376,6 +395,23 @@ def _cli_parsimony_score_from_files(
     for score, treepath in zip(pscore_gen, treefiles):
         print(treepath)
         print(score)
+
+    if save_to_dag is not None:
+        trees = build_trees_from_files(
+            treefiles,
+            fasta_file,
+            reference_id=root_id,
+            ignore_internal_sequences=(not include_internal_sequences),
+        )
+        trees = (
+            disambiguate(
+                tree, gap_as_char=gap_as_char, min_ambiguities=preserve_ambiguities
+            )
+            for tree in trees
+        )
+        dag = build_dag_from_trees(trees)
+        with open(save_to_dag, "wb") as fh:
+            fh.write(pickle.dumps(dag))
 
 
 def summarize_dag(dag):
