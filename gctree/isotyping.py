@@ -121,14 +121,20 @@ class Isotype:
     def isbefore(self, t: "Isotype") -> bool:
         return self.isotype <= t.isotype
 
+    def iso_string(self) -> str:
+        if self.isotype is None:
+            return "?"
+        else:
+            return self.order[self.isotype]
+
     def __repr__(self) -> str:
-        return f"Isotype('{self.order[self.isotype]}')"
+        return f"Isotype('{self.iso_string()}')"
 
     def __str__(self) -> str:
-        return f"{self.order[self.isotype]}"
+        return self.iso_string()
 
     def copy(self) -> "Isotype":
-        return Isotype(self.order, self.weight_matrix, self.order[self.isotype])
+        return Isotype(self.order, self.weight_matrix, self.iso_string())
 
     @_assert_switching_order_match
     def __eq__(self, other: "Isotype") -> bool:
@@ -136,11 +142,21 @@ class Isotype:
 
     @_assert_switching_order_match
     def __lt__(self, other: "Isotype") -> bool:
-        return self.isotype < other.isotype
+        if other.isotype is None:
+            return True
+        elif self.isotype is None:
+            return False
+        else:
+            return self.isotype < other.isotype
 
     @_assert_switching_order_match
     def __gt__(self, other: "Isotype") -> bool:
-        return self.isotype > other.isotype
+        if other.isotype is None:
+            return False
+        elif self.isotype is None:
+            return True
+        else:
+            return self.isotype > other.isotype
 
     def __hash__(self) -> int:
         return hash(self.__repr__())
@@ -215,7 +231,10 @@ def isotype_distance(t1: Isotype, t2: Isotype) -> float:
     This function is not symmetric on its arguments, so isn't a true
     distance.
     """
-    return t1.weight_matrix[t1.isotype][t2.isotype]
+    if t1.isotype is None or t2.isotype is None:
+        return 0
+    else:
+        return t1.weight_matrix[t1.isotype][t2.isotype]
 
 
 def isotype_parsimony(tree: ete3.TreeNode) -> float:
@@ -475,6 +494,18 @@ def _isotype_annotation_dagfuncs(
 
     def start_func(n: hdag.HistoryDagNode):
         seqid = n.attr["name"]
+        iso_dict = {}
+        for seqid in n.attr["original_ids"]:
+            if seqid in newidmap:
+                for key, val in newidmap[seqid].items():
+                    isotype = newisotype(key)
+                    if isotype in iso_dict:
+                        iso_dict[isotype] = iso_dict[isotype] + len(val)
+                    else:
+                        iso_dict[isotype] = len(val)
+        # if this isn't a leaf, original_ids is empty and the returned dict
+        # will be empty.
+        return frozendict(iso_dict)
         if seqid in newidmap:
             return frozendict(
                 {

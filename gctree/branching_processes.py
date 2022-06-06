@@ -44,9 +44,9 @@ class CollapsedTree:
         tree: :class:`ete3.TreeNode` object with ``abundance`` node features
 
     Args:
-        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves,
-            and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed,
-            it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+        tree: ete3 tree with ``abundance`` node features. If uncollapsed,
+            it will be collapsed along branches with no mutations.
+            Can be ommitted on initializaion, and later simulated.
             If a tree is provided, names of nodes with abundance 0 will not be preserved.
         allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.
     """
@@ -83,7 +83,9 @@ class CollapsedTree:
             # length if the node is a leaf and it's parent has nonzero
             # abundance we combine taxa names to a set to acommodate
             # bootstrap samples that result in repeated genotypes
-            observed_genotypes = set((leaf.name for leaf in self.tree))
+            observed_genotypes = set(
+                node.name for node in self.tree.traverse() if node.abundance
+            )
             observed_genotypes.add(self.tree.name)
             for node in self.tree.get_descendants(strategy="postorder"):
                 if node.dist == 0:
@@ -91,7 +93,14 @@ class CollapsedTree:
                     node.up.abundance = max(node.abundance, node.up.abundance)
                     # isotype is dictionary with isotype as key and observed
                     # abundance as value
-                    node.up.isotype = merge_isotype_dicts(node.up.isotype, node.isotype)
+                    if "isotype" in node.features:
+                        node.up.isotype = merge_isotype_dicts(
+                            node.up.isotype, node.isotype
+                        )
+                    # original_ids is a set of observed ids corresponding to
+                    # each node
+                    if "original_ids" in node.features:
+                        node.up.original_ids = node.original_ids | node.up.original_ids
                     if isinstance(node.name, str):
                         node_set = set([node.name])
                     else:
@@ -110,12 +119,15 @@ class CollapsedTree:
                         if len(node.up.name) == 1:
                             node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
-                node.add_feature(
-                    "inferred_isotype", min(node.isotype.keys(), default=None)
+
+                if "isotype" in node.features:
+                    node.add_feature(
+                        "inferred_isotype", min(node.isotype.keys(), default=None)
+                    )
+            if "isotype" in node.features:
+                self.tree.add_feature(
+                    "inferred_isotype", min(self.tree.isotype.keys(), default=None)
                 )
-            self.tree.add_feature(
-                "inferred_isotype", min(self.tree.isotype.keys(), default=None)
-            )
 
             final_observed_genotypes = set()
             for node in self.tree.traverse():
@@ -931,7 +943,10 @@ class CollapsedForest:
                     "If provided, `forest` argument should contain a list of ete3 trees or CollapsedTrees."
                 )
             # Collect stats for validation
-            model_tree = disambiguate(forest[0].copy())
+            model_tree = forest[0].copy()
+            leaf_seqs = {node.sequence: node.name for node in model_tree.get_leaves()}
+            root_seq = model_tree.sequence
+            model_tree = disambiguate(model_tree)
             # include root in counts, since deduplicate will never let observed
             # root be a leaf.
             counts = {node.name: node.abundance for node in model_tree.iter_leaves()}
@@ -940,11 +955,10 @@ class CollapsedForest:
                 "counts": counts,
                 "root": model_tree.name,
                 "parsimony_score": sum([node.dist for node in model_tree.traverse()]),
-                "root_seq": model_tree.sequence,
-                "leaf_seqs": {
-                    node.sequence: node.name for node in model_tree.get_leaves()
-                },
+                "root_seq": root_seq,
             }
+            if not any(_is_ambiguous(key) for key in leaf_seqs):
+                self._validation_stats["leaf_seqs"] = leaf_seqs
             # Making this a private variable so that trying to access forest
             # attribute as before won't just give a confusing type or
             # attribute error.
@@ -1140,10 +1154,11 @@ class CollapsedForest:
             if verbose:
                 print("Isotype parsimony will be used as a ranking criterion")
             # Check for missing isotype data in all but root node, and fake root-adjacent leaf node
+            rootname = list(self._forest.dagroot.children())[0].attr["name"]
             if any(
                 not node.attr["isotype"]
                 for node in self._forest.preorder()
-                if not node.is_root() and node.attr["name"] != ""
+                if not node.is_root() and node.attr["name"] != rootname
             ):
                 warnings.warn(
                     "Some isotype data seems to be missing. Isotype parsimony scores may be incorrect."
@@ -1433,25 +1448,21 @@ class CollapsedForest:
         Returns:
             :meth:`CollapsedTree` object matching the topology of ``clade_tree``, but fully collapsed.
         """
+        # Allow only leaf nodes to have nonzero abundance, so that ctree
+        # collapsing takes care of all uncollapsed leaves. This works for
+        # observed root because all trees have added pseudo leaf with root name
+        # and abundance.
+        # original_ids is a set of original leaf node ids, or empty if node is
+        # not a leaf.
         etetree = clade_tree.to_ete(
             name_func=lambda n: n.attr["name"],
             features=["sequence"],
             feature_funcs={
-                "abundance": lambda n: n.attr["abundance"],
+                "abundance": lambda n: n.label.abundance if n.is_leaf() else 0,
                 "isotype": lambda n: n.attr["isotype"],
+                "original_ids": lambda n: n.attr["original_ids"],
             },
         )
-
-        # Remove dummy leaf added below root for hDAG compatibility
-        dummyleaves = [
-            node for node in etetree.children if node.is_leaf() and node.name == ""
-        ]
-        if len(dummyleaves) > 1:
-            raise RuntimeError(
-                "Multiple temporary leaves found in tree. Does an observed sequence have name ''?"
-            )
-        for leaf in dummyleaves:
-            leaf.delete(prevent_nondicotomic=False)
 
         ctree = CollapsedTree(etetree)
 
@@ -1474,20 +1485,29 @@ class CollapsedForest:
         # Here can do some validation on the tree:
         if self._validation_stats is not None:
             # root name:
-            if self._validation_stats["root"] not in ctree.tree.name:
+            if self._validation_stats["root"] != ctree.tree.name:
                 raise RuntimeError(
                     f"collapsed tree should have root name '{self._validation_stats['root']}' but has instead {ctree.tree.name}"
                 )
             # counts:
             counts = self._validation_stats["counts"]
             for node in etetree.iter_leaves():
-                if node.name:
-                    assert counts[node.name] == node.abundance
+                assert (
+                    sum(counts[og_id] for og_id in node.original_ids) == node.abundance
+                )
+                assert node.name in node.original_ids
+            tree_abundance = 0
             for node in ctree.tree.traverse():
+                tree_abundance += node.abundance
                 if node.name in counts:
-                    assert counts[node.name] == node.abundance
+                    assert (
+                        sum(counts[og_id] for og_id in node.original_ids)
+                        == node.abundance
+                    )
+                    assert node.name in node.original_ids
                 else:
                     assert node.abundance == 0
+            assert tree_abundance == sum(counts.values())
 
             # unnamed_seq issue:
             for node in ctree.tree.traverse():
@@ -1504,30 +1524,40 @@ class CollapsedForest:
                 raise RuntimeError(
                     "History DAG tree parsimony score does not match parsimony score provided"
                 )
-            # Root sequence:
-            if ctree.tree.sequence != self._validation_stats["root_seq"]:
+            # Root sequence is a possible disambiguation of root:
+            if any(
+                base not in gctree.utils.ambiguous_dna_values[ambig_base]
+                for base, ambig_base in zip(
+                    ctree.tree.sequence, self._validation_stats["root_seq"]
+                )
+            ):
                 raise RuntimeError(
-                    "History DAG root node sequence does not match root sequence provided"
+                    "History DAG root node sequence does not match root sequence provided\n"
+                    "found: " + ctree.tree.sequence + "\n"
+                    "expected: " + self._validation_stats["root_seq"]
                 )
             # Leaf names:
-            leaf_seqs = self._validation_stats["leaf_seqs"]
-            # A dictionary of leaf sequences to leaf names
-            observed_set = {
-                node for node in ctree.tree.iter_descendants() if node.abundance > 0
-            }
-            for node in observed_set:
-                if not node.is_root() and leaf_seqs[node.sequence] != node.name:
+            if "leaf_seqs" in self._validation_stats:
+                # Will be intentionally missing if observed sequences had
+                # ambiguities.
+                leaf_seqs = self._validation_stats["leaf_seqs"]
+                # A dictionary of leaf sequences to leaf names
+                observed_set = {
+                    node for node in ctree.tree.iter_descendants() if node.abundance > 0
+                }
+                for node in observed_set:
+                    if not node.is_root() and leaf_seqs[node.sequence] != node.name:
+                        raise RuntimeError(
+                            "History DAG tree leaf names don't match sequences"
+                        )
+                observed_seqs = {node.sequence for node in observed_set}
+                nonroot_observed_seqs = observed_seqs - {ctree.tree.sequence}
+                nonroot_leaf_seqs = set(leaf_seqs.keys()) - {ctree.tree.sequence}
+                if nonroot_leaf_seqs != nonroot_observed_seqs:
                     raise RuntimeError(
-                        "History DAG tree leaf names don't match sequences"
+                        "Observed nonroot sequences in history DAG tree don't match "
+                        "observed nonroot sequences passed in leaf_seqs."
                     )
-            observed_seqs = {node.sequence for node in observed_set}
-            nonroot_observed_seqs = observed_seqs - {ctree.tree.sequence}
-            nonroot_leaf_seqs = set(leaf_seqs.keys()) - {ctree.tree.sequence}
-            if nonroot_leaf_seqs != nonroot_observed_seqs:
-                raise RuntimeError(
-                    "Observed nonroot sequences in history DAG tree don't match "
-                    "observed nonroot sequences passed in leaf_seqs."
-                )
         else:
             warnings.warn("No validation was performed on tree")
 
@@ -1609,107 +1639,159 @@ def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.nda
     return logf, grad_ll_genotype
 
 
+def _is_ambiguous(sequence):
+    return any(base not in gctree.utils.bases for base in sequence)
+
+
 def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
     # Assume all trees have fixed root sequence and fixed leaf sequences
-    def get_sequence(node):
-        if any(base not in gctree.utils.bases for base in node.sequence):
-            raise ValueError(
-                f"Unrecognized base found in node '{node.name}'. "
-                "Ambiguous bases are not permitted in observed sequences."
-            )
-        else:
-            return node.sequence
 
-    leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
-
-    # Assume all trees have same observed nodes.
-    sequence_counts = {
-        node.sequence: node.abundance
-        for node in trees[0].traverse()
-        if node.abundance > 0
-    }
     if from_copy:
         trees = [tree.copy() for tree in trees]
-    if all(len(tree.children) > 1 for tree in trees):
-        pass  # We're all good!
-    elif trees[0].sequence not in leaf_seqs:
-        if trees[0].sequence not in sequence_counts:
-            sequence_counts[trees[0].sequence] = 0
-        for tree in trees:
-            newleaf = tree.add_child(name="", dist=0)
-            newleaf.add_feature("sequence", trees[0].sequence)
-            if tree.sequence != newleaf.sequence:
-                raise ValueError(
-                    "At least some trees unifurcate at root, but root sequence is not fixed."
-                )
-    else:
-        # This should never happen in parsimony setting, when internal edges
-        # are collapsed by sequence
-        raise RuntimeError(
-            "Root sequence observed, but the corresponding leaf is not a child of the root node. "
-            "Gctree inference may give nonsensical results. Are you sure these are parsimony trees?"
-        )
 
-    dag = hdag.history_dag_from_etes(
-        trees,
-        ["sequence"],
-        attr_func=lambda n: {
-            "name": n.name,
-            "isotype": frozendict(),
-        },
-    )
-    # If there are too many ambiguities at too many nodes, disambiguation will
-    # hang. Need to have an alternative (disambiguate each tree before putting in dag):
-    if (
-        dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
-        / dag.count_trees()
-        > 500000000
-    ):
+    # disambiguate leaves: disambiguate each tree and transplant disambiguated
+    # leaf sequences to tree with ambiguous internal sequences
+
+    # add pseudo-leaf below root in all trees:
+    # This is done first in case root is ambiguous, and gets merged with
+    # another ambiguous leaf node after disambiguation.
+    rootname = trees[0].name  # all root nodes must have the same name
+    for tree in trees:
+        newleaf = tree.add_child(name=tree.name, dist=0)
+        newleaf.add_feature("sequence", tree.sequence)
+        newleaf.add_feature("abundance", tree.abundance)
+
+    if any(_is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
         warnings.warn(
-            "Parsimony trees have too many ambiguities for disambiguation in history DAG. "
-            "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
+            "Some observed sequences are ambiguous. A disambiguation consistent"
+            " with each dnapars tree will be chosen arbitrarily. Many alternative"
+            " disambiguated leaf sequences may be possible."
         )
-        distrees = [disambiguate(tree) for tree in trees]
-        dag = hdag.history_dag_from_etes(
-            distrees,
+        for tree in trees:
+            for node in tree.iter_leaves():
+                node.add_feature("original_ids", {node.name})
+            disambig_tree = tree.copy()
+            node_map = {
+                d_node: o_node
+                for d_node, o_node in zip(disambig_tree.traverse(), tree.traverse())
+            }
+            disambiguate(disambig_tree)
+
+            # remove duplicate leaves, and adjust abundances
+            leaf_seqs = {}
+            to_delete = []
+            for leaf in disambig_tree.iter_leaves():
+                if leaf.sequence in leaf_seqs:
+                    leaf_seqs[leaf.sequence].append(leaf)
+                else:
+                    leaf_seqs[leaf.sequence] = [leaf]
+            for sequence, leaf_list in leaf_seqs.items():
+                if len(leaf_list) > 1:
+                    # Always choose root pseudo-leaf to represent nodes, if
+                    # possible
+                    ancestor = disambig_tree.get_common_ancestor(*leaf_list)
+                    _leaf_list_names = {node.name: node for node in leaf_list}
+                    if rootname in _leaf_list_names:
+                        rep_node = _leaf_list_names.pop(rootname)
+                    else:
+                        rep_node = _leaf_list_names.pop(leaf_list[0].name)
+                    to_delete = list(_leaf_list_names.values())
+                    rep_node.abundance = sum(leaf.abundance for leaf in leaf_list)
+                    rep_node.original_ids = {
+                        seq_id for node in leaf_list for seq_id in node.original_ids
+                    }
+                    while to_delete:
+                        for node in to_delete:
+                            node_map[node].delete(prevent_nondicotomic=False)
+                            node.delete(prevent_nondicotomic=False)
+                        to_delete = [
+                            leaf
+                            for leaf in ancestor.iter_leaves()
+                            if (leaf.sequence == sequence and leaf != rep_node)
+                        ]
+            # transplant leaf sequences and abundances:
+            for node in disambig_tree.iter_leaves():
+                node_map[node].abundance = node.abundance
+                node_map[node].sequence = node.sequence
+                node_map[node].original_ids = node.original_ids
+            # remove some unifurcations
+            to_delete = []
+            for node in tree.iter_descendants():
+                if len(node.children) == 1:
+                    # this excludes leaves
+                    to_delete.append(node)
+            for node in to_delete:
+                node.delete(prevent_nondicotomic=False)
+
+    def trees_to_dag(trees):
+        return hdag.history_dag_from_etes(
+            trees,
             ["sequence"],
+            label_functions={"abundance": lambda n: n.abundance if n.is_leaf() else 0},
             attr_func=lambda n: {
                 "name": n.name,
+                "original_ids": (
+                    n.original_ids
+                    if "original_ids" in n.features
+                    else {n.name}
+                    if n.is_leaf()
+                    else set()
+                ),
                 "isotype": frozendict(),
             },
         )
+
+    dag = trees_to_dag(trees)
+    # If there are too many ambiguities at too many nodes, disambiguation will
+    # hang. Need to have an alternative (disambiguate each tree before putting in dag):
+
+    def test_explode_individually():
+        try:
+            if (
+                dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
+                / dag.count_trees()
+                > 5000000
+            ):
+                return True
+            else:
+                return False
+        except OverflowError:
+            return True
+
+    if test_explode_individually():
+        warnings.warn(
+            "Parsimony trees have too many ambiguities for disambiguation in all possible ways. "
+            "Disambiguating trees individually. Gctree may find fewer parsimony trees."
+        )
+        distrees = [disambiguate(tree) for tree in trees]
+        dag = trees_to_dag(distrees)
     dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
     # Look for (even) more trees:
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
-    dag.convert_to_collapsed()
-    # Add abundances to attrs:
     for node in dag.preorder(skip_root=True):
-        if node.label.sequence in sequence_counts:
-            node.attr["abundance"] = sequence_counts[node.label.sequence]
-        else:
-            if node.is_leaf():
-                raise ValueError(
-                    "sequence_counts dictionary should contain all leaf sequences"
-                )
-            node.attr["abundance"] = 0
+        if node.label.abundance != 0 and not node.is_leaf():
+            raise RuntimeError(
+                f"An internal node {node.attr['name']} was found with nonzero abundance {node.label.abundance}"
+            )
+    dag.convert_to_collapsed()
+    dag.recompute_parents()
+    # Only leaf nodes have nonzero abundance now, so all internal edges are
+    # collapsed by sequence. Now labels with correct abundances are placed on
+    # leaf-adjacent nodes that will be collapsed by sequence.
+    for node in dag.preorder(skip_root=True):
+        if node.is_leaf():
+            for parent in node.parents:
+                if parent.label.sequence == node.label.sequence:
+                    parent.label = node.label
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
             f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.hamming_parsimony_count()}"
         )
-    for node in dag.preorder(skip_root=True):
-        if (
-            node.attr["abundance"] != 0
-            and not node.is_leaf()
-            and frozenset({node.label}) not in node.clades
-        ):
-            raise RuntimeError(
-                "An internal node not adjacent to a leaf with the same label was found with nonzero abundance."
-            )
 
     # names on internal nodes are all messed up from disambiguation step, we'll
     # fix them in CollapsedTree.__init__.
@@ -1721,14 +1803,14 @@ def _cmcounter_dagfuncs():
     the DAG."""
 
     def edge_weight_func(n1, n2):
-        if n1.label == n2.label and n2.is_leaf():
+        if n2.is_leaf() and n1.label.sequence == n2.label.sequence:
             # Then this is a leaf-adjacent node with nonzero abundance
             return multiset.FrozenMultiset()
         else:
             m = len(n2.clades)
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
+            return multiset.FrozenMultiset([(n2.label.abundance, m)])
 
     def accum_func(cmsetlist: List[multiset.FrozenMultiset]):
         st = multiset.FrozenMultiset()
@@ -1774,16 +1856,16 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
         collapsed, then 0.
 
         Expects DAG to have abundances added so that each node has
-        "abundance" key in attr dict.
+        abundance feature on label.
         """
-        if n2.is_leaf() and n2.label == n1.label:
+        if n2.is_leaf() and n2.label.sequence == n1.label.sequence:
             return hdag.utils.FloatState(0.0, state=Decimal(0.0))
         else:
             m = len(n2.clades)
             # Check if this edge should be collapsed, and reduce mutant descendants
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            c = n2.attr["abundance"]
+            c = n2.label.abundance
             if n1.is_root() and c == 0 and m == 1:
                 # Add pseudocount for unobserved root unifurcation
                 c = 1
