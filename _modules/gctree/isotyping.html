@@ -13,6 +13,7 @@
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -209,14 +210,20 @@
     <span class="k">def</span> <span class="nf">isbefore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="o">.</span><span class="n">isotype</span>
 
+    <span class="k">def</span> <span class="nf">iso_string</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;?&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">isotype</span><span class="p">]</span>
+
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Isotype(&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">isotype</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Isotype(&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">iso_string</span><span class="p">()</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">isotype</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">iso_string</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">Isotype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">isotype</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">Isotype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iso_string</span><span class="p">())</span>
 
     <span class="nd">@_assert_switching_order_match</span>
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -224,11 +231,21 @@
 
     <span class="nd">@_assert_switching_order_match</span>
     <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">isotype</span>
+        <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">isotype</span>
 
     <span class="nd">@_assert_switching_order_match</span>
     <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;Isotype&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">isotype</span>
+        <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isotype</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">isotype</span>
 
     <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">())</span>
@@ -303,7 +320,10 @@
 <span class="sd">    This function is not symmetric on its arguments, so isn&#39;t a true</span>
 <span class="sd">    distance.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">t1</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">[</span><span class="n">t1</span><span class="o">.</span><span class="n">isotype</span><span class="p">][</span><span class="n">t2</span><span class="o">.</span><span class="n">isotype</span><span class="p">]</span></div>
+    <span class="k">if</span> <span class="n">t1</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">t2</span><span class="o">.</span><span class="n">isotype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">t1</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">[</span><span class="n">t1</span><span class="o">.</span><span class="n">isotype</span><span class="p">][</span><span class="n">t2</span><span class="o">.</span><span class="n">isotype</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="isotype_parsimony"><a class="viewcode-back" href="../../stubs/gctree.isotyping.isotype_parsimony.html#gctree.isotyping.isotype_parsimony">[docs]</a><span class="k">def</span> <span class="nf">isotype_parsimony</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
@@ -563,6 +583,18 @@
 
     <span class="k">def</span> <span class="nf">start_func</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">):</span>
         <span class="n">seqid</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="n">iso_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">seqid</span> <span class="ow">in</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;original_ids&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">seqid</span> <span class="ow">in</span> <span class="n">newidmap</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">newidmap</span><span class="p">[</span><span class="n">seqid</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">isotype</span> <span class="o">=</span> <span class="n">newisotype</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">isotype</span> <span class="ow">in</span> <span class="n">iso_dict</span><span class="p">:</span>
+                        <span class="n">iso_dict</span><span class="p">[</span><span class="n">isotype</span><span class="p">]</span> <span class="o">=</span> <span class="n">iso_dict</span><span class="p">[</span><span class="n">isotype</span><span class="p">]</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">iso_dict</span><span class="p">[</span><span class="n">isotype</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="c1"># if this isn&#39;t a leaf, original_ids is empty and the returned dict</span>
+        <span class="c1"># will be empty.</span>
+        <span class="k">return</span> <span class="n">frozendict</span><span class="p">(</span><span class="n">iso_dict</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">seqid</span> <span class="ow">in</span> <span class="n">newidmap</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">frozendict</span><span class="p">(</span>
                 <span class="p">{</span>

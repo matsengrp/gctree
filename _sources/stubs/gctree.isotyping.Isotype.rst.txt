@@ -18,6 +18,7 @@ gctree.isotyping.Isotype
    
       ~Isotype.copy
       ~Isotype.isbefore
+      ~Isotype.iso_string
       ~Isotype.resolutions
    
    

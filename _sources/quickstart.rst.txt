@@ -161,3 +161,48 @@ The names associated with unobserved nodes (for example, in trees rendered with
 bijectively with unobserved sequences. However, if gctree output contains
 multiple trees, **two unobserved nodes which share the same name but occur in
 different output trees will not in general possess the same unobserved sequence.**
+
+A note about ambiguous sequence data
+====================================
+
+Gctree can handle input sequences which contain ambiguous bases, but handling
+of such sequences is experimental. That is, there may be issues with both the
+implementation and the underlying methods.
+
+If you use gctree to build trees from ambiguous sequence data, it's probably a good idea
+to follow at least these guidelines:
+
+* Make sure that all sites are unambiguous in at least one of the input
+  sequences. If a site contains an ambiguous base in all input sequences,
+  gctree will choose an arbitrary base for that site. The bases chosen for such
+  sites should not be interpreted as meaningful in any way.
+* Understand that for any observed sequence disambiguated by gctree, another choice of
+  disambiguation for that sequence may exist, which results in a better tree
+  with respect to the ranking criteria. The only guarantee is that
+  disambiguations of observed sequences are maximally parsimonious given the
+  tree topology in which they appear.
+
+Gctree can handle ambiguous input sequences because ``dnapars`` can accept
+ambiguous input sequences. Each tree output by ``dnapars`` is then
+disambiguated. It is possible that multiple observed sequences may be
+disambiguated in identical ways, in which case their corresponding leaf nodes,
+and abundances, are merged. The deduplicated sequence ids corresponding to each
+node in the final tree output by gctree are retained in the ``original_ids`` node
+attribute.
+
+Here's a bit more discussion about how much the disambiguated observed
+sequences can be trusted:
+
+**Why not to trust leaf disambiguation:**
+
+As mentioned above, if the same site(s) contain ambiguous bases in all sequences, the disambiguation is completely arbitrary at those sites, but could be mistakenly interpreted as informed.
+Also alluded to above, if multiple possible disambiguated leaf sequences exist for a particular dnapars topology, one will be chosen arbitrarily, even though another may be more plausible IRL, or with respect to the ranking criteria that gctree uses.
+
+**Why to trust leaf disambiguation:**
+
+Disambiguation is informed by sequence placement in the tree (by dnapars), which takes into account all that is known about the sequences.
+Disambiguation minimizes parsimony score, meaning that
+ambiguous sites will be filled in using bases in the most closely related
+sequence in which those sites are unambiguous.
+
+Also, different trees, with possibly different disambiguated leaf sequences, are ranked according to all data (isotype, abundance, mutability) provided to gctree, and the disambiguated leaf sequences influence that ranking. This means that ranking may influence the chosen disambiguation of observed sequences to be more plausible.

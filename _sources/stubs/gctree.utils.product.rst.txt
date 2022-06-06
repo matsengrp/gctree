@@ -1,0 +1,6 @@
+gctree.utils.product
+====================
+
+.. currentmodule:: gctree.utils
+
+.. autofunction:: product

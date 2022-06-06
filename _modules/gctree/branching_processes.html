@@ -13,6 +13,7 @@
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../_static/js/theme.js"></script>
@@ -132,9 +133,9 @@
 <span class="sd">        tree: :class:`ete3.TreeNode` object with ``abundance`` node features</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        tree: ete3 tree with ``abundance`` node features. Nonzero abundances expected on leaves,</span>
-<span class="sd">            and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed,</span>
-<span class="sd">            it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.</span>
+<span class="sd">        tree: ete3 tree with ``abundance`` node features. If uncollapsed,</span>
+<span class="sd">            it will be collapsed along branches with no mutations.</span>
+<span class="sd">            Can be ommitted on initializaion, and later simulated.</span>
 <span class="sd">            If a tree is provided, names of nodes with abundance 0 will not be preserved.</span>
 <span class="sd">        allow_repeats: tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -171,7 +172,9 @@
             <span class="c1"># length if the node is a leaf and it&#39;s parent has nonzero</span>
             <span class="c1"># abundance we combine taxa names to a set to acommodate</span>
             <span class="c1"># bootstrap samples that result in repeated genotypes</span>
-            <span class="n">observed_genotypes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">((</span><span class="n">leaf</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">))</span>
+            <span class="n">observed_genotypes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+            <span class="p">)</span>
             <span class="n">observed_genotypes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">get_descendants</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -179,7 +182,14 @@
                     <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
                     <span class="c1"># isotype is dictionary with isotype as key and observed</span>
                     <span class="c1"># abundance as value</span>
-                    <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="n">merge_isotype_dicts</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">isotype</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="s2">&quot;isotype&quot;</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span> <span class="o">=</span> <span class="n">merge_isotype_dicts</span><span class="p">(</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">isotype</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">isotype</span>
+                        <span class="p">)</span>
+                    <span class="c1"># original_ids is a set of observed ids corresponding to</span>
+                    <span class="c1"># each node</span>
+                    <span class="k">if</span> <span class="s2">&quot;original_ids&quot;</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">original_ids</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">original_ids</span> <span class="o">|</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">original_ids</span>
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                         <span class="n">node_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
                     <span class="k">else</span><span class="p">:</span>
@@ -198,12 +208,15 @@
                         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                             <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                     <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="n">node</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span>
-                    <span class="s2">&quot;inferred_isotype&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">isotype</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="s2">&quot;isotype&quot;</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span>
+                        <span class="s2">&quot;inferred_isotype&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">isotype</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+                    <span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;isotype&quot;</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span>
+                    <span class="s2">&quot;inferred_isotype&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">isotype</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
                 <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span>
-                <span class="s2">&quot;inferred_isotype&quot;</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">isotype</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-            <span class="p">)</span>
 
             <span class="n">final_observed_genotypes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
@@ -1019,7 +1032,10 @@
                     <span class="s2">&quot;If provided, `forest` argument should contain a list of ete3 trees or CollapsedTrees.&quot;</span>
                 <span class="p">)</span>
             <span class="c1"># Collect stats for validation</span>
-            <span class="n">model_tree</span> <span class="o">=</span> <span class="n">disambiguate</span><span class="p">(</span><span class="n">forest</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+            <span class="n">model_tree</span> <span class="o">=</span> <span class="n">forest</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">leaf_seqs</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">get_leaves</span><span class="p">()}</span>
+            <span class="n">root_seq</span> <span class="o">=</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">sequence</span>
+            <span class="n">model_tree</span> <span class="o">=</span> <span class="n">disambiguate</span><span class="p">(</span><span class="n">model_tree</span><span class="p">)</span>
             <span class="c1"># include root in counts, since deduplicate will never let observed</span>
             <span class="c1"># root be a leaf.</span>
             <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">()}</span>
@@ -1028,11 +1044,10 @@
                 <span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">counts</span><span class="p">,</span>
                 <span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                 <span class="s2">&quot;parsimony_score&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">([</span><span class="n">node</span><span class="o">.</span><span class="n">dist</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()]),</span>
-                <span class="s2">&quot;root_seq&quot;</span><span class="p">:</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span>
-                <span class="s2">&quot;leaf_seqs&quot;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">model_tree</span><span class="o">.</span><span class="n">get_leaves</span><span class="p">()</span>
-                <span class="p">},</span>
+                <span class="s2">&quot;root_seq&quot;</span><span class="p">:</span> <span class="n">root_seq</span><span class="p">,</span>
             <span class="p">}</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">_is_ambiguous</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">leaf_seqs</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;leaf_seqs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">leaf_seqs</span>
             <span class="c1"># Making this a private variable so that trying to access forest</span>
             <span class="c1"># attribute as before won&#39;t just give a confusing type or</span>
             <span class="c1"># attribute error.</span>
@@ -1228,10 +1243,11 @@
             <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Isotype parsimony will be used as a ranking criterion&quot;</span><span class="p">)</span>
             <span class="c1"># Check for missing isotype data in all but root node, and fake root-adjacent leaf node</span>
+            <span class="n">rootname</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">dagroot</span><span class="o">.</span><span class="n">children</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
                 <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;isotype&quot;</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">preorder</span><span class="p">()</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_root</span><span class="p">()</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_root</span><span class="p">()</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">rootname</span>
             <span class="p">):</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
                     <span class="s2">&quot;Some isotype data seems to be missing. Isotype parsimony scores may be incorrect.&quot;</span>
@@ -1521,25 +1537,21 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            :meth:`CollapsedTree` object matching the topology of ``clade_tree``, but fully collapsed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Allow only leaf nodes to have nonzero abundance, so that ctree</span>
+        <span class="c1"># collapsing takes care of all uncollapsed leaves. This works for</span>
+        <span class="c1"># observed root because all trees have added pseudo leaf with root name</span>
+        <span class="c1"># and abundance.</span>
+        <span class="c1"># original_ids is a set of original leaf node ids, or empty if node is</span>
+        <span class="c1"># not a leaf.</span>
         <span class="n">etetree</span> <span class="o">=</span> <span class="n">clade_tree</span><span class="o">.</span><span class="n">to_ete</span><span class="p">(</span>
             <span class="n">name_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
             <span class="n">features</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">],</span>
             <span class="n">feature_funcs</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;abundance&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;abundance&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">abundance</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
                 <span class="s2">&quot;isotype&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;isotype&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;original_ids&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;original_ids&quot;</span><span class="p">],</span>
             <span class="p">},</span>
         <span class="p">)</span>
-
-        <span class="c1"># Remove dummy leaf added below root for hDAG compatibility</span>
-        <span class="n">dummyleaves</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">etetree</span><span class="o">.</span><span class="n">children</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
-        <span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dummyleaves</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="s2">&quot;Multiple temporary leaves found in tree. Does an observed sequence have name &#39;&#39;?&quot;</span>
-            <span class="p">)</span>
-        <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">dummyleaves</span><span class="p">:</span>
-            <span class="n">leaf</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">ctree</span> <span class="o">=</span> <span class="n">CollapsedTree</span><span class="p">(</span><span class="n">etetree</span><span class="p">)</span>
 
@@ -1562,20 +1574,29 @@
         <span class="c1"># Here can do some validation on the tree:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># root name:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;root&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;root&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;collapsed tree should have root name &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s1">&#39;root&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; but has instead </span><span class="si">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
             <span class="c1"># counts:</span>
             <span class="n">counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">etetree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
-                    <span class="k">assert</span> <span class="n">counts</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+                <span class="k">assert</span> <span class="p">(</span>
+                    <span class="nb">sum</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">og_id</span><span class="p">]</span> <span class="k">for</span> <span class="n">og_id</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">original_ids</span><span class="p">)</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+                <span class="p">)</span>
+                <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">original_ids</span>
+            <span class="n">tree_abundance</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
+                <span class="n">tree_abundance</span> <span class="o">+=</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
                 <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">:</span>
-                    <span class="k">assert</span> <span class="n">counts</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+                    <span class="k">assert</span> <span class="p">(</span>
+                        <span class="nb">sum</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">og_id</span><span class="p">]</span> <span class="k">for</span> <span class="n">og_id</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">original_ids</span><span class="p">)</span>
+                        <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+                    <span class="p">)</span>
+                    <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">original_ids</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="k">assert</span> <span class="n">tree_abundance</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
             <span class="c1"># unnamed_seq issue:</span>
             <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
@@ -1592,30 +1613,40 @@
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="s2">&quot;History DAG tree parsimony score does not match parsimony score provided&quot;</span>
                 <span class="p">)</span>
-            <span class="c1"># Root sequence:</span>
-            <span class="k">if</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;root_seq&quot;</span><span class="p">]:</span>
+            <span class="c1"># Root sequence is a possible disambiguation of root:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="n">base</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">gctree</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">ambiguous_dna_values</span><span class="p">[</span><span class="n">ambig_base</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">base</span><span class="p">,</span> <span class="n">ambig_base</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;root_seq&quot;</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                    <span class="s2">&quot;History DAG root node sequence does not match root sequence provided&quot;</span>
+                    <span class="s2">&quot;History DAG root node sequence does not match root sequence provided</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;found: &quot;</span> <span class="o">+</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;expected: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;root_seq&quot;</span><span class="p">]</span>
                 <span class="p">)</span>
             <span class="c1"># Leaf names:</span>
-            <span class="n">leaf_seqs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;leaf_seqs&quot;</span><span class="p">]</span>
-            <span class="c1"># A dictionary of leaf sequences to leaf names</span>
-            <span class="n">observed_set</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">()</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
-            <span class="p">}</span>
-            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">observed_set</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_root</span><span class="p">()</span> <span class="ow">and</span> <span class="n">leaf_seqs</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="o">!=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;leaf_seqs&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">:</span>
+                <span class="c1"># Will be intentionally missing if observed sequences had</span>
+                <span class="c1"># ambiguities.</span>
+                <span class="n">leaf_seqs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;leaf_seqs&quot;</span><span class="p">]</span>
+                <span class="c1"># A dictionary of leaf sequences to leaf names</span>
+                <span class="n">observed_set</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">()</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">observed_set</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_root</span><span class="p">()</span> <span class="ow">and</span> <span class="n">leaf_seqs</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="o">!=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                            <span class="s2">&quot;History DAG tree leaf names don&#39;t match sequences&quot;</span>
+                        <span class="p">)</span>
+                <span class="n">observed_seqs</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">observed_set</span><span class="p">}</span>
+                <span class="n">nonroot_observed_seqs</span> <span class="o">=</span> <span class="n">observed_seqs</span> <span class="o">-</span> <span class="p">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">}</span>
+                <span class="n">nonroot_leaf_seqs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">leaf_seqs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="p">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">}</span>
+                <span class="k">if</span> <span class="n">nonroot_leaf_seqs</span> <span class="o">!=</span> <span class="n">nonroot_observed_seqs</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                        <span class="s2">&quot;History DAG tree leaf names don&#39;t match sequences&quot;</span>
+                        <span class="s2">&quot;Observed nonroot sequences in history DAG tree don&#39;t match &quot;</span>
+                        <span class="s2">&quot;observed nonroot sequences passed in leaf_seqs.&quot;</span>
                     <span class="p">)</span>
-            <span class="n">observed_seqs</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">sequence</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">observed_set</span><span class="p">}</span>
-            <span class="n">nonroot_observed_seqs</span> <span class="o">=</span> <span class="n">observed_seqs</span> <span class="o">-</span> <span class="p">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">}</span>
-            <span class="n">nonroot_leaf_seqs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">leaf_seqs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="p">{</span><span class="n">ctree</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">}</span>
-            <span class="k">if</span> <span class="n">nonroot_leaf_seqs</span> <span class="o">!=</span> <span class="n">nonroot_observed_seqs</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                    <span class="s2">&quot;Observed nonroot sequences in history DAG tree don&#39;t match &quot;</span>
-                    <span class="s2">&quot;observed nonroot sequences passed in leaf_seqs.&quot;</span>
-                <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;No validation was performed on tree&quot;</span><span class="p">)</span>
 
@@ -1697,107 +1728,159 @@
     <span class="k">return</span> <span class="n">logf</span><span class="p">,</span> <span class="n">grad_ll_genotype</span>
 
 
+<span class="k">def</span> <span class="nf">_is_ambiguous</span><span class="p">(</span><span class="n">sequence</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">base</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">gctree</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">bases</span> <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">sequence</span><span class="p">)</span>
+
+
 <span class="k">def</span> <span class="nf">_make_dag</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">from_copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Build a history DAG from ambiguous or disambiguated trees, whose nodes</span>
 <span class="sd">    have abundance, name, and sequence attributes.&quot;&quot;&quot;</span>
     <span class="c1"># preprocess trees so they&#39;re acceptable inputs</span>
     <span class="c1"># Assume all trees have fixed root sequence and fixed leaf sequences</span>
-    <span class="k">def</span> <span class="nf">get_sequence</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">base</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">gctree</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">bases</span> <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Unrecognized base found in node &#39;</span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
-                <span class="s2">&quot;Ambiguous bases are not permitted in observed sequences.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span>
 
-    <span class="n">leaf_seqs</span> <span class="o">=</span> <span class="p">{</span><span class="n">get_sequence</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_leaves</span><span class="p">()}</span>
-
-    <span class="c1"># Assume all trees have same observed nodes.</span>
-    <span class="n">sequence_counts</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
-        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">traverse</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
-    <span class="p">}</span>
     <span class="k">if</span> <span class="n">from_copy</span><span class="p">:</span>
         <span class="n">trees</span> <span class="o">=</span> <span class="p">[</span><span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">]</span>
-    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">):</span>
-        <span class="k">pass</span>  <span class="c1"># We&#39;re all good!</span>
-    <span class="k">elif</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">leaf_seqs</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sequence_counts</span><span class="p">:</span>
-            <span class="n">sequence_counts</span><span class="p">[</span><span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">:</span>
-            <span class="n">newleaf</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-            <span class="n">newleaf</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">tree</span><span class="o">.</span><span class="n">sequence</span> <span class="o">!=</span> <span class="n">newleaf</span><span class="o">.</span><span class="n">sequence</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;At least some trees unifurcate at root, but root sequence is not fixed.&quot;</span>
-                <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># This should never happen in parsimony setting, when internal edges</span>
-        <span class="c1"># are collapsed by sequence</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;Root sequence observed, but the corresponding leaf is not a child of the root node. &quot;</span>
-            <span class="s2">&quot;Gctree inference may give nonsensical results. Are you sure these are parsimony trees?&quot;</span>
-        <span class="p">)</span>
 
-    <span class="n">dag</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">history_dag_from_etes</span><span class="p">(</span>
-        <span class="n">trees</span><span class="p">,</span>
-        <span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">],</span>
-        <span class="n">attr_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;isotype&quot;</span><span class="p">:</span> <span class="n">frozendict</span><span class="p">(),</span>
-        <span class="p">},</span>
-    <span class="p">)</span>
-    <span class="c1"># If there are too many ambiguities at too many nodes, disambiguation will</span>
-    <span class="c1"># hang. Need to have an alternative (disambiguate each tree before putting in dag):</span>
-    <span class="k">if</span> <span class="p">(</span>
-        <span class="n">dag</span><span class="o">.</span><span class="n">count_trees</span><span class="p">(</span><span class="n">expand_count_func</span><span class="o">=</span><span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">sequence_resolutions_count</span><span class="p">)</span>
-        <span class="o">/</span> <span class="n">dag</span><span class="o">.</span><span class="n">count_trees</span><span class="p">()</span>
-        <span class="o">&gt;</span> <span class="mi">500000000</span>
-    <span class="p">):</span>
+    <span class="c1"># disambiguate leaves: disambiguate each tree and transplant disambiguated</span>
+    <span class="c1"># leaf sequences to tree with ambiguous internal sequences</span>
+
+    <span class="c1"># add pseudo-leaf below root in all trees:</span>
+    <span class="c1"># This is done first in case root is ambiguous, and gets merged with</span>
+    <span class="c1"># another ambiguous leaf node after disambiguation.</span>
+    <span class="n">rootname</span> <span class="o">=</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># all root nodes must have the same name</span>
+    <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">:</span>
+        <span class="n">newleaf</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">add_child</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">tree</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">newleaf</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+        <span class="n">newleaf</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;abundance&quot;</span><span class="p">,</span> <span class="n">tree</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">_is_ambiguous</span><span class="p">(</span><span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">()):</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="s2">&quot;Parsimony trees have too many ambiguities for disambiguation in history DAG. &quot;</span>
-            <span class="s2">&quot;Disambiguating trees individually. History DAG may find fewer new parsimony trees.&quot;</span>
+            <span class="s2">&quot;Some observed sequences are ambiguous. A disambiguation consistent&quot;</span>
+            <span class="s2">&quot; with each dnapars tree will be chosen arbitrarily. Many alternative&quot;</span>
+            <span class="s2">&quot; disambiguated leaf sequences may be possible.&quot;</span>
         <span class="p">)</span>
-        <span class="n">distrees</span> <span class="o">=</span> <span class="p">[</span><span class="n">disambiguate</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">]</span>
-        <span class="n">dag</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">history_dag_from_etes</span><span class="p">(</span>
-            <span class="n">distrees</span><span class="p">,</span>
+        <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">():</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="s2">&quot;original_ids&quot;</span><span class="p">,</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">})</span>
+            <span class="n">disambig_tree</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">node_map</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">d_node</span><span class="p">:</span> <span class="n">o_node</span>
+                <span class="k">for</span> <span class="n">d_node</span><span class="p">,</span> <span class="n">o_node</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">disambig_tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">(),</span> <span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span>
+            <span class="p">}</span>
+            <span class="n">disambiguate</span><span class="p">(</span><span class="n">disambig_tree</span><span class="p">)</span>
+
+            <span class="c1"># remove duplicate leaves, and adjust abundances</span>
+            <span class="n">leaf_seqs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">to_delete</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">disambig_tree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span> <span class="ow">in</span> <span class="n">leaf_seqs</span><span class="p">:</span>
+                    <span class="n">leaf_seqs</span><span class="p">[</span><span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">leaf</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">leaf_seqs</span><span class="p">[</span><span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">leaf</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">sequence</span><span class="p">,</span> <span class="n">leaf_list</span> <span class="ow">in</span> <span class="n">leaf_seqs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">leaf_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="c1"># Always choose root pseudo-leaf to represent nodes, if</span>
+                    <span class="c1"># possible</span>
+                    <span class="n">ancestor</span> <span class="o">=</span> <span class="n">disambig_tree</span><span class="o">.</span><span class="n">get_common_ancestor</span><span class="p">(</span><span class="o">*</span><span class="n">leaf_list</span><span class="p">)</span>
+                    <span class="n">_leaf_list_names</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">leaf_list</span><span class="p">}</span>
+                    <span class="k">if</span> <span class="n">rootname</span> <span class="ow">in</span> <span class="n">_leaf_list_names</span><span class="p">:</span>
+                        <span class="n">rep_node</span> <span class="o">=</span> <span class="n">_leaf_list_names</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">rootname</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">rep_node</span> <span class="o">=</span> <span class="n">_leaf_list_names</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">leaf_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">to_delete</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">_leaf_list_names</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                    <span class="n">rep_node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">leaf</span><span class="o">.</span><span class="n">abundance</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">leaf_list</span><span class="p">)</span>
+                    <span class="n">rep_node</span><span class="o">.</span><span class="n">original_ids</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="n">seq_id</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">leaf_list</span> <span class="k">for</span> <span class="n">seq_id</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">original_ids</span>
+                    <span class="p">}</span>
+                    <span class="k">while</span> <span class="n">to_delete</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">to_delete</span><span class="p">:</span>
+                            <span class="n">node_map</span><span class="p">[</span><span class="n">node</span><span class="p">]</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                        <span class="n">to_delete</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="n">leaf</span>
+                            <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">ancestor</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="p">(</span><span class="n">leaf</span><span class="o">.</span><span class="n">sequence</span> <span class="o">==</span> <span class="n">sequence</span> <span class="ow">and</span> <span class="n">leaf</span> <span class="o">!=</span> <span class="n">rep_node</span><span class="p">)</span>
+                        <span class="p">]</span>
+            <span class="c1"># transplant leaf sequences and abundances:</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">disambig_tree</span><span class="o">.</span><span class="n">iter_leaves</span><span class="p">():</span>
+                <span class="n">node_map</span><span class="p">[</span><span class="n">node</span><span class="p">]</span><span class="o">.</span><span class="n">abundance</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span>
+                <span class="n">node_map</span><span class="p">[</span><span class="n">node</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span>
+                <span class="n">node_map</span><span class="p">[</span><span class="n">node</span><span class="p">]</span><span class="o">.</span><span class="n">original_ids</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">original_ids</span>
+            <span class="c1"># remove some unifurcations</span>
+            <span class="n">to_delete</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">iter_descendants</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="c1"># this excludes leaves</span>
+                    <span class="n">to_delete</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">to_delete</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">prevent_nondicotomic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">trees_to_dag</span><span class="p">(</span><span class="n">trees</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">history_dag_from_etes</span><span class="p">(</span>
+            <span class="n">trees</span><span class="p">,</span>
             <span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">],</span>
+            <span class="n">label_functions</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;abundance&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">abundance</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="k">else</span> <span class="mi">0</span><span class="p">},</span>
             <span class="n">attr_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;original_ids&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="n">n</span><span class="o">.</span><span class="n">original_ids</span>
+                    <span class="k">if</span> <span class="s2">&quot;original_ids&quot;</span> <span class="ow">in</span> <span class="n">n</span><span class="o">.</span><span class="n">features</span>
+                    <span class="k">else</span> <span class="p">{</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
+                    <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span>
+                    <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="p">),</span>
                 <span class="s2">&quot;isotype&quot;</span><span class="p">:</span> <span class="n">frozendict</span><span class="p">(),</span>
             <span class="p">},</span>
         <span class="p">)</span>
+
+    <span class="n">dag</span> <span class="o">=</span> <span class="n">trees_to_dag</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span>
+    <span class="c1"># If there are too many ambiguities at too many nodes, disambiguation will</span>
+    <span class="c1"># hang. Need to have an alternative (disambiguate each tree before putting in dag):</span>
+
+    <span class="k">def</span> <span class="nf">test_explode_individually</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">dag</span><span class="o">.</span><span class="n">count_trees</span><span class="p">(</span><span class="n">expand_count_func</span><span class="o">=</span><span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">sequence_resolutions_count</span><span class="p">)</span>
+                <span class="o">/</span> <span class="n">dag</span><span class="o">.</span><span class="n">count_trees</span><span class="p">()</span>
+                <span class="o">&gt;</span> <span class="mi">5000000</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">except</span> <span class="ne">OverflowError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">test_explode_individually</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;Parsimony trees have too many ambiguities for disambiguation in all possible ways. &quot;</span>
+            <span class="s2">&quot;Disambiguating trees individually. Gctree may find fewer parsimony trees.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">distrees</span> <span class="o">=</span> <span class="p">[</span><span class="n">disambiguate</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">]</span>
+        <span class="n">dag</span> <span class="o">=</span> <span class="n">trees_to_dag</span><span class="p">(</span><span class="n">distrees</span><span class="p">)</span>
     <span class="n">dag</span><span class="o">.</span><span class="n">explode_nodes</span><span class="p">(</span><span class="n">expand_func</span><span class="o">=</span><span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">sequence_resolutions</span><span class="p">)</span>
     <span class="c1"># Look for (even) more trees:</span>
     <span class="n">dag</span><span class="o">.</span><span class="n">add_all_allowed_edges</span><span class="p">(</span><span class="n">adjacent_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">dag</span><span class="o">.</span><span class="n">trim_optimal_weight</span><span class="p">()</span>
-    <span class="n">dag</span><span class="o">.</span><span class="n">convert_to_collapsed</span><span class="p">()</span>
-    <span class="c1"># Add abundances to attrs:</span>
     <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dag</span><span class="o">.</span><span class="n">preorder</span><span class="p">(</span><span class="n">skip_root</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span> <span class="ow">in</span> <span class="n">sequence_counts</span><span class="p">:</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sequence_counts</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;sequence_counts dictionary should contain all leaf sequences&quot;</span>
-                <span class="p">)</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">abundance</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;An internal node </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> was found with nonzero abundance </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">abundance</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+    <span class="n">dag</span><span class="o">.</span><span class="n">convert_to_collapsed</span><span class="p">()</span>
+    <span class="n">dag</span><span class="o">.</span><span class="n">recompute_parents</span><span class="p">()</span>
+    <span class="c1"># Only leaf nodes have nonzero abundance now, so all internal edges are</span>
+    <span class="c1"># collapsed by sequence. Now labels with correct abundances are placed on</span>
+    <span class="c1"># leaf-adjacent nodes that will be collapsed by sequence.</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dag</span><span class="o">.</span><span class="n">preorder</span><span class="p">(</span><span class="n">skip_root</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">:</span>
+                    <span class="n">parent</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">label</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dag</span><span class="o">.</span><span class="n">hamming_parsimony_count</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;History DAG parsimony search resulted in parsimony trees of unexpected weights:</span><span class="se">\n</span><span class="s2"> </span><span class="si">{</span><span class="n">dag</span><span class="o">.</span><span class="n">hamming_parsimony_count</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
-    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dag</span><span class="o">.</span><span class="n">preorder</span><span class="p">(</span><span class="n">skip_root</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span>
-            <span class="ow">and</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span>
-            <span class="ow">and</span> <span class="nb">frozenset</span><span class="p">({</span><span class="n">node</span><span class="o">.</span><span class="n">label</span><span class="p">})</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">clades</span>
-        <span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="s2">&quot;An internal node not adjacent to a leaf with the same label was found with nonzero abundance.&quot;</span>
-            <span class="p">)</span>
 
     <span class="c1"># names on internal nodes are all messed up from disambiguation step, we&#39;ll</span>
     <span class="c1"># fix them in CollapsedTree.__init__.</span>
@@ -1809,14 +1892,14 @@
 <span class="sd">    the DAG.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">edge_weight_func</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">n1</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span> <span class="ow">and</span> <span class="n">n2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">n2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="ow">and</span> <span class="n">n1</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span> <span class="o">==</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">:</span>
             <span class="c1"># Then this is a leaf-adjacent node with nonzero abundance</span>
             <span class="k">return</span> <span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">n2</span><span class="o">.</span><span class="n">clades</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">frozenset</span><span class="p">({</span><span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="p">})</span> <span class="ow">in</span> <span class="n">n2</span><span class="o">.</span><span class="n">clades</span><span class="p">:</span>
                 <span class="n">m</span> <span class="o">-=</span> <span class="mi">1</span>
-            <span class="k">return</span> <span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">([(</span><span class="n">n2</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">],</span> <span class="n">m</span><span class="p">)])</span>
+            <span class="k">return</span> <span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">([(</span><span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">abundance</span><span class="p">,</span> <span class="n">m</span><span class="p">)])</span>
 
     <span class="k">def</span> <span class="nf">accum_func</span><span class="p">(</span><span class="n">cmsetlist</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">]):</span>
         <span class="n">st</span> <span class="o">=</span> <span class="n">multiset</span><span class="o">.</span><span class="n">FrozenMultiset</span><span class="p">()</span>
@@ -1862,16 +1945,16 @@
 <span class="sd">        collapsed, then 0.</span>
 
 <span class="sd">        Expects DAG to have abundances added so that each node has</span>
-<span class="sd">        &quot;abundance&quot; key in attr dict.</span>
+<span class="sd">        abundance feature on label.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">n2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="ow">and</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">n1</span><span class="o">.</span><span class="n">label</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">n2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="ow">and</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span> <span class="o">==</span> <span class="n">n1</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">FloatState</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="mf">0.0</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">n2</span><span class="o">.</span><span class="n">clades</span><span class="p">)</span>
             <span class="c1"># Check if this edge should be collapsed, and reduce mutant descendants</span>
             <span class="k">if</span> <span class="nb">frozenset</span><span class="p">({</span><span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="p">})</span> <span class="ow">in</span> <span class="n">n2</span><span class="o">.</span><span class="n">clades</span><span class="p">:</span>
                 <span class="n">m</span> <span class="o">-=</span> <span class="mi">1</span>
-            <span class="n">c</span> <span class="o">=</span> <span class="n">n2</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;abundance&quot;</span><span class="p">]</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">abundance</span>
             <span class="k">if</span> <span class="n">n1</span><span class="o">.</span><span class="n">is_root</span><span class="p">()</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="c1"># Add pseudocount for unobserved root unifurcation</span>
                 <span class="n">c</span> <span class="o">=</span> <span class="mi">1</span>

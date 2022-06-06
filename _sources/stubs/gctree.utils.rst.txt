@@ -16,6 +16,7 @@
       :nosignatures:
    
       hamming_distance
+      product
    
    
 

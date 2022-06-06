@@ -14,6 +14,7 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -119,7 +120,7 @@
 }
 </style>
 <section id="gctree-collapsedtree">
-<h1>gctree.CollapsedTree<a class="headerlink" href="#gctree-collapsedtree" title="Permalink to this headline"></a></h1>
+<h1>gctree.CollapsedTree<a class="headerlink" href="#gctree-collapsedtree" title="Permalink to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="gctree.CollapsedTree">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.</span></span><span class="sig-name descname"><span class="pre">CollapsedTree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_repeats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedTree" title="Permalink to this definition"></a></dt>
@@ -135,9 +136,9 @@ to extinction.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>tree</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TreeNode</span></code>]) – ete3 tree with <code class="docutils literal notranslate"><span class="pre">abundance</span></code> node features. Nonzero abundances expected on leaves,
-and optionally nodes adjacent to leaves via a path of length zero edges. If uncollapsed,
-it will be collapsed along branches with no mutations. Can be ommitted on initializaion, and later simulated.
+<li><p><strong>tree</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TreeNode</span></code>]) – ete3 tree with <code class="docutils literal notranslate"><span class="pre">abundance</span></code> node features. If uncollapsed,
+it will be collapsed along branches with no mutations.
+Can be ommitted on initializaion, and later simulated.
 If a tree is provided, names of nodes with abundance 0 will not be preserved.</p></li>
 <li><p><strong>allow_repeats</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – tolerate the existence of nodes with the same genotype after collapse, e.g. in sister clades.</p></li>
 </ul>

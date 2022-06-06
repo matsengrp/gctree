@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -118,9 +119,9 @@
 }
 </style>
 <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
 <section id="anaconda-install">
-<h2>Anaconda install<a class="headerlink" href="#anaconda-install" title="Permalink to this headline"></a></h2>
+<h2>Anaconda install<a class="headerlink" href="#anaconda-install" title="Permalink to this heading"></a></h2>
 <p>The preferred way to install gctree is with Conda:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda create -n gctree <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.9
 conda activate gctree
@@ -130,7 +131,7 @@ conda install -c conda-forge gctree
 <p>You will likely also want to install PHYLIP (see below)</p>
 </section>
 <section id="pip-install">
-<h2>Pip install<a class="headerlink" href="#pip-install" title="Permalink to this headline"></a></h2>
+<h2>Pip install<a class="headerlink" href="#pip-install" title="Permalink to this heading"></a></h2>
 <p>You may install using pip instead:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install gctree
 </pre></div>
@@ -138,7 +139,7 @@ conda install -c conda-forge gctree
 <p>However, you will then need to separately install PHYLIP</p>
 </section>
 <section id="docker-build">
-<h2>Docker build<a class="headerlink" href="#docker-build" title="Permalink to this headline"></a></h2>
+<h2>Docker build<a class="headerlink" href="#docker-build" title="Permalink to this heading"></a></h2>
 <p>You may also find the provided Dockerfile useful.
 The resulting image runs the test script <cite>tests/test.sh</cite> by default.
 This runs the default inference pipeline on the sample data provided with gctree.</p>
@@ -156,7 +157,7 @@ docker build gctree -t gctree
 </div>
 </section>
 <section id="phylip-installation">
-<h2>PHYLIP Installation<a class="headerlink" href="#phylip-installation" title="Permalink to this headline"></a></h2>
+<h2>PHYLIP Installation<a class="headerlink" href="#phylip-installation" title="Permalink to this heading"></a></h2>
 <p>The original use case for gctree is to use genotype abundance information to
 rank degenerate maximum parsimony trees. For this, you will need Joe
 Felsenstein’s PHYLIP package

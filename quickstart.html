@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -50,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#gctree">gctree</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#isotype">isotype</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#a-note-about-node-names">A note about node names</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a-note-about-ambiguous-sequence-data">A note about ambiguous sequence data</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="rendering-demo.html">Custom tree visualization</a></li>
@@ -120,13 +122,13 @@
 }
 </style>
 <section id="quickstart">
-<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline"></a></h1>
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this heading"></a></h1>
 <p>In this minimal example we show how to use gctree commands to rank parsimony trees from PHYLIP’s dnapars program.
 See the CLI and API docs for complete documentation of command options, included many not used here.</p>
 <p>The data in this example were published in <a class="reference external" href="http://science.sciencemag.org/content/351/6277/1048">Tas et al. 2016. Visualizing Antibody Affinity Maturation in Germinal Centers. Science 351 (6277)</a> and shown in Fig. 4 (lymph node 2, germinal center 1).</p>
 <a class="reference internal image-reference" href="_images/gc1.png"><img alt="_images/gc1.png" src="_images/gc1.png" style="width: 200px;" /></a>
 <section id="input-data">
-<h2>Input data<a class="headerlink" href="#input-data" title="Permalink to this headline"></a></h2>
+<h2>Input data<a class="headerlink" href="#input-data" title="Permalink to this heading"></a></h2>
 <p>We start with a fasta alignment file.
 The file <code class="docutils literal notranslate"><span class="pre">../example/150228_Clone_3-8.fasta</span></code> contains heavy chain V gene sequences from
 germinal B cells sorted from a brainbow mouse using multicolor fate mapping.</p>
@@ -168,7 +170,7 @@ It does not refer to an observed sequence, but is included to outgroup root the 
 This input fasta file should also contain all observed sequences with duplication (some of which may be identical to the root/outgroup sequence).</p>
 </section>
 <section id="deduplication-and-sequence-abundances">
-<h2>Deduplication and sequence abundances<a class="headerlink" href="#deduplication-and-sequence-abundances" title="Permalink to this headline"></a></h2>
+<h2>Deduplication and sequence abundances<a class="headerlink" href="#deduplication-and-sequence-abundances" title="Permalink to this heading"></a></h2>
 <p>First we deduplicate the sequences and convert to phylip alignment format, and also determine sequence abundances.
 The <code class="docutils literal notranslate"><span class="pre">deduplicate</span></code> command writes the phylip alignment of unique sequences to stdout (which we redirect to a file here).
 The argument <code class="docutils literal notranslate"><span class="pre">--root</span></code> indicates the root id.
@@ -209,7 +211,7 @@ seq9,3
 </div>
 </section>
 <section id="parsimony-trees">
-<h2>Parsimony trees<a class="headerlink" href="#parsimony-trees" title="Permalink to this headline"></a></h2>
+<h2>Parsimony trees<a class="headerlink" href="#parsimony-trees" title="Permalink to this heading"></a></h2>
 <p>We use PHYLIP’s <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> program (see install docs page) to generate a set of maximum parsimony trees for the deduplicated sequences.
 PHYLIP is an interactive command line tool, so we will automatically generate a config file to feed it input, instead of using it interactively.</p>
 <p>We generate a config file for <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> based on our deduplicated alignment using the <code class="docutils literal notranslate"><span class="pre">mkconfig</span></code> command.</p>
@@ -224,7 +226,7 @@ PHYLIP is an interactive command line tool, so we will automatically generate a 
 Note: if you want to rerun the above <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> command, you must delete these two files first!</p>
 </section>
 <section id="gctree">
-<h2>gctree<a class="headerlink" href="#gctree" title="Permalink to this headline"></a></h2>
+<h2>gctree<a class="headerlink" href="#gctree" title="Permalink to this heading"></a></h2>
 <p>We’re now ready to run <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> to use abundance data (in <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>) to rank the equally parsimonious trees (in <code class="docutils literal notranslate"><span class="pre">outfile</span></code>).
 We can use the optional argument <code class="docutils literal notranslate"><span class="pre">--frame</span></code> to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.</p>
 <div class="admonition note">
@@ -273,94 +275,97 @@ mutabilities, and alleles:</p>
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Isotype parsimony will be used as a ranking criterion
 Mutation model parsimony will be used as a ranking criterion
-Parameters: (0.4961832069242958, 0.36445206621349757)
-
-Stats for optimal trees:
-tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
-1         	-78.00393661	28        	66.45251202	48        	112.6491878
+Traceback (most recent call last):
+  File &quot;/usr/share/miniconda/envs/gctree/bin/gctree&quot;, line 8, in &lt;module&gt;
+    sys.exit(main())
+  File &quot;/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/cli.py&quot;, line 734, in main
+    args.func(args)
+  File &quot;/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/cli.py&quot;, line 202, in infer
+    trimmed_forest, _ = forest.filter_trees(
+  File &quot;/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/branching_processes.py&quot;, line 914, in wrapper
+    return func(self, *args, **kwargs)
+  File &quot;/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/branching_processes.py&quot;, line 1172, in filter_trees
+    mut_funcs = _mutability_dagfuncs(
+  File &quot;/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/mutation_model.py&quot;, line 432, in _mutability_dagfuncs
+    @hdag.utils.ignore_ualabel(0)
+AttributeError: module &#39;historydag.utils&#39; has no attribute &#39;ignore_ualabel&#39;
 </pre></div>
 </div>
 <p>By default, only the files listed above will be generated, with the optional argument <code class="docutils literal notranslate"><span class="pre">--outbase</span></code> specifying how the output files should be named.</p>
-<a class="reference internal image-reference" href="_images/newranking.inference.1.svg"><img alt="_images/newranking.inference.1.svg" src="_images/newranking.inference.1.svg" width="1000" /></a>
+<a class="reference internal image-reference" href="newranking.inference.1.svg"><img alt="newranking.inference.1.svg" src="newranking.inference.1.svg" width="1000" /></a>
 <p>For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees,use the argument <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code>.</p>
-<a class="reference internal image-reference" href="_images/newranking.tree_stats.pairplot.png"><img alt="_images/newranking.tree_stats.pairplot.png" src="_images/newranking.tree_stats.pairplot.png" style="width: 1000px;" /></a>
+<a class="reference internal image-reference" href="newranking.tree_stats.pairplot.png"><img alt="newranking.tree_stats.pairplot.png" src="newranking.tree_stats.pairplot.png" style="width: 1000px;" /></a>
 <p>Sometimes ranked trees are too numerous, and generating the output of <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code> would require too many resources. For a summary of the collection of trees used for ranking, the argument <code class="docutils literal notranslate"><span class="pre">--summarize_forest</span></code> is provided. Most importantly, this option summarizes how much less likely the top ranked tree is, compared to the most likely tree being ranked, for example to validate coefficients passed to <code class="docutils literal notranslate"><span class="pre">--ranking_coeffs</span></code>.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat newranking.forest_summary.log
-
-Among trees with min Log Likelihood of: -92.15528744
-	Isotype Pars. range: 24 to 24
-	Mut. Pars. range: 71.58051182571174 to 71.58051182571174
-	Alleles range: 53 to 53
-
-Among trees with max Log Likelihood of: -78.00393661
-	Isotype Pars. range: 28 to 28
-	Mut. Pars. range: 66.45251202469834 to 68.93267315188115
-	Alleles range: 48 to 48
-
-Among trees with min Isotype Pars. of: 23
-	Log Likelihood range: -90.94295234 to -87.98896459
-	Mut. Pars. range: 67.70153148153068 to 72.04836178596884
-	Alleles range: 51 to 52
-
-Among trees with max Isotype Pars. of: 28
-	Log Likelihood range: -83.8653921 to -78.00393661
-	Mut. Pars. range: 65.83694196283363 to 72.02357793840056
-	Alleles range: 48 to 50
-
-Among trees with min Mut. Pars. of: 63.945009015045585
-	Log Likelihood range: -80.46148748 to -80.46148748
-	Isotype Pars. range: 27 to 27
-	Alleles range: 49 to 49
-
-Among trees with max Mut. Pars. of: 76.08641624712234
-	Log Likelihood range: -85.28172209 to -85.28172209
-	Isotype Pars. range: 25 to 25
-	Alleles range: 50 to 50
-
-Among trees with min Alleles of: 48
-	Log Likelihood range: -82.14344157 to -78.00393661
-	Isotype Pars. range: 26 to 28
-	Mut. Pars. range: 66.45251202469834 to 74.06179332549453
-
-Among trees with max Alleles of: 53
-	Log Likelihood range: -92.15528744 to -90.28220403
-	Isotype Pars. range: 24 to 25
-	Mut. Pars. range: 71.58051182571174 to 72.97479723796525
-
-
-Parameters: (0.4961832069242958, 0.36445206621349757)
-
-Highest ranked tree: loss from best value:
-tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       
-1         	       0.0	5         	2.50750301	0
+cat: newranking.forest_summary.log: No such file or directory
 </pre></div>
 </div>
 </section>
 <section id="isotype">
-<h2>isotype<a class="headerlink" href="#isotype" title="Permalink to this headline"></a></h2>
+<h2>isotype<a class="headerlink" href="#isotype" title="Permalink to this heading"></a></h2>
 <p>If we would like to add observed isotype data to trees output by gctree
 inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
 sequences to their observed isotypes (like <code class="docutils literal notranslate"><span class="pre">example/isotypemap.txt</span></code>) is required.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ isotype idmap.txt ../example/isotypemap.txt --trees gctree.out.inference.1.p newranking.inference.1.p --out_directory isotyped
-name			 original node count	 isotype parsimony	 new node count
-gctree.out.inference.1.p		 48			 28.0			 50
-newranking.inference.1.p		 48			 28.0			 50
+Traceback (most recent call last):
+  File &quot;/usr/share/miniconda/envs/gctree/bin/isotype&quot;, line 8, in &lt;module&gt;
+    sys.exit(main())
+  File &quot;/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/isotype.py&quot;, line 125, in main
+    with open(treefile, &quot;rb&quot;) as fh:
+FileNotFoundError: [Errno 2] No such file or directory: &#39;newranking.inference.1.p&#39;
 ...
 </pre></div>
 </div>
 <p>Trees originally output by gctree are re-rendered with revised labels and node
 colors corresponding to observed or inferred isotypes.
 For example, here is the top ranked tree above, with isotypes added:</p>
-<a class="reference internal image-reference" href="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg"><img alt="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg" src="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg" width="1000" /></a>
+<a class="reference internal image-reference" href="isotyped/gctree.out.inference.1.p.isotype_parsimony.28.svg"><img alt="isotyped/gctree.out.inference.1.p.isotype_parsimony.28.svg" src="isotyped/gctree.out.inference.1.p.isotype_parsimony.28.svg" width="1000" /></a>
 </section>
 <section id="a-note-about-node-names">
-<h2>A note about node names<a class="headerlink" href="#a-note-about-node-names" title="Permalink to this headline"></a></h2>
+<h2>A note about node names<a class="headerlink" href="#a-note-about-node-names" title="Permalink to this heading"></a></h2>
 <p>The names associated with unobserved nodes (for example, in trees rendered with
 <cite>–idlabel</cite>) are arbitrarily chosen, but are guaranteed to correspond
 bijectively with unobserved sequences. However, if gctree output contains
 multiple trees, <strong>two unobserved nodes which share the same name but occur in
 different output trees will not in general possess the same unobserved sequence.</strong></p>
+</section>
+<section id="a-note-about-ambiguous-sequence-data">
+<h2>A note about ambiguous sequence data<a class="headerlink" href="#a-note-about-ambiguous-sequence-data" title="Permalink to this heading"></a></h2>
+<p>Gctree can handle input sequences which contain ambiguous bases, but handling
+of such sequences is experimental. That is, there may be issues with both the
+implementation and the underlying methods.</p>
+<p>If you use gctree to build trees from ambiguous sequence data, it’s probably a good idea
+to follow at least these guidelines:</p>
+<ul class="simple">
+<li><p>Make sure that all sites are unambiguous in at least one of the input
+sequences. If a site contains an ambiguous base in all input sequences,
+gctree will choose an arbitrary base for that site. The bases chosen for such
+sites should not be interpreted as meaningful in any way.</p></li>
+<li><p>Understand that for any observed sequence disambiguated by gctree, another choice of
+disambiguation for that sequence may exist, which results in a better tree
+with respect to the ranking criteria. The only guarantee is that
+disambiguations of observed sequences are maximally parsimonious given the
+tree topology in which they appear.</p></li>
+</ul>
+<p>Gctree can handle ambiguous input sequences because <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> can accept
+ambiguous input sequences. Each tree output by <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> is then
+disambiguated. It is possible that multiple observed sequences may be
+disambiguated in identical ways, in which case their corresponding leaf nodes,
+and abundances, are merged. The deduplicated sequence ids corresponding to each
+node in the final tree output by gctree are retained in the <code class="docutils literal notranslate"><span class="pre">original_ids</span></code> node
+attribute.</p>
+<p>Here’s a bit more discussion about how much the disambiguated observed
+sequences can be trusted:</p>
+<p><strong>Why not to trust leaf disambiguation:</strong></p>
+<p>As mentioned above, if the same site(s) contain ambiguous bases in all sequences, the disambiguation is completely arbitrary at those sites, but could be mistakenly interpreted as informed.
+Also alluded to above, if multiple possible disambiguated leaf sequences exist for a particular dnapars topology, one will be chosen arbitrarily, even though another may be more plausible IRL, or with respect to the ranking criteria that gctree uses.</p>
+<p><strong>Why to trust leaf disambiguation:</strong></p>
+<p>Disambiguation is informed by sequence placement in the tree (by dnapars), which takes into account all that is known about the sequences.
+Disambiguation minimizes parsimony score, meaning that
+ambiguous sites will be filled in using bases in the most closely related
+sequence in which those sites are unambiguous.</p>
+<p>Also, different trees, with possibly different disambiguated leaf sequences, are ranked according to all data (isotype, abundance, mutability) provided to gctree, and the disambiguated leaf sequences influence that ranking. This means that ranking may influence the chosen disambiguation of observed sequences to be more plausible.</p>
 </section>
 </section>
 

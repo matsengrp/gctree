@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -313,6 +314,7 @@ div.nboutput.container div.output_area > div[class^='highlight']{
 }
 
 /* Some additional styling taken form the Jupyter notebook CSS */
+.jp-RenderedHTMLCommon table,
 div.rendered_html table {
   border: none;
   border-collapse: collapse;
@@ -321,10 +323,14 @@ div.rendered_html table {
   font-size: 12px;
   table-layout: fixed;
 }
+.jp-RenderedHTMLCommon thead,
 div.rendered_html thead {
   border-bottom: 1px solid black;
   vertical-align: bottom;
 }
+.jp-RenderedHTMLCommon tr,
+.jp-RenderedHTMLCommon th,
+.jp-RenderedHTMLCommon td,
 div.rendered_html tr,
 div.rendered_html th,
 div.rendered_html td {
@@ -336,12 +342,15 @@ div.rendered_html td {
   max-width: none;
   border: none;
 }
+.jp-RenderedHTMLCommon th,
 div.rendered_html th {
   font-weight: bold;
 }
+.jp-RenderedHTMLCommon tbody tr:nth-child(odd),
 div.rendered_html tbody tr:nth-child(odd) {
   background: #f5f5f5;
 }
+.jp-RenderedHTMLCommon tbody tr:hover,
 div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
@@ -369,7 +378,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Custom-tree-visualization">
-<h1>Custom tree visualization<a class="headerlink" href="#Custom-tree-visualization" title="Permalink to this headline"></a></h1>
+<h1>Custom tree visualization<a class="headerlink" href="#Custom-tree-visualization" title="Permalink to this heading"></a></h1>
 <p>This page demonstrates custom tree visualization options available in the Python API, including custom colormaps, and may be used for developing visualizations in a Jupyter notebook. See <a class="reference external" href="https://matsengrp.github.io/gctree/stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.render">docs page</a> on the <code class="docutils literal notranslate"><span class="pre">CollapsedTree.render()</span></code> method for more details.</p>
 <p>Import packages</p>
 <div class="nbinput nblast docutils container">
@@ -393,7 +402,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="The-default-tree-rendering">
-<h2>The default tree rendering<a class="headerlink" href="#The-default-tree-rendering" title="Permalink to this headline"></a></h2>
+<h2>The default tree rendering<a class="headerlink" href="#The-default-tree-rendering" title="Permalink to this heading"></a></h2>
 <p>Note that the special file name <code class="docutils literal notranslate"><span class="pre">&quot;%%inline&quot;</span></code> allows rendering in the notebook. To render to a file, supply a filename instead, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;tree1.svg&quot;</span></code></p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
@@ -413,7 +422,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Rendering-arguments">
-<h2>Rendering arguments<a class="headerlink" href="#Rendering-arguments" title="Permalink to this headline"></a></h2>
+<h2>Rendering arguments<a class="headerlink" href="#Rendering-arguments" title="Permalink to this heading"></a></h2>
 <p>Use the <code class="docutils literal notranslate"><span class="pre">scale</span></code> argument to make the tree taller</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -484,7 +493,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Coloring-nodes">
-<h2>Coloring nodes<a class="headerlink" href="#Coloring-nodes" title="Permalink to this headline"></a></h2>
+<h2>Coloring nodes<a class="headerlink" href="#Coloring-nodes" title="Permalink to this heading"></a></h2>
 <p>The argument <code class="docutils literal notranslate"><span class="pre">colormap</span></code> can be used to customize the colors of nodes. You can supply a dictionary with node names as keys and with values that are <a class="reference external" href="http://etetoolkit.org/docs/latest/reference/reference_treeview.html#ete3.SVG_COLORS">color names in ETE</a> or RGB hex values.</p>
 <p>Here we will instead demonstrate how to use a custom colormap based on a numerical node feature. We will use node abundance feature (which all gctree trees have) in this example, and will use the <code class="docutils literal notranslate"><span class="pre">&quot;viridis&quot;</span></code> palette for our color range. You can use other named palettes shown <a class="reference external" href="https://matplotlib.org/stable/gallery/color/colormap_reference.html">here</a>.</p>
 <p>We first obtain the color map based on the abundance feature, and then supply this as the <code class="docutils literal notranslate"><span class="pre">colormap</span></code> argument when rendering. See <a class="reference external" href="https://matsengrp.github.io/gctree/stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.feature_colormap">docs page</a> on the <code class="docutils literal notranslate"><span class="pre">CollapsedTree.feature_colormap()</span></code> method for more details.</p>
@@ -506,7 +515,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Local-branching-statistics">
-<h3>Local branching statistics<a class="headerlink" href="#Local-branching-statistics" title="Permalink to this headline"></a></h3>
+<h3>Local branching statistics<a class="headerlink" href="#Local-branching-statistics" title="Permalink to this heading"></a></h3>
 <p>We might want to color by other node attributes, and here we show how to compute the local branching index (LBI) <a class="reference external" href="https://elifesciences.org/articles/03568">(Neher et al., 2014)</a> to measure “bushiness”, which may be associated with fitness.</p>
 <ul class="simple">
 <li><p>The method <code class="docutils literal notranslate"><span class="pre">local_branching()</span></code> computes LBI for all nodes in our tree, and assigns them as tree features. See <a class="reference external" href="https://matsengrp.github.io/gctree/stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.local_branching">docs page</a> on the <code class="docutils literal notranslate"><span class="pre">CollapsedTree.local_branching()</span></code> method for more details.</p></li>
@@ -533,7 +542,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Custom-node-features">
-<h3>Custom node features<a class="headerlink" href="#Custom-node-features" title="Permalink to this headline"></a></h3>
+<h3>Custom node features<a class="headerlink" href="#Custom-node-features" title="Permalink to this heading"></a></h3>
 <p>We can use any numerical node feature to color our tree. For example, we might have affinity estimates for each node.</p>
 <p>In this example, we assign random values as node features to create artificial affinity data. With real data, we would assign values based on the <code class="docutils literal notranslate"><span class="pre">node.name</span></code> or <code class="docutils literal notranslate"><span class="pre">node.sequence</span></code> of each node.</p>
 <div class="nbinput docutils container">
