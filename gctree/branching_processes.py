@@ -851,8 +851,7 @@ class CollapsedTree:
                     compatibility_ += weights[i] if weights is not None else 1
             node.support = compatibility_ if compatibility else support
 
-    @np.errstate(all="raise")
-    def local_branching(self, tau=1, tau0=0.1):
+    def local_branching(self, tau=1, tau0=0.1, infinite_root_branch=True):
         r"""Add local branching statistics (Neher et al. 2014) as tree node
         features to the ETE tree attribute.
         After execution, all nodes will have new features ``LBI``
@@ -862,45 +861,48 @@ class CollapsedTree:
         Args:
             tau: decay timescale for exponential filter
             tau0: effective branch length for branches with zero mutations
+            infinite_root_branch: calculate assuming the root node has an infinite branch
         """
         # the fixed integral contribution for clonal cells indicated by abundance annotations
         clone_contribution = tau * (1 - np.exp(-tau0 / tau))
 
-        # post-order traversal to populate downward integral for each node
+        # post-order traversal to populate downward integrals for each node
         for node in self.tree.traverse(strategy="postorder"):
             if node.is_leaf():
-                node.add_feature(
-                    "LB_down",
-                    node.abundance * clone_contribution if node.abundance > 1 else 0,
-                )
+                node.LB_down = {
+                    node: node.abundance * clone_contribution
+                    if node.abundance > 1
+                    else 0
+                }
             else:
-                node.add_feature(
-                    "LB_down",
-                    node.abundance * clone_contribution
-                    + sum(
-                        tau * (1 - np.exp(-child.dist / tau))
-                        + np.exp(-child.dist / tau) * child.LB_down
-                        for child in node.children
-                    ),
-                )
+                node.LB_down = {node: node.abundance * clone_contribution}
+                for child in node.children:
+                    node.LB_down[child] = tau * (
+                        1 - np.exp(-child.dist / tau)
+                    ) + np.exp(-child.dist / tau) * sum(child.LB_down.values())
 
         # pre-order traversal to populate upward integral for each node
         for node in self.tree.traverse(strategy="preorder"):
             if node.is_root():
-                node.add_feature("LB_up", 0)
+                # integral corresponding to infinite branch above root node
+                node.LB_up = tau if infinite_root_branch else 0
             else:
-                node.add_feature(
-                    "LB_up",
-                    tau * (1 - np.exp(-node.dist / tau))
-                    + np.exp(-node.dist / tau) * (node.up.LB_up + node.up.LB_down),
+                node.LB_up = tau * (1 - np.exp(-node.dist / tau)) + np.exp(
+                    -node.dist / tau
+                ) * (
+                    node.up.LB_up
+                    + sum(
+                        node.up.LB_down[message]
+                        for message in node.up.LB_down
+                        if message != node
+                    )
                 )
 
-        # finally, compute LBI (LBR) as the sum (ratio) of upward and downward integrals at each node
+        # finally, compute LBI (LBR) as the sum (ratio) of downward and upward integrals at each node
         for node in self.tree.traverse():
-            node.add_feature("LBI", node.LB_down + node.LB_up)
-            node.add_feature(
-                "LBR", node.LB_down / node.LB_up if not node.is_root() else np.nan
-            )
+            node_LB_down_total = sum(node.LB_down.values())
+            node.LBI = node_LB_down_total + node.LB_up
+            node.LBR = node_LB_down_total / node.LB_up
 
 
 def _requires_dag(func):

@@ -9,7 +9,7 @@ test:
 	gctree test
 
 format:
-	black gctree
+	black gctree tests
 	docformatter --in-place gctree/*.py
 
 lint:
