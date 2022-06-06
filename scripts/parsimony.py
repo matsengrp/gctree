@@ -116,6 +116,7 @@ def disambiguate(
     adj_dist=False,
     gap_as_char=False,
     transition_weights=None,
+    min_ambiguities=False,
 ):
     """Randomly resolve ambiguous bases using a two-pass Sankoff Algorithm on
     subtrees of consecutive ambiguity codes.
@@ -136,6 +137,9 @@ def disambiguate(
             transition weight matrices, if transition weights vary by-site. By default, a constant
             weight matrix will be used containing 1 in all off-diagonal positions, equivalent
             to Hamming parsimony.
+        min_ambiguities: If True, leaves ambiguities in reconstructed sequences, expressing which
+            bases are possible at each site in a maximally parsimonious disambiguation of the given
+            topology. Otherwise, sequences are resolved in one possible way, and include no ambiguities.
     """
     if random_state is None:
         random.seed(tree.write(format=1))
