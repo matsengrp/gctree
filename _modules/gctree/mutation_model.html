@@ -517,11 +517,11 @@
     <span class="n">mutation_model</span> <span class="o">=</span> <span class="n">MutationModel</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">dist</span> <span class="o">=</span> <span class="n">_mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">,</span> <span class="n">splits</span><span class="o">=</span><span class="n">splits</span><span class="p">)</span>
 
-    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">access_field</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">)</span>
-    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">ignore_ualabel</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="nd">@hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">access_field</span><span class="p">(</span><span class="s2">&quot;sequence&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">dist</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">node1</span><span class="o">.</span><span class="n">is_root</span><span class="p">():</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">dist</span><span class="p">(</span><span class="n">node1</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">node2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
         <span class="p">{</span><span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span> <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">},</span>
