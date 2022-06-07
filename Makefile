@@ -5,6 +5,7 @@ install:
 	pip install -e .
 
 test:
+	bash tests/smalltest.sh
 	pytest
 	gctree test
 

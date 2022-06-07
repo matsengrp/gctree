@@ -428,11 +428,11 @@ def _mutability_dagfuncs(
     mutation_model = MutationModel(*args, **kwargs)
     dist = _mutability_distance(mutation_model, splits=splits)
 
-    @hdag.utils.access_field("label")
-    @hdag.utils.ignore_ualabel(0)
-    @hdag.utils.access_field("sequence")
-    def distance(seq1, seq2):
-        return dist(seq1, seq2)
+    def distance(node1, node2):
+        if node1.is_root():
+            return 0
+        else:
+            return dist(node1.label.sequence, node2.label.sequence)
 
     return hdag.utils.AddFuncDict(
         {"start_func": lambda n: 0, "edge_weight_func": distance, "accum_func": sum},
