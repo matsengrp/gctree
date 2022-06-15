@@ -161,7 +161,7 @@ def infer(args):
     else:
         seed = args.seed
     random.seed(a=seed)
-    numpy.random.seed(a=seed)
+    np.random.seed(a=seed)
 
     def isotype_add(forest):
         forest.add_isotypes(
