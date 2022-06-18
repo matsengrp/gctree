@@ -1,6 +1,7 @@
 import ete3
 import gctree
 import numpy as np
+import pytest
 
 tree = ete3.TreeNode(name="naive", dist=0)
 tree.abundance = 0
@@ -29,8 +30,7 @@ child1.add_child(grandchild)
 ctree = gctree.CollapsedTree()
 ctree.tree = tree
 
-τ = 1
-τ0 = 0.1
+τ = τ0 = 1
 
 ctree.local_branching(tau=τ, tau0=τ0)
 
@@ -78,8 +78,12 @@ LB_up[grandchild] = τ * (1 - np.exp(-grandchild.dist / τ)) + np.exp(
 LBI = {node: LB_up[node] + sum(LB_down[node].values()) for node in tree.traverse()}
 LBR = {node: sum(LB_down[node].values()) / LB_up[node] for node in tree.traverse()}
 
+print("name\tLBI\tLBR")
 for node in ctree.tree.traverse():
-    assert LB_up[node] == node.LB_up
-    assert LB_down[node] == node.LB_down
-    assert LBI[node] == node.LBI
-    assert LBR[node] == node.LBR
+    print(f"{node.name}\t{node.LBI:.3f}\t{node.LBR:.3f}")
+    assert LB_up[node] == pytest.approx(node.LB_up)
+    assert LB_down[node] == pytest.approx(node.LB_down)
+    assert LBI[node] == pytest.approx(node.LBI)
+    assert LBR[node] == pytest.approx(node.LBR) or (
+        np.isnan(LBR[node]) and np.isnan(node.LBR)
+    )
