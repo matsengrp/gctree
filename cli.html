@@ -414,7 +414,8 @@ meant to mimic the responses to the expected prompts.</p>
 $ dnapars &lt; dnapars.cfg</p>
 </div></blockquote>
 </p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">mkconfig</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">quick</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap</span> <span class="n">BOOTSTRAP</span><span class="p">]</span> <span class="n">phylip</span> <span class="n">treeprog</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">mkconfig</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">quick</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">jumble</span> <span class="n">JUMBLE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap</span> <span class="n">BOOTSTRAP</span><span class="p">]</span>
+                <span class="n">phylip</span> <span class="n">treeprog</span>
 </pre></div>
 </div>
 <section id="Positional Arguments">
@@ -433,6 +434,9 @@ $ dnapars &lt; dnapars.cfg</p>
 <dl class="option-list">
 <dt><kbd>--quick</kbd></dt>
 <dd><p>quicker (less thourough) dnapars</p>
+</dd>
+<dt><kbd>--jumble</kbd></dt>
+<dd><p>search tree space with this many random permutations of the input sequences</p>
 </dd>
 <dt><kbd>--bootstrap</kbd></dt>
 <dd><p>input is seqboot output with this many samples</p>
