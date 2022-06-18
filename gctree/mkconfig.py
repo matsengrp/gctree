@@ -27,7 +27,9 @@ def get_parser():
         "--quick", action="store_true", help="quicker (less thourough) dnapars"
     )
     parser.add_argument(
-        "--jumble", default=10, help="search tree space with this many random permutations of the input sequences"
+        "--jumble",
+        default=10,
+        help="search tree space with this many random permutations of the input sequences",
     )
     parser.add_argument(
         "--bootstrap",
