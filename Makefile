@@ -7,7 +7,6 @@ install:
 test:
 	bash tests/smalltest.sh
 	pytest
-	gctree test
 
 format:
 	black gctree tests

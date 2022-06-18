@@ -32,7 +32,7 @@ import historydag as hdag
 import multiset
 import matplotlib as mp
 import matplotlib.pyplot as plt
-from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence
+from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence, Optional
 from decimal import Decimal
 
 
@@ -53,7 +53,9 @@ class CollapsedTree:
 
     _max_ll_cache: Dict[Tuple[float, float], Tuple[int, int]] = {}
 
-    def __init__(self, tree: ete3.TreeNode = None, allow_repeats: bool = False):
+    def __init__(
+        self, tree: Optional[ete3.TreeNode] = None, allow_repeats: bool = False
+    ):
         if tree is not None:
             self.tree = tree.copy()
             self.tree.dist = 0
@@ -438,16 +440,16 @@ class CollapsedTree:
     def render(
         self,
         outfile: str,
-        scale: float = None,
+        scale: Optional[float] = None,
         branch_margin: float = 0,
-        node_size: float = None,
+        node_size: Optional[float] = None,
         idlabel: bool = False,
-        colormap: Dict = None,
-        frame: int = None,
-        position_map: List = None,
-        chain_split: int = None,
-        frame2: int = None,
-        position_map2: List = None,
+        colormap: Optional[Dict] = None,
+        frame: Optional[int] = None,
+        position_map: Optional[List] = None,
+        chain_split: Optional[int] = None,
+        frame2: Optional[int] = None,
+        position_map2: Optional[List] = None,
         show_support: bool = False,
     ):
         r"""Render to tree image file.
@@ -640,16 +642,20 @@ class CollapsedTree:
         self,
         feature: str,
         cmap: str = "viridis",
-        vmin: float = None,
-        vmax: float = None,
+        vmin: Optional[float] = None,
+        vmax: Optional[float] = None,
+        scale: str = "linear",
+        **kwargs,
     ) -> Dict[str, str]:
         r"""Generate a colormap based on a continuous tree feature.
 
         Args:
             feature: feature name (all nodes in tree attribute must have this feature)
-            cmap: any matplotlib color palette: https://matplotlib.org/stable/gallery/color/colormap_reference.html
+            cmap: any `matplotlib color palette name <https://matplotlib.org/stable/gallery/color/colormap_reference.html>`_
             vmin: minimum value for colormap (default to minimum of the feature over the tree)
             vmax: maximum value for colormap (default to maximum of the feature over the tree)
+            scale: ``linear`` (default), ``log``, or ``symlog`` (must also provide ``linthresh`` kwarg)
+            kwargs: additional keyword arguments for scale transformation
 
         Returns:
             Dictionary of node names to hex color strings, which may be used as the colormap in :meth:`gctree.CollapsedTree.render`
@@ -661,8 +667,14 @@ class CollapsedTree:
         if vmax is None:
             vmax = np.nanmax([getattr(node, feature) for node in self.tree.traverse()])
 
-        # define the minimum and maximum values for our colormap
-        norm = mp.colors.Normalize(vmin=vmin, vmax=vmax)
+        if scale == "linear":
+            norm = mp.colors.Normalize(vmin=vmin, vmax=vmax)
+        elif scale == "log":
+            norm = mp.colors.LogNorm(vmin=vmin, vmax=vmax)
+        elif scale == "symlog":
+            norm = mp.colors.SymLogNorm(vmin=vmin, vmax=vmax, **kwargs)
+        else:
+            raise ValueError(f"unrecognize scale: {scale}")
 
         return {
             node.name: mp.colors.to_hex(cmap(norm(getattr(node, feature))))
@@ -818,7 +830,7 @@ class CollapsedTree:
     def support(
         self,
         bootstrap_trees_list: List[CollapsedTree],
-        weights: List[np.float64] = None,
+        weights: Optional[List[np.float64]] = None,
         compatibility: bool = False,
     ):
         r"""Compute support from a list of bootstrap :class:`CollapsedTree` objects, and add to tree attibute.
@@ -851,7 +863,9 @@ class CollapsedTree:
                     compatibility_ += weights[i] if weights is not None else 1
             node.support = compatibility_ if compatibility else support
 
-    def local_branching(self, tau=1, tau0=0.1, infinite_root_branch=True):
+    def local_branching(
+        self, tau=1, tau0=1, infinite_root_branch=True, nan_root_lbr=False
+    ):
         r"""Add local branching statistics (Neher et al. 2014) as tree node
         features to the ETE tree attribute.
         After execution, all nodes will have new features ``LBI``
@@ -862,6 +876,7 @@ class CollapsedTree:
             tau: decay timescale for exponential filter
             tau0: effective branch length for branches with zero mutations
             infinite_root_branch: calculate assuming the root node has an infinite branch
+            nan_root_lbr: replace the root LBR value with ``np.nan``
         """
         # the fixed integral contribution for clonal cells indicated by abundance annotations
         clone_contribution = tau * (1 - np.exp(-tau0 / tau))
@@ -904,6 +919,9 @@ class CollapsedTree:
             node.LBI = node_LB_down_total + node.LB_up
             node.LBR = node_LB_down_total / node.LB_up
 
+        if nan_root_lbr:
+            self.tree.LBR = np.nan
+
 
 def _requires_dag(func):
     @functools.wraps(func)
@@ -933,7 +951,7 @@ class CollapsedForest:
 
     def __init__(
         self,
-        forest: List[Union[CollapsedTree, ete3.Tree]] = None,
+        forest: Optional[List[Union[CollapsedTree, ete3.Tree]]] = None,
     ):
         if forest is not None:
             if len(forest) == 0:
@@ -1098,11 +1116,11 @@ class CollapsedForest:
     @_requires_dag
     def filter_trees(
         self,
-        ranking_coeffs: Sequence[float] = None,
-        mutability_file: str = None,
-        substitution_file: str = None,
+        ranking_coeffs: Optional[Sequence[float]] = None,
+        mutability_file: Optional[str] = None,
+        substitution_file: Optional[str] = None,
         ignore_isotype: bool = False,
-        chain_split: int = None,
+        chain_split: Optional[int] = None,
         verbose: bool = False,
         outbase: str = "gctree.out",
         summarize_forest: bool = False,
@@ -1384,11 +1402,11 @@ class CollapsedForest:
     @_requires_dag
     def add_isotypes(
         self,
-        isotypemap: Mapping[str, str] = None,
-        isotypemap_file: str = None,
-        idmap: Mapping[str, Set[str]] = None,
-        idmap_file: str = None,
-        isotype_names: Sequence[str] = None,
+        isotypemap: Optional[Mapping[str, str]] = None,
+        isotypemap_file: Optional[str] = None,
+        idmap: Optional[Mapping[str, Set[str]]] = None,
+        idmap_file: Optional[str] = None,
+        isotype_names: Optional[Sequence[str]] = None,
     ):
         """Adds isotype annotations, including inferred ancestral isotypes, to
         all nodes in stored trees."""
