@@ -121,7 +121,7 @@
 <span class="kn">import</span> <span class="nn">multiset</span>
 <span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mp</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span>
 
 
@@ -142,7 +142,9 @@
 
     <span class="n">_max_ll_cache</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 
-<div class="viewcode-block" id="CollapsedTree.__init__"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.html#gctree.CollapsedTree.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">allow_repeats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="CollapsedTree.__init__"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.html#gctree.CollapsedTree.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">allow_repeats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">):</span>
         <span class="k">if</span> <span class="n">tree</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="mi">0</span>
@@ -527,16 +529,16 @@
 <div class="viewcode-block" id="CollapsedTree.render"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.render">[docs]</a>    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">outfile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">branch_margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="n">node_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">node_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">idlabel</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">colormap</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">frame</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">position_map</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">chain_split</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">frame2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">position_map2</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">colormap</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">frame</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">position_map</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">chain_split</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">frame2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">position_map2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">show_support</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Render to tree image file.</span>
@@ -729,16 +731,20 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">feature</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;viridis&quot;</span><span class="p">,</span>
-        <span class="n">vmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">vmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">vmin</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">vmax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Generate a colormap based on a continuous tree feature.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            feature: feature name (all nodes in tree attribute must have this feature)</span>
-<span class="sd">            cmap: any matplotlib color palette: https://matplotlib.org/stable/gallery/color/colormap_reference.html</span>
+<span class="sd">            cmap: any `matplotlib color palette name &lt;https://matplotlib.org/stable/gallery/color/colormap_reference.html&gt;`_</span>
 <span class="sd">            vmin: minimum value for colormap (default to minimum of the feature over the tree)</span>
 <span class="sd">            vmax: maximum value for colormap (default to maximum of the feature over the tree)</span>
+<span class="sd">            scale: ``linear`` (default), ``log``, or ``symlog`` (must also provide ``linthresh`` kwarg)</span>
+<span class="sd">            kwargs: additional keyword arguments for scale transformation</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Dictionary of node names to hex color strings, which may be used as the colormap in :meth:`gctree.CollapsedTree.render`</span>
@@ -750,8 +756,14 @@
         <span class="k">if</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">([</span><span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">feature</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">()])</span>
 
-        <span class="c1"># define the minimum and maximum values for our colormap</span>
-        <span class="n">norm</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;log&quot;</span><span class="p">:</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">LogNorm</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;symlog&quot;</span><span class="p">:</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">SymLogNorm</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unrecognize scale: </span><span class="si">{</span><span class="n">scale</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="p">{</span>
             <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">mp</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">to_hex</span><span class="p">(</span><span class="n">cmap</span><span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">feature</span><span class="p">))))</span>
@@ -907,7 +919,7 @@
 <div class="viewcode-block" id="CollapsedTree.support"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.support">[docs]</a>    <span class="k">def</span> <span class="nf">support</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">bootstrap_trees_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">CollapsedTree</span><span class="p">],</span>
-        <span class="n">weights</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">weights</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">compatibility</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute support from a list of bootstrap :class:`CollapsedTree` objects, and add to tree attibute.</span>
@@ -940,7 +952,9 @@
                     <span class="n">compatibility_</span> <span class="o">+=</span> <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">1</span>
             <span class="n">node</span><span class="o">.</span><span class="n">support</span> <span class="o">=</span> <span class="n">compatibility_</span> <span class="k">if</span> <span class="n">compatibility</span> <span class="k">else</span> <span class="n">support</span></div>
 
-<div class="viewcode-block" id="CollapsedTree.local_branching"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.local_branching">[docs]</a>    <span class="k">def</span> <span class="nf">local_branching</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tau0</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">infinite_root_branch</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="CollapsedTree.local_branching"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.local_branching">[docs]</a>    <span class="k">def</span> <span class="nf">local_branching</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tau0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">infinite_root_branch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nan_root_lbr</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Add local branching statistics (Neher et al. 2014) as tree node</span>
 <span class="sd">        features to the ETE tree attribute.</span>
 <span class="sd">        After execution, all nodes will have new features ``LBI``</span>
@@ -951,6 +965,7 @@
 <span class="sd">            tau: decay timescale for exponential filter</span>
 <span class="sd">            tau0: effective branch length for branches with zero mutations</span>
 <span class="sd">            infinite_root_branch: calculate assuming the root node has an infinite branch</span>
+<span class="sd">            nan_root_lbr: replace the root LBR value with ``np.nan``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># the fixed integral contribution for clonal cells indicated by abundance annotations</span>
         <span class="n">clone_contribution</span> <span class="o">=</span> <span class="n">tau</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">tau0</span> <span class="o">/</span> <span class="n">tau</span><span class="p">))</span>
@@ -991,7 +1006,10 @@
         <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">():</span>
             <span class="n">node_LB_down_total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">LB_down</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
             <span class="n">node</span><span class="o">.</span><span class="n">LBI</span> <span class="o">=</span> <span class="n">node_LB_down_total</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="n">LB_up</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">LBR</span> <span class="o">=</span> <span class="n">node_LB_down_total</span> <span class="o">/</span> <span class="n">node</span><span class="o">.</span><span class="n">LB_up</span></div></div>
+            <span class="n">node</span><span class="o">.</span><span class="n">LBR</span> <span class="o">=</span> <span class="n">node_LB_down_total</span> <span class="o">/</span> <span class="n">node</span><span class="o">.</span><span class="n">LB_up</span>
+
+        <span class="k">if</span> <span class="n">nan_root_lbr</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">LBR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span></div></div>
 
 
 <span class="k">def</span> <span class="nf">_requires_dag</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
@@ -1022,7 +1040,7 @@
 
 <div class="viewcode-block" id="CollapsedForest.__init__"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.html#gctree.CollapsedForest.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">forest</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">CollapsedTree</span><span class="p">,</span> <span class="n">ete3</span><span class="o">.</span><span class="n">Tree</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">forest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">CollapsedTree</span><span class="p">,</span> <span class="n">ete3</span><span class="o">.</span><span class="n">Tree</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">if</span> <span class="n">forest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">forest</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -1187,11 +1205,11 @@
 <div class="viewcode-block" id="CollapsedForest.filter_trees"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.filter_trees">[docs]</a>    <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">filter_trees</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">ranking_coeffs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">mutability_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">substitution_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ranking_coeffs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mutability_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">substitution_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">ignore_isotype</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">chain_split</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">chain_split</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">outbase</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gctree.out&quot;</span><span class="p">,</span>
         <span class="n">summarize_forest</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1473,11 +1491,11 @@
 <div class="viewcode-block" id="CollapsedForest.add_isotypes"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.add_isotypes">[docs]</a>    <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">add_isotypes</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">isotypemap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">isotypemap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">idmap</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">idmap_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">isotypemap</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">isotypemap_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idmap</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">idmap_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Adds isotype annotations, including inferred ancestral isotypes, to</span>
 <span class="sd">        all nodes in stored trees.&quot;&quot;&quot;</span>

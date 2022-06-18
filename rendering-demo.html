@@ -519,7 +519,7 @@ div.rendered_html tbody tr:hover {
 <p>We might want to color by other node attributes, and here we show how to compute the local branching index (LBI) <a class="reference external" href="https://elifesciences.org/articles/03568">(Neher et al., 2014)</a> to measure “bushiness”, which may be associated with fitness.</p>
 <ul class="simple">
 <li><p>The method <code class="docutils literal notranslate"><span class="pre">local_branching()</span></code> computes LBI for all nodes in our tree, and assigns them as tree features. See <a class="reference external" href="https://matsengrp.github.io/gctree/stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.local_branching">docs page</a> on the <code class="docutils literal notranslate"><span class="pre">CollapsedTree.local_branching()</span></code> method for more details.</p></li>
-<li><p>We then create a colormap based on these features.</p></li>
+<li><p>We then create a colormap based on these features, using the <code class="docutils literal notranslate"><span class="pre">scale</span></code> argument to specify log scale.</p></li>
 <li><p>Finally, we use this colormap to render a tree with nodes colored by LBI</p></li>
 </ul>
 <div class="nbinput docutils container">
@@ -527,7 +527,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tree</span><span class="o">.</span><span class="n">local_branching</span><span class="p">()</span>
-<span class="n">colormap</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">feature_colormap</span><span class="p">(</span><span class="s2">&quot;LBI&quot;</span><span class="p">)</span>
+<span class="n">colormap</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">feature_colormap</span><span class="p">(</span><span class="s2">&quot;LBI&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
 <span class="n">tree</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%%</span><span class="s2">inline&quot;</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="n">colormap</span><span class="p">)</span>
 </pre></div>
 </div>
