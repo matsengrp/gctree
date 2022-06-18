@@ -10,7 +10,7 @@ import scipy
 from Bio.Seq import Seq
 import historydag as hdag
 from multiset import FrozenMultiset
-from typing import Tuple, List, Callable
+from typing import Tuple, List, Callable, Optional
 
 
 class MutationModel:
@@ -124,7 +124,9 @@ class MutationModel:
                 for i in range(self.k // 2, len(sequence) - self.k // 2)
             ]
 
-    def mutate(self, sequence: str, lambda0: np.float64 = 1, frame: Optional[int] = None) -> str:
+    def mutate(
+        self, sequence: str, lambda0: np.float64 = 1, frame: Optional[int] = None
+    ) -> str:
         r"""Mutate a sequence, with lamdba0 the baseline mutability. Cannot
         mutate the same position multiple times.
 

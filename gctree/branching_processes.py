@@ -53,7 +53,9 @@ class CollapsedTree:
 
     _max_ll_cache: Dict[Tuple[float, float], Tuple[int, int]] = {}
 
-    def __init__(self, tree: Optional[ete3.TreeNode] = None, allow_repeats: bool = False):
+    def __init__(
+        self, tree: Optional[ete3.TreeNode] = None, allow_repeats: bool = False
+    ):
         if tree is not None:
             self.tree = tree.copy()
             self.tree.dist = 0
