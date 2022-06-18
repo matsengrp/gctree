@@ -32,7 +32,7 @@ import historydag as hdag
 import multiset
 import matplotlib as mp
 import matplotlib.pyplot as plt
-from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence
+from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence, Optional
 from decimal import Decimal
 
 
@@ -640,16 +640,20 @@ class CollapsedTree:
         self,
         feature: str,
         cmap: str = "viridis",
-        vmin: float = None,
-        vmax: float = None,
+        vmin: Optional[float] = None,
+        vmax: Optional[float] = None,
+        scale: str = "linear",
+        **kwargs,
     ) -> Dict[str, str]:
         r"""Generate a colormap based on a continuous tree feature.
 
         Args:
             feature: feature name (all nodes in tree attribute must have this feature)
-            cmap: any matplotlib color palette: https://matplotlib.org/stable/gallery/color/colormap_reference.html
+            cmap: any `matplotlib color palette name <https://matplotlib.org/stable/gallery/color/colormap_reference.html>`_
             vmin: minimum value for colormap (default to minimum of the feature over the tree)
             vmax: maximum value for colormap (default to maximum of the feature over the tree)
+            scale: ``linear`` (default), ``log``, or ``symlog`` (must also provide ``linthresh`` kwarg)
+            kwargs: additional keyword arguments for scale transformation
 
         Returns:
             Dictionary of node names to hex color strings, which may be used as the colormap in :meth:`gctree.CollapsedTree.render`
@@ -661,8 +665,14 @@ class CollapsedTree:
         if vmax is None:
             vmax = np.nanmax([getattr(node, feature) for node in self.tree.traverse()])
 
-        # define the minimum and maximum values for our colormap
-        norm = mp.colors.Normalize(vmin=vmin, vmax=vmax)
+        if scale == "linear":
+            norm = mp.colors.Normalize(vmin=vmin, vmax=vmax)
+        elif scale == "log":
+            norm = mp.colors.LogNorm(vmin=vmin, vmax=vmax)
+        elif scale == "symlog":
+            norm = mp.colors.SymLogNorm(vmin=vmin, vmax=vmax, **kwargs)
+        else:
+            raise ValueError(f"unrecognize scale: {scale}")
 
         return {
             node.name: mp.colors.to_hex(cmap(norm(getattr(node, feature))))
@@ -851,7 +861,9 @@ class CollapsedTree:
                     compatibility_ += weights[i] if weights is not None else 1
             node.support = compatibility_ if compatibility else support
 
-    def local_branching(self, tau=1, tau0=0.1, infinite_root_branch=True):
+    def local_branching(
+        self, tau=1, tau0=1, infinite_root_branch=True, nan_root_lbr=False
+    ):
         r"""Add local branching statistics (Neher et al. 2014) as tree node
         features to the ETE tree attribute.
         After execution, all nodes will have new features ``LBI``
@@ -862,6 +874,7 @@ class CollapsedTree:
             tau: decay timescale for exponential filter
             tau0: effective branch length for branches with zero mutations
             infinite_root_branch: calculate assuming the root node has an infinite branch
+            nan_root_lbr: replace the root LBR value with ``np.nan``
         """
         # the fixed integral contribution for clonal cells indicated by abundance annotations
         clone_contribution = tau * (1 - np.exp(-tau0 / tau))
@@ -903,6 +916,9 @@ class CollapsedTree:
             node_LB_down_total = sum(node.LB_down.values())
             node.LBI = node_LB_down_total + node.LB_up
             node.LBR = node_LB_down_total / node.LB_up
+
+        if nan_root_lbr:
+            self.tree.LBR = np.nan
 
 
 def _requires_dag(func):
