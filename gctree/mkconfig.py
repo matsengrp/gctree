@@ -27,6 +27,9 @@ def get_parser():
         "--quick", action="store_true", help="quicker (less thourough) dnapars"
     )
     parser.add_argument(
+        "--jumble", default=10, help="search tree space with this many random permutations of the input sequences"
+    )
+    parser.add_argument(
         "--bootstrap",
         type=int,
         default=0,
@@ -48,7 +51,7 @@ def main(arg_list=None):
     print("J")
     # random seed for tree search
     print("1")
-    print("10")
+    print(args.jumble)
     if args.bootstrap:
         print("M")
         print("D")
