@@ -446,11 +446,11 @@ def _isotype_dagfuncs() -> hdag.utils.AddFuncDict:
 
 
 def _isotype_annotation_dagfuncs(
-    isotypemap: Mapping[str, str] = None,
-    isotypemap_file: str = None,
-    idmap: Mapping[str, Set[str]] = None,
-    idmap_file: str = None,
-    isotype_names: Sequence[str] = None,
+    isotypemap: Optional[Mapping[str, str]] = None,
+    isotypemap_file: Optional[str] = None,
+    idmap: Optional[Mapping[str, Set[str]]] = None,
+    idmap_file: Optional[str] = None,
+    isotype_names: Optional[Sequence[str]] = None,
 ) -> hdag.utils.AddFuncDict:
     """Return functions for annotating history DAG nodes with inferred
     isotypes.

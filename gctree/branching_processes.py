@@ -53,7 +53,7 @@ class CollapsedTree:
 
     _max_ll_cache: Dict[Tuple[float, float], Tuple[int, int]] = {}
 
-    def __init__(self, tree: ete3.TreeNode = None, allow_repeats: bool = False):
+    def __init__(self, tree: Optional[ete3.TreeNode] = None, allow_repeats: bool = False):
         if tree is not None:
             self.tree = tree.copy()
             self.tree.dist = 0
@@ -438,16 +438,16 @@ class CollapsedTree:
     def render(
         self,
         outfile: str,
-        scale: float = None,
+        scale: Optional[float] = None,
         branch_margin: float = 0,
-        node_size: float = None,
+        node_size: Optional[float] = None,
         idlabel: bool = False,
-        colormap: Dict = None,
-        frame: int = None,
-        position_map: List = None,
-        chain_split: int = None,
-        frame2: int = None,
-        position_map2: List = None,
+        colormap: Optional[Dict] = None,
+        frame: Optional[int] = None,
+        position_map: Optional[List] = None,
+        chain_split: Optional[int] = None,
+        frame2: Optional[int] = None,
+        position_map2: Optional[List] = None,
         show_support: bool = False,
     ):
         r"""Render to tree image file.
@@ -828,7 +828,7 @@ class CollapsedTree:
     def support(
         self,
         bootstrap_trees_list: List[CollapsedTree],
-        weights: List[np.float64] = None,
+        weights: Optional[List[np.float64]] = None,
         compatibility: bool = False,
     ):
         r"""Compute support from a list of bootstrap :class:`CollapsedTree` objects, and add to tree attibute.
@@ -949,7 +949,7 @@ class CollapsedForest:
 
     def __init__(
         self,
-        forest: List[Union[CollapsedTree, ete3.Tree]] = None,
+        forest: Optional[List[Union[CollapsedTree, ete3.Tree]]] = None,
     ):
         if forest is not None:
             if len(forest) == 0:
@@ -1114,11 +1114,11 @@ class CollapsedForest:
     @_requires_dag
     def filter_trees(
         self,
-        ranking_coeffs: Sequence[float] = None,
-        mutability_file: str = None,
-        substitution_file: str = None,
+        ranking_coeffs: Optional[Sequence[float]] = None,
+        mutability_file: Optional[str] = None,
+        substitution_file: Optional[str] = None,
         ignore_isotype: bool = False,
-        chain_split: int = None,
+        chain_split: Optional[int] = None,
         verbose: bool = False,
         outbase: str = "gctree.out",
         summarize_forest: bool = False,
@@ -1400,11 +1400,11 @@ class CollapsedForest:
     @_requires_dag
     def add_isotypes(
         self,
-        isotypemap: Mapping[str, str] = None,
-        isotypemap_file: str = None,
-        idmap: Mapping[str, Set[str]] = None,
-        idmap_file: str = None,
-        isotype_names: Sequence[str] = None,
+        isotypemap: Optional[Mapping[str, str]] = None,
+        isotypemap_file: Optional[str] = None,
+        idmap: Optional[Mapping[str, Set[str]]] = None,
+        idmap_file: Optional[str] = None,
+        isotype_names: Optional[Sequence[str]] = None,
     ):
         """Adds isotype annotations, including inferred ancestral isotypes, to
         all nodes in stored trees."""

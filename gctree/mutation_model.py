@@ -26,8 +26,8 @@ class MutationModel:
 
     def __init__(
         self,
-        mutability_file: str = None,
-        substitution_file: str = None,
+        mutability_file: Optional[str] = None,
+        substitution_file: Optional[str] = None,
         mutation_order: bool = True,
         with_replacement: bool = True,
     ):
@@ -124,7 +124,7 @@ class MutationModel:
                 for i in range(self.k // 2, len(sequence) - self.k // 2)
             ]
 
-    def mutate(self, sequence: str, lambda0: np.float64 = 1, frame: int = None) -> str:
+    def mutate(self, sequence: str, lambda0: np.float64 = 1, frame: Optional[int] = None) -> str:
         r"""Mutate a sequence, with lamdba0 the baseline mutability. Cannot
         mutate the same position multiple times.
 
@@ -201,14 +201,14 @@ class MutationModel:
     def simulate(
         self,
         sequence: str,
-        seq_bounds: Tuple[Tuple[int, int], Tuple[int, int]] = None,
+        seq_bounds: Optional[Tuple[Tuple[int, int], Tuple[int, int]]] = None,
         fitness_function: Callable = lambda seq: 0.9,
         lambda0: List[np.float64] = [1],
-        frame: int = None,
+        frame: Optional[int] = None,
         N_init: int = 1,
-        N: int = None,
-        T: int = None,
-        n: int = None,
+        N: Optional[int] = None,
+        T: Optional[int] = None,
+        n: Optional[int] = None,
         verbose: bool = False,
     ) -> TreeNode:
         r"""Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.
