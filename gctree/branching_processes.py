@@ -800,7 +800,7 @@ class CollapsedTree:
                 for name in ((node.name,) if isinstance(node.name, str) else node.name)
             )
         )
-        return tuple(sorted([taxa1, taxa2]))
+        return tuple(sorted([taxa1, taxa2], key=lambda taxaset: tuple(sorted(taxaset))))
 
     @staticmethod
     def _split_compatibility(split1, split2):
