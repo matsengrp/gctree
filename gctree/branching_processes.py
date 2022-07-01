@@ -1411,7 +1411,9 @@ class CollapsedForest:
             node.attr["isotype"] = node._dp_data
 
     def sample_tree(self) -> CollapsedTree:
-        """Sample a random CollapsedTree from the forest."""
+        """Sample a random CollapsedTree from the forest.
+
+        For reproducibility, set ``random.seed`` before sampling."""
         if self._ctrees is not None:
             return random.choice(self._ctrees)
         elif self._forest is not None:
@@ -1727,6 +1729,7 @@ def _make_dag(trees, from_copy=True):
                     to_delete.append(node)
             for node in to_delete:
                 node.delete(prevent_nondicotomic=False)
+
 
     def trees_to_dag(trees):
         return hdag.history_dag_from_etes(
