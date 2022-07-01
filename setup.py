@@ -37,6 +37,6 @@ setuptools.setup(
         "seaborn",
         "multiset",
         "frozendict",
-        "historydag>=1"
+        "historydag>=1.0.1"
     ],
 )
