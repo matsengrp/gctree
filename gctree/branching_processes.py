@@ -1730,7 +1730,6 @@ def _make_dag(trees, from_copy=True):
             for node in to_delete:
                 node.delete(prevent_nondicotomic=False)
 
-
     def trees_to_dag(trees):
         return hdag.history_dag_from_etes(
             trees,
