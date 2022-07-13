@@ -173,17 +173,20 @@ class CollapsedTree:
                     f"{rep_seq} sequences were found repeated."
                 )
             # a custom ladderize accounting for abundance and sequence to break
-            # ties in abundance. In same traversal fix unobserved node names
-            unobserved_count = 1
-            unobserved_dict = {}
+            # ties in abundance.
             for node in self.tree.traverse(strategy="postorder"):
                 # add a partition feature and compute it recursively up tree
                 node.add_feature(
                     "partition",
                     node.abundance + sum(node2.partition for node2 in node.children),
                 )
-                # sort children of this node based on partion and sequence
+                # sort children of this node based on partition and sequence
                 node.children.sort(key=lambda node: (node.partition, node.sequence))
+
+            # fix unobserved node names in new consistent post order
+            unobserved_count = 1
+            unobserved_dict = {}
+            for node in self.tree.traverse(strategy="postorder"):
                 # change node name if necessary
                 if node.abundance == 0 and not node.is_root():
                     if node.sequence in unobserved_dict:
@@ -1470,8 +1473,7 @@ class CollapsedForest:
 
         ctree = CollapsedTree(etetree)
 
-        # Fix internal node names to be unique, and verify
-        # The maps from nodes to names and nodes to sequences are bijections
+        # Verify the maps from nodes to names and nodes to sequences are bijections
         n_nodes = 0
         names = set()
         seqs = set()
