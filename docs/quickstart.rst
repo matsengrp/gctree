@@ -107,7 +107,7 @@ arguments ``--mutability`` and ``--substitution`` allows trees to be ranked
 according to a context-sensitive mutation model. By default, trees are ranked
 lexicographically, first maximizing likelihood, then minimizing isotype
 parsimony and mutabilities, if such information is provided.
-Ranking priorities can be adjusted using the argument ``--priority_weights``.
+Ranking priorities can be adjusted using the argument ``--ranking_coeffs``.
 
 All parsimony trees found by dnapars, as well as branching process parameters
 are saved in the file ``gctree.out.inference.parsimony_forest.p``, containing a :class:`gctree.CollapsedForest` object.
