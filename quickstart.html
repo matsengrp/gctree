@@ -16,6 +16,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -265,7 +266,7 @@ arguments <code class="docutils literal notranslate"><span class="pre">--mutabil
 according to a context-sensitive mutation model. By default, trees are ranked
 lexicographically, first maximizing likelihood, then minimizing isotype
 parsimony and mutabilities, if such information is provided.
-Ranking priorities can be adjusted using the argument <code class="docutils literal notranslate"><span class="pre">--priority_weights</span></code>.</p>
+Ranking priorities can be adjusted using the argument <code class="docutils literal notranslate"><span class="pre">--ranking_coeffs</span></code>.</p>
 <p>All parsimony trees found by dnapars, as well as branching process parameters
 are saved in the file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.parsimony_forest.p</span></code>, containing a <a class="reference internal" href="stubs/gctree.CollapsedForest.html#gctree.CollapsedForest" title="gctree.CollapsedForest"><code class="xref py py-class docutils literal notranslate"><span class="pre">gctree.CollapsedForest</span></code></a> object.
 This file may be manipulated using <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code>. For example, to find the optimal tree
@@ -296,7 +297,7 @@ Among trees with min Log Likelihood of: -92.15528744
 
 Among trees with max Log Likelihood of: -78.00393661
 	Isotype Pars. range: 28 to 28
-	Mut. Pars. range: 66.45251202469831 to 68.93267315188115
+	Mut. Pars. range: 66.45251202469831 to 68.93267315188112
 	Alleles range: 48 to 48
 
 Among trees with min Isotype Pars. of: 23
@@ -306,7 +307,7 @@ Among trees with min Isotype Pars. of: 23
 
 Among trees with max Isotype Pars. of: 28
 	Log Likelihood range: -83.8653921 to -78.00393661
-	Mut. Pars. range: 65.83694196283363 to 72.02357793840054
+	Mut. Pars. range: 65.83694196283363 to 72.02357793840056
 	Alleles range: 48 to 50
 
 Among trees with min Mut. Pars. of: 63.94500901504557
@@ -314,7 +315,7 @@ Among trees with min Mut. Pars. of: 63.94500901504557
 	Isotype Pars. range: 27 to 27
 	Alleles range: 49 to 49
 
-Among trees with max Mut. Pars. of: 76.08641624712237
+Among trees with max Mut. Pars. of: 76.08641624712234
 	Log Likelihood range: -85.28172209 to -85.28172209
 	Isotype Pars. range: 25 to 25
 	Alleles range: 50 to 50

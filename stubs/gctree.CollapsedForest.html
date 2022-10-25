@@ -16,6 +16,7 @@
         <script src="../_static/underscore.js"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
         <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -59,7 +60,23 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">Classes</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="gctree.CollapsedTree.html">gctree.CollapsedTree</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">gctree.CollapsedForest</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">gctree.CollapsedForest</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gctree.CollapsedForest"><code class="docutils literal notranslate"><span class="pre">CollapsedForest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.n_trees"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.n_trees</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.parameters"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.parameters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.simulate"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.simulate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.ll"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.ll()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.mle"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.mle()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.filter_trees"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.filter_trees()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.likelihood_rankplot"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.likelihood_rankplot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.n_topologies"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.n_topologies()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.iter_topology_classes"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.iter_topology_classes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.add_isotypes"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.add_isotypes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.CollapsedForest.sample_tree"><code class="docutils literal notranslate"><span class="pre">CollapsedForest.sample_tree()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../api.html#modules">Modules</a></li>
@@ -214,7 +231,7 @@
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
 </dd>
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>Log likelihood <span class="math notranslate nohighlight">\(\ell(p, q; T, A)\)</span> and its gradient <span class="math notranslate nohighlight">\(\nabla\ell(p, q; T, A)\)</span></p>
