@@ -88,11 +88,9 @@
            <div itemprop="articleBody">
              
   <h1>Source code for gctree.branching_processes</h1><div class="highlight"><pre>
-<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">This module contains classes for simulation and inference for a binary</span>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;This module contains classes for simulation and inference for a binary</span>
 <span class="sd">branching process with mutation in which the tree is collapsed to nodes that</span>
-<span class="sd">count the number of clonal leaves of each type.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">count the number of clonal leaves of each type.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
 
@@ -468,7 +466,8 @@
         <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
         <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given</span>
+<span class="sd">        tree topology :math:`T` and genotype abundances :math:`A`.</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)</span>
@@ -923,7 +922,8 @@
         <span class="n">weights</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">compatibility</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute support from a list of bootstrap :class:`CollapsedTree` objects, and add to tree attibute.</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute support from a list of bootstrap :class:`CollapsedTree`</span>
+<span class="sd">        objects, and add to tree attibute.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            bootstrap_trees_list: List of trees</span>
@@ -957,10 +957,9 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tau0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">infinite_root_branch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nan_root_lbr</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Add local branching statistics (Neher et al. 2014) as tree node</span>
-<span class="sd">        features to the ETE tree attribute.</span>
-<span class="sd">        After execution, all nodes will have new features ``LBI``</span>
-<span class="sd">        (local branching index) and ``LBR`` (local branching ratio, below Vs</span>
-<span class="sd">        above the node)</span>
+<span class="sd">        features to the ETE tree attribute. After execution, all nodes will</span>
+<span class="sd">        have new features ``LBI`` (local branching index) and ``LBR`` (local</span>
+<span class="sd">        branching ratio, below Vs above the node)</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            tau: decay timescale for exponential filter</span>
@@ -1084,7 +1083,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">is_isotyped</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.simulate"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">n_trees</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a forest of collapsed trees. Overwrites existing forest attribute.</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a forest of collapsed trees. Overwrites existing forest</span>
+<span class="sd">        attribute.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            p: branching probability</span>
@@ -1107,7 +1107,10 @@
         <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
         <span class="n">marginal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given tree topologies :math:`T_1, \dots, T_n` and corresponding genotype abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees in the forest.</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given</span>
+<span class="sd">        tree topologies :math:`T_1, \dots, T_n` and corresponding genotype</span>
+<span class="sd">        abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees</span>
+<span class="sd">        in the forest.</span>
 
 <span class="sd">        If ``marginal=False`` (the default), compute the joint log likelihood</span>
 
@@ -1727,6 +1730,7 @@
 
 <span class="k">def</span> <span class="nf">_lltree</span><span class="p">(</span><span class="n">cm_counts</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)`</span>
+
 <span class="sd">    .. math::</span>
 <span class="sd">        \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)</span>
 

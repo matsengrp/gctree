@@ -259,6 +259,19 @@ The SVG image file <code class="docutils literal notranslate"><span class="pre">
 For example here is the top ranked tree <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.1.svg</span></code>:</p>
 <a class="reference internal image-reference" href="_images/gctree.out.inference.1.svg"><img alt="_images/gctree.out.inference.1.svg" src="_images/gctree.out.inference.1.svg" width="1000" /></a>
 <p>You will also see Python pickle files <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.[1,2,...].p</span></code> containing a <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gctree.CollapsedTree</span></code></a> object for each optimal tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using <a class="reference internal" href="stubs/gctree.CollapsedTree.html#gctree.CollapsedTree.render" title="gctree.CollapsedTree.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gctree.CollapsedTree.render()</span></code></a>).</p>
+<p>All parsimony trees found by dnapars, as well as branching process parameters
+are saved in the file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.parsimony_forest.p</span></code>, containing a <a class="reference internal" href="stubs/gctree.CollapsedForest.html#gctree.CollapsedForest" title="gctree.CollapsedForest"><code class="xref py py-class docutils literal notranslate"><span class="pre">gctree.CollapsedForest</span></code></a> object.
+This file may be manipulated using <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code>, instead of providing
+a dnapars <code class="docutils literal notranslate"><span class="pre">outfile</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>Although described below, using mutability parsimony or isotype parsimony</dt><dd><p>as ranking criteria is experimental, and has not yet been shown in a careful
+validation to improve tree inference. Only the default branching process
+likelihood is recommended for tree ranking!</p>
+</dd>
+</dl>
+</div>
 <p>Criteria other than branching process likelihoods can be used to break ties
 between trees. Providing arguments <code class="docutils literal notranslate"><span class="pre">--isotype_mapfile</span></code> and
 <code class="docutils literal notranslate"><span class="pre">--idmapfile</span></code> will allow trees to be ranked by isotype parsimony. Providing
@@ -267,12 +280,10 @@ according to a context-sensitive mutation model. By default, trees are ranked
 lexicographically, first maximizing likelihood, then minimizing isotype
 parsimony and mutabilities, if such information is provided.
 Ranking priorities can be adjusted using the argument <code class="docutils literal notranslate"><span class="pre">--ranking_coeffs</span></code>.</p>
-<p>All parsimony trees found by dnapars, as well as branching process parameters
-are saved in the file <code class="docutils literal notranslate"><span class="pre">gctree.out.inference.parsimony_forest.p</span></code>, containing a <a class="reference internal" href="stubs/gctree.CollapsedForest.html#gctree.CollapsedForest" title="gctree.CollapsedForest"><code class="xref py py-class docutils literal notranslate"><span class="pre">gctree.CollapsedForest</span></code></a> object.
-This file may be manipulated using <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code>. For example, to find the optimal tree
+<p>For example, to find the optimal tree
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../HS5F_Mutability.csv --substitution ../HS5F_Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Isotype parsimony will be used as a ranking criterion
 Mutation model parsimony will be used as a ranking criterion
@@ -280,9 +291,11 @@ Parameters: (0.49618320692429585, 0.36445206621349757)
 
 Stats for optimal trees:
 tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
-1         	-78.00393661	28        	66.45251202	48        	112.6491878
+1         	-78.00393661	28        	66.45251203	48        	112.6491878
 </pre></div>
 </div>
+<p>The files <code class="docutils literal notranslate"><span class="pre">HS5F_Mutability.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">HS5F_Substitution.csv</span></code> are a context
+sensitive mutation model which can be downloaded from the <cite>Shazam Project &lt;https://bitbucket.org/kleinstein/shazam/src/master/data-raw/</cite>&gt;_.</p>
 <p>By default, only the files listed above will be generated, with the optional argument <code class="docutils literal notranslate"><span class="pre">--outbase</span></code> specifying how the output files should be named.</p>
 <a class="reference internal image-reference" href="_images/newranking.inference.1.svg"><img alt="_images/newranking.inference.1.svg" src="_images/newranking.inference.1.svg" width="1000" /></a>
 <p>For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees,use the argument <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code>.</p>
@@ -292,30 +305,30 @@ tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
 
 Among trees with min Log Likelihood of: -92.15528744
 	Isotype Pars. range: 24 to 24
-	Mut. Pars. range: 71.58051182571174 to 71.58051182571174
+	Mut. Pars. range: 71.58051182819213 to 71.58051182819213
 	Alleles range: 53 to 53
 
 Among trees with max Log Likelihood of: -78.00393661
 	Isotype Pars. range: 28 to 28
-	Mut. Pars. range: 66.45251202469831 to 68.93267315188112
+	Mut. Pars. range: 66.45251202776495 to 68.93267315487162
 	Alleles range: 48 to 48
 
 Among trees with min Isotype Pars. of: 23
 	Log Likelihood range: -90.94295234 to -87.98896459
-	Mut. Pars. range: 67.70153148153068 to 72.04836178596884
+	Mut. Pars. range: 67.70153148437015 to 72.04836178891952
 	Alleles range: 51 to 52
 
 Among trees with max Isotype Pars. of: 28
 	Log Likelihood range: -83.8653921 to -78.00393661
-	Mut. Pars. range: 65.83694196283363 to 72.02357793840056
+	Mut. Pars. range: 65.83694196549037 to 72.0235779415406
 	Alleles range: 48 to 50
 
-Among trees with min Mut. Pars. of: 63.94500901504557
+Among trees with min Mut. Pars. of: 63.94500901769653
 	Log Likelihood range: -80.46148748 to -80.46148748
 	Isotype Pars. range: 27 to 27
 	Alleles range: 49 to 49
 
-Among trees with max Mut. Pars. of: 76.08641624712234
+Among trees with max Mut. Pars. of: 76.08641625036459
 	Log Likelihood range: -85.28172209 to -85.28172209
 	Isotype Pars. range: 25 to 25
 	Alleles range: 50 to 50
@@ -323,12 +336,12 @@ Among trees with max Mut. Pars. of: 76.08641624712234
 Among trees with min Alleles of: 48
 	Log Likelihood range: -82.14344157 to -78.00393661
 	Isotype Pars. range: 26 to 28
-	Mut. Pars. range: 66.45251202469831 to 74.06179332549453
+	Mut. Pars. range: 66.45251202776495 to 74.06179332885715
 
 Among trees with max Alleles of: 53
 	Log Likelihood range: -92.15528744 to -90.28220403
 	Isotype Pars. range: 24 to 25
-	Mut. Pars. range: 71.58051182571174 to 72.97479723796525
+	Mut. Pars. range: 71.58051182819213 to 72.97479724064682
 
 
 Parameters: (0.49618320692429585, 0.36445206621349757)

@@ -240,10 +240,10 @@
 <dd><p>A list of isotype names used in isotype_mapfile, in order of most naive to most differentiated. Default is equivalent to providing the argument <code class="docutils literal notranslate"><span class="pre">--isotype_names</span> <span class="pre">IgM</span> <span class="pre">IgD</span> <span class="pre">IgG3</span> <span class="pre">IgG1</span> <span class="pre">IgG2</span> <span class="pre">IgE</span> <span class="pre">IgA</span></code></p>
 </dd>
 <dt><kbd>--mutability</kbd></dt>
-<dd><p>Path to mutability model file. If –mutability and –substitution are both provided, they will be used to rank trees after likelihood and isotype parsimony.</p>
+<dd><p>Path to mutability model file. If –mutability and –substitution are both provided, they will be used to rank trees after likelihood and isotype parsimony. This shall be a csv filewith the first column containing fivemers, and the second column containing mutability scores.See a file excerpt in the documentation for <code class="xref py py-meth docutils literal notranslate"><span class="pre">mutation_model.MutationModel()</span></code>.</p>
 </dd>
 <dt><kbd>--substitution</kbd></dt>
-<dd><p>Path to substitution model file. If –mutability and –substitution are both provided, they will be used to rank trees after likelihood and isotype parsimony.</p>
+<dd><p>Path to substitution model file. If –mutability and –substitution are both provided, they will be used to rank trees after likelihood and isotype parsimony.This shall be a csv file with the first column containing fivemers, and the next fourcolumns containing targeting probabilities for bases A, C, G, and T, respectively.See a file excerpt in the documentation for <code class="xref py py-meth docutils literal notranslate"><span class="pre">mutation_model.MutationModel()</span></code>.</p>
 </dd>
 <dt><kbd>--ranking_coeffs</kbd></dt>
 <dd><p>List of coefficients for ranking trees by a linear combination of traits. Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. A coefficient of -1 will be applied to branching process likelihood. If not provided, trees will be ranked lexicographically by likelihood, isotype parsimony, and mutability parsimony in that order.</p>

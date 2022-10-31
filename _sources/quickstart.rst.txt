@@ -100,6 +100,17 @@ For example here is the top ranked tree ``gctree.out.inference.1.svg``:
 
 You will also see Python pickle files ``gctree.out.inference.[1,2,...].p`` containing a :obj:`gctree.CollapsedTree` object for each optimal tree, which can be loaded and manipulated via the API (e.g. plotted in various ways using :meth:`gctree.CollapsedTree.render`).
 
+All parsimony trees found by dnapars, as well as branching process parameters
+are saved in the file ``gctree.out.inference.parsimony_forest.p``, containing a :class:`gctree.CollapsedForest` object.
+This file may be manipulated using ``gctree infer``, instead of providing
+a dnapars ``outfile``.
+
+.. note::
+  Although described below, using mutability parsimony or isotype parsimony
+   as ranking criteria is experimental, and has not yet been shown in a careful
+   validation to improve tree inference. Only the default branching process
+   likelihood is recommended for tree ranking!
+
 Criteria other than branching process likelihoods can be used to break ties
 between trees. Providing arguments ``--isotype_mapfile`` and
 ``--idmapfile`` will allow trees to be ranked by isotype parsimony. Providing
@@ -109,14 +120,15 @@ lexicographically, first maximizing likelihood, then minimizing isotype
 parsimony and mutabilities, if such information is provided.
 Ranking priorities can be adjusted using the argument ``--ranking_coeffs``.
 
-All parsimony trees found by dnapars, as well as branching process parameters
-are saved in the file ``gctree.out.inference.parsimony_forest.p``, containing a :class:`gctree.CollapsedForest` object.
-This file may be manipulated using ``gctree infer``. For example, to find the optimal tree
+For example, to find the optimal tree
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:
 
-.. command-output:: gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../S5F/Mutability.csv --substitution ../S5F/Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
+.. command-output:: gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../HS5F_Mutability.csv --substitution ../HS5F_Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
    :shell:
+
+The files ``HS5F_Mutability.csv`` and ``HS5F_Substitution.csv`` are a context
+sensitive mutation model which can be downloaded from the `Shazam Project <https://bitbucket.org/kleinstein/shazam/src/master/data-raw/`>_.
 
 By default, only the files listed above will be generated, with the optional argument ``--outbase`` specifying how the output files should be named.
 

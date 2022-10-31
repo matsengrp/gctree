@@ -112,6 +112,41 @@
 <span class="sd">        mutation_order: whether or not to mutate sequences using a context sensitive manner</span>
 <span class="sd">                        where mutation order matters</span>
 <span class="sd">        with_replacement: allow the same position to mutate multiple times on a single branch</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        ``mutability_file`` shall be a csv file with the first column containing fivemers,</span>
+<span class="sd">        and the second column containing mutability scores.</span>
+<span class="sd">        An example can be found at https://bitbucket.org/kleinstein/shazam/src/master/data-raw/HS5F_Mutability.csv</span>
+
+<span class="sd">        For example:</span>
+
+<span class="sd">        .. code-block:: text</span>
+
+<span class="sd">            Fivemer,Mutability,...</span>
+<span class="sd">            TCGGG,0.03542,...</span>
+<span class="sd">            GCCGG,0.02241675,...</span>
+<span class="sd">            GCCGC,0.06789,...</span>
+<span class="sd">            .</span>
+<span class="sd">            .</span>
+<span class="sd">            .</span>
+
+
+<span class="sd">        ``substitution_file`` shall be a csv file with the first column containing fivemers,</span>
+<span class="sd">        and the next four columns containing targeting probabilities for bases A, C, G,</span>
+<span class="sd">        and T, respectively.</span>
+<span class="sd">        An example can be found at https://bitbucket.org/kleinstein/shazam/src/master/data-raw/HS5F_Substitution.csv</span>
+
+<span class="sd">        For example:</span>
+
+<span class="sd">        .. code-block:: text</span>
+
+<span class="sd">            Fivemer,A,C,G,T,...</span>
+<span class="sd">            AAAAA,0,0.33,0.33,0.34,...</span>
+<span class="sd">            AAAAC,0,0.5000,0.2500,0.2500,...</span>
+<span class="sd">            AAAAG,0,0.65,0.15,0.20,...</span>
+<span class="sd">            .</span>
+<span class="sd">            .</span>
+<span class="sd">            .</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="MutationModel.__init__"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.html#gctree.mutation_model.MutationModel.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
@@ -129,7 +164,10 @@
                 <span class="c1"># eat header</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
                 <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-                    <span class="n">motif</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">:</span>
+                        <span class="n">motif</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">motif</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">context_model</span><span class="p">[</span><span class="n">motif</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
 
             <span class="c1"># kmer k</span>
@@ -138,7 +176,10 @@
                 <span class="c1"># eat header</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
                 <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-                    <span class="n">fields</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">:</span>
+                        <span class="n">fields</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fields</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
                     <span class="n">motif</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">motif</span><span class="p">)</span>
@@ -159,8 +200,9 @@
         <span class="k">return</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MutationModel.mutability"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutability">[docs]</a>    <span class="k">def</span> <span class="nf">mutability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kmer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a central base of :math:`k`-mer, along with</span>
-<span class="sd">        nucleotide bias averages over ambiguous ``&quot;N&quot;`` nucleotide identities.</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a central base of :math:`k`-mer, along</span>
+<span class="sd">        with nucleotide bias averages over ambiguous ``&quot;N&quot;`` nucleotide</span>
+<span class="sd">        identities.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            kmer: nucleotide :math:`k`-mer</span>
@@ -303,7 +345,8 @@
         <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TreeNode</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a neutral binary branching process with the mutation model,</span>
+<span class="sd">        returning a :class:`ete3.Treenode` object.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            sequence: root nucleotide sequence</span>
