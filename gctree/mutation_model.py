@@ -26,15 +26,16 @@ class MutationModel:
     Notes:
         ``mutability_file`` shall be a csv file with the first column containing fivemers,
         and the second column containing mutability scores.
+        An example can be found at https://bitbucket.org/kleinstein/shazam/src/master/data-raw/HS5F_Mutability.csv
 
         For example:
 
         .. code-block:: text
 
             Fivemer,Mutability,...
-            TCGGG,0.0250144523,...
-            GCCGG,0.0362888192,...
-            GCCGC,0.0582586814,...
+            TCGGG,0.03542,...
+            GCCGG,0.02241675,...
+            GCCGC,0.06789,...
             .
             .
             .
@@ -43,14 +44,16 @@ class MutationModel:
         ``substitution_file`` shall be a csv file with the first column containing fivemers,
         and the next four columns containing targeting probabilities for bases A, C, G,
         and T, respectively.
+        An example can be found at https://bitbucket.org/kleinstein/shazam/src/master/data-raw/HS5F_Substitution.csv
+
         For example:
 
         .. code-block:: text
 
             Fivemer,A,C,G,T,...
-            AAAAA,0,0.3543814433,0.4149484536,0.2306701031,...
-            AAAAC,0,0.2378854626,0.4757709251,0.2863436123,...
-            AAAAG,0,0.2419700214,0.4582441113,0.2997858672,...
+            AAAAA,0,0.33,0.33,0.34,...
+            AAAAC,0,0.5000,0.2500,0.2500,...
+            AAAAG,0,0.65,0.15,0.20,...
             .
             .
             .
@@ -71,7 +74,10 @@ class MutationModel:
                 # eat header
                 f.readline()
                 for line in f:
-                    motif, score = line.replace(',', " ").split()[:2]
+                    if line[0] == '"':
+                        motif, score = line.replace('"', "").split()[:2]
+                    else:
+                        motif, score = line.replace(',', " ").split()[:2]
                     self.context_model[motif] = float(score)
 
             # kmer k
@@ -80,7 +86,10 @@ class MutationModel:
                 # eat header
                 f.readline()
                 for line in f:
-                    fields = line.replace(',', " ").split()
+                    if line[0] == '"':
+                        fields = line.replace('"', "").split()
+                    else:
+                        fields = line.replace(',', " ").split()
                     motif = fields[0]
                     if self.k is None:
                         self.k = len(motif)
