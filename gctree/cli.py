@@ -592,7 +592,9 @@ def get_parser():
         default=None,
         help=(
             "Path to mutability model file. If --mutability and --substitution are both provided, "
-            "they will be used to rank trees after likelihood and isotype parsimony."
+            "they will be used to rank trees after likelihood and isotype parsimony. This shall be a csv file"
+            "with the first column containing fivemers, and the second column containing mutability scores."
+            "See a file excerpt in the documentation for :meth:`mutation_model.MutationModel`."
         ),
     )
     parser_infer.add_argument(
@@ -602,6 +604,9 @@ def get_parser():
         help=(
             "Path to substitution model file. If --mutability and --substitution are both provided, "
             "they will be used to rank trees after likelihood and isotype parsimony."
+            "This shall be a csv file with the first column containing fivemers, and the next four"
+            "columns containing targeting probabilities for bases A, C, G, and T, respectively."
+            "See a file excerpt in the documentation for :meth:`mutation_model.MutationModel`."
         ),
     )
     parser_infer.add_argument(

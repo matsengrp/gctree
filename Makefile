@@ -19,6 +19,8 @@ lint:
 	flake8 . --count --max-complexity=30 --max-line-length=127 --statistics
 
 docs:
+	wget -O HS5F_Mutability.csv https://bitbucket.org/kleinstein/shazam/raw/ba4b30fc6791e2cfd5712e9024803c53b136e664/data-raw/HS5F_Mutability.csv
+	wget -O HS5F_Substitution.csv https://bitbucket.org/kleinstein/shazam/raw/ba4b30fc6791e2cfd5712e9024803c53b136e664/data-raw/HS5F_Substitution.csv
 	rm -f docs/outfile docs/outtree # remove phylip dnapars output
 	make -C docs html
 	make -C docs html # need it again to get images from quickstart commands

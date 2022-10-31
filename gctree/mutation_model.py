@@ -22,6 +22,38 @@ class MutationModel:
         mutation_order: whether or not to mutate sequences using a context sensitive manner
                         where mutation order matters
         with_replacement: allow the same position to mutate multiple times on a single branch
+
+    Notes:
+        ``mutability_file`` shall be a csv file with the first column containing fivemers,
+        and the second column containing mutability scores.
+
+        For example:
+
+        .. code-block:: text
+
+            Fivemer,Mutability,...
+            TCGGG,0.0250144523,...
+            GCCGG,0.0362888192,...
+            GCCGC,0.0582586814,...
+            .
+            .
+            .
+
+
+        ``substitution_file`` shall be a csv file with the first column containing fivemers,
+        and the next four columns containing targeting probabilities for bases A, C, G,
+        and T, respectively.
+        For example:
+
+        .. code-block:: text
+
+            Fivemer,A,C,G,T,...
+            AAAAA,0,0.3543814433,0.4149484536,0.2306701031,...
+            AAAAC,0,0.2378854626,0.4757709251,0.2863436123,...
+            AAAAG,0,0.2419700214,0.4582441113,0.2997858672,...
+            .
+            .
+            .
     """
 
     def __init__(
@@ -39,7 +71,7 @@ class MutationModel:
                 # eat header
                 f.readline()
                 for line in f:
-                    motif, score = line.replace('"', "").split()[:2]
+                    motif, score = line.replace(',', " ").split()[:2]
                     self.context_model[motif] = float(score)
 
             # kmer k
@@ -48,7 +80,7 @@ class MutationModel:
                 # eat header
                 f.readline()
                 for line in f:
-                    fields = line.replace('"', "").split()
+                    fields = line.replace(',', " ").split()
                     motif = fields[0]
                     if self.k is None:
                         self.k = len(motif)
