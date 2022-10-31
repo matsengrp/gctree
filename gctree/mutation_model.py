@@ -77,7 +77,7 @@ class MutationModel:
                     if line[0] == '"':
                         motif, score = line.replace('"', "").split()[:2]
                     else:
-                        motif, score = line.replace(',', " ").split()[:2]
+                        motif, score = line.replace(",", " ").split()[:2]
                     self.context_model[motif] = float(score)
 
             # kmer k
@@ -89,7 +89,7 @@ class MutationModel:
                     if line[0] == '"':
                         fields = line.replace('"', "").split()
                     else:
-                        fields = line.replace(',', " ").split()
+                        fields = line.replace(",", " ").split()
                     motif = fields[0]
                     if self.k is None:
                         self.k = len(motif)
@@ -110,8 +110,9 @@ class MutationModel:
         return _sequence_disambiguations(sequence)
 
     def mutability(self, kmer: str) -> Tuple[np.float64, np.float64]:
-        r"""Returns the mutability of a central base of :math:`k`-mer, along with
-        nucleotide bias averages over ambiguous ``"N"`` nucleotide identities.
+        r"""Returns the mutability of a central base of :math:`k`-mer, along
+        with nucleotide bias averages over ambiguous ``"N"`` nucleotide
+        identities.
 
         Args:
             kmer: nucleotide :math:`k`-mer
@@ -254,7 +255,8 @@ class MutationModel:
         n: Optional[int] = None,
         verbose: bool = False,
     ) -> TreeNode:
-        r"""Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.
+        r"""Simulate a neutral binary branching process with the mutation model,
+        returning a :class:`ete3.Treenode` object.
 
         Args:
             sequence: root nucleotide sequence

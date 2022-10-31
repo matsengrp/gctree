@@ -1,8 +1,6 @@
-r"""
-This module contains classes for simulation and inference for a binary
+r"""This module contains classes for simulation and inference for a binary
 branching process with mutation in which the tree is collapsed to nodes that
-count the number of clonal leaves of each type.
-"""
+count the number of clonal leaves of each type."""
 
 from __future__ import annotations
 
@@ -378,7 +376,8 @@ class CollapsedTree:
         p: np.float64,
         q: np.float64,
     ) -> Tuple[np.float64, np.ndarray]:
-        r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topology :math:`T` and genotype abundances :math:`A`.
+        r"""Log likelihood of branching process parameters :math:`(p, q)` given
+        tree topology :math:`T` and genotype abundances :math:`A`.
 
         .. math::
             \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)
@@ -833,7 +832,8 @@ class CollapsedTree:
         weights: Optional[List[np.float64]] = None,
         compatibility: bool = False,
     ):
-        r"""Compute support from a list of bootstrap :class:`CollapsedTree` objects, and add to tree attibute.
+        r"""Compute support from a list of bootstrap :class:`CollapsedTree`
+        objects, and add to tree attibute.
 
         Args:
             bootstrap_trees_list: List of trees
@@ -867,10 +867,9 @@ class CollapsedTree:
         self, tau=1, tau0=1, infinite_root_branch=True, nan_root_lbr=False
     ):
         r"""Add local branching statistics (Neher et al. 2014) as tree node
-        features to the ETE tree attribute.
-        After execution, all nodes will have new features ``LBI``
-        (local branching index) and ``LBR`` (local branching ratio, below Vs
-        above the node)
+        features to the ETE tree attribute. After execution, all nodes will
+        have new features ``LBI`` (local branching index) and ``LBR`` (local
+        branching ratio, below Vs above the node)
 
         Args:
             tau: decay timescale for exponential filter
@@ -994,7 +993,8 @@ class CollapsedForest:
         self.is_isotyped = False
 
     def simulate(self, p: np.float64, q: np.float64, n_trees: int):
-        r"""Simulate a forest of collapsed trees. Overwrites existing forest attribute.
+        r"""Simulate a forest of collapsed trees. Overwrites existing forest
+        attribute.
 
         Args:
             p: branching probability
@@ -1017,7 +1017,10 @@ class CollapsedForest:
         q: np.float64,
         marginal: bool = False,
     ) -> Tuple[np.float64, np.ndarray]:
-        r"""Log likelihood of branching process parameters :math:`(p, q)` given tree topologies :math:`T_1, \dots, T_n` and corresponding genotype abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees in the forest.
+        r"""Log likelihood of branching process parameters :math:`(p, q)` given
+        tree topologies :math:`T_1, \dots, T_n` and corresponding genotype
+        abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees
+        in the forest.
 
         If ``marginal=False`` (the default), compute the joint log likelihood
 
@@ -1637,6 +1640,7 @@ def _mle_helper(
 
 def _lltree(cm_counts, p: np.float64, q: np.float64) -> Tuple[np.float64, np.ndarray]:
     r"""Log likelihood of branching process parameters :math:`(p, q)`
+
     .. math::
         \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)
 
