@@ -22,6 +22,41 @@ class MutationModel:
         mutation_order: whether or not to mutate sequences using a context sensitive manner
                         where mutation order matters
         with_replacement: allow the same position to mutate multiple times on a single branch
+
+    Notes:
+        ``mutability_file`` shall be a csv file with the first column containing fivemers,
+        and the second column containing mutability scores.
+        An example can be found at https://bitbucket.org/kleinstein/shazam/src/master/data-raw/HS5F_Mutability.csv
+
+        For example:
+
+        .. code-block:: text
+
+            Fivemer,Mutability,...
+            TCGGG,0.03542,...
+            GCCGG,0.02241675,...
+            GCCGC,0.06789,...
+            .
+            .
+            .
+
+
+        ``substitution_file`` shall be a csv file with the first column containing fivemers,
+        and the next four columns containing targeting probabilities for bases A, C, G,
+        and T, respectively.
+        An example can be found at https://bitbucket.org/kleinstein/shazam/src/master/data-raw/HS5F_Substitution.csv
+
+        For example:
+
+        .. code-block:: text
+
+            Fivemer,A,C,G,T,...
+            AAAAA,0,0.33,0.33,0.34,...
+            AAAAC,0,0.5000,0.2500,0.2500,...
+            AAAAG,0,0.65,0.15,0.20,...
+            .
+            .
+            .
     """
 
     def __init__(
@@ -39,7 +74,10 @@ class MutationModel:
                 # eat header
                 f.readline()
                 for line in f:
-                    motif, score = line.replace('"', "").split()[:2]
+                    if line[0] == '"':
+                        motif, score = line.replace('"', "").split()[:2]
+                    else:
+                        motif, score = line.replace(",", " ").split()[:2]
                     self.context_model[motif] = float(score)
 
             # kmer k
@@ -48,7 +86,10 @@ class MutationModel:
                 # eat header
                 f.readline()
                 for line in f:
-                    fields = line.replace('"', "").split()
+                    if line[0] == '"':
+                        fields = line.replace('"', "").split()
+                    else:
+                        fields = line.replace(",", " ").split()
                     motif = fields[0]
                     if self.k is None:
                         self.k = len(motif)
@@ -69,8 +110,9 @@ class MutationModel:
         return _sequence_disambiguations(sequence)
 
     def mutability(self, kmer: str) -> Tuple[np.float64, np.float64]:
-        r"""Returns the mutability of a central base of :math:`k`-mer, along with
-        nucleotide bias averages over ambiguous ``"N"`` nucleotide identities.
+        r"""Returns the mutability of a central base of :math:`k`-mer, along
+        with nucleotide bias averages over ambiguous ``"N"`` nucleotide
+        identities.
 
         Args:
             kmer: nucleotide :math:`k`-mer
@@ -213,7 +255,8 @@ class MutationModel:
         n: Optional[int] = None,
         verbose: bool = False,
     ) -> TreeNode:
-        r"""Simulate a neutral binary branching process with the mutation model, returning a :class:`ete3.Treenode` object.
+        r"""Simulate a neutral binary branching process with the mutation model,
+        returning a :class:`ete3.Treenode` object.
 
         Args:
             sequence: root nucleotide sequence

@@ -12,7 +12,6 @@ Typical usage is,
 
      $ mkconfig sequence.phy > dnapars.cfg
      $ dnapars < dnapars.cfg
-
 """
 import os
 import argparse
