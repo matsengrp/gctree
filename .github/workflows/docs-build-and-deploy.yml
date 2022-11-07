@@ -2,7 +2,7 @@ name: Docs build and deploy
 on:
   push:
     branches:
-      - master
+      - main
 jobs:
   build-and-deploy:
     concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.

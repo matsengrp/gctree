@@ -26,7 +26,7 @@ Build docs locally (you can then see the generated documentation in ``docs/_buil
 
   make docs
 
-Docs are automatically deployed to github pages via a workflow on push to the master branch.
+Docs are automatically deployed to github pages via a workflow on push to the main branch.
 
 Todo list
 =========
