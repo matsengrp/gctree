@@ -8,8 +8,6 @@ on:
 
 jobs:
   build:
-    if: "!contains(github.event.commits[0].message, '[skip ci]')"
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
