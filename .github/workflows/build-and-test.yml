@@ -46,6 +46,8 @@ jobs:
         run: make test
 
       - name: Test docs build
+        # NOTE: only run on ubuntu-latest to save on compute usage
+        if: matrix.os == 'ubuntu-latest'
         shell: bash -l {0}
         run: |
           make docs
