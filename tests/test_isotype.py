@@ -47,7 +47,7 @@ def test_trim_byisotype():
     # idmap_file=None,
     # isotype_names=None,
     tdag = dag.copy()
-    tdag.optimal_weight_annotate(**kwargs, optimal_func=lambda l: l[0])
+    tdag.optimal_weight_annotate(**kwargs, optimal_func=lambda l: l[0])  # noqa: E741
     for node in tdag.preorder():
         if node.attr is not None:
             node.attr["isotype"] = node._dp_data

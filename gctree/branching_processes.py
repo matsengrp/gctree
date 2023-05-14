@@ -433,7 +433,7 @@ class CollapsedTree:
             self._build_cm_counts()
 
     def __repr__(self):
-        r"""return a string representation for printing."""
+        r"""Return a string representation for printing."""
         return str(self.tree)
 
     def render(
@@ -1266,7 +1266,7 @@ class CollapsedForest:
         dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_funcs
         trimdag = dag.copy()
         trimdag.trim_optimal_weight(
-            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
+            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)  # noqa: E741
         )
         # make sure trimming worked as expected:
         min_weightcounter = trimdag.weight_count(**dagweight_kwargs)
@@ -1278,7 +1278,7 @@ class CollapsedForest:
             )
 
         best_weighttuple = trimdag.optimal_weight_annotate(
-            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)
+            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)  # noqa: E741
         )
         if summarize_forest:
             with open(outbase + ".forest_summary.log", "w") as fh:
@@ -1347,7 +1347,7 @@ class CollapsedForest:
         return (self._trimmed_self(trimdag), best_weighttuple)
 
     def likelihood_rankplot(self, outbase, p, q, img_type="svg"):
-        """save a rank plot of likelihoods to the file
+        """Save a rank plot of likelihoods to the file
         `[outbase].inference.likelihood_rank.[img_type]`."""
         ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
         if self._forest is not None:
@@ -1587,7 +1587,7 @@ class CollapsedForest:
         return ctree
 
     def __repr__(self):
-        r"""return a string representation for printing."""
+        r"""Return a string representation for printing."""
         return f"n_trees = {self.n_trees}\n" "\n".join([str(tree) for tree in self])
 
     def __iter__(self):
@@ -1615,7 +1615,7 @@ def _mle_helper(
     bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
 
     def f(x):
-        """negative log likelihood."""
+        """Negative log likelihood."""
         return tuple(-y for y in ll(*x, **kwargs))
 
     grad_check = sco.check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
