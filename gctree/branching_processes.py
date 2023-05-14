@@ -1266,7 +1266,8 @@ class CollapsedForest:
         dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_funcs
         trimdag = dag.copy()
         trimdag.trim_optimal_weight(
-            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)  # noqa: E741
+            **dagweight_kwargs,
+            optimal_func=lambda l: min(l, key=minfunckey),  # noqa: E741
         )
         # make sure trimming worked as expected:
         min_weightcounter = trimdag.weight_count(**dagweight_kwargs)
@@ -1278,7 +1279,8 @@ class CollapsedForest:
             )
 
         best_weighttuple = trimdag.optimal_weight_annotate(
-            **dagweight_kwargs, optimal_func=lambda l: min(l, key=minfunckey)  # noqa: E741
+            **dagweight_kwargs,
+            optimal_func=lambda l: min(l, key=minfunckey),  # noqa: E741
         )
         if summarize_forest:
             with open(outbase + ".forest_summary.log", "w") as fh:
