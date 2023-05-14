@@ -7,7 +7,7 @@ The preferred way to install gctree is with Conda:
 
 .. code-block:: bash
 
-  conda create -n gctree python=3.9
+  conda create -n gctree python=3.10
   conda activate gctree
   conda install -c conda-forge gctree
 
