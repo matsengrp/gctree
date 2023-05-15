@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>gctree &mdash; gctree  documentation</title>
@@ -12,9 +12,6 @@
   <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -30,12 +27,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html">
-            <img src="_static/logo.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -53,17 +54,17 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">gctree</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Sub-commands">Sub-commands</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#test">test</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#named-arguments">Named Arguments</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#infer">infer</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Named Arguments_repeat1">Named Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#positional-arguments">Positional Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#named-arguments_repeat1">Named Arguments</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#simulate">simulate</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Positional Arguments_repeat1">Positional Arguments</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Named Arguments_repeat2">Named Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#positional-arguments_repeat1">Positional Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#named-arguments_repeat2">Named Arguments</a></li>
 </ul>
 </li>
 </ul>
@@ -72,25 +73,25 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#parsimony-utilities">Parsimony utilities</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#deduplicate">deduplicate</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#positional-arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#named-arguments">Named Arguments</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#mkconfig">mkconfig</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#positional-arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#named-arguments">Named Arguments</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#phylip-parse">phylip_parse</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#positional-arguments">Positional Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#named-arguments">Named Arguments</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#isotype">isotype</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#positional-arguments">Positional Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#named-arguments">Named Arguments</a></li>
 </ul>
 </li>
 </ul>
@@ -119,7 +120,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">gctree</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -129,31 +130,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="gctree">
+  <section id="gctree">
 <h1>gctree<a class="headerlink" href="#gctree" title="Permalink to this heading"></a></h1>
 <p>The primary gctree command.</p>
 <p><p>genotype collapsed tree inference and simulation</p>
@@ -169,8 +146,8 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">test</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
 </pre></div>
 </div>
-<section id="Named Arguments">
-<h4>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this heading"></a></h4>
+<section id="named-arguments">
+<h4>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>--outbase</kbd></dt>
 <dd><p>output file base name</p>
@@ -200,16 +177,16 @@
              <span class="n">infiles</span> <span class="p">[</span><span class="n">infiles</span> <span class="o">...</span><span class="p">]</span>
 </pre></div>
 </div>
-<section id="Positional Arguments">
-<h4>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this heading"></a></h4>
+<section id="positional-arguments">
+<h4>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>infiles</kbd></dt>
 <dd><p>Input files for inference. If two filenames are passed, the first shall be a dnapars outfile (verbose output with sequences at each site), and the second shall be an abundance file containing allele frequencies (sequence counts) in the format: <code class="docutils literal notranslate"><span class="pre">SeqID,</span> <span class="pre">Nobs</span></code>. If a single filename is passed, it shall be the name of a pickled history DAG object created by gctree. A new pickled forest will be output only if new annotations (such as isotypes) are added.</p>
 </dd>
 </dl>
 </section>
-<section id="Named Arguments_repeat1">
-<h4>Named Arguments<a class="headerlink" href="#Named Arguments_repeat1" title="Permalink to this heading"></a></h4>
+<section id="named-arguments_repeat1">
+<h4>Named Arguments<a class="headerlink" href="#named-arguments_repeat1" title="Permalink to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>--root</kbd></dt>
 <dd><p>name of root sequence (outgroup root), default <code class="docutils literal notranslate"><span class="pre">&quot;root&quot;</span></code></p>
@@ -284,8 +261,8 @@
                 <span class="n">sequence</span> <span class="n">mutability</span> <span class="n">substitution</span>
 </pre></div>
 </div>
-<section id="Positional Arguments_repeat1">
-<h4>Positional Arguments<a class="headerlink" href="#Positional Arguments_repeat1" title="Permalink to this heading"></a></h4>
+<section id="positional-arguments_repeat1">
+<h4>Positional Arguments<a class="headerlink" href="#positional-arguments_repeat1" title="Permalink to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>sequence</kbd></dt>
 <dd><p>seed root nucleotide sequence</p>
@@ -298,8 +275,8 @@
 </dd>
 </dl>
 </section>
-<section id="Named Arguments_repeat2">
-<h4>Named Arguments<a class="headerlink" href="#Named Arguments_repeat2" title="Permalink to this heading"></a></h4>
+<section id="named-arguments_repeat2">
+<h4>Named Arguments<a class="headerlink" href="#named-arguments_repeat2" title="Permalink to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>--sequence2</kbd></dt>
 <dd><p>Second seed root nucleotide sequence. For simulating heavy/light chain co-evolution.</p>
@@ -365,16 +342,16 @@ with gctree.</p>
                    <span class="n">infile</span> <span class="p">[</span><span class="n">infile</span> <span class="o">...</span><span class="p">]</span>
 </pre></div>
 </div>
-<section id="Positional Arguments">
-<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this heading"></a></h3>
+<section id="positional-arguments">
+<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>infile</kbd></dt>
 <dd><p>Fasta file with less than or equal to 10 characters unique header ID. Because dnapars will name internal nodes by integers a node name must includeat least one non number character (unless using the id_abundances option).</p>
 </dd>
 </dl>
 </section>
-<section id="Named Arguments">
-<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this heading"></a></h3>
+<section id="named-arguments">
+<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>--abundance_file</kbd></dt>
 <dd><p>filename for the output file containing the counts.</p>
@@ -405,22 +382,19 @@ with gctree.</p>
 <h2>mkconfig<a class="headerlink" href="#mkconfig" title="Permalink to this heading"></a></h2>
 <p><p>Read a PHYLIP-format file and produce an appropriate config file for passing
 to <cite>dnapars</cite>.</p>
-<p><cite>dnapars</cite> doesn’t play very well in a
-pipeline.  It prompts the user for configuration information and reads
-responses from stdin.  The config file generated by this script is
-meant to mimic the responses to the expected prompts.</p>
+<p><cite>dnapars</cite> doesn’t play very well in a pipeline.  It prompts the user for
+configuration information and reads responses from stdin.  The config
+file generated by this script is meant to mimic the responses to the
+expected prompts.</p>
 <p>Typical usage is,</p>
-<blockquote>
-<div><p>$ mkconfig sequence.phy &gt; dnapars.cfg
-$ dnapars &lt; dnapars.cfg</p>
-</div></blockquote>
+<p>$ mkconfig sequence.phy &gt; dnapars.cfg $ dnapars &lt; dnapars.cfg</p>
 </p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">mkconfig</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">quick</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">jumble</span> <span class="n">JUMBLE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">bootstrap</span> <span class="n">BOOTSTRAP</span><span class="p">]</span>
                 <span class="n">phylip</span> <span class="n">treeprog</span>
 </pre></div>
 </div>
-<section id="Positional Arguments">
-<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this heading"></a></h3>
+<section id="positional-arguments">
+<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>phylip</kbd></dt>
 <dd><p>PHYLIP input</p>
@@ -430,8 +404,8 @@ $ dnapars &lt; dnapars.cfg</p>
 </dd>
 </dl>
 </section>
-<section id="Named Arguments">
-<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this heading"></a></h3>
+<section id="named-arguments">
+<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>--quick</kbd></dt>
 <dd><p>quicker (less thourough) dnapars</p>
@@ -454,8 +428,8 @@ produce a CollapsedForest containing the trees in that outputfile.</p>
                     <span class="n">phylip_outfile</span> <span class="n">abundance_file</span>
 </pre></div>
 </div>
-<section id="Positional Arguments">
-<h3>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this heading"></a></h3>
+<section id="positional-arguments">
+<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>phylip_outfile</kbd></dt>
 <dd><p>dnaml outfile (verbose output with inferred ancestral sequences, option 5).</p>
@@ -465,8 +439,8 @@ produce a CollapsedForest containing the trees in that outputfile.</p>
 </dd>
 </dl>
 </section>
-<section id="Named Arguments">
-<h3>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this heading"></a></h3>
+<section id="named-arguments">
+<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>--outputfile</kbd></dt>
 <dd><p>output file.</p>
@@ -527,8 +501,8 @@ isotype additions.</p>
                <span class="n">idmapfile</span> <span class="n">isotype_mapfile</span>
 </pre></div>
 </div>
-<section id="Positional Arguments">
-<h2>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this heading"></a></h2>
+<section id="positional-arguments">
+<h2>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h2>
 <dl class="option-list">
 <dt><kbd>idmapfile</kbd></dt>
 <dd><p>filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.</p>
@@ -538,8 +512,8 @@ isotype additions.</p>
 </dd>
 </dl>
 </section>
-<section id="Named Arguments">
-<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this heading"></a></h2>
+<section id="named-arguments">
+<h2>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h2>
 <dl class="option-list">
 <dt><kbd>--trees</kbd></dt>
 <dd><p>filenames for collapsed tree pickle files output by gctree inference</p>

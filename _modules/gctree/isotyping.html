@@ -11,9 +11,6 @@
   <![endif]-->
   
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script src="../../_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -27,12 +24,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html">
-            <img src="../../_static/logo.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="../../index.html">
+            
+              <img src="../../_static/logo.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -76,7 +77,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a></li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
       <li class="breadcrumb-item active">gctree.isotyping</li>
       <li class="wy-breadcrumbs-aside">
@@ -126,7 +127,7 @@
 
 
 <div class="viewcode-block" id="IsotypeTemplate"><a class="viewcode-back" href="../../stubs/gctree.isotyping.IsotypeTemplate.html#gctree.isotyping.IsotypeTemplate">[docs]</a><span class="k">class</span> <span class="nc">IsotypeTemplate</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;A template constructor class for :meth:`Isotype`</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A template constructor class for :meth:`Isotype`</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        isotype_order: A list or other Sequence of isotype names, in the allowed class switching order</span>
@@ -167,13 +168,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span> <span class="o">=</span> <span class="n">weight_matrix</span></div>
 
 <div class="viewcode-block" id="IsotypeTemplate.new"><a class="viewcode-back" href="../../stubs/gctree.isotyping.IsotypeTemplate.html#gctree.isotyping.IsotypeTemplate.new">[docs]</a>    <span class="k">def</span> <span class="nf">new</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isotype_name</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return an :meth:`Isotype` object with the isotype order and weight</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an :meth:`Isotype` object with the isotype order and weight</span>
 <span class="sd">        matrix provided to this class&#39;s constructor.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Isotype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight_matrix</span><span class="p">,</span> <span class="n">isotype_name</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="Isotype"><a class="viewcode-back" href="../../stubs/gctree.isotyping.Isotype.html#gctree.isotyping.Isotype">[docs]</a><span class="k">class</span> <span class="nc">Isotype</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;An isotype, and associated information about class switching order and</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An isotype, and associated information about class switching order and</span>
 <span class="sd">    transition weights.</span>
 
 <span class="sd">    Attributes:</span>
@@ -252,7 +253,7 @@
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">())</span>
 
 <div class="viewcode-block" id="Isotype.resolutions"><a class="viewcode-back" href="../../stubs/gctree.isotyping.Isotype.html#gctree.isotyping.Isotype.resolutions">[docs]</a>    <span class="k">def</span> <span class="nf">resolutions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;Isotype&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Returns list of all possible isotypes if passed an ambiguous</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns list of all possible isotypes if passed an ambiguous</span>
 <span class="sd">        isotype.</span>
 
 <span class="sd">        Otherwise, returns a list containing a copy of the passed</span>
@@ -272,7 +273,7 @@
     <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">weight_matrix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Method adds isotypes to ``tree``, minimizing isotype switching and</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method adds isotypes to ``tree``, minimizing isotype switching and</span>
 <span class="sd">    obeying switching order.</span>
 
 <span class="sd">    * Adds observed isotypes to each observed node in the collapsed</span>
@@ -315,7 +316,7 @@
 
 <div class="viewcode-block" id="isotype_distance"><a class="viewcode-back" href="../../stubs/gctree.isotyping.isotype_distance.html#gctree.isotyping.isotype_distance">[docs]</a><span class="nd">@_assert_switching_order_match</span>
 <span class="k">def</span> <span class="nf">isotype_distance</span><span class="p">(</span><span class="n">t1</span><span class="p">:</span> <span class="n">Isotype</span><span class="p">,</span> <span class="n">t2</span><span class="p">:</span> <span class="n">Isotype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the weight of the transition from isotype ``t1`` to isotype</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the weight of the transition from isotype ``t1`` to isotype</span>
 <span class="sd">    ``t2``.</span>
 
 <span class="sd">    This function is not symmetric on its arguments, so isn&#39;t a true</span>
@@ -328,7 +329,7 @@
 
 
 <div class="viewcode-block" id="isotype_parsimony"><a class="viewcode-back" href="../../stubs/gctree.isotyping.isotype_parsimony.html#gctree.isotyping.isotype_parsimony">[docs]</a><span class="k">def</span> <span class="nf">isotype_parsimony</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Computes the sum of :meth:`isotype_distance` along each edge in an</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the sum of :meth:`isotype_distance` along each edge in an</span>
 <span class="sd">    isotyped tree.</span>
 
 <span class="sd">    If no weight matrix was provided during isotyping of the tree, then</span>
@@ -461,7 +462,7 @@
 <div class="viewcode-block" id="explode_idmap"><a class="viewcode-back" href="../../stubs/gctree.isotyping.explode_idmap.html#gctree.isotyping.explode_idmap">[docs]</a><span class="k">def</span> <span class="nf">explode_idmap</span><span class="p">(</span>
     <span class="n">idmap</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">isotype_map</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Uses provided mapping of original sequence IDs to observed isotypes to</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Uses provided mapping of original sequence IDs to observed isotypes to</span>
 <span class="sd">    &#39;explode&#39; the provided mapping of unique sequence IDs to original sequence</span>
 <span class="sd">    IDs.</span>
 
@@ -496,7 +497,7 @@
 
 
 <span class="k">def</span> <span class="nf">_isotype_dagfuncs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return functions for filtering by isotype parsimony score on the history</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for filtering by isotype parsimony score on the history</span>
 <span class="sd">    DAG.</span>
 
 <span class="sd">    The DAG on which these functions is run should have key ``isotype`` in their attr dictionaries.</span>
@@ -542,7 +543,7 @@
     <span class="n">idmap_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return functions for annotating history DAG nodes with inferred</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for annotating history DAG nodes with inferred</span>
 <span class="sd">    isotypes.</span>
 
 <span class="sd">    Args:</span>

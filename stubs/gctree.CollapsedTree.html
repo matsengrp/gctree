@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>gctree.CollapsedTree &mdash; gctree  documentation</title>
@@ -12,9 +12,6 @@
   <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -32,12 +29,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../index.html">
-            <img src="../_static/logo.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/logo.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -101,7 +102,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a></li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../api.html">Classes</a></li>
       <li class="breadcrumb-item active">gctree.CollapsedTree</li>
       <li class="wy-breadcrumbs-aside">
@@ -112,31 +113,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="gctree-collapsedtree">
+  <section id="gctree-collapsedtree">
 <h1>gctree.CollapsedTree<a class="headerlink" href="#gctree-collapsedtree" title="Permalink to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="gctree.CollapsedTree">
@@ -151,7 +128,7 @@ to extinction.</p>
 </dd></dl>
 
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>tree</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TreeNode</span></code>]) – ete3 tree with <code class="docutils literal notranslate"><span class="pre">abundance</span></code> node features. If uncollapsed,
 it will be collapsed along branches with no mutations.
@@ -163,10 +140,6 @@ If a tree is provided, names of nodes with abundance 0 will not be preserved.</p
 </dl>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gctree.CollapsedTree.compare" title="gctree.CollapsedTree.compare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare</span></code></a></p></td>
 <td><p>Compare this tree to the other tree.</p></td>
@@ -208,16 +181,16 @@ tree topology <span class="math notranslate nohighlight">\(T\)</span> and genoty
 <div class="math notranslate nohighlight">
 \[\ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)\]</div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>p</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>) – branching probability</p></li>
 <li><p><strong>q</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>) – mutation probability</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>]</p>
 </dd>
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Log likelihood <span class="math notranslate nohighlight">\(\ell(p, q; T, A)\)</span> and its gradient <span class="math notranslate nohighlight">\(\nabla\ell(p, q; T, A)\)</span></p>
 </dd>
 </dl>
@@ -230,13 +203,13 @@ tree topology <span class="math notranslate nohighlight">\(T\)</span> and genoty
 <div class="math notranslate nohighlight">
 \[(p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)\]</div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>kwargs</strong> – keyword arguments passed along to the log likelihood <a class="reference internal" href="#gctree.CollapsedTree.ll" title="gctree.CollapsedTree.ll"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CollapsedTree.ll()</span></code></a></p>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]</p>
 </dd>
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tuple <span class="math notranslate nohighlight">\((p, q)\)</span> with estimated branching probability and estimated mutation probability</p>
 </dd>
 </dl>
@@ -249,7 +222,7 @@ tree topology <span class="math notranslate nohighlight">\(T\)</span> and genoty
 run to extintion, with branching probability <span class="math notranslate nohighlight">\(p\)</span> and mutation
 probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites existing tree attribute.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>p</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>) – branching probability</p></li>
 <li><p><strong>q</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>) – mutation probability</p></li>
@@ -264,7 +237,7 @@ probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites 
 <span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">branch_margin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colormap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chain_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_map2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_support</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.render"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedTree.render" title="Permalink to this definition"></a></dt>
 <dd><p>Render to tree image file.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>outfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – file name to render to, filetype inferred from suffix, .svg for color</p></li>
 <li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – branch length scale in pixels (set automatically if <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
@@ -288,7 +261,7 @@ probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites 
 <span class="sig-name descname"><span class="pre">feature_colormap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'viridis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.feature_colormap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedTree.feature_colormap" title="Permalink to this definition"></a></dt>
 <dd><p>Generate a colormap based on a continuous tree feature.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>feature</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – feature name (all nodes in tree attribute must have this feature)</p></li>
 <li><p><strong>cmap</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – any <a class="reference external" href="https://matplotlib.org/stable/gallery/color/colormap_reference.html">matplotlib color palette name</a></p></li>
@@ -298,10 +271,10 @@ probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites 
 <li><p><strong>kwargs</strong> – additional keyword arguments for scale transformation</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</p>
 </dd>
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Dictionary of node names to hex color strings, which may be used as the colormap in <a class="reference internal" href="#gctree.CollapsedTree.render" title="gctree.CollapsedTree.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gctree.CollapsedTree.render()</span></code></a></p>
 </dd>
 </dl>
@@ -312,7 +285,7 @@ probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites 
 <span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedTree.write" title="Permalink to this definition"></a></dt>
 <dd><p>Serialize to pickle file.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – file name (.p suffix recommended)</p>
 </dd>
 </dl>
@@ -323,7 +296,7 @@ probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites 
 <span class="sig-name descname"><span class="pre">newick</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.newick"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedTree.newick" title="Permalink to this definition"></a></dt>
 <dd><p>Write to newick file.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – file name (.nk suffix recommended)</p>
 </dd>
 </dl>
@@ -334,16 +307,16 @@ probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites 
 <span class="sig-name descname"><span class="pre">compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'identity'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/branching_processes.html#CollapsedTree.compare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.CollapsedTree.compare" title="Permalink to this definition"></a></dt>
 <dd><p>Compare this tree to the other tree.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>tree2</strong> (<a class="reference internal" href="gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>) – another object of this type</p></li>
 <li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – comparison type (<code class="docutils literal notranslate"><span class="pre">identity</span></code>, <code class="docutils literal notranslate"><span class="pre">MRCA</span></code>, or <code class="docutils literal notranslate"><span class="pre">RF</span></code>)</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]</p>
 </dd>
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>tree difference</p>
 </dd>
 </dl>
@@ -355,7 +328,7 @@ probability <span class="math notranslate nohighlight">\(q\)</span>. Overwrites 
 <dd><p>Compute support from a list of bootstrap <a class="reference internal" href="#gctree.CollapsedTree" title="gctree.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>
 objects, and add to tree attibute.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bootstrap_trees_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="gctree.branching_processes.CollapsedTree.html#gctree.branching_processes.CollapsedTree" title="gctree.branching_processes.CollapsedTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a>]) – List of trees</p></li>
 <li><p><strong>weights</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code>]]) – weights for each tree, perhaps for weighting parsimony degenerate trees</p></li>
@@ -373,7 +346,7 @@ features to the ETE tree attribute. After execution, all nodes will
 have new features <code class="docutils literal notranslate"><span class="pre">LBI</span></code> (local branching index) and <code class="docutils literal notranslate"><span class="pre">LBR</span></code> (local
 branching ratio, below Vs above the node)</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>tau</strong> – decay timescale for exponential filter</p></li>
 <li><p><strong>tau0</strong> – effective branch length for branches with zero mutations</p></li>

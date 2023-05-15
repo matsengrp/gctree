@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Installation &mdash; gctree  documentation</title>
@@ -12,9 +12,6 @@
   <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -30,12 +27,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html">
-            <img src="_static/logo.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -85,7 +86,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Installation</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -95,38 +96,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<section id="installation">
+  <section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
 <section id="anaconda-install">
 <h2>Anaconda install<a class="headerlink" href="#anaconda-install" title="Permalink to this heading"></a></h2>
 <p>The preferred way to install gctree is with Conda:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda create -n gctree <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.9
-conda activate gctree
-conda install -c conda-forge gctree
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>gctree<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.10
+conda<span class="w"> </span>activate<span class="w"> </span>gctree
+conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>gctree
 </pre></div>
 </div>
 <p>You will likely also want to install PHYLIP (see below)</p>
@@ -134,7 +111,7 @@ conda install -c conda-forge gctree
 <section id="pip-install">
 <h2>Pip install<a class="headerlink" href="#pip-install" title="Permalink to this heading"></a></h2>
 <p>You may install using pip instead:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install gctree
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>gctree
 </pre></div>
 </div>
 <p>However, you will then need to separately install PHYLIP</p>
@@ -144,16 +121,16 @@ conda install -c conda-forge gctree
 <p>You may also find the provided Dockerfile useful.
 The resulting image runs the test script <cite>tests/test.sh</cite> by default.
 This runs the default inference pipeline on the sample data provided with gctree.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone git@github.com:matsengrp/gctree.git
-docker build gctree -t gctree
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:matsengrp/gctree.git
+docker<span class="w"> </span>build<span class="w"> </span>gctree<span class="w"> </span>-t<span class="w"> </span>gctree
 </pre></div>
 </div>
 <p>To run the test script and verify the image was built successfully:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker run -t gctree
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-t<span class="w"> </span>gctree
 </pre></div>
 </div>
 <p>Or use the image interactively with, for example:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker run -i -t gctree bash
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-i<span class="w"> </span>-t<span class="w"> </span>gctree<span class="w"> </span>bash
 </pre></div>
 </div>
 </section>
@@ -164,7 +141,7 @@ rank degenerate maximum parsimony trees. For this, you will need Joe
 Felsenstein’s PHYLIP package
 (<a class="reference external" href="https://evolution.genetics.washington.edu/phylip.html">https://evolution.genetics.washington.edu/phylip.html</a>).
 If you are working in a Conda environment, PHYLIP can be installed with</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c bioconda phylip
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>bioconda<span class="w"> </span>phylip
 </pre></div>
 </div>
 </section>

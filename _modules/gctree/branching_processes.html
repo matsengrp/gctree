@@ -11,9 +11,6 @@
   <![endif]-->
   
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script src="../../_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -27,12 +24,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html">
-            <img src="../../_static/logo.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="../../index.html">
+            
+              <img src="../../_static/logo.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -76,7 +77,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a></li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
       <li class="breadcrumb-item active">gctree.branching_processes</li>
       <li class="wy-breadcrumbs-aside">
@@ -125,7 +126,7 @@
 
 
 <div class="viewcode-block" id="CollapsedTree"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree">[docs]</a><span class="k">class</span> <span class="nc">CollapsedTree</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;A collapsed tree, modeled as an infinite type Galton-Watson process run</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A collapsed tree, modeled as an infinite type Galton-Watson process run</span>
 <span class="sd">    to extinction.</span>
 
 <span class="sd">    Attributes:</span>
@@ -229,7 +230,7 @@
                     <span class="sa">f</span><span class="s2">&quot;collapse</span><span class="se">\n\t</span><span class="s2">before: </span><span class="si">{</span><span class="n">observed_genotypes</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n\t</span><span class="s2">after: </span><span class="si">{</span><span class="n">final_observed_genotypes</span><span class="si">}</span><span class="se">\n\t</span><span class="s2">&quot;</span>
                     <span class="s2">&quot;symmetric diff: &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">observed_genotypes</span> <span class="o">^</span> <span class="n">final_observed_genotypes</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">observed_genotypes</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="n">final_observed_genotypes</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
 
             <span class="n">rep_seq</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">())</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span>
@@ -303,7 +304,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_simulate_genotype</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate the number of clonal leaves :math:`c` and mutant clades</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate the number of clonal leaves :math:`c` and mutant clades</span>
 <span class="sd">        :math:`m` as a Galton-Watson process with branching probability</span>
 <span class="sd">        :math:`p` and mutation probability :math:`q`.</span>
 
@@ -349,7 +350,7 @@
     <span class="k">def</span> <span class="nf">_ll_genotype</span><span class="p">(</span>
         <span class="n">c</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log-probability of getting :math:`c` leaves that are clones of the root and</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log-probability of getting :math:`c` leaves that are clones of the root and</span>
 <span class="sd">        :math:`m` mutant clades off the root lineage, given branching probability :math:`p` and</span>
 <span class="sd">        mutation probability :math:`q`.</span>
 
@@ -466,7 +467,7 @@
         <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
         <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given</span>
 <span class="sd">        tree topology :math:`T` and genotype abundances :math:`A`.</span>
 
 <span class="sd">        .. math::</span>
@@ -484,7 +485,7 @@
         <span class="k">return</span> <span class="n">_lltree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cm_counts</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedTree.mle"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.mle">[docs]</a>    <span class="k">def</span> <span class="nf">mle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Maximum likelihood estimate of :math:`(p, q)`.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Maximum likelihood estimate of :math:`(p, q)`.</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            (p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)</span>
@@ -498,7 +499,7 @@
         <span class="k">return</span> <span class="n">_mle_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ll</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedTree.simulate"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a collapsed tree as an infinite type Galton-Watson process</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a collapsed tree as an infinite type Galton-Watson process</span>
 <span class="sd">        run to extintion, with branching probability :math:`p` and mutation</span>
 <span class="sd">        probability :math:`q`. Overwrites existing tree attribute.</span>
 
@@ -523,7 +524,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_build_cm_counts</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;return a string representation for printing.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a string representation for printing.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">)</span>
 
 <div class="viewcode-block" id="CollapsedTree.render"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.render">[docs]</a>    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span>
@@ -541,7 +542,7 @@
         <span class="n">position_map2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">show_support</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Render to tree image file.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Render to tree image file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            outfile: file name to render to, filetype inferred from suffix, .svg for color</span>
@@ -673,7 +674,7 @@
                                     <span class="p">]</span>
                                 <span class="p">)</span><span class="o">.</span><span class="n">translate</span><span class="p">()</span>
                                 <span class="n">mutations</span> <span class="o">=</span> <span class="p">[</span>
-                                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">aa1</span><span class="si">}{</span><span class="n">pos</span> <span class="k">if</span> <span class="n">position_mapx</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">position_mapx</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span><span class="si">}{</span><span class="n">aa2</span><span class="si">}</span><span class="s2">&quot;</span>
+                                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">aa1</span><span class="si">}{</span><span class="n">pos</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">position_mapx</span><span class="w"> </span><span class="ow">is</span><span class="w"> </span><span class="kc">None</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">position_mapx</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span><span class="si">}{</span><span class="n">aa2</span><span class="si">}</span><span class="s2">&quot;</span>
                                     <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="p">(</span><span class="n">aa1</span><span class="p">,</span> <span class="n">aa2</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">aa_parent</span><span class="p">,</span> <span class="n">aa</span><span class="p">))</span>
                                     <span class="k">if</span> <span class="n">aa1</span> <span class="o">!=</span> <span class="n">aa2</span>
                                 <span class="p">]</span>
@@ -736,7 +737,7 @@
         <span class="n">scale</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;linear&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Generate a colormap based on a continuous tree feature.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Generate a colormap based on a continuous tree feature.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            feature: feature name (all nodes in tree attribute must have this feature)</span>
@@ -771,7 +772,7 @@
         <span class="p">}</span></div>
 
 <div class="viewcode-block" id="CollapsedTree.write"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Serialize to pickle file.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Serialize to pickle file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            file_name: file name (.p suffix recommended)</span>
@@ -780,7 +781,7 @@
             <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedTree.newick"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.newick">[docs]</a>    <span class="k">def</span> <span class="nf">newick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Write to newick file.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Write to newick file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            file_name: file name (.nk suffix recommended)</span>
@@ -790,7 +791,7 @@
 <div class="viewcode-block" id="CollapsedTree.compare"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tree2</span><span class="p">:</span> <span class="n">CollapsedTree</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;identity&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compare this tree to the other tree.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compare this tree to the other tree.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            tree2: another object of this type</span>
@@ -860,7 +861,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid distance method: &quot;</span> <span class="o">+</span> <span class="n">method</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_get_split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Set</span><span class="p">,</span> <span class="n">Set</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return the bipartition resulting from clipping this node&#39;s edge</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return the bipartition resulting from clipping this node&#39;s edge</span>
 <span class="sd">        above.</span>
 
 <span class="sd">        Args:</span>
@@ -922,7 +923,7 @@
         <span class="n">weights</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">compatibility</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute support from a list of bootstrap :class:`CollapsedTree`</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute support from a list of bootstrap :class:`CollapsedTree`</span>
 <span class="sd">        objects, and add to tree attibute.</span>
 
 <span class="sd">        Args:</span>
@@ -956,7 +957,7 @@
 <div class="viewcode-block" id="CollapsedTree.local_branching"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree.local_branching">[docs]</a>    <span class="k">def</span> <span class="nf">local_branching</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tau0</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">infinite_root_branch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nan_root_lbr</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Add local branching statistics (Neher et al. 2014) as tree node</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Add local branching statistics (Neher et al. 2014) as tree node</span>
 <span class="sd">        features to the ETE tree attribute. After execution, all nodes will</span>
 <span class="sd">        have new features ``LBI`` (local branching index) and ``LBR`` (local</span>
 <span class="sd">        branching ratio, below Vs above the node)</span>
@@ -1026,7 +1027,7 @@
 
 
 <div class="viewcode-block" id="CollapsedForest"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest">[docs]</a><span class="k">class</span> <span class="nc">CollapsedForest</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;A collection of trees.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A collection of trees.</span>
 
 <span class="sd">    We can intialize with a list of trees, each an instance of :class:`ete3.Tree` or :class:`CollapsedTree`, or we can simulate the forest later.</span>
 
@@ -1083,7 +1084,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">is_isotyped</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.simulate"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">n_trees</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a forest of collapsed trees. Overwrites existing forest</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a forest of collapsed trees. Overwrites existing forest</span>
 <span class="sd">        attribute.</span>
 
 <span class="sd">        Args:</span>
@@ -1107,7 +1108,7 @@
         <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
         <span class="n">marginal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)` given</span>
 <span class="sd">        tree topologies :math:`T_1, \dots, T_n` and corresponding genotype</span>
 <span class="sd">        abundances vectors :math:`A_1, \dots, A_n` for each of :math:`n` trees</span>
 <span class="sd">        in the forest.</span>
@@ -1192,7 +1193,7 @@
             <span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.mle"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.mle">[docs]</a>    <span class="k">def</span> <span class="nf">mle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Maximum likelihood estimate of :math:`(p, q)`.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Maximum likelihood estimate of :math:`(p, q)`.</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            (p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)</span>
@@ -1219,7 +1220,7 @@
         <span class="n">summarize_forest</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">tree_stats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CollapsedForest</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Filter trees according to specified criteria.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Filter trees according to specified criteria.</span>
 
 <span class="sd">        Trim the forest to minimize a linear</span>
 <span class="sd">        combination of branching process likelihood, isotype parsimony score,</span>
@@ -1299,7 +1300,7 @@
             <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">ranking_coeffs</span><span class="p">)</span>
 
             <span class="k">def</span> <span class="nf">minfunckey</span><span class="p">(</span><span class="n">weighttuple</span><span class="p">):</span>
-                <span class="sd">&quot;&quot;&quot;Weighttuple will have (ll, isotypepars, mutabilitypars,</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Weighttuple will have (ll, isotypepars, mutabilitypars,</span>
 <span class="sd">                alleles)&quot;&quot;&quot;</span>
                 <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
                     <span class="p">[</span>
@@ -1311,7 +1312,7 @@
         <span class="k">else</span><span class="p">:</span>
 
             <span class="k">def</span> <span class="nf">minfunckey</span><span class="p">(</span><span class="n">weighttuple</span><span class="p">):</span>
-                <span class="sd">&quot;&quot;&quot;Weighttuple will have (ll, isotypepars, mutabilitypars,</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Weighttuple will have (ll, isotypepars, mutabilitypars,</span>
 <span class="sd">                alleles)&quot;&quot;&quot;</span>
                 <span class="c1"># Sort output by likelihood, then isotype parsimony, then mutability score</span>
                 <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="n">weighttuple</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span> <span class="o">+</span> <span class="n">weighttuple</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -1332,7 +1333,7 @@
                     <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">name</span>
                 <span class="p">)</span>
 
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameters: </span><span class="si">{</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameters: </span><span class="si">{</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span>
             <span class="n">statstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mask</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="n">kwargls</span><span class="p">),</span> <span class="n">n</span><span class="o">=</span><span class="mi">14</span><span class="p">))</span>
             <span class="nb">print</span><span class="p">(</span>
@@ -1356,7 +1357,8 @@
         <span class="n">dagweight_kwargs</span> <span class="o">=</span> <span class="n">ll_dagfuncs</span> <span class="o">+</span> <span class="n">iso_funcs</span> <span class="o">+</span> <span class="n">mut_funcs</span> <span class="o">+</span> <span class="n">allele_funcs</span>
         <span class="n">trimdag</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">trimdag</span><span class="o">.</span><span class="n">trim_optimal_weight</span><span class="p">(</span>
-            <span class="o">**</span><span class="n">dagweight_kwargs</span><span class="p">,</span> <span class="n">optimal_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">)</span>
+            <span class="o">**</span><span class="n">dagweight_kwargs</span><span class="p">,</span>
+            <span class="n">optimal_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">),</span>  <span class="c1"># noqa: E741</span>
         <span class="p">)</span>
         <span class="c1"># make sure trimming worked as expected:</span>
         <span class="n">min_weightcounter</span> <span class="o">=</span> <span class="n">trimdag</span><span class="o">.</span><span class="n">weight_count</span><span class="p">(</span><span class="o">**</span><span class="n">dagweight_kwargs</span><span class="p">)</span>
@@ -1368,7 +1370,8 @@
             <span class="p">)</span>
 
         <span class="n">best_weighttuple</span> <span class="o">=</span> <span class="n">trimdag</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span>
-            <span class="o">**</span><span class="n">dagweight_kwargs</span><span class="p">,</span> <span class="n">optimal_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">)</span>
+            <span class="o">**</span><span class="n">dagweight_kwargs</span><span class="p">,</span>
+            <span class="n">optimal_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">),</span>  <span class="c1"># noqa: E741</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">summarize_forest</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="s2">&quot;.forest_summary.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
@@ -1437,7 +1440,7 @@
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_trimmed_self</span><span class="p">(</span><span class="n">trimdag</span><span class="p">),</span> <span class="n">best_weighttuple</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.likelihood_rankplot"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.likelihood_rankplot">[docs]</a>    <span class="k">def</span> <span class="nf">likelihood_rankplot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outbase</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">img_type</span><span class="o">=</span><span class="s2">&quot;svg&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;save a rank plot of likelihoods to the file</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save a rank plot of likelihoods to the file</span>
 <span class="sd">        `[outbase].inference.likelihood_rank.[img_type]`.&quot;&quot;&quot;</span>
         <span class="n">ll_dagfuncs</span> <span class="o">=</span> <span class="n">_ll_genotype_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1467,13 +1470,13 @@
 
 <div class="viewcode-block" id="CollapsedForest.n_topologies"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.n_topologies">[docs]</a>    <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">n_topologies</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Count the number of topology classes, ignoring internal node</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Count the number of topology classes, ignoring internal node</span>
 <span class="sd">        sequences.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">count_topologies</span><span class="p">(</span><span class="n">collapse_leaves</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.iter_topology_classes"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.iter_topology_classes">[docs]</a>    <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">iter_topology_classes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sort trees by topology class.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sort trees by topology class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A generator of CollapsedForest objects, each containing trees with the same topology,</span>
@@ -1501,7 +1504,7 @@
         <span class="n">idmap_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">isotype_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Adds isotype annotations, including inferred ancestral isotypes, to</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds isotype annotations, including inferred ancestral isotypes, to</span>
 <span class="sd">        all nodes in stored trees.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">is_isotyped</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -1522,7 +1525,7 @@
             <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;isotype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">_dp_data</span></div>
 
 <div class="viewcode-block" id="CollapsedForest.sample_tree"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedForest.html#gctree.CollapsedForest.sample_tree">[docs]</a>    <span class="k">def</span> <span class="nf">sample_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CollapsedTree</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Sample a random CollapsedTree from the forest.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample a random CollapsedTree from the forest.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctrees</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ctrees</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1531,7 +1534,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot sample trees from an empty forest&quot;</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_trimmed_self</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dag</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create a new CollapsedForest object from a subset of the current</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new CollapsedForest object from a subset of the current</span>
 <span class="sd">        one&#39;s history DAG, properly initializing validation_stats and</span>
 <span class="sd">        n_trees.&quot;&quot;&quot;</span>
         <span class="n">newforest</span> <span class="o">=</span> <span class="n">CollapsedForest</span><span class="p">()</span>
@@ -1545,7 +1548,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">clade_tree</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDag</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CollapsedTree</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create and validate :meth:`CollapsedTree` object from tree-shaped</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create and validate :meth:`CollapsedTree` object from tree-shaped</span>
 <span class="sd">        history DAG.</span>
 
 <span class="sd">        Uses self._validation_stats dictionary, if available, for validation. Dictionary keys are:</span>
@@ -1677,7 +1680,7 @@
         <span class="k">return</span> <span class="n">ctree</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;return a string representation for printing.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a string representation for printing.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;n_trees = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1705,7 +1708,7 @@
     <span class="n">bounds</span> <span class="o">=</span> <span class="p">((</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-6</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-6</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;negative log likelihood.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Negative log likelihood.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="o">-</span><span class="n">y</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
 
     <span class="n">grad_check</span> <span class="o">=</span> <span class="n">sco</span><span class="o">.</span><span class="n">check_grad</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x_0</span><span class="p">)</span>
@@ -1729,7 +1732,7 @@
 
 
 <span class="k">def</span> <span class="nf">_lltree</span><span class="p">(</span><span class="n">cm_counts</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)`</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Log likelihood of branching process parameters :math:`(p, q)`</span>
 
 <span class="sd">    .. math::</span>
 <span class="sd">        \ell(p, q; T, A) = \log\mathbb{P}(T, A \mid p, q)</span>
@@ -1758,7 +1761,7 @@
 
 
 <span class="k">def</span> <span class="nf">_make_dag</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">from_copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Build a history DAG from ambiguous or disambiguated trees, whose nodes</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a history DAG from ambiguous or disambiguated trees, whose nodes</span>
 <span class="sd">    have abundance, name, and sequence attributes.&quot;&quot;&quot;</span>
     <span class="c1"># preprocess trees so they&#39;re acceptable inputs</span>
     <span class="c1"># Assume all trees have fixed root sequence and fixed leaf sequences</span>
@@ -1913,7 +1916,7 @@
 
 
 <span class="k">def</span> <span class="nf">_cmcounter_dagfuncs</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Functions for accumulating frozen multisets of (c, m) pairs in trees in</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Functions for accumulating frozen multisets of (c, m) pairs in trees in</span>
 <span class="sd">    the DAG.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">edge_weight_func</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">):</span>
@@ -1943,7 +1946,7 @@
 
 
 <span class="k">def</span> <span class="nf">_ll_genotype_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return functions for counting tree log likelihood on the history DAG.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for counting tree log likelihood on the history DAG.</span>
 
 <span class="sd">    For numerical consistency, we resort to the use of ``decimal.Decimal``.</span>
 <span class="sd">    This is exactly for the purpose of solving the problem that float sum is</span>
@@ -1966,7 +1969,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">edge_weight_ll_genotype</span><span class="p">(</span><span class="n">n1</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="n">hdag</span><span class="o">.</span><span class="n">HistoryDagNode</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The _ll_genotype weight of the target node, unless it should be</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The _ll_genotype weight of the target node, unless it should be</span>
 <span class="sd">        collapsed, then 0.</span>
 
 <span class="sd">        Expects DAG to have abundances added so that each node has</span>
@@ -2001,7 +2004,7 @@
 
 
 <span class="k">def</span> <span class="nf">_allele_dagfuncs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return functions for filtering trees in a history DAG by allele count.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for filtering trees in a history DAG by allele count.</span>
 
 <span class="sd">    The number of alleles in a tree is the number of unique sequences observed on nodes of that tree.</span>
 

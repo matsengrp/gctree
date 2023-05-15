@@ -11,9 +11,6 @@
   <![endif]-->
   
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script src="../../_static/sphinx_highlight.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -27,12 +24,16 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html">
-            <img src="../../_static/logo.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="../../index.html">
+            
+              <img src="../../_static/logo.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -76,7 +77,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a></li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
       <li class="breadcrumb-item active">gctree.mutation_model</li>
       <li class="wy-breadcrumbs-aside">
@@ -104,7 +105,7 @@
 
 
 <div class="viewcode-block" id="MutationModel"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel">[docs]</a><span class="k">class</span> <span class="nc">MutationModel</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;A class for a mutation model, and functions to mutate sequences.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A class for a mutation model, and functions to mutate sequences.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        mutability_file: S5F format mutabilities</span>
@@ -195,12 +196,12 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_disambiguate</span><span class="p">(</span><span class="n">sequence</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;generator of all possible nt sequences implied by a sequence</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Generator of all possible nt sequences implied by a sequence</span>
 <span class="sd">        containing ambiguous bases.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MutationModel.mutability"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutability">[docs]</a>    <span class="k">def</span> <span class="nf">mutability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kmer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a central base of :math:`k`-mer, along</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a central base of :math:`k`-mer, along</span>
 <span class="sd">        with nucleotide bias averages over ambiguous ``&quot;N&quot;`` nucleotide</span>
 <span class="sd">        identities.</span>
 
@@ -236,7 +237,7 @@
         <span class="k">return</span> <span class="n">average_mutability</span><span class="p">,</span> <span class="n">average_substitution</span></div>
 
 <div class="viewcode-block" id="MutationModel.mutabilities"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutabilities">[docs]</a>    <span class="k">def</span> <span class="nf">mutabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a sequence at each site, along with</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns the mutability of a sequence at each site, along with</span>
 <span class="sd">        nucleotide biases.</span>
 
 <span class="sd">        Args:</span>
@@ -259,7 +260,7 @@
 <div class="viewcode-block" id="MutationModel.mutate"><a class="viewcode-back" href="../../stubs/gctree.mutation_model.MutationModel.html#gctree.mutation_model.MutationModel.mutate">[docs]</a>    <span class="k">def</span> <span class="nf">mutate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">lambda0</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Mutate a sequence, with lamdba0 the baseline mutability. Cannot</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Mutate a sequence, with lamdba0 the baseline mutability. Cannot</span>
 <span class="sd">        mutate the same position multiple times.</span>
 
 <span class="sd">        Args:</span>
@@ -345,7 +346,7 @@
         <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TreeNode</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a neutral binary branching process with the mutation model,</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simulate a neutral binary branching process with the mutation model,</span>
 <span class="sd">        returning a :class:`ete3.Treenode` object.</span>
 
 <span class="sd">        Args:</span>
@@ -511,7 +512,7 @@
 
 
 <span class="k">def</span> <span class="nf">_sequence_disambiguations</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">_accum</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Iterates through possible disambiguations of sequence, recursively.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Iterates through possible disambiguations of sequence, recursively.</span>
 
 <span class="sd">    Recursion-depth-limited by number of ambiguity codes in sequence,</span>
 <span class="sd">    not sequence length.</span>
@@ -532,7 +533,7 @@
 <span class="k">def</span> <span class="nf">_mutability_dagfuncs</span><span class="p">(</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">splits</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Return functions for counting mutability parsimony on the history DAG.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for counting mutability parsimony on the history DAG.</span>
 
 <span class="sd">    Mutability parsimony of a tree is the sum over all edges in the tree</span>
 <span class="sd">    of mutability distances between parent and child node sequences.</span>
@@ -639,7 +640,7 @@
 
 
 <span class="k">def</span> <span class="nf">_mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">MutationModel</span><span class="p">,</span> <span class="n">splits</span><span class="o">=</span><span class="p">[]):</span>
-    <span class="sd">&quot;&quot;&quot;Returns a fast distance function based on passed mutation_model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a fast distance function based on passed mutation_model.</span>
 
 <span class="sd">    First, caches computed mutabilities for k-mers with k // 2 N&#39;s on either end. This</span>
 <span class="sd">    is pretty fast for k=5, but the distance function should be created once</span>
