@@ -156,6 +156,12 @@ def test(args):
 
 def infer(args):
     """inference subprogram."""
+    if args.seed is None:
+        seed = 1
+    else:
+        seed = args.seed
+    random.seed(seed)
+    np.random.seed(seed)
 
     def isotype_add(forest):
         forest.add_isotypes(
@@ -689,9 +695,6 @@ def get_parser():
         " leaves",
     )
     parser_sim.add_argument(
-        "--seed", type=int, default=None, help="integer random seed"
-    )
-    parser_sim.add_argument(
         "--target_dist",
         type=int,
         default=10,
@@ -708,6 +711,9 @@ def get_parser():
 
     # shared parameters
     for subparser in [parser_test, parser_infer, parser_sim]:
+        subparser.add_argument(
+            "--seed", type=int, default=None, help="integer random seed"
+        )
         subparser.add_argument(
             "--outbase", type=str, default="gctree.out", help="output file base name"
         )
