@@ -8,16 +8,16 @@ on:
 
 jobs:
   build:
-    if: "!contains(github.event.commits[0].message, '[skip ci]')"
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, "3.10"] # https://github.com/actions/runner/issues/1989
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Pandoc
         uses: r-lib/actions/setup-pandoc@v2
@@ -46,6 +46,8 @@ jobs:
         run: make test
 
       - name: Test docs build
+        # NOTE: only run on ubuntu-latest to save on compute usage
+        if: matrix.os == 'ubuntu-latest'
         shell: bash -l {0}
         run: |
           make docs

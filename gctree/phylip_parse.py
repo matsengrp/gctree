@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Given an outputfile from one of the PHYLIP tools - `dnaml` or `dnapars` -
 produce a CollapsedForest containing the trees in that outputfile."""
 
@@ -100,7 +99,7 @@ def parse_seqdict(fh, mode="dnaml"):
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
 def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False):
-    """parse phylip outfile, and return dnapars trees."""
+    """Parse phylip outfile, and return dnapars trees."""
     if abundance_file is not None:
         counts = {
             line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)

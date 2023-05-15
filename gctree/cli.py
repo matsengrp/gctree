@@ -155,7 +155,7 @@ def test(args):
 
 
 def infer(args):
-    """inference subprogram."""
+    """Inference subprogram."""
 
     def isotype_add(forest):
         forest.add_isotypes(

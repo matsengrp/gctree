@@ -10,6 +10,13 @@ Developer install::
 
   make install
 
+.. warning:: 
+  
+    If you're working on an ARM Mac, you may run into trouble installing the PyQt5 dependency
+    (which is also a dependency of the ``historydag`` package) via pip. As a workaround,
+    we recommend commenting out the the ``PyQt5``, ``ete3``, and ``historydag`` lines from
+    the ``setup.py`` and installing those via Conda.
+
 Run tests::
 
   make test

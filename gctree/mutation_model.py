@@ -105,7 +105,7 @@ class MutationModel:
 
     @staticmethod
     def _disambiguate(sequence):
-        r"""generator of all possible nt sequences implied by a sequence
+        r"""Generator of all possible nt sequences implied by a sequence
         containing ambiguous bases."""
         return _sequence_disambiguations(sequence)
 
