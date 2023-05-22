@@ -405,6 +405,44 @@ def explode_idmap(
     return newidmap
 
 
+def _lenas_isotype_dagfuncs() -> hdag.utils.AddFuncDict:
+    """Return functions for filtering by isotype parsimony score on the history
+    DAG.
+
+    The DAG on which these functions is run should have key ``isotype`` in their attr dictionaries.
+    The :meth:``CollapsedForest.add_isotypes`` method can be used to achieve this.
+    If isotypes aren't added, these functions will return a weight of 0 for all trees.
+
+    Isotype parsimony of a tree is the minimum number of allowed isotype transitions
+    required along all edges.
+
+    Returns:
+        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments
+        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,
+        or :meth:`historydag.HistoryDag.optimal_weight_annotate`
+        methods to trim or annotate a :meth:`historydag.HistoryDag` according to isotype parsimony.
+        Weight type is ``int``.
+    """
+
+    def edge_weight_func(n1: hdag.HistoryDagNode, n2: hdag.HistoryDagNode):
+        if n2.is_leaf():
+            # When leaf nodes have multiple observed isotypes, we want to allow
+            # more flexibility than splitting into two sister leaves, so we
+            # count isotype parsimony from a higher node
+            return 0
+        else:
+            child_isos = {iso for child in n2.children() for iso in child.attr["isotype"].keys()}
+            return len(child_isos) - 1
+
+    return hdag.utils.AddFuncDict(
+        {
+            "start_func": lambda n: 0,
+            "edge_weight_func": edge_weight_func,
+            "accum_func": sum,
+        },
+        name="Isotype Pars.",
+    )
+
 def _isotype_dagfuncs() -> hdag.utils.AddFuncDict:
     """Return functions for filtering by isotype parsimony score on the history
     DAG.
@@ -493,6 +531,9 @@ def _isotype_annotation_dagfuncs(
     newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
 
     def start_func(n: hdag.HistoryDagNode):
+        """To each leaf node, we assign a frozendict containing observed isotypes as keys,
+        and observed abundances as values, so that the values of the dictionary should
+        sum to the total abundance of each node."""
         seqid = n.attr["name"]
         iso_dict = {}
         for seqid in n.attr["original_ids"]:
@@ -506,17 +547,20 @@ def _isotype_annotation_dagfuncs(
         # if this isn't a leaf, original_ids is empty and the returned dict
         # will be empty.
         return frozendict(iso_dict)
-        if seqid in newidmap:
-            return frozendict(
-                {
-                    newisotype(name): len(oldidset)
-                    for name, oldidset in newidmap[seqid].items()
-                }
-            )
-        else:
-            return frozendict()
+        # # This was just hanging out here after the return statement, never being run.
+        # if seqid in newidmap:
+        #     return frozendict(
+        #         {
+        #             newisotype(name): len(oldidset)
+        #             for name, oldidset in newidmap[seqid].items()
+        #         }
+        #     )
+        # else:
+        #     return frozendict()
 
     def sumweights(weights: Sequence[Tuple[float, frozendict]]):
+        """To each internal node, we assign a frozendict with key the earliest isotype of
+        any child, and value 0 (unobserved)"""
         ts = [item for i in weights for item in i.keys()]
         if ts:
             return frozendict({min(ts): 0})
