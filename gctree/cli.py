@@ -7,6 +7,7 @@ import gctree.utils as utils
 
 
 import argparse
+from collections import defaultdict
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -157,16 +158,24 @@ def test(args):
 def infer(args):
     """Inference subprogram."""
 
-    def isotype_add(forest):
-        forest.add_isotypes(
-            isotypemap_file=args.isotype_mapfile,
-            idmap_file=args.idmapfile,
-            isotype_names=args.isotype_names,
-        )
-
     if len(args.infiles) == 2:
+        # If isotypes provided, add isotypes. Otherwise,
+        # add ambiguous isotype to all leaves:
+        if args.isotype_mapfile:
+            isotypemap = None
+            isotype_mapfile = args.isotype_mapfile
+        if not args.isotype_mapfile:
+            isotypemap = defaultdict(lambda: '?')
+            isotype_mapfile = None
+
         forest = bp.CollapsedForest(
-            pp.parse_outfile(args.infiles[0], args.infiles[1], args.root)
+            isotyping._add_isotype_to_mp_trees(
+                pp.parse_outfile(args.infiles[0], args.infiles[1], args.root),
+                isotypemap=isotypemap,
+                isotype_mapfile=isotype_mapfile,
+                idmap_file=args.idmapfile,
+                isotype_names=args.isotype_names,
+            )
         )
         if forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
@@ -187,11 +196,6 @@ def infer(args):
             )
         with open(args.infiles[0], "rb") as fh:
             forest = pickle.load(fh)
-        # Add isotypes to forest and re-pickle if necessary
-        if args.isotype_mapfile:
-            isotype_add(forest)
-            with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
-                pickle.dump(forest, f)
     else:
         raise ValueError(
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
@@ -612,14 +616,14 @@ def get_parser():
     parser_infer.add_argument(
         "--ranking_coeffs",
         type=float,
-        nargs=3,
+        nargs=2,
         default=None,
         help=(
             "List of coefficients for ranking trees by a linear combination of traits. "
-            "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
+            "Coefficients are in order: mutation model parsimony, number of alleles. "
             "A coefficient of -1 will be applied to branching process likelihood. "
             "If not provided, trees will be ranked lexicographically by likelihood, "
-            "isotype parsimony, and mutability parsimony in that order."
+            "and mutability parsimony, in that order."
         ),
     )
     parser_infer.add_argument(

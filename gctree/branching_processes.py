@@ -5,9 +5,9 @@ count the number of clonal leaves of each type."""
 from __future__ import annotations
 
 import gctree.utils
-from gctree.isotyping import _isotype_dagfuncs, _isotype_annotation_dagfuncs
 from gctree.mutation_model import _mutability_dagfuncs
 from gctree.phylip_parse import disambiguate
+import gctree.isotyping
 
 from frozendict import frozendict
 import pandas as pd
@@ -58,16 +58,6 @@ class CollapsedTree:
             self.tree = tree.copy()
             self.tree.dist = 0
 
-            def merge_isotype_dicts(parent_isotype, child_isotype):
-                # values are abundances and keys are isotypes.
-                parent_isotype = dict(parent_isotype)
-                for key, val in child_isotype.items():
-                    if key in parent_isotype:
-                        parent_isotype[key] = max(parent_isotype[key], val)
-                    else:
-                        parent_isotype[key] = val
-                return frozendict(parent_isotype)
-
             # remove unobserved internal unifurcations
             for node in self.tree.iter_descendants():
                 if node.abundance == 0 and len(node.children) == 1:
@@ -77,7 +67,7 @@ class CollapsedTree:
             for node in self.tree.iter_descendants():
                 node.dist = gctree.utils.hamming_distance(
                     node.sequence, node.up.sequence
-                )
+                ) + node.isotype != node.up.isotype
 
             # iterate over the tree below root and collapse edges of zero
             # length if the node is a leaf and it's parent has nonzero
@@ -91,12 +81,6 @@ class CollapsedTree:
                 if node.dist == 0:
                     # if an abundance is nonzero, that's the right one.
                     node.up.abundance = max(node.abundance, node.up.abundance)
-                    # isotype is dictionary with isotype as key and observed
-                    # abundance as value
-                    if "isotype" in node.features:
-                        node.up.isotype = merge_isotype_dicts(
-                            node.up.isotype, node.isotype
-                        )
                     # original_ids is a set of observed ids corresponding to
                     # each node
                     if "original_ids" in node.features:
@@ -120,14 +104,6 @@ class CollapsedTree:
                             node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
 
-                if "isotype" in node.features:
-                    node.add_feature(
-                        "inferred_isotype", min(node.isotype.keys(), default=None)
-                    )
-            if "isotype" in node.features:
-                self.tree.add_feature(
-                    "inferred_isotype", min(self.tree.isotype.keys(), default=None)
-                )
 
             final_observed_genotypes = set()
             for node in self.tree.traverse():
@@ -1122,7 +1098,6 @@ class CollapsedForest:
         ranking_coeffs: Optional[Sequence[float]] = None,
         mutability_file: Optional[str] = None,
         substitution_file: Optional[str] = None,
-        ignore_isotype: bool = False,
         chain_split: Optional[int] = None,
         verbose: bool = False,
         outbase: str = "gctree.out",
@@ -1132,21 +1107,19 @@ class CollapsedForest:
         """Filter trees according to specified criteria.
 
         Trim the forest to minimize a linear
-        combination of branching process likelihood, isotype parsimony score,
+        combination of branching process likelihood,
         mutability parsimony score, and number of alleles, with coefficients
         provided in the argument ``ranking_coeffs`, in that order.
 
         Args:
             ranking_coeffs: A list or tuple of coefficients for prioritizing tree weights.
-                The order of coefficients is: isotype parsimony score, mutability parsimony score,
-                and number of alleles. A coefficient of ``-1`` will be applied to branching process
+                The order of coefficients is: mutability parsimony score,
+                number of alleles. A coefficient of ``-1`` will be applied to branching process
                 likelihood.
                 If ranking_coeffs is not provided, trees will be ranked lexicographically
                 by likelihood, then by other traits, in the same order.
             mutability_file: A mutability model
             substitution_file: A substitution model
-            ignore_isotype: Ignore isotype parsimony when ranking. By default, isotype information added with
-                :meth:``add_isotypes`` will be used to compute isotype parsimony, which is used in ranking.
             chain_split: The index at which non-adjacent sequences are concatenated, for calculating
                 mutability parsimony.
             verbose: print information about trimming
@@ -1156,7 +1129,7 @@ class CollapsedForest:
 
         Returns:
             The trimmed forest, containing all optimal trees according to the specified criteria, and a tuple
-            of data about the trees in that forest, with format (ll, isotype parsimony, mutability parsimony, alleles).
+            of data about the trees in that forest, with format (ll, mutability parsimony, alleles).
         """
         dag = self._forest
         if self.parameters is None:
@@ -1171,23 +1144,6 @@ class CollapsedForest:
             },
             name="",
         )
-        if ignore_isotype or not self.is_isotyped:
-            iso_funcs = placeholder_dagfuncs
-        else:
-            if verbose:
-                print("Isotype parsimony will be used as a ranking criterion")
-            # Check for missing isotype data in all but root node, and fake root-adjacent leaf node
-            rootname = list(self._forest.dagroot.children())[0].attr["name"]
-            if any(
-                not node.attr["isotype"]
-                for node in self._forest.preorder()
-                if not node.is_root() and node.attr["name"] != rootname
-            ):
-                warnings.warn(
-                    "Some isotype data seems to be missing. Isotype parsimony scores may be incorrect."
-                )
-
-            iso_funcs = _isotype_dagfuncs()
         if mutability_file and substitution_file:
             if verbose:
                 print("Mutation model parsimony will be used as a ranking criterion")
@@ -1209,7 +1165,7 @@ class CollapsedForest:
             coeffs = [-1] + list(ranking_coeffs)
 
             def minfunckey(weighttuple):
-                """Weighttuple will have (ll, isotypepars, mutabilitypars,
+                """Weighttuple will have (ll, mutabilitypars,
                 alleles)"""
                 return sum(
                     [
@@ -1221,9 +1177,9 @@ class CollapsedForest:
         else:
 
             def minfunckey(weighttuple):
-                """Weighttuple will have (ll, isotypepars, mutabilitypars,
+                """Weighttuple will have (ll, mutabilitypars,
                 alleles)"""
-                # Sort output by likelihood, then isotype parsimony, then mutability score
+                # Sort output by likelihood, then mutability score
                 return (-weighttuple[0],) + weighttuple[1:-1]
 
         def print_stats(statlist, title, file=None, suppress_score=False):
@@ -1261,7 +1217,7 @@ class CollapsedForest:
                     file=file,
                 )
 
-        # Filter by likelihood, isotype parsimony, mutability,
+        # Filter by likelihood, mutability,
         # and make ctrees, cforest, and render trees
         dagweight_kwargs = ll_dagfuncs + iso_funcs + mut_funcs + allele_funcs
         trimdag = dag.copy()
@@ -1337,7 +1293,7 @@ class CollapsedForest:
             bestdf["set"] = ["best_tree"]
             toplot_df = pd.concat([df, bestdf], ignore_index=True)
             pplot = sns.pairplot(
-                toplot_df[["Log Likelihood", "Isotype Pars.", "Mut. Pars.", "set"]],
+                toplot_df[["Log Likelihood", "Mut. Pars.", "set"]],
                 hue="set",
                 diag_kind="hist",
             )
@@ -1404,35 +1360,6 @@ class CollapsedForest:
             tdag.trim_topology(ctopology, collapse_leaves=True)
             yield self._trimmed_self(tdag)
 
-    @_requires_dag
-    def add_isotypes(
-        self,
-        isotypemap: Optional[Mapping[str, str]] = None,
-        isotypemap_file: Optional[str] = None,
-        idmap: Optional[Mapping[str, Set[str]]] = None,
-        idmap_file: Optional[str] = None,
-        isotype_names: Optional[Sequence[str]] = None,
-    ):
-        """Adds isotype annotations, including inferred ancestral isotypes, to
-        all nodes in stored trees."""
-        self.is_isotyped = True
-
-        iso_funcs = _isotype_annotation_dagfuncs(
-            isotypemap_file=isotypemap_file,
-            isotypemap=isotypemap,
-            idmap_file=idmap_file,
-            idmap=idmap,
-            isotype_names=isotype_names,
-        )
-
-        def optimal_func(weightlist):
-            # all weights (frozendicts containing isotypes) are equal
-            return weightlist[0]
-
-        self._forest.optimal_weight_annotate(**iso_funcs, optimal_func=optimal_func)
-        for node in self._forest.preorder(skip_root=True):
-            node.attr["isotype"] = node._dp_data
-
     def sample_tree(self) -> CollapsedTree:
         """Sample a random CollapsedTree from the forest."""
         if self._ctrees is not None:
@@ -1481,10 +1408,9 @@ class CollapsedForest:
         # not a leaf.
         etetree = clade_tree.to_ete(
             name_func=lambda n: n.attr["name"],
-            features=["sequence"],
+            features=["sequence", "isotype"],
             feature_funcs={
                 "abundance": lambda n: n.label.abundance if n.is_leaf() else 0,
-                "isotype": lambda n: n.attr["isotype"],
                 "original_ids": lambda n: n.attr["original_ids"],
             },
         )
@@ -1492,14 +1418,15 @@ class CollapsedForest:
         ctree = CollapsedTree(etetree)
 
         # Fix internal node names to be unique, and verify
-        # The maps from nodes to names and nodes to sequences are bijections
+        # The maps from nodes to (name, isotype) and nodes to (sequence,
+        # isotype) pairs are bijections
         n_nodes = 0
         names = set()
         seqs = set()
         for node in ctree.tree.traverse():
             n_nodes += 1
-            names.add(node.name)
-            seqs.add(node.sequence)
+            names.add((node.name, node.isotype))
+            seqs.add((node.sequence, node.isotype))
         n_names, n_seqs = len(names), len(seqs)
         if not (n_nodes == n_names and n_names == n_seqs):
             raise RuntimeError(
@@ -1669,7 +1596,7 @@ def _is_ambiguous(sequence):
     return any(base not in gctree.utils.bases for base in sequence)
 
 
-def _make_dag(trees, from_copy=True):
+def _make_dag(trees, use_isotypes=False, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs

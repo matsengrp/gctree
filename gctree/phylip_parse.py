@@ -98,7 +98,7 @@ def parse_seqdict(fh, mode="dnaml"):
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
-def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False):
+def parse_outfile(outfile, abundance_file=None, root="root", disambiguate_trees=False):
     """Parse phylip outfile, and return dnapars trees."""
     if abundance_file is not None:
         counts = {
@@ -135,7 +135,7 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
                 raise RuntimeError("unrecognized phylip section = {}".format(sect))
     if len(trees) == 0:
         raise RuntimeError(f"No trees found in '{outfile}'")
-    if disambiguate:
+    if disambiguate_trees:
         # Disambiguate sets node.dist for all nodes in disambiguated trees
         trees = [disambiguate(tree) for tree in trees]
     return trees
