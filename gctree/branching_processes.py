@@ -1674,150 +1674,102 @@ def _make_dag(trees, from_copy=True):
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
     # Assume all trees have fixed root sequence and fixed leaf sequences
+    def get_sequence(node):
+        if any(base not in gctree.utils.bases for base in node.sequence):
+            raise ValueError(
+                f"Unrecognized base found in node '{node.name}'. "
+                "Ambiguous bases are not permitted in observed sequences."
+            )
+        else:
+            return node.sequence
 
+    leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
+
+    # Assume all trees have same observed nodes.
+    sequence_counts = {
+        node.sequence: node.abundance
+        for node in trees[0].traverse()
+        if node.abundance > 0
+    }
     if from_copy:
         trees = [tree.copy() for tree in trees]
-
-    # disambiguate leaves: disambiguate each tree and transplant disambiguated
-    # leaf sequences to tree with ambiguous internal sequences
-
-    # add pseudo-leaf below root in all trees:
-    # This is done first in case root is ambiguous, and gets merged with
-    # another ambiguous leaf node after disambiguation.
-    rootname = trees[0].name  # all root nodes must have the same name
-    for tree in trees:
-        newleaf = tree.add_child(name=tree.name, dist=0)
-        newleaf.add_feature("sequence", tree.sequence)
-        newleaf.add_feature("abundance", tree.abundance)
-
-    if any(_is_ambiguous(leaf.sequence) for leaf in trees[0].iter_leaves()):
-        warnings.warn(
-            "Some observed sequences are ambiguous. A disambiguation consistent"
-            " with each dnapars tree will be chosen arbitrarily. Many alternative"
-            " disambiguated leaf sequences may be possible."
-        )
+    if all(len(tree.children) > 1 for tree in trees):
+        pass  # We're all good!
+    elif trees[0].sequence not in leaf_seqs:
+        if trees[0].sequence not in sequence_counts:
+            sequence_counts[trees[0].sequence] = 0
         for tree in trees:
-            for node in tree.iter_leaves():
-                node.add_feature("original_ids", {node.name})
-            disambig_tree = tree.copy()
-            node_map = {
-                d_node: o_node
-                for d_node, o_node in zip(disambig_tree.traverse(), tree.traverse())
-            }
-            disambiguate(disambig_tree)
+            newleaf = tree.add_child(name="", dist=0)
+            newleaf.add_feature("sequence", trees[0].sequence)
+            if tree.sequence != newleaf.sequence:
+                raise ValueError(
+                    "At least some trees unifurcate at root, but root sequence is not fixed."
+                )
+    else:
+        # This should never happen in parsimony setting, when internal edges
+        # are collapsed by sequence
+        raise RuntimeError(
+            "Root sequence observed, but the corresponding leaf is not a child of the root node. "
+            "Gctree inference may give nonsensical results. Are you sure these are parsimony trees?"
+        )
 
-            # remove duplicate leaves, and adjust abundances
-            leaf_seqs = {}
-            to_delete = []
-            for leaf in disambig_tree.iter_leaves():
-                if leaf.sequence in leaf_seqs:
-                    leaf_seqs[leaf.sequence].append(leaf)
-                else:
-                    leaf_seqs[leaf.sequence] = [leaf]
-            for sequence, leaf_list in leaf_seqs.items():
-                if len(leaf_list) > 1:
-                    # Always choose root pseudo-leaf to represent nodes, if
-                    # possible
-                    ancestor = disambig_tree.get_common_ancestor(*leaf_list)
-                    _leaf_list_names = {node.name: node for node in leaf_list}
-                    if rootname in _leaf_list_names:
-                        rep_node = _leaf_list_names.pop(rootname)
-                    else:
-                        rep_node = _leaf_list_names.pop(leaf_list[0].name)
-                    to_delete = list(_leaf_list_names.values())
-                    rep_node.abundance = sum(leaf.abundance for leaf in leaf_list)
-                    rep_node.original_ids = {
-                        seq_id for node in leaf_list for seq_id in node.original_ids
-                    }
-                    while to_delete:
-                        for node in to_delete:
-                            node_map[node].delete(prevent_nondicotomic=False)
-                            node.delete(prevent_nondicotomic=False)
-                        to_delete = [
-                            leaf
-                            for leaf in ancestor.iter_leaves()
-                            if (leaf.sequence == sequence and leaf != rep_node)
-                        ]
-            # transplant leaf sequences and abundances:
-            for node in disambig_tree.iter_leaves():
-                node_map[node].abundance = node.abundance
-                node_map[node].sequence = node.sequence
-                node_map[node].original_ids = node.original_ids
-            # remove some unifurcations
-            to_delete = []
-            for node in tree.iter_descendants():
-                if len(node.children) == 1:
-                    # this excludes leaves
-                    to_delete.append(node)
-            for node in to_delete:
-                node.delete(prevent_nondicotomic=False)
-
-    def trees_to_dag(trees):
-        return hdag.history_dag_from_etes(
-            trees,
+    dag = hdag.history_dag_from_etes(
+        trees,
+        ["sequence"],
+        attr_func=lambda n: {
+            "name": n.name,
+            "isotype": frozendict(),
+        },
+    )
+    # If there are too many ambiguities at too many nodes, disambiguation will
+    # hang. Need to have an alternative (disambiguate each tree before putting in dag):
+    if (
+        dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
+        / dag.count_trees()
+        > 500000000
+    ):
+        warnings.warn(
+            "Parsimony trees have too many ambiguities for disambiguation in history DAG. "
+            "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
+        )
+        distrees = [disambiguate(tree) for tree in trees]
+        dag = hdag.history_dag_from_etes(
+            distrees,
             ["sequence"],
-            label_functions={"abundance": lambda n: n.abundance if n.is_leaf() else 0},
             attr_func=lambda n: {
                 "name": n.name,
-                "original_ids": (
-                    n.original_ids
-                    if "original_ids" in n.features
-                    else {n.name}
-                    if n.is_leaf()
-                    else set()
-                ),
                 "isotype": frozendict(),
             },
         )
-
-    dag = trees_to_dag(trees)
-    # If there are too many ambiguities at too many nodes, disambiguation will
-    # hang. Need to have an alternative (disambiguate each tree before putting in dag):
-
-    def test_explode_individually():
-        try:
-            if (
-                dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
-                / dag.count_trees()
-                > 5000000
-            ):
-                return True
-            else:
-                return False
-        except OverflowError:
-            return True
-
-    if test_explode_individually():
-        warnings.warn(
-            "Parsimony trees have too many ambiguities for disambiguation in all possible ways. "
-            "Disambiguating trees individually. Gctree may find fewer parsimony trees."
-        )
-        distrees = [disambiguate(tree) for tree in trees]
-        dag = trees_to_dag(distrees)
     dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
     # Look for (even) more trees:
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
-    for node in dag.preorder(skip_root=True):
-        if node.label.abundance != 0 and not node.is_leaf():
-            raise RuntimeError(
-                f"An internal node {node.attr['name']} was found with nonzero abundance {node.label.abundance}"
-            )
     dag.convert_to_collapsed()
-    dag.recompute_parents()
-    # Only leaf nodes have nonzero abundance now, so all internal edges are
-    # collapsed by sequence. Now labels with correct abundances are placed on
-    # leaf-adjacent nodes that will be collapsed by sequence.
+    # Add abundances to attrs:
     for node in dag.preorder(skip_root=True):
-        if node.is_leaf():
-            for parent in node.parents:
-                if parent.label.sequence == node.label.sequence:
-                    parent.label = node.label
+        if node.label.sequence in sequence_counts:
+            node.attr["abundance"] = sequence_counts[node.label.sequence]
+        else:
+            if node.is_leaf():
+                raise ValueError(
+                    "sequence_counts dictionary should contain all leaf sequences"
+                )
+            node.attr["abundance"] = 0
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
             f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.hamming_parsimony_count()}"
         )
+    for node in dag.preorder(skip_root=True):
+        if (
+            node.attr["abundance"] != 0
+            and not node.is_leaf()
+            and frozenset({node.label}) not in node.clades
+        ):
+            raise RuntimeError(
+                "An internal node not adjacent to a leaf with the same label was found with nonzero abundance."
+            )
 
     # names on internal nodes are all messed up from disambiguation step, we'll
     # fix them in CollapsedTree.__init__.
