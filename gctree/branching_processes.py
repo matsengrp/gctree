@@ -1672,6 +1672,7 @@ def _is_ambiguous(sequence):
 def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
+
     # preprocess trees so they're acceptable inputs
     # Assume all trees have fixed root sequence and fixed leaf sequences
     def get_sequence(node):
@@ -1683,6 +1684,27 @@ def _make_dag(trees, from_copy=True):
         else:
             return node.sequence
 
+    def get_all_leaf_isotypes(tree):
+        if any(not hasattr(node, "isotype") for node in tree.get_leaves()):
+            raise ValueError(f"All leaves need to be assigned an isotype.")
+        else:
+            return set([node.isotype for node in tree.get_leaves()])
+
+    # add isotypes to internal nodes of tree by always picking minimum isotype
+    # of all children + add abundances (internal nodes with sequence and isotype
+    # identical to a leaf get this leaf's abundance)
+    def isotype_internal_nodes(tree):
+        for node in tree.traverse("postorder"):
+            if not node.is_leaf():
+                children_isotypes = set(
+                    [child.isotype for child in node.get_children()]
+                )
+                node.add_feature(
+                    "isotype", min(children_isotypes, key=lambda x: x.isotype)
+                )
+                node.add_feature("abundance", 0)
+            node.name = str(node.name) + " " + str(node.isotype)
+
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
 
     # Assume all trees have same observed nodes.
@@ -1693,14 +1715,23 @@ def _make_dag(trees, from_copy=True):
     }
     if from_copy:
         trees = [tree.copy() for tree in trees]
+
+    # ensure that no tree has unifurcation at root
     if all(len(tree.children) > 1 for tree in trees):
         pass  # We're all good!
     elif trees[0].sequence not in leaf_seqs:
         if trees[0].sequence not in sequence_counts:
             sequence_counts[trees[0].sequence] = 0
+        # get first observed isotype in data set (i.e. all trees)
+        observed_isotypes = set.union(*[get_all_leaf_isotypes(tree) for tree in trees])
+        first_isotype = min(observed_isotypes, key=lambda x: x.isotype)
+        # add leaf as child of root with same sequence to remove unifurcation
         for tree in trees:
-            newleaf = tree.add_child(name="", dist=0)
+            newleaf = tree.add_child(name="naive", dist=0)
             newleaf.add_feature("sequence", trees[0].sequence)
+            # new leaf always gets first_isotype
+            newleaf.add_feature("isotype", first_isotype)
+            newleaf.add_feature("abundance", 0)
             if tree.sequence != newleaf.sequence:
                 raise ValueError(
                     "At least some trees unifurcate at root, but root sequence is not fixed."
@@ -1713,12 +1744,48 @@ def _make_dag(trees, from_copy=True):
             "Gctree inference may give nonsensical results. Are you sure these are parsimony trees?"
         )
 
+    # create new tree with additional nodes when sequence is identical but isotype switch is not
+    additional_trees = []
+    for tree in trees:
+        isotype_internal_nodes(tree)
+        newtree = tree.copy()
+        # get all edges on which we would like to add node
+        for node in newtree.iter_descendants():
+            if node.up.sequence == node.sequence and node.up.isotype != node.isotype:
+                new_children = [
+                    n
+                    for n in node.get_sisters()
+                    if n.isotype.isotype >= node.isotype.isotype
+                ]
+                # if multiple parallel edges are to be updated, we do not want to have the ones with
+                # greater isotype to be children of the node with smaller isotype (sequence is identical),
+                # we instead leave them to be parallel
+                ignore_isotypes = set([n.isotype for n in new_children if n.sequence == node.sequence]).difference(set([node.isotype]))
+                new_children = [n for n in new_children if n.isotype not in ignore_isotypes] + [node]
+                # skip this edge if we would create unifurcation
+                if len(new_children) <= 1:
+                    continue
+                newnode = node.up.add_child(dist=0, name="")
+                newnode.sequence = node.sequence
+                newnode.isotype = node.isotype
+                newnode.abundance = node.abundance
+                for child in new_children:
+                    child.detach()
+                    newnode.add_child(child)
+        additional_trees.append(newtree)
+    trees += additional_trees
+
+    # add trees if there are edges with identical sequence but different isotype
     dag = hdag.history_dag_from_etes(
         trees,
-        ["sequence"],
+        [],
+        label_functions={
+            "sequence": lambda n: n.sequence,
+            "isotype": lambda n: n.isotype,
+        },
         attr_func=lambda n: {
             "name": n.name,
-            "isotype": frozendict(),
+            "abundance": n.abundance,
         },
     )
     # If there are too many ambiguities at too many nodes, disambiguation will
@@ -1735,10 +1802,14 @@ def _make_dag(trees, from_copy=True):
         distrees = [disambiguate(tree) for tree in trees]
         dag = hdag.history_dag_from_etes(
             distrees,
-            ["sequence"],
-            attr_func=lambda n: {
-                "name": n.name,
-                "isotype": frozendict(),
+                [],
+                label_functions={
+                    "sequence": lambda n: n.sequence,
+                    "isotype": lambda n: n.isotype,
+                },
+                attr_func=lambda n: {
+                    "name": n.name,
+                    "abundance": n.abundance,
             },
         )
     dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
@@ -1746,16 +1817,15 @@ def _make_dag(trees, from_copy=True):
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
     dag.convert_to_collapsed()
-    # Add abundances to attrs:
+    # Add abundances for parents of leaves to attrs:
     for node in dag.preorder(skip_root=True):
-        if node.label.sequence in sequence_counts:
-            node.attr["abundance"] = sequence_counts[node.label.sequence]
-        else:
-            if node.is_leaf():
-                raise ValueError(
-                    "sequence_counts dictionary should contain all leaf sequences"
-                )
-            node.attr["abundance"] = 0
+        child_same_label = [child for child in node.children() if child.is_leaf() and child.label == node.label]
+        if len(child_same_label) == 1:
+            node.attr["abundance"] = child_same_label[0].attr["abundance"]
+        elif len(child_same_label) > 0:
+            raise RuntimeError(
+                "An internal node has two leaf children with identical sequence and isotype as itself."
+            )
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
