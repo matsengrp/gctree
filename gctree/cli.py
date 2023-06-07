@@ -172,7 +172,6 @@ def infer(args):
             isotype_mapfile = None
             idmap = defaultdict(lambda: 'any_sequence')
             idmapfile = None
-        print(isotypemap, isotype_mapfile)
 
         forest = bp.CollapsedForest(
             isotyping._add_isotype_to_mp_trees(
