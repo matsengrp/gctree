@@ -168,9 +168,9 @@ def infer(args):
             idmap = None
             idmapfile = args.idmapfile
         else:
-            isotypemap = defaultdict(lambda: '?')
+            isotypemap = None
             isotype_mapfile = None
-            idmap = defaultdict(lambda: 'any_sequence')
+            idmap = None
             idmapfile = None
 
         forest = bp.CollapsedForest(

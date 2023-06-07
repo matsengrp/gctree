@@ -442,29 +442,33 @@ def _add_isotype_to_mp_trees(
     a leaf corresponds to multiple observed isotypes, the leaf is split into two sister leaves (without adding a new node to the tree), each with its own observed isotype and the correct corresponding abundance."""
     if isotype_names is None:
         isotype_names = default_isotype_order
-    idmap, isotypemap = _process_isotype_arguments(isotypemap=isotypemap,
-                                                   isotypemap_file=isotypemap_file,
-                                                   idmap=idmap,
-                                                   idmap_file=idmap_file)
-    newidmap = explode_idmap(idmap, isotypemap)
     newisotype = IsotypeTemplate(isotype_names, weight_matrix=None).new
-    # newidmap maps unique sequence IDs to dictionaries mapping isotypes to
-    # observed abundances
-    for tree in trees:
-        nodes_to_add = []
-        for leaf in tree.iter_leaves():
-            this_leaf_isotypes = list((isoname, len(og_id_set)) for isoname, og_id_set in newidmap[leaf.name].items())
-            leaf.isotype = newisotype(this_leaf_isotypes[0][0])
-            if len(this_leaf_isotypes) > 1:
-                leaf.abundance = this_leaf_isotypes[0][1]
-                for other_isotype, other_abundance in this_leaf_isotypes[1:]:
-                    nodes_to_add.append((leaf.up, other_isotype, other_abundance, leaf.sequence, leaf.name))
+    if isotypemap is None and isotypemap_file is None:
+        for tree in trees:
+            for node in tree.get_leaves():
+                node.add_feature('isotype', newisotype('?'))
+    else:
+        idmap, isotypemap = _process_isotype_arguments(isotypemap=isotypemap,
+                                                       isotypemap_file=isotypemap_file,
+                                                       idmap=idmap,
+                                                       idmap_file=idmap_file)
+        newidmap = explode_idmap(idmap, isotypemap)
+        # newidmap maps unique sequence IDs to dictionaries mapping isotypes to
+        # observed abundances
+        for tree in trees:
+            nodes_to_add = []
+            for leaf in tree.iter_leaves():
+                this_leaf_isotypes = list((isoname, len(og_id_set)) for isoname, og_id_set in newidmap[leaf.name].items())
+                leaf.isotype = newisotype(this_leaf_isotypes[0][0])
+                if len(this_leaf_isotypes) > 1:
+                    leaf.abundance = this_leaf_isotypes[0][1]
+                    for other_isotype, other_abundance in this_leaf_isotypes[1:]:
+                        nodes_to_add.append((leaf.up, other_isotype, other_abundance, leaf.sequence, leaf.name))
 
-        for parent, isotype, abundance, sequence, name in nodes_to_add:
-            new_child = parent.add_child(name=name)
-            new_child.add_feature('abundance', abundance)
-            new_child.add_feature('sequence', sequence)
-            new_child.add_feature('isotype', newisotype(isotype))
-
+            for parent, isotype, abundance, sequence, name in nodes_to_add:
+                new_child = parent.add_child(name=name)
+                new_child.add_feature('abundance', abundance)
+                new_child.add_feature('sequence', sequence)
+                new_child.add_feature('isotype', newisotype(isotype))
     return trees
 
