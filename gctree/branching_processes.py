@@ -1705,6 +1705,19 @@ def _make_dag(trees, from_copy=True):
                 node.add_feature("abundance", 0)
             node.name = str(node.name) + " " + str(node.isotype)
 
+    # add new node as child of parent with given sequence and isotype and make
+    # all nodes in new_children children of the newly introduced node
+    def add_node(parent, new_children, sequence, isotype):
+        # don't allow creating a unifurcation
+        if len(new_children) > 1 and len(set(parent.children).difference(set(new_children))) > 0:
+            newnode = parent.add_child(dist=0, name="")
+            newnode.sequence = sequence
+            newnode.isotype = isotype
+            newnode.abundance = 0
+            for child in new_children:
+                child.detach()
+                newnode.add_child(child)
+
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
 
     # Assume all trees have same observed nodes.
@@ -1745,11 +1758,11 @@ def _make_dag(trees, from_copy=True):
         )
 
     # create new tree with additional nodes when sequence is identical but isotype switch is not
-    additional_trees = []
+    updated_trees = []
     for tree in trees:
         isotype_internal_nodes(tree)
         newtree = tree.copy()
-        # get all edges on which we would like to add node
+        # get all edges with identical on which we would like to add node
         for node in newtree.iter_descendants():
             if node.up.sequence == node.sequence and node.up.isotype != node.isotype:
                 new_children = [
@@ -1762,18 +1775,18 @@ def _make_dag(trees, from_copy=True):
                 # we instead leave them to be parallel
                 ignore_isotypes = set([n.isotype for n in new_children if n.sequence == node.sequence]).difference(set([node.isotype]))
                 new_children = [n for n in new_children if n.isotype not in ignore_isotypes] + [node]
-                # skip this edge if we would create unifurcation
-                if len(new_children) <= 1:
-                    continue
-                newnode = node.up.add_child(dist=0, name="")
-                newnode.sequence = node.sequence
-                newnode.isotype = node.isotype
-                newnode.abundance = node.abundance
-                for child in new_children:
-                    child.detach()
-                    newnode.add_child(child)
-        additional_trees.append(newtree)
-    trees += additional_trees
+                add_node(node.up, new_children, node.sequence, node.isotype)
+        # add nodes for edges where isotype and sequence are different
+        for node in newtree.iter_descendants():
+            if node.isotype != node.up.isotype and node.sequence != node.up.sequence:
+                new_children = [
+                    n
+                    for n in node.get_sisters()
+                    if n.isotype.isotype == node.isotype.isotype
+                ] + [node]
+                add_node(node.up, new_children, node.up.sequence, node.isotype)
+        updated_trees.append(newtree)
+    trees = updated_trees
 
     # add trees if there are edges with identical sequence but different isotype
     dag = hdag.history_dag_from_etes(
