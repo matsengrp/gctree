@@ -4,6 +4,7 @@ import gctree.branching_processes as bp
 import gctree.phylip_parse as pp
 import gctree.mutation_model as mm
 import gctree.utils as utils
+import gctree.isotyping as isotyping
 
 
 import argparse
@@ -164,16 +165,22 @@ def infer(args):
         if args.isotype_mapfile:
             isotypemap = None
             isotype_mapfile = args.isotype_mapfile
-        if not args.isotype_mapfile:
+            idmap = None
+            idmapfile = args.idmapfile
+        else:
             isotypemap = defaultdict(lambda: '?')
             isotype_mapfile = None
+            idmap = defaultdict(lambda: 'any_sequence')
+            idmapfile = None
+        print(isotypemap, isotype_mapfile)
 
         forest = bp.CollapsedForest(
             isotyping._add_isotype_to_mp_trees(
                 pp.parse_outfile(args.infiles[0], args.infiles[1], args.root),
                 isotypemap=isotypemap,
-                isotype_mapfile=isotype_mapfile,
-                idmap_file=args.idmapfile,
+                isotypemap_file=isotype_mapfile,
+                idmap=idmap,
+                idmap_file=idmapfile,
                 isotype_names=args.isotype_names,
             )
         )
@@ -183,9 +190,6 @@ def infer(args):
         if args.verbose:
             print("number of trees with integer branch lengths:", forest.n_trees)
         forest.mle(marginal=True)
-        # Add isotypes to forest
-        if args.isotype_mapfile:
-            isotype_add(forest)
         with open(args.outbase + ".inference.parsimony_forest.p", "wb") as f:
             pickle.dump(forest, f)
 
@@ -248,7 +252,25 @@ def infer(args):
                     colormap[seqid] = colors
                 else:
                     colormap[seqid] = color
+        color_func = None
     else:
+        isotype_palette = ['#8dd3c7',
+                           '#ffffb3',
+                           '#bebada',
+                           '#fb8072',
+                           '#80b1d3',
+                           '#fdb462',
+                           '#b3de69',
+                           '#fccde5',
+                           '#d9d9d9',
+                           '#bc80bd',
+                           '#ccebc5',
+                           '#ffed6f']
+        def color_func(treenode):
+            if treenode.isotype.isotype is None:
+                return "lightgray"
+            else:
+                return isotype_palette[treenode.isotype.isotype % len(isotype_palette)]
         colormap = None
 
     # parse position map file(s)
@@ -269,11 +291,13 @@ def infer(args):
             f"{args.outbase}.inference.{j}.svg",
             idlabel=args.idlabel,
             colormap=colormap,
+            color_func=color_func,
             frame=args.frame,
             position_map=position_map,
             chain_split=args.chain_split,
             frame2=args.frame2,
             position_map2=position_map2,
+            show_isotype=True,
         )
         collapsed_tree.newick(f"{args.outbase}.inference.{j}.nk")
         with open(f"{args.outbase}.inference.{j}.p", "wb") as f:

@@ -411,7 +411,7 @@ def _process_isotype_arguments(
     idmap: Optional[Mapping[str, Set[str]]] = None,
     idmap_file: Optional[str] = None,
 ):
-    if isotypemap_file and isotypemap is None:
+    if isotypemap is None and isotypemap_file:
         with open(isotypemap_file, "r") as fh:
             isotypemap = dict(map(lambda x: x.strip(), line.split(",")) for line in fh)
     elif isotypemap is None:
