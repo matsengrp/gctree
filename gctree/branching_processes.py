@@ -1728,7 +1728,7 @@ def _make_dag(trees, from_copy=True):
     # If there are too many ambiguities at too many nodes, disambiguation will
     # hang. Need to have an alternative (disambiguate each tree before putting in dag):
     if (
-        dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
+        dag.count_trees(expand_count_func=hdag.parsimony_utils.standard_nt_ambiguity_map.sequence_resolution_count)
         / dag.count_trees()
         > 500000000
     ):
@@ -1749,7 +1749,9 @@ def _make_dag(trees, from_copy=True):
                     "abundance": n.abundance,
             },
         )
-    dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
+    sequence_resolution_func = hdag.parsimony_utils.standard_nt_ambiguity_map.get_sequence_resolution_func('sequence')
+    dag.explode_nodes(expand_func=sequence_resolution_func)
+    dag = hdag.sequence_dag.SequenceHistoryDag.from_history_dag(dag)
     # Look for (even) more trees:
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
@@ -1890,7 +1892,7 @@ def _make_dag_old(trees, use_isotypes=False, from_copy=True):
     def test_explode_individually():
         try:
             if (
-                dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
+                dag.count_trees(expand_count_func=hdag.parsimony_utils.standard_nt_ambiguity_map.sequence_resolution_count)
                 / dag.count_trees()
                 > 5000000
             ):
@@ -1907,7 +1909,8 @@ def _make_dag_old(trees, use_isotypes=False, from_copy=True):
         )
         distrees = [disambiguate(tree) for tree in trees]
         dag = trees_to_dag(distrees)
-    dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
+    sequence_resolution_func = hdag.parsimony_utils.standard_nt_ambiguity_map.get_sequence_resolution_func('sequence')
+    dag.explode_nodes(expand_func=sequence_resolution_func)
     # Look for (even) more trees:
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
