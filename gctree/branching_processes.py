@@ -161,6 +161,13 @@ class CollapsedTree:
         else:
             self.tree = None
 
+        # readjust branch lengths now that collapse happened, no longer
+        # including isotype
+        for node in self.tree.iter_descendants():
+            node.dist = gctree.utils.hamming_distance(
+                node.sequence, node.up.sequence
+            )
+
     def _build_cm_counts(self):
         # create tuple (c, m) for each node, and store in a tuple of
         # ((c, m), n)'s, where n is the multiplicity of (c, m) seen in the
@@ -609,13 +616,21 @@ class CollapsedTree:
         # if we labelled seqs, let's also write the alignment out so we have
         # the sequences (including of internal nodes)
         if idlabel:
-            aln = MultipleSeqAlignment([])
+            # Nodes may be exploded by isotype, so to avoid duplicate records
+            # in fasta, first aggregate abundances over tree:
+            abundances = coll.defaultdict(lambda: 0)
+            sequences = {}
             for node in tree_copy.traverse():
+                sequences[node.name] = node.sequence
+                abundances[node.name] += node.abundance
+
+            aln = MultipleSeqAlignment([])
+            for seqname, sequence in sequences.items():
                 aln.append(
                     SeqRecord(
-                        Seq(str(node.sequence)),
-                        id=str(node.name),
-                        description=f"abundance={node.abundance}",
+                        Seq(str(sequence)),
+                        id=str(seqname),
+                        description=f"abundance={abundances[seqname]}",
                     )
                 )
             AlignIO.write(
