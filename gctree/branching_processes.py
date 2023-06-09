@@ -1621,6 +1621,56 @@ def _is_ambiguous(sequence):
     return any(base not in gctree.utils.bases for base in sequence)
 
 
+def _build_and_disambiguate_dag(trees):
+    # add trees if there are edges with identical sequence but different isotype
+    dag_building_kwargs = {"label_functions": {
+            "sequence": lambda n: n.sequence,
+            "isotype": lambda n: n.isotype,
+        },
+        "attr_func": lambda n: {
+            "name": n.name,
+            "abundance": n.abundance,
+        }}
+    dag = hdag.history_dag_from_etes(
+        trees,
+        [],
+        **dag_building_kwargs,
+    )
+    # If there are too many ambiguities at too many nodes, disambiguation will
+    # hang. Need to have an alternative (disambiguate each tree before putting in dag):
+    if (
+        dag.count_trees(expand_count_func=hdag.parsimony_utils.standard_nt_ambiguity_map.sequence_resolution_count)
+        / dag.count_trees()
+        > 500000000
+    ):
+        warnings.warn(
+            "Parsimony trees have too many ambiguities for disambiguation in history DAG. "
+            "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
+        )
+        distrees = [disambiguate(tree) for tree in trees]
+        dag = hdag.history_dag_from_etes(
+            distrees,
+            [],
+            **dag_building_kwargs,
+        )
+    sequence_resolution_func = hdag.parsimony_utils.standard_nt_ambiguity_map.get_sequence_resolution_func('sequence')
+    dag.explode_nodes(expand_func=sequence_resolution_func)
+    dag = hdag.sequence_dag.SequenceHistoryDag.from_history_dag(dag)
+    # Look for (even) more trees:
+    dag.add_all_allowed_edges(adjacent_labels=True)
+    dag.trim_optimal_weight()
+    dag.convert_to_collapsed()
+    # Add abundances for parents of leaves to attrs:
+    for node in dag.preorder(skip_root=True):
+        child_same_label = [child for child in node.children() if child.is_leaf() and child.label == node.label]
+        if len(child_same_label) == 1:
+            node.attr["abundance"] = child_same_label[0].attr["abundance"]
+        elif len(child_same_label) > 0:
+            raise RuntimeError(
+                "An internal node has two leaf children with identical sequence and isotype as itself."
+            )
+    return dag
+
 def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
@@ -1740,59 +1790,7 @@ def _make_dag(trees, from_copy=True):
         updated_trees.append(newtree)
     trees = updated_trees
 
-    # add trees if there are edges with identical sequence but different isotype
-    dag = hdag.history_dag_from_etes(
-        trees,
-        [],
-        label_functions={
-            "sequence": lambda n: n.sequence,
-            "isotype": lambda n: n.isotype,
-        },
-        attr_func=lambda n: {
-            "name": n.name,
-            "abundance": n.abundance,
-        },
-    )
-    # If there are too many ambiguities at too many nodes, disambiguation will
-    # hang. Need to have an alternative (disambiguate each tree before putting in dag):
-    if (
-        dag.count_trees(expand_count_func=hdag.parsimony_utils.standard_nt_ambiguity_map.sequence_resolution_count)
-        / dag.count_trees()
-        > 500000000
-    ):
-        warnings.warn(
-            "Parsimony trees have too many ambiguities for disambiguation in history DAG. "
-            "Disambiguating trees individually. History DAG may find fewer new parsimony trees."
-        )
-        distrees = [disambiguate(tree) for tree in trees]
-        dag = hdag.history_dag_from_etes(
-            distrees,
-                [],
-                label_functions={
-                    "sequence": lambda n: n.sequence,
-                    "isotype": lambda n: n.isotype,
-                },
-                attr_func=lambda n: {
-                    "name": n.name,
-                    "abundance": n.abundance,
-            },
-        )
-    sequence_resolution_func = hdag.parsimony_utils.standard_nt_ambiguity_map.get_sequence_resolution_func('sequence')
-    dag.explode_nodes(expand_func=sequence_resolution_func)
-    dag = hdag.sequence_dag.SequenceHistoryDag.from_history_dag(dag)
-    # Look for (even) more trees:
-    dag.add_all_allowed_edges(adjacent_labels=True)
-    dag.trim_optimal_weight()
-    dag.convert_to_collapsed()
-    # Add abundances for parents of leaves to attrs:
-    for node in dag.preorder(skip_root=True):
-        child_same_label = [child for child in node.children() if child.is_leaf() and child.label == node.label]
-        if len(child_same_label) == 1:
-            node.attr["abundance"] = child_same_label[0].attr["abundance"]
-        elif len(child_same_label) > 0:
-            raise RuntimeError(
-                "An internal node has two leaf children with identical sequence and isotype as itself."
-            )
+    dag = build_and_disambiguate_dag(trees)
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
