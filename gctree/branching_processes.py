@@ -1050,7 +1050,8 @@ class CollapsedForest:
                     # When there's unobserved root unifurcation, augment with
                     # pseudocount.
                     if (0, 1) in mset:
-                        assert mset[(0, 1)] == 1
+                        if mset[(0, 1)] != 1:
+                            raise AssertionError(f"expected one unobserved root unifurcation, but found {mset[(0, 1)]}")
                         mset = mset - {(0, 1)} + {(1, 1)}
                     return tuple(mset.items())
 
@@ -1664,15 +1665,6 @@ def _build_and_disambiguate_dag(trees):
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
     dag.convert_to_collapsed()
-    # Add abundances for parents of leaves to attrs:
-    for node in dag.preorder(skip_root=True):
-        child_same_label = [child for child in node.children() if child.is_leaf() and child.label == node.label]
-        if len(child_same_label) == 1:
-            node.attr["abundance"] = child_same_label[0].attr["abundance"]
-        elif len(child_same_label) > 0:
-            raise RuntimeError(
-                "An internal node has two leaf children with identical sequence and isotype as itself."
-            )
     return dag
 
 def _make_dag(trees, from_copy=True):
@@ -1832,7 +1824,7 @@ def _make_dag(trees, from_copy=True):
                             # We need child clades and edgesets
                             clades = {clade: node.clades[clade] for clade in clade_list}
                             label = type(node.label)(sequence=node.label.sequence, isotype=isotype)
-                            built_children.append(HistoryDagNode(label, clades, attr={'abundance': 0}))
+                            built_children.append(HistoryDagNode(label, clades, attr={'abundance': 0, 'name': 'unknown'}))
 
                         # modify parent node
                         new_clades = {old_clade: node.clades[old_clade] for old_clade in leave_behind}
@@ -1843,9 +1835,21 @@ def _make_dag(trees, from_copy=True):
         # This can be avoided by looking up new nodes in the node dictionary
         dag = dag[0] | dag
         dag._check_valid()
+        dag.convert_to_collapsed()
+        dag._check_valid()
         return dag
 
     dag = resolve_by_isotype(dag)
+
+    # Add abundances for parents of leaves to attrs:
+    for node in dag.preorder(skip_root=True):
+        child_same_label = [child for child in node.children() if child.is_leaf() and child.label == node.label]
+        if len(child_same_label) == 1:
+            node.attr["abundance"] = child_same_label[0].attr["abundance"]
+        elif len(child_same_label) > 0:
+            raise RuntimeError(
+                "An internal node has two leaf children with identical sequence and isotype as itself."
+            )
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
