@@ -9,6 +9,7 @@ from gctree.mutation_model import _mutability_dagfuncs
 from gctree.phylip_parse import disambiguate
 import gctree.isotyping
 
+from historydag.dag_node import HistoryDagNode, EdgeSet
 from frozendict import frozendict
 import pandas as pd
 import seaborn as sns
@@ -1623,9 +1624,12 @@ def _is_ambiguous(sequence):
 
 def _build_and_disambiguate_dag(trees):
     # add trees if there are edges with identical sequence but different isotype
+    isotype_sample = next(trees[0].iter_leaves()).isotype
+    ambiguous_isotype = type(isotype_sample)(isotype_sample.order, isotype_sample.weight_matrix, '?')
+
     dag_building_kwargs = {"label_functions": {
             "sequence": lambda n: n.sequence,
-            "isotype": lambda n: n.isotype,
+            "isotype": lambda n: n.isotype if n.is_leaf() else ambiguous_isotype,
         },
         "attr_func": lambda n: {
             "name": n.name,
@@ -1790,7 +1794,58 @@ def _make_dag(trees, from_copy=True):
         updated_trees.append(newtree)
     trees = updated_trees
 
-    dag = build_and_disambiguate_dag(trees)
+    dag = _build_and_disambiguate_dag(trees)
+    # Add isotypes to internal labels:
+    leaf_isotypes = {leaf.label: leaf.label.isotype for leaf in dag.get_leaves()}
+    dag = dag.update_label_fields(['isotype'], lambda n: [min(leaf_isotypes[label] for label in n.clade_union())])
+
+    def resolve_by_isotype(dag):
+        """Modifies dag in-place and returns a reference, to resolve multifurcations using isotypes, where possible."""
+        # Add additional nodes to resolve multifurcations using isotypes:
+        node_dict = {node: node for node in dag.preorder()}
+        # New added nodes don't need to be considered, but do need to be added to
+        # the dictionary.
+        for node in list(dag.preorder()):
+            # All target nodes beneath a clade must have the same isotype, which
+            # makes this simpler. if any resolving needs to be done, there's only
+            # one way to do it (according to our rules).
+            if len(node.clades) > 2:
+                child_isotypes = coll.defaultdict(lambda: [])
+                for clade, eset in node.clades.items():
+                    child_isotypes[eset.targets[0].label.isotype].append(clade)
+                if len(child_isotypes) > 1:
+                    # otherwise we can't use isotypes to resolve the
+                    # multifurcation
+                    leave_behind = []
+                    new_nodes = []
+                    for isotype, clade_list in child_isotypes.items():
+                        if len(clade_list) == 1:
+                            leave_behind.append(clade_list[0])
+                        else:
+                            new_nodes.append((isotype, clade_list))
+                    if len(new_nodes) > 0:
+                        # otherwise we'd have nothing to do...
+
+                        # create new child nodes
+                        built_children = []
+                        for isotype, clade_list in new_nodes:
+                            # We need child clades and edgesets
+                            clades = {clade: node.clades[clade] for clade in clade_list}
+                            label = type(node.label)(sequence=node.label.sequence, isotype=isotype)
+                            built_children.append(HistoryDagNode(label, clades, attr={'abundance': 0}))
+
+                        # modify parent node
+                        new_clades = {old_clade: node.clades[old_clade] for old_clade in leave_behind}
+                        for new_child in built_children:
+                            new_clades[new_child.clade_union()] = EdgeSet([new_child])
+                        node.clades = frozendict(new_clades)
+        dag.recompute_parents()
+        # This can be avoided by looking up new nodes in the node dictionary
+        dag = dag[0] | dag
+        dag._check_valid()
+        return dag
+
+    dag = resolve_by_isotype(dag)
 
     if len(dag.hamming_parsimony_count()) > 1:
         raise RuntimeError(
