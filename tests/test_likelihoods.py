@@ -1,6 +1,7 @@
 import gctree.branching_processes as bp
 import gctree.phylip_parse as pp
 import gctree.utils as utils
+import gctree.isotyping as isotyping
 
 import numpy as np
 from multiset import FrozenMultiset
@@ -11,8 +12,8 @@ def make_oldctree(tree):
     """Make an old CollapsedTree from an hDAG clade tree"""
     etetree = tree.to_ete(
         name_func=lambda n: n.attr["name"],
-        features=["sequence"],
-        feature_funcs={"abundance": lambda n: n.label.abundance},
+        features=["sequence", "isotype"],
+        feature_funcs={"abundance": lambda n: n.attr["abundance"]},
     )
     for node in etetree.traverse():
         if not node.is_leaf():
@@ -51,7 +52,7 @@ testtreesdis = [trees1dis, trees2dis]
 
 # The three kinds of CollapsedForests we're comparing:
 # new ones with hDAG
-newforests = [bp.CollapsedForest(trees) for trees in testtrees]
+newforests = [bp.CollapsedForest(isotyping._add_isotype_to_mp_trees(trees)) for trees in testtrees]
 
 # new ones with a list of ctrees
 newforests_ctrees = []

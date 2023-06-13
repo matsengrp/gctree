@@ -158,13 +158,13 @@ class CollapsedTree:
                         unobserved_count += 1
                         unobserved_dict[node.sequence] = node.name
             self._build_cm_counts()
+            # readjust branch lengths now that collapse happened, no longer
+            # including isotype
+            for node in self.tree.iter_descendants():
+                node.dist = gctree.utils.hamming_distance(node.sequence, node.up.sequence)
         else:
             self.tree = None
 
-        # readjust branch lengths now that collapse happened, no longer
-        # including isotype
-        for node in self.tree.iter_descendants():
-            node.dist = gctree.utils.hamming_distance(node.sequence, node.up.sequence)
 
     def _build_cm_counts(self):
         # create tuple (c, m) for each node, and store in a tuple of
