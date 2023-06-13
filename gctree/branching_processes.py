@@ -161,10 +161,11 @@ class CollapsedTree:
             # readjust branch lengths now that collapse happened, no longer
             # including isotype
             for node in self.tree.iter_descendants():
-                node.dist = gctree.utils.hamming_distance(node.sequence, node.up.sequence)
+                node.dist = gctree.utils.hamming_distance(
+                    node.sequence, node.up.sequence
+                )
         else:
             self.tree = None
-
 
     def _build_cm_counts(self):
         # create tuple (c, m) for each node, and store in a tuple of

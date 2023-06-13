@@ -52,7 +52,9 @@ testtreesdis = [trees1dis, trees2dis]
 
 # The three kinds of CollapsedForests we're comparing:
 # new ones with hDAG
-newforests = [bp.CollapsedForest(isotyping._add_isotype_to_mp_trees(trees)) for trees in testtrees]
+newforests = [
+    bp.CollapsedForest(isotyping._add_isotype_to_mp_trees(trees)) for trees in testtrees
+]
 
 # new ones with a list of ctrees
 newforests_ctrees = []
