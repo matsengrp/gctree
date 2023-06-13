@@ -8,7 +8,6 @@ import gctree.isotyping as isotyping
 
 
 import argparse
-from collections import defaultdict
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -253,23 +252,27 @@ def infer(args):
                     colormap[seqid] = color
         color_func = None
     else:
-        isotype_palette = ['#8dd3c7',
-                           '#ffffb3',
-                           '#bebada',
-                           '#fb8072',
-                           '#80b1d3',
-                           '#fdb462',
-                           '#b3de69',
-                           '#fccde5',
-                           '#d9d9d9',
-                           '#bc80bd',
-                           '#ccebc5',
-                           '#ffed6f']
+        isotype_palette = [
+            "#8dd3c7",
+            "#ffffb3",
+            "#bebada",
+            "#fb8072",
+            "#80b1d3",
+            "#fdb462",
+            "#b3de69",
+            "#fccde5",
+            "#d9d9d9",
+            "#bc80bd",
+            "#ccebc5",
+            "#ffed6f",
+        ]
+
         def color_func(treenode):
             if treenode.isotype.isotype is None:
                 return "lightgray"
             else:
                 return isotype_palette[treenode.isotype.isotype % len(isotype_palette)]
+
         colormap = None
 
     # parse position map file(s)

@@ -31,7 +31,7 @@ import historydag as hdag
 import multiset
 import matplotlib as mp
 import matplotlib.pyplot as plt
-from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence, Optional
+from typing import Tuple, Dict, List, Union, Set, Callable, Sequence, Optional
 from decimal import Decimal
 
 
@@ -105,7 +105,6 @@ class CollapsedTree:
                             node.up.name = node.up.name[0]
                     node.delete(prevent_nondicotomic=False)
 
-
             final_observed_genotypes = set()
             for node in self.tree.traverse():
                 if node.abundance > 0 or node == self.tree:
@@ -165,9 +164,7 @@ class CollapsedTree:
         # readjust branch lengths now that collapse happened, no longer
         # including isotype
         for node in self.tree.iter_descendants():
-            node.dist = gctree.utils.hamming_distance(
-                node.sequence, node.up.sequence
-            )
+            node.dist = gctree.utils.hamming_distance(node.sequence, node.up.sequence)
 
     def _build_cm_counts(self):
         # create tuple (c, m) for each node, and store in a tuple of
@@ -409,7 +406,7 @@ class CollapsedTree:
         r"""Return a string representation for printing."""
         return str(self.tree)
 
-    def render(
+    def render(  # noqa: C901
         self,
         outfile: str,
         scale: Optional[float] = None,
@@ -450,18 +447,19 @@ class CollapsedTree:
         if color_func is not None:
             pass
         elif colormap is not None:
+
             def color_func(node):
                 if node.name not in colormap:
                     return "lightgray"
                 else:
                     return colormap[node.name]
+
         else:
+
             def color_func(node):
                 return "lightgray"
 
-
         def my_layout(node):
-
             circle_color = color_func(node)
             text_color = "black"
 
@@ -508,12 +506,12 @@ class CollapsedTree:
                     position="branch-top",
                 )
 
-            node_label_text = ''
+            node_label_text = ""
             if idlabel:
                 node_label_text += node.name
             if show_isotype:
                 if node.isotype.isotype is not None:
-                    node_label_text += ' ' + str(node.isotype)
+                    node_label_text += " " + str(node.isotype)
             if len(node_label_text) > 0:
                 T = ete3.TextFace(node_label_text, tight_text=True, fsize=6)
                 T.rotation = -90
@@ -1051,7 +1049,9 @@ class CollapsedForest:
                     # pseudocount.
                     if (0, 1) in mset:
                         if mset[(0, 1)] != 1:
-                            raise AssertionError(f"expected one unobserved root unifurcation, but found {mset[(0, 1)]}")
+                            raise AssertionError(
+                                f"expected one unobserved root unifurcation, but found {mset[(0, 1)]}"
+                            )
                         mset = mset - {(0, 1)} + {(1, 1)}
                     return tuple(mset.items())
 
@@ -1192,8 +1192,7 @@ class CollapsedForest:
             coeffs = [-1] + list(ranking_coeffs)
 
             def minfunckey(weighttuple):
-                """Weighttuple will have (ll, mutabilitypars,
-                alleles)"""
+                """Weighttuple will have (ll, mutabilitypars, alleles)"""
                 return sum(
                     [
                         priority * float(weight)
@@ -1204,8 +1203,7 @@ class CollapsedForest:
         else:
 
             def minfunckey(weighttuple):
-                """Weighttuple will have (ll, mutabilitypars,
-                alleles)"""
+                """Weighttuple will have (ll, mutabilitypars, alleles)"""
                 # Sort output by likelihood, then mutability score
                 return (-weighttuple[0],) + weighttuple[1:-1]
 
@@ -1437,7 +1435,7 @@ class CollapsedForest:
             name_func=lambda n: n.attr["name"],
             features=["sequence", "isotype"],
             feature_funcs={
-                "abundance": lambda n: n.attr['abundance'] if n.is_leaf() else 0,
+                "abundance": lambda n: n.attr["abundance"] if n.is_leaf() else 0,
             },
         )
 
@@ -1467,9 +1465,9 @@ class CollapsedForest:
                 raise RuntimeError(
                     f"collapsed tree should have root name '{self._validation_stats['root']}' but has instead {ctree.tree.name}"
                 )
-            # counts:
-            counts = self._validation_stats["counts"]
-            #TODO make this validation work again
+            # TODO make this validation work again
+            # # counts:
+            # counts = self._validation_stats["counts"]
             # for node in etetree.iter_leaves():
             #     assert (
             #         sum(counts[og_id] for og_id in node.original_ids) == node.abundance
@@ -1626,16 +1624,20 @@ def _is_ambiguous(sequence):
 def _build_and_disambiguate_dag(trees):
     # add trees if there are edges with identical sequence but different isotype
     isotype_sample = next(trees[0].iter_leaves()).isotype
-    ambiguous_isotype = type(isotype_sample)(isotype_sample.order, isotype_sample.weight_matrix, '?')
+    ambiguous_isotype = type(isotype_sample)(
+        isotype_sample.order, isotype_sample.weight_matrix, "?"
+    )
 
-    dag_building_kwargs = {"label_functions": {
+    dag_building_kwargs = {
+        "label_functions": {
             "sequence": lambda n: n.sequence,
             "isotype": lambda n: n.isotype if n.is_leaf() else ambiguous_isotype,
         },
         "attr_func": lambda n: {
             "name": n.name,
             "abundance": n.abundance,
-        }}
+        },
+    }
     dag = hdag.history_dag_from_etes(
         trees,
         [],
@@ -1644,7 +1646,9 @@ def _build_and_disambiguate_dag(trees):
     # If there are too many ambiguities at too many nodes, disambiguation will
     # hang. Need to have an alternative (disambiguate each tree before putting in dag):
     if (
-        dag.count_trees(expand_count_func=hdag.parsimony_utils.standard_nt_ambiguity_map.sequence_resolution_count)
+        dag.count_trees(
+            expand_count_func=hdag.parsimony_utils.standard_nt_ambiguity_map.sequence_resolution_count
+        )
         / dag.count_trees()
         > 500000000
     ):
@@ -1658,7 +1662,11 @@ def _build_and_disambiguate_dag(trees):
             [],
             **dag_building_kwargs,
         )
-    sequence_resolution_func = hdag.parsimony_utils.standard_nt_ambiguity_map.get_sequence_resolution_func('sequence')
+    sequence_resolution_func = (
+        hdag.parsimony_utils.standard_nt_ambiguity_map.get_sequence_resolution_func(
+            "sequence"
+        )
+    )
     dag.explode_nodes(expand_func=sequence_resolution_func)
     dag = hdag.sequence_dag.SequenceHistoryDag.from_history_dag(dag)
     # Look for (even) more trees:
@@ -1667,8 +1675,10 @@ def _build_and_disambiguate_dag(trees):
     dag.convert_to_collapsed()
     return dag
 
+
 def _resolve_by_isotype(dag):
-    """Modifies dag in-place and returns a reference, to resolve multifurcations using isotypes, where possible."""
+    """Modifies dag in-place and returns a reference, to resolve
+    multifurcations using isotypes, where possible."""
     # Add additional nodes to resolve multifurcations using isotypes:
     # When multiple isotypes appear below a multifurcating node, create one
     # new child node per (duplicated) isotype, and move children with that
@@ -1700,11 +1710,19 @@ def _resolve_by_isotype(dag):
                     for isotype, clade_list in new_nodes:
                         # We need child clades and edgesets
                         clades = {clade: node.clades[clade] for clade in clade_list}
-                        label = type(node.label)(sequence=node.label.sequence, isotype=isotype)
-                        built_children.append(HistoryDagNode(label, clades, attr={'abundance': 0, 'name': 'unknown'}))
+                        label = type(node.label)(
+                            sequence=node.label.sequence, isotype=isotype
+                        )
+                        built_children.append(
+                            HistoryDagNode(
+                                label, clades, attr={"abundance": 0, "name": "unknown"}
+                            )
+                        )
 
                     # modify parent node
-                    new_clades = {old_clade: node.clades[old_clade] for old_clade in leave_behind}
+                    new_clades = {
+                        old_clade: node.clades[old_clade] for old_clade in leave_behind
+                    }
                     for new_child in built_children:
                         new_clades[new_child.clade_union()] = EdgeSet([new_child])
                     node.clades = frozendict(new_clades)
@@ -1714,6 +1732,7 @@ def _resolve_by_isotype(dag):
     dag = dag[0] | dag
     dag.convert_to_collapsed()
     return dag
+
 
 def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
@@ -1732,7 +1751,7 @@ def _make_dag(trees, from_copy=True):
 
     def get_all_leaf_isotypes(tree):
         if any(not hasattr(node, "isotype") for node in tree.get_leaves()):
-            raise ValueError(f"All leaves need to be assigned an isotype.")
+            raise ValueError("All leaves need to be assigned an isotype.")
         else:
             return set([node.isotype for node in tree.get_leaves()])
 
@@ -1780,7 +1799,9 @@ def _make_dag(trees, from_copy=True):
     # leaves below each node. This should be the choice that maximizes
     # collapsing:
     leaf_isotypes = {leaf.label: leaf.label.isotype for leaf in dag.get_leaves()}
-    dag = dag.update_label_fields(['isotype'], lambda n: [min(leaf_isotypes[label] for label in n.clade_union())])
+    dag = dag.update_label_fields(
+        ["isotype"], lambda n: [min(leaf_isotypes[label] for label in n.clade_union())]
+    )
 
     # Resolve multifurcations using isotype, when possible
     dag = _resolve_by_isotype(dag)
@@ -1788,7 +1809,11 @@ def _make_dag(trees, from_copy=True):
     # Add abundances for parents of leaves to attrs (this must be done after
     # all other modifications to the DAG):
     for node in dag.preorder(skip_root=True):
-        child_same_label = [child for child in node.children() if child.is_leaf() and child.label == node.label]
+        child_same_label = [
+            child
+            for child in node.children()
+            if child.is_leaf() and child.label == node.label
+        ]
         if len(child_same_label) == 1:
             node.attr["abundance"] = child_same_label[0].attr["abundance"]
         elif len(child_same_label) > 0:
@@ -1826,7 +1851,7 @@ def _cmcounter_dagfuncs():
             m = len(n2.clades)
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            return multiset.FrozenMultiset([(n2.attr['abundance'], m)])
+            return multiset.FrozenMultiset([(n2.attr["abundance"], m)])
 
     def accum_func(cmsetlist: List[multiset.FrozenMultiset]):
         st = multiset.FrozenMultiset()
@@ -1881,7 +1906,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.AddFuncDic
             # Check if this edge should be collapsed, and reduce mutant descendants
             if frozenset({n2.label}) in n2.clades:
                 m -= 1
-            c = n2.attr['abundance']
+            c = n2.attr["abundance"]
             if n1.is_root() and c == 0 and m == 1:
                 # Add pseudocount for unobserved root unifurcation
                 c = 1

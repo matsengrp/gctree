@@ -1,8 +1,9 @@
 # from gctree.isotyping import _isotype_annotation_dagfuncs
 import gctree.branching_processes as bp
-import gctree.isotyping as iso
-import gctree.phylip_parse as pp
-import ete3
+
+# import gctree.isotyping as iso
+# import gctree.phylip_parse as pp
+# import ete3
 import pickle
 
 # testtrees = [
@@ -64,4 +65,4 @@ def test_node_expansion():
     isotypedtrees_file = "tests/isotype_trees/sample_isotyped_mp_trees.p"
     with open(isotypedtrees_file, "rb") as f:
         input_trees = pickle.load(f)
-    forest = bp.CollapsedForest(input_trees)
+    bp.CollapsedForest(input_trees)
