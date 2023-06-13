@@ -1667,6 +1667,54 @@ def _build_and_disambiguate_dag(trees):
     dag.convert_to_collapsed()
     return dag
 
+def _resolve_by_isotype(dag):
+    """Modifies dag in-place and returns a reference, to resolve multifurcations using isotypes, where possible."""
+    # Add additional nodes to resolve multifurcations using isotypes:
+    # When multiple isotypes appear below a multifurcating node, create one
+    # new child node per (duplicated) isotype, and move children with that
+    # isotype beneath the new child
+    # New added nodes don't need to be considered for resolving.
+    for node in list(dag.preorder()):
+        # All target nodes beneath a clade must have the same isotype, which
+        # makes this simpler. if any resolving needs to be done, there's only
+        # one way to do it (according to our rules).
+        if len(node.clades) > 2:
+            child_isotypes = coll.defaultdict(lambda: [])
+            for clade, eset in node.clades.items():
+                child_isotypes[eset.targets[0].label.isotype].append(clade)
+            if len(child_isotypes) > 1:
+                # otherwise we can't use isotypes to resolve the
+                # multifurcation
+                leave_behind = []
+                new_nodes = []
+                for isotype, clade_list in child_isotypes.items():
+                    if len(clade_list) == 1:
+                        leave_behind.append(clade_list[0])
+                    else:
+                        new_nodes.append((isotype, clade_list))
+                if len(new_nodes) > 0:
+                    # otherwise we'd have nothing to do...
+
+                    # create new child nodes
+                    built_children = []
+                    for isotype, clade_list in new_nodes:
+                        # We need child clades and edgesets
+                        clades = {clade: node.clades[clade] for clade in clade_list}
+                        label = type(node.label)(sequence=node.label.sequence, isotype=isotype)
+                        built_children.append(HistoryDagNode(label, clades, attr={'abundance': 0, 'name': 'unknown'}))
+
+                    # modify parent node
+                    new_clades = {old_clade: node.clades[old_clade] for old_clade in leave_behind}
+                    for new_child in built_children:
+                        new_clades[new_child.clade_union()] = EdgeSet([new_child])
+                    node.clades = frozendict(new_clades)
+    dag.recompute_parents()
+    # This removes duplicate nodes, but could be avoided by looking up new
+    # nodes in a dictionary as they're created
+    dag = dag[0] | dag
+    dag.convert_to_collapsed()
+    return dag
+
 def _make_dag(trees, from_copy=True):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
@@ -1687,34 +1735,6 @@ def _make_dag(trees, from_copy=True):
             raise ValueError(f"All leaves need to be assigned an isotype.")
         else:
             return set([node.isotype for node in tree.get_leaves()])
-
-    # add isotypes to internal nodes of tree by always picking minimum isotype
-    # of all children + add abundances (internal nodes with sequence and isotype
-    # identical to a leaf get this leaf's abundance)
-    def isotype_internal_nodes(tree):
-        for node in tree.traverse("postorder"):
-            if not node.is_leaf():
-                children_isotypes = set(
-                    [child.isotype for child in node.get_children()]
-                )
-                node.add_feature(
-                    "isotype", min(children_isotypes, key=lambda x: x.isotype)
-                )
-                node.add_feature("abundance", 0)
-            node.name = str(node.name)
-
-    # add new node as child of parent with given sequence and isotype and make
-    # all nodes in new_children children of the newly introduced node
-    def add_node(parent, new_children, sequence, isotype):
-        # don't allow creating a unifurcation
-        if len(new_children) > 1 and len(set(parent.children).difference(set(new_children))) > 0:
-            newnode = parent.add_child(dist=0, name="")
-            newnode.sequence = sequence
-            newnode.isotype = isotype
-            newnode.abundance = 0
-            for child in new_children:
-                child.detach()
-                newnode.add_child(child)
 
     leaf_seqs = {get_sequence(node) for node in trees[0].get_leaves()}
 
@@ -1755,93 +1775,18 @@ def _make_dag(trees, from_copy=True):
             "Gctree inference may give nonsensical results. Are you sure these are parsimony trees?"
         )
 
-    # create new tree with additional nodes when sequence is identical but isotype switch is not
-    updated_trees = []
-    for tree in trees:
-        isotype_internal_nodes(tree)
-        newtree = tree.copy()
-        # get all edges with identical on which we would like to add node
-        for node in newtree.iter_descendants():
-            if node.up.sequence == node.sequence and node.up.isotype != node.isotype:
-                new_children = [
-                    n
-                    for n in node.get_sisters()
-                    if n.isotype.isotype >= node.isotype.isotype
-                ]
-                # if multiple parallel edges are to be updated, we do not want to have the ones with
-                # greater isotype to be children of the node with smaller isotype (sequence is identical),
-                # we instead leave them to be parallel
-                ignore_isotypes = set([n.isotype for n in new_children if n.sequence == node.sequence]).difference(set([node.isotype]))
-                new_children = [n for n in new_children if n.isotype not in ignore_isotypes] + [node]
-                add_node(node.up, new_children, node.sequence, node.isotype)
-        # add nodes for edges where isotype and sequence are different
-        for node in newtree.iter_descendants():
-            if node.isotype != node.up.isotype and node.sequence != node.up.sequence:
-                new_children = [
-                    n
-                    for n in node.get_sisters()
-                    if n.isotype.isotype == node.isotype.isotype
-                ] + [node]
-                add_node(node.up, new_children, node.up.sequence, node.isotype)
-        updated_trees.append(newtree)
-    trees = updated_trees
-
     dag = _build_and_disambiguate_dag(trees)
-    # Add isotypes to internal labels:
+    # Add isotypes to internal labels, using the earliest isotype observed on
+    # leaves below each node. This should be the choice that maximizes
+    # collapsing:
     leaf_isotypes = {leaf.label: leaf.label.isotype for leaf in dag.get_leaves()}
     dag = dag.update_label_fields(['isotype'], lambda n: [min(leaf_isotypes[label] for label in n.clade_union())])
 
-    def resolve_by_isotype(dag):
-        """Modifies dag in-place and returns a reference, to resolve multifurcations using isotypes, where possible."""
-        # Add additional nodes to resolve multifurcations using isotypes:
-        node_dict = {node: node for node in dag.preorder()}
-        # New added nodes don't need to be considered, but do need to be added to
-        # the dictionary.
-        for node in list(dag.preorder()):
-            # All target nodes beneath a clade must have the same isotype, which
-            # makes this simpler. if any resolving needs to be done, there's only
-            # one way to do it (according to our rules).
-            if len(node.clades) > 2:
-                child_isotypes = coll.defaultdict(lambda: [])
-                for clade, eset in node.clades.items():
-                    child_isotypes[eset.targets[0].label.isotype].append(clade)
-                if len(child_isotypes) > 1:
-                    # otherwise we can't use isotypes to resolve the
-                    # multifurcation
-                    leave_behind = []
-                    new_nodes = []
-                    for isotype, clade_list in child_isotypes.items():
-                        if len(clade_list) == 1:
-                            leave_behind.append(clade_list[0])
-                        else:
-                            new_nodes.append((isotype, clade_list))
-                    if len(new_nodes) > 0:
-                        # otherwise we'd have nothing to do...
+    # Resolve multifurcations using isotype, when possible
+    dag = _resolve_by_isotype(dag)
 
-                        # create new child nodes
-                        built_children = []
-                        for isotype, clade_list in new_nodes:
-                            # We need child clades and edgesets
-                            clades = {clade: node.clades[clade] for clade in clade_list}
-                            label = type(node.label)(sequence=node.label.sequence, isotype=isotype)
-                            built_children.append(HistoryDagNode(label, clades, attr={'abundance': 0, 'name': 'unknown'}))
-
-                        # modify parent node
-                        new_clades = {old_clade: node.clades[old_clade] for old_clade in leave_behind}
-                        for new_child in built_children:
-                            new_clades[new_child.clade_union()] = EdgeSet([new_child])
-                        node.clades = frozendict(new_clades)
-        dag.recompute_parents()
-        # This can be avoided by looking up new nodes in the node dictionary
-        dag = dag[0] | dag
-        dag._check_valid()
-        dag.convert_to_collapsed()
-        dag._check_valid()
-        return dag
-
-    dag = resolve_by_isotype(dag)
-
-    # Add abundances for parents of leaves to attrs:
+    # Add abundances for parents of leaves to attrs (this must be done after
+    # all other modifications to the DAG):
     for node in dag.preorder(skip_root=True):
         child_same_label = [child for child in node.children() if child.is_leaf() and child.label == node.label]
         if len(child_same_label) == 1:
