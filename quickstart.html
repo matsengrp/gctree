@@ -11,6 +11,8 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
@@ -218,6 +220,8 @@ Alternatively, we have had success setting the following environment variables i
 You may also want to tell matplotlib to use a headless backend with <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">MPLBACKEND=agg</span></code>.</p>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/historydag/dag.py:1727: UserWarning: `HistoryDag.hamming_parsimony_count` is deprecated in favor of `sequence_dag.SequenceHistoryDag.hamming_parsimony_count`.
+  warnings.warn(
 number of trees with integer branch lengths: 703
 Parameters: (0.49618320692429585, 0.36445206621349757)
 
@@ -261,6 +265,8 @@ Ranking priorities can be adjusted using the argument <code class="docutils lite
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../HS5F_Mutability.csv --substitution ../HS5F_Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/axisgrid.py:118: UserWarning: The figure layout has changed to tight
+  self._figure.tight_layout(*args, **kwargs)
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Isotype parsimony will be used as a ranking criterion
 Mutation model parsimony will be used as a ranking criterion
@@ -287,7 +293,7 @@ Among trees with min Log Likelihood of: -92.15528744
 
 Among trees with max Log Likelihood of: -78.00393661
 	Isotype Pars. range: 28 to 28
-	Mut. Pars. range: 66.45251202776495 to 68.93267315487162
+	Mut. Pars. range: 66.45251202776495 to 68.93267315487161
 	Alleles range: 48 to 48
 
 Among trees with min Isotype Pars. of: 23

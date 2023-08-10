@@ -10,6 +10,8 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script src="../../_static/sphinx_highlight.js"></script>
@@ -123,6 +125,13 @@
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span>
+
+<span class="n">sequence_resolutions</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">parsimony_utils</span><span class="o">.</span><span class="n">standard_nt_ambiguity_map_gap_as_char</span><span class="o">.</span><span class="n">get_sequence_resolution_func</span><span class="p">(</span>
+    <span class="s2">&quot;sequence&quot;</span>
+<span class="p">)</span>
+<span class="n">sequence_resolutions_count</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">parsimony_utils</span><span class="o">.</span><span class="n">standard_nt_ambiguity_map_gap_as_char</span><span class="o">.</span><span class="n">get_sequence_resolution_count_func</span><span class="p">(</span>
+    <span class="s2">&quot;sequence&quot;</span>
+<span class="p">)</span>
 
 
 <div class="viewcode-block" id="CollapsedTree"><a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree">[docs]</a><span class="k">class</span> <span class="nc">CollapsedTree</span><span class="p">:</span>
@@ -1760,7 +1769,7 @@
     <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">base</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">gctree</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">bases</span> <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">sequence</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_make_dag</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">from_copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_make_dag</span><span class="p">(</span><span class="n">trees</span><span class="p">,</span> <span class="n">from_copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">quick_sankoff</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a history DAG from ambiguous or disambiguated trees, whose nodes</span>
 <span class="sd">    have abundance, name, and sequence attributes.&quot;&quot;&quot;</span>
     <span class="c1"># preprocess trees so they&#39;re acceptable inputs</span>
@@ -1868,7 +1877,7 @@
     <span class="k">def</span> <span class="nf">test_explode_individually</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span>
-                <span class="n">dag</span><span class="o">.</span><span class="n">count_trees</span><span class="p">(</span><span class="n">expand_count_func</span><span class="o">=</span><span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">sequence_resolutions_count</span><span class="p">)</span>
+                <span class="n">dag</span><span class="o">.</span><span class="n">count_trees</span><span class="p">(</span><span class="n">expand_count_func</span><span class="o">=</span><span class="n">sequence_resolutions_count</span><span class="p">)</span>
                 <span class="o">/</span> <span class="n">dag</span><span class="o">.</span><span class="n">count_trees</span><span class="p">()</span>
                 <span class="o">&gt;</span> <span class="mi">5000000</span>
             <span class="p">):</span>
@@ -1885,7 +1894,7 @@
         <span class="p">)</span>
         <span class="n">distrees</span> <span class="o">=</span> <span class="p">[</span><span class="n">disambiguate</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">]</span>
         <span class="n">dag</span> <span class="o">=</span> <span class="n">trees_to_dag</span><span class="p">(</span><span class="n">distrees</span><span class="p">)</span>
-    <span class="n">dag</span><span class="o">.</span><span class="n">explode_nodes</span><span class="p">(</span><span class="n">expand_func</span><span class="o">=</span><span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">sequence_resolutions</span><span class="p">)</span>
+    <span class="n">dag</span><span class="o">.</span><span class="n">explode_nodes</span><span class="p">(</span><span class="n">expand_func</span><span class="o">=</span><span class="n">sequence_resolutions</span><span class="p">)</span>
     <span class="c1"># Look for (even) more trees:</span>
     <span class="n">dag</span><span class="o">.</span><span class="n">add_all_allowed_edges</span><span class="p">(</span><span class="n">adjacent_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">dag</span><span class="o">.</span><span class="n">trim_optimal_weight</span><span class="p">()</span>
