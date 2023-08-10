@@ -33,6 +33,13 @@ import matplotlib.pyplot as plt
 from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence, Optional
 from decimal import Decimal
 
+sequence_resolutions = hdag.parsimony_utils.standard_nt_ambiguity_map_gap_as_char.get_sequence_resolution_func(
+    "sequence"
+)
+sequence_resolutions_count = hdag.parsimony_utils.standard_nt_ambiguity_map_gap_as_char.get_sequence_resolution_count_func(
+    "sequence"
+)
+
 
 class CollapsedTree:
     r"""A collapsed tree, modeled as an infinite type Galton-Watson process run
@@ -1669,7 +1676,7 @@ def _is_ambiguous(sequence):
     return any(base not in gctree.utils.bases for base in sequence)
 
 
-def _make_dag(trees, from_copy=True):
+def _make_dag(trees, from_copy=True, quick_sankoff=False):
     """Build a history DAG from ambiguous or disambiguated trees, whose nodes
     have abundance, name, and sequence attributes."""
     # preprocess trees so they're acceptable inputs
@@ -1777,7 +1784,7 @@ def _make_dag(trees, from_copy=True):
     def test_explode_individually():
         try:
             if (
-                dag.count_trees(expand_count_func=hdag.utils.sequence_resolutions_count)
+                dag.count_trees(expand_count_func=sequence_resolutions_count)
                 / dag.count_trees()
                 > 5000000
             ):
@@ -1794,7 +1801,7 @@ def _make_dag(trees, from_copy=True):
         )
         distrees = [disambiguate(tree) for tree in trees]
         dag = trees_to_dag(distrees)
-    dag.explode_nodes(expand_func=hdag.utils.sequence_resolutions)
+    dag.explode_nodes(expand_func=sequence_resolutions)
     # Look for (even) more trees:
     dag.add_all_allowed_edges(adjacent_labels=True)
     dag.trim_optimal_weight()
