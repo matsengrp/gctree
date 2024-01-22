@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quickstart &mdash; gctree  documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -102,13 +104,13 @@
            <div itemprop="articleBody">
              
   <section id="quickstart">
-<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this heading"></a></h1>
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading"></a></h1>
 <p>In this minimal example we show how to use gctree commands to rank parsimony trees from PHYLIP’s dnapars program.
 See the CLI and API docs for complete documentation of command options, included many not used here.</p>
 <p>The data in this example were published in <a class="reference external" href="http://science.sciencemag.org/content/351/6277/1048">Tas et al. 2016. Visualizing Antibody Affinity Maturation in Germinal Centers. Science 351 (6277)</a> and shown in Fig. 4 (lymph node 2, germinal center 1).</p>
 <a class="reference internal image-reference" href="_images/gc1.png"><img alt="_images/gc1.png" src="_images/gc1.png" style="width: 200px;" /></a>
 <section id="input-data">
-<h2>Input data<a class="headerlink" href="#input-data" title="Permalink to this heading"></a></h2>
+<h2>Input data<a class="headerlink" href="#input-data" title="Link to this heading"></a></h2>
 <p>We start with a fasta alignment file.
 The file <code class="docutils literal notranslate"><span class="pre">../example/150228_Clone_3-8.fasta</span></code> contains heavy chain V gene sequences from
 germinal B cells sorted from a brainbow mouse using multicolor fate mapping.</p>
@@ -150,7 +152,7 @@ It does not refer to an observed sequence, but is included to outgroup root the 
 This input fasta file should also contain all observed sequences with duplication (some of which may be identical to the root/outgroup sequence).</p>
 </section>
 <section id="deduplication-and-sequence-abundances">
-<h2>Deduplication and sequence abundances<a class="headerlink" href="#deduplication-and-sequence-abundances" title="Permalink to this heading"></a></h2>
+<h2>Deduplication and sequence abundances<a class="headerlink" href="#deduplication-and-sequence-abundances" title="Link to this heading"></a></h2>
 <p>First we deduplicate the sequences and convert to phylip alignment format, and also determine sequence abundances.
 The <code class="docutils literal notranslate"><span class="pre">deduplicate</span></code> command writes the phylip alignment of unique sequences to stdout (which we redirect to a file here).
 The argument <code class="docutils literal notranslate"><span class="pre">--root</span></code> indicates the root id.
@@ -191,7 +193,7 @@ seq9,3
 </div>
 </section>
 <section id="parsimony-trees">
-<h2>Parsimony trees<a class="headerlink" href="#parsimony-trees" title="Permalink to this heading"></a></h2>
+<h2>Parsimony trees<a class="headerlink" href="#parsimony-trees" title="Link to this heading"></a></h2>
 <p>We use PHYLIP’s <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> program (see install docs page) to generate a set of maximum parsimony trees for the deduplicated sequences.
 PHYLIP is an interactive command line tool, so we will automatically generate a config file to feed it input, instead of using it interactively.</p>
 <p>We generate a config file for <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> based on our deduplicated alignment using the <code class="docutils literal notranslate"><span class="pre">mkconfig</span></code> command.</p>
@@ -206,7 +208,7 @@ PHYLIP is an interactive command line tool, so we will automatically generate a 
 Note: if you want to rerun the above <code class="docutils literal notranslate"><span class="pre">dnapars</span></code> command, you must delete these two files first!</p>
 </section>
 <section id="gctree">
-<h2>gctree<a class="headerlink" href="#gctree" title="Permalink to this heading"></a></h2>
+<h2>gctree<a class="headerlink" href="#gctree" title="Link to this heading"></a></h2>
 <p>We’re now ready to run <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span></code> to use abundance data (in <code class="docutils literal notranslate"><span class="pre">abundances.csv</span></code>) to rank the equally parsimonious trees (in <code class="docutils literal notranslate"><span class="pre">outfile</span></code>).
 We can use the optional argument <code class="docutils literal notranslate"><span class="pre">--frame</span></code> to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.</p>
 <div class="admonition note">
@@ -220,8 +222,6 @@ Alternatively, we have had success setting the following environment variables i
 You may also want to tell matplotlib to use a headless backend with <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">MPLBACKEND=agg</span></code>.</p>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose
-/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/historydag/dag.py:1727: UserWarning: `HistoryDag.hamming_parsimony_count` is deprecated in favor of `sequence_dag.SequenceHistoryDag.hamming_parsimony_count`.
-  warnings.warn(
 number of trees with integer branch lengths: 703
 Parameters: (0.49618320692429585, 0.36445206621349757)
 
@@ -265,8 +265,24 @@ Ranking priorities can be adjusted using the argument <code class="docutils lite
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../HS5F_Mutability.csv --substitution ../HS5F_Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
-/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/axisgrid.py:118: UserWarning: The figure layout has changed to tight
-  self._figure.tight_layout(*args, **kwargs)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/seaborn/_base.py:949: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+  data_subset = grouped_data.get_group(pd_key)
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Isotype parsimony will be used as a ranking criterion
 Mutation model parsimony will be used as a ranking criterion
@@ -293,7 +309,7 @@ Among trees with min Log Likelihood of: -92.15528744
 
 Among trees with max Log Likelihood of: -78.00393661
 	Isotype Pars. range: 28 to 28
-	Mut. Pars. range: 66.45251202776495 to 68.93267315487161
+	Mut. Pars. range: 66.45251202776494 to 68.93267315487161
 	Alleles range: 48 to 48
 
 Among trees with min Isotype Pars. of: 23
@@ -319,7 +335,7 @@ Among trees with max Mut. Pars. of: 76.08641625036459
 Among trees with min Alleles of: 48
 	Log Likelihood range: -82.14344157 to -78.00393661
 	Isotype Pars. range: 26 to 28
-	Mut. Pars. range: 66.45251202776495 to 74.06179332885715
+	Mut. Pars. range: 66.45251202776494 to 74.06179332885715
 
 Among trees with max Alleles of: 53
 	Log Likelihood range: -92.15528744 to -90.28220403
@@ -336,7 +352,7 @@ tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles
 </div>
 </section>
 <section id="isotype">
-<h2>isotype<a class="headerlink" href="#isotype" title="Permalink to this heading"></a></h2>
+<h2>isotype<a class="headerlink" href="#isotype" title="Link to this heading"></a></h2>
 <p>If we would like to add observed isotype data to trees output by gctree
 inference, we can now do so.
 In addition to the outputs from gctree, a file mapping original IDs of observed
@@ -354,7 +370,7 @@ For example, here is the top ranked tree above, with isotypes added:</p>
 <a class="reference internal image-reference" href="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg"><img alt="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg" src="_images/gctree.out.inference.1.p.isotype_parsimony.28.svg" width="1000" /></a>
 </section>
 <section id="a-note-about-node-names">
-<h2>A note about node names<a class="headerlink" href="#a-note-about-node-names" title="Permalink to this heading"></a></h2>
+<h2>A note about node names<a class="headerlink" href="#a-note-about-node-names" title="Link to this heading"></a></h2>
 <p>The names associated with unobserved nodes (for example, in trees rendered with
 <cite>–idlabel</cite>) are arbitrarily chosen, but are guaranteed to correspond
 bijectively with unobserved sequences. However, if gctree output contains
@@ -362,7 +378,7 @@ multiple trees, <strong>two unobserved nodes which share the same name but occur
 different output trees will not in general possess the same unobserved sequence.</strong></p>
 </section>
 <section id="a-note-about-ambiguous-sequence-data">
-<h2>A note about ambiguous sequence data<a class="headerlink" href="#a-note-about-ambiguous-sequence-data" title="Permalink to this heading"></a></h2>
+<h2>A note about ambiguous sequence data<a class="headerlink" href="#a-note-about-ambiguous-sequence-data" title="Link to this heading"></a></h2>
 <p>Gctree can handle input sequences which contain ambiguous bases, but handling
 of such sequences is experimental. That is, there may be issues with both the
 implementation and the underlying methods.</p>

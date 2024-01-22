@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>gctree.isotyping.Isotype &mdash; gctree  documentation</title>
-      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -118,28 +120,28 @@
            <div itemprop="articleBody">
              
   <section id="gctree-isotyping-isotype">
-<h1>gctree.isotyping.Isotype<a class="headerlink" href="#gctree-isotyping-isotype" title="Permalink to this heading"></a></h1>
+<h1>gctree.isotyping.Isotype<a class="headerlink" href="#gctree-isotyping-isotype" title="Link to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="gctree.isotyping.Isotype">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.isotyping.</span></span><span class="sig-name descname"><span class="pre">Isotype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotype_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/isotyping.html#Isotype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.isotyping.Isotype" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.isotyping.</span></span><span class="sig-name descname"><span class="pre">Isotype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotype_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/isotyping.html#Isotype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.isotyping.Isotype" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>An isotype, and associated information about class switching order and
 transition weights.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gctree.isotyping.Isotype.order">
-<span class="sig-name descname"><span class="pre">order</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.order" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">order</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.order" title="Link to this definition"></a></dt>
 <dd><p>A list or other sequence of isotype names, in their allowed class switching order</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gctree.isotyping.Isotype.weight_matrix">
-<span class="sig-name descname"><span class="pre">weight_matrix</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.weight_matrix" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">weight_matrix</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.weight_matrix" title="Link to this definition"></a></dt>
 <dd><p>Transition weights between isotypes, with first index the original isotype index, and second index the new isotype index.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gctree.isotyping.Isotype.isotype">
-<span class="sig-name descname"><span class="pre">isotype</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.isotype" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">isotype</span></span><a class="headerlink" href="#gctree.isotyping.Isotype.isotype" title="Link to this definition"></a></dt>
 <dd><p>Index of isotype name in <code class="docutils literal notranslate"><span class="pre">self.order</span></code></p>
 </dd></dl>
 
@@ -150,7 +152,7 @@ transition weights.</p>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">copy</span></code></p></td>
 <td><p><dl class="field-list simple">
 <dt class="field-odd">rtype<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#gctree.isotyping.Isotype" title="gctree.isotyping.Isotype"><code class="xref py py-class docutils literal notranslate"><span class="pre">Isotype</span></code></a></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#gctree.isotyping.Isotype" title="gctree.isotyping.Isotype"><code class="xref py py-class docutils literal notranslate"><span class="pre">Isotype</span></code></a></span></p>
 </dd>
 </dl>
 </p></td>
@@ -158,7 +160,7 @@ transition weights.</p>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">isbefore</span></code></p></td>
 <td><p><dl class="field-list simple">
 <dt class="field-odd">rtype<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
 </dd>
 </dl>
 </p></td>
@@ -166,7 +168,7 @@ transition weights.</p>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">iso_string</span></code></p></td>
 <td><p><dl class="field-list simple">
 <dt class="field-odd">rtype<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
 </dd>
 </dl>
 </p></td>
@@ -178,14 +180,14 @@ transition weights.</p>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="gctree.isotyping.Isotype.resolutions">
-<span class="sig-name descname"><span class="pre">resolutions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/isotyping.html#Isotype.resolutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.isotyping.Isotype.resolutions" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">resolutions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/isotyping.html#Isotype.resolutions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.isotyping.Isotype.resolutions" title="Link to this definition"></a></dt>
 <dd><p>Returns list of all possible isotypes if passed an ambiguous
 isotype.</p>
 <p>Otherwise, returns a list containing a copy of the passed
 isotype.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference internal" href="#gctree.isotyping.Isotype" title="gctree.isotyping.Isotype"><code class="xref py py-class docutils literal notranslate"><span class="pre">Isotype</span></code></a>]</p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference internal" href="#gctree.isotyping.Isotype" title="gctree.isotyping.Isotype"><code class="xref py py-class docutils literal notranslate"><span class="pre">Isotype</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>

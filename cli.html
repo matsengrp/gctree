@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>gctree &mdash; gctree  documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -133,7 +135,7 @@
            <div itemprop="articleBody">
              
   <section id="gctree">
-<h1>gctree<a class="headerlink" href="#gctree" title="Permalink to this heading"></a></h1>
+<h1>gctree<a class="headerlink" href="#gctree" title="Link to this heading"></a></h1>
 <p>The primary gctree command.</p>
 <p><p>genotype collapsed tree inference and simulation</p>
 </p>
@@ -141,15 +143,15 @@
 </pre></div>
 </div>
 <section id="Sub-commands">
-<h2>Sub-commands<a class="headerlink" href="#Sub-commands" title="Permalink to this heading"></a></h2>
+<h2>Sub-commands<a class="headerlink" href="#Sub-commands" title="Link to this heading"></a></h2>
 <section id="test">
-<h3>test<a class="headerlink" href="#test" title="Permalink to this heading"></a></h3>
+<h3>test<a class="headerlink" href="#test" title="Link to this heading"></a></h3>
 <p>run tests on library functions</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">test</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
 </pre></div>
 </div>
 <section id="named-arguments">
-<h4>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h4>
+<h4>Named Arguments<a class="headerlink" href="#named-arguments" title="Link to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>--outbase</kbd></dt>
 <dd><p>output file base name</p>
@@ -164,7 +166,7 @@
 </section>
 </section>
 <section id="infer">
-<h3>infer<a class="headerlink" href="#infer" title="Permalink to this heading"></a></h3>
+<h3>infer<a class="headerlink" href="#infer" title="Link to this heading"></a></h3>
 <p>likelihood ranking of parsimony trees</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">infer</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">root</span> <span class="n">ROOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">colormapfile</span> <span class="n">COLORMAPFILE</span><span class="p">]</span>
              <span class="p">[</span><span class="o">--</span><span class="n">chain_split</span> <span class="n">CHAIN_SPLIT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">frame2</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span>
@@ -180,7 +182,7 @@
 </pre></div>
 </div>
 <section id="positional-arguments">
-<h4>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h4>
+<h4>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Link to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>infiles</kbd></dt>
 <dd><p>Input files for inference. If two filenames are passed, the first shall be a dnapars outfile (verbose output with sequences at each site), and the second shall be an abundance file containing allele frequencies (sequence counts) in the format: <code class="docutils literal notranslate"><span class="pre">SeqID,</span> <span class="pre">Nobs</span></code>. If a single filename is passed, it shall be the name of a pickled history DAG object created by gctree. A new pickled forest will be output only if new annotations (such as isotypes) are added.</p>
@@ -188,7 +190,7 @@
 </dl>
 </section>
 <section id="named-arguments_repeat1">
-<h4>Named Arguments<a class="headerlink" href="#named-arguments_repeat1" title="Permalink to this heading"></a></h4>
+<h4>Named Arguments<a class="headerlink" href="#named-arguments_repeat1" title="Link to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>--root</kbd></dt>
 <dd><p>name of root sequence (outgroup root), default <code class="docutils literal notranslate"><span class="pre">&quot;root&quot;</span></code></p>
@@ -253,7 +255,7 @@
 </section>
 </section>
 <section id="simulate">
-<h3>simulate<a class="headerlink" href="#simulate" title="Permalink to this heading"></a></h3>
+<h3>simulate<a class="headerlink" href="#simulate" title="Link to this heading"></a></h3>
 <p>Neutral, and target selective, model gctree simulation</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gctree</span> <span class="n">simulate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sequence2</span> <span class="n">SEQUENCE2</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="k">lambda</span> <span class="n">LAMBDA_</span><span class="p">]</span>
                 <span class="p">[</span><span class="o">--</span><span class="n">lambda0</span> <span class="p">[</span><span class="n">LAMBDA0</span> <span class="o">...</span><span class="p">]]</span> <span class="p">[</span><span class="o">--</span><span class="n">n</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">T</span> <span class="n">T</span> <span class="p">[</span><span class="n">T</span> <span class="o">...</span><span class="p">]]</span>
@@ -264,7 +266,7 @@
 </pre></div>
 </div>
 <section id="positional-arguments_repeat1">
-<h4>Positional Arguments<a class="headerlink" href="#positional-arguments_repeat1" title="Permalink to this heading"></a></h4>
+<h4>Positional Arguments<a class="headerlink" href="#positional-arguments_repeat1" title="Link to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>sequence</kbd></dt>
 <dd><p>seed root nucleotide sequence</p>
@@ -278,7 +280,7 @@
 </dl>
 </section>
 <section id="named-arguments_repeat2">
-<h4>Named Arguments<a class="headerlink" href="#named-arguments_repeat2" title="Permalink to this heading"></a></h4>
+<h4>Named Arguments<a class="headerlink" href="#named-arguments_repeat2" title="Link to this heading"></a></h4>
 <dl class="option-list">
 <dt><kbd>--sequence2</kbd></dt>
 <dd><p>Second seed root nucleotide sequence. For simulating heavy/light chain co-evolution.</p>
@@ -329,12 +331,12 @@
 </section>
 </section>
 <section id="parsimony-utilities">
-<h1>Parsimony utilities<a class="headerlink" href="#parsimony-utilities" title="Permalink to this heading"></a></h1>
+<h1>Parsimony utilities<a class="headerlink" href="#parsimony-utilities" title="Link to this heading"></a></h1>
 <p>Additional command line uilities for processing data for genotype collapse,
 inferring parsimony trees with phylip, and prepping parsimony trees for analysis
 with gctree.</p>
 <section id="deduplicate">
-<h2>deduplicate<a class="headerlink" href="#deduplicate" title="Permalink to this heading"></a></h2>
+<h2>deduplicate<a class="headerlink" href="#deduplicate" title="Link to this heading"></a></h2>
 <p><p>Deduplicate sequences in a fasta file, write to stdout in phylip format, and create a few other files (see arguments). Headers must be a unique ID of less than or equal to 10 ASCII characters. An additional sequence representing the outgroup/root must be included (even if one or more observed sequences are identical to it).</p>
 </p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">deduplicate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">abundance_file</span> <span class="n">ABUNDANCE_FILE</span><span class="p">]</span>
@@ -345,7 +347,7 @@ with gctree.</p>
 </pre></div>
 </div>
 <section id="positional-arguments">
-<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h3>
+<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Link to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>infile</kbd></dt>
 <dd><p>Fasta file with less than or equal to 10 characters unique header ID. Because dnapars will name internal nodes by integers a node name must includeat least one non number character (unless using the id_abundances option).</p>
@@ -353,7 +355,7 @@ with gctree.</p>
 </dl>
 </section>
 <section id="named-arguments">
-<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h3>
+<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Link to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>--abundance_file</kbd></dt>
 <dd><p>filename for the output file containing the counts.</p>
@@ -381,7 +383,7 @@ with gctree.</p>
 </section>
 </section>
 <section id="mkconfig">
-<h2>mkconfig<a class="headerlink" href="#mkconfig" title="Permalink to this heading"></a></h2>
+<h2>mkconfig<a class="headerlink" href="#mkconfig" title="Link to this heading"></a></h2>
 <p><p>Read a PHYLIP-format file and produce an appropriate config file for passing
 to <cite>dnapars</cite>.</p>
 <p><cite>dnapars</cite> doesn’t play very well in a pipeline.  It prompts the user for
@@ -396,7 +398,7 @@ expected prompts.</p>
 </pre></div>
 </div>
 <section id="positional-arguments">
-<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h3>
+<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Link to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>phylip</kbd></dt>
 <dd><p>PHYLIP input</p>
@@ -407,7 +409,7 @@ expected prompts.</p>
 </dl>
 </section>
 <section id="named-arguments">
-<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h3>
+<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Link to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>--quick</kbd></dt>
 <dd><p>quicker (less thourough) dnapars</p>
@@ -422,7 +424,7 @@ expected prompts.</p>
 </section>
 </section>
 <section id="phylip-parse">
-<h2>phylip_parse<a class="headerlink" href="#phylip-parse" title="Permalink to this heading"></a></h2>
+<h2>phylip_parse<a class="headerlink" href="#phylip-parse" title="Link to this heading"></a></h2>
 <p><p>Given an outputfile from one of the PHYLIP tools - <cite>dnaml</cite> or <cite>dnapars</cite> -
 produce a CollapsedForest containing the trees in that outputfile.</p>
 </p>
@@ -431,7 +433,7 @@ produce a CollapsedForest containing the trees in that outputfile.</p>
 </pre></div>
 </div>
 <section id="positional-arguments">
-<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h3>
+<h3>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Link to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>phylip_outfile</kbd></dt>
 <dd><p>dnaml outfile (verbose output with inferred ancestral sequences, option 5).</p>
@@ -442,7 +444,7 @@ produce a CollapsedForest containing the trees in that outputfile.</p>
 </dl>
 </section>
 <section id="named-arguments">
-<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h3>
+<h3>Named Arguments<a class="headerlink" href="#named-arguments" title="Link to this heading"></a></h3>
 <dl class="option-list">
 <dt><kbd>--outputfile</kbd></dt>
 <dd><p>output file.</p>
@@ -455,7 +457,7 @@ produce a CollapsedForest containing the trees in that outputfile.</p>
 </section>
 </section>
 <section id="isotype">
-<h1>isotype<a class="headerlink" href="#isotype" title="Permalink to this heading"></a></h1>
+<h1>isotype<a class="headerlink" href="#isotype" title="Link to this heading"></a></h1>
 <p><p>Given gctree inference outputs, and a file mapping original
 sequence names (the original sequence ids referenced as values in
 <cite>idmapfile</cite>) with format “Original SeqID, Isotype”, this utility</p>
@@ -504,7 +506,7 @@ isotype additions.</p>
 </pre></div>
 </div>
 <section id="positional-arguments">
-<h2>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Permalink to this heading"></a></h2>
+<h2>Positional Arguments<a class="headerlink" href="#positional-arguments" title="Link to this heading"></a></h2>
 <dl class="option-list">
 <dt><kbd>idmapfile</kbd></dt>
 <dd><p>filename for a csv file mapping sequence names to original sequence ids, like the one output by deduplicate.</p>
@@ -515,7 +517,7 @@ isotype additions.</p>
 </dl>
 </section>
 <section id="named-arguments">
-<h2>Named Arguments<a class="headerlink" href="#named-arguments" title="Permalink to this heading"></a></h2>
+<h2>Named Arguments<a class="headerlink" href="#named-arguments" title="Link to this heading"></a></h2>
 <dl class="option-list">
 <dt><kbd>--trees</kbd></dt>
 <dd><p>filenames for collapsed tree pickle files output by gctree inference</p>

@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Installation &mdash; gctree  documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -99,9 +101,9 @@
            <div itemprop="articleBody">
              
   <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
 <section id="anaconda-install">
-<h2>Anaconda install<a class="headerlink" href="#anaconda-install" title="Permalink to this heading"></a></h2>
+<h2>Anaconda install<a class="headerlink" href="#anaconda-install" title="Link to this heading"></a></h2>
 <p>The preferred way to install gctree is with Conda:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>gctree<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.10
 conda<span class="w"> </span>activate<span class="w"> </span>gctree
@@ -111,7 +113,7 @@ conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> <
 <p>You will likely also want to install PHYLIP (see below)</p>
 </section>
 <section id="pip-install">
-<h2>Pip install<a class="headerlink" href="#pip-install" title="Permalink to this heading"></a></h2>
+<h2>Pip install<a class="headerlink" href="#pip-install" title="Link to this heading"></a></h2>
 <p>You may install using pip instead:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>gctree
 </pre></div>
@@ -119,7 +121,7 @@ conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> <
 <p>However, you will then need to separately install PHYLIP</p>
 </section>
 <section id="docker-build">
-<h2>Docker build<a class="headerlink" href="#docker-build" title="Permalink to this heading"></a></h2>
+<h2>Docker build<a class="headerlink" href="#docker-build" title="Link to this heading"></a></h2>
 <p>You may also find the provided Dockerfile useful.
 The resulting image runs the test script <cite>tests/test.sh</cite> by default.
 This runs the default inference pipeline on the sample data provided with gctree.</p>
@@ -137,7 +139,7 @@ docker<span class="w"> </span>build<span class="w"> </span>gctree<span class="w"
 </div>
 </section>
 <section id="phylip-installation">
-<h2>PHYLIP Installation<a class="headerlink" href="#phylip-installation" title="Permalink to this heading"></a></h2>
+<h2>PHYLIP Installation<a class="headerlink" href="#phylip-installation" title="Link to this heading"></a></h2>
 <p>The original use case for gctree is to use genotype abundance information to
 rank degenerate maximum parsimony trees. For this, you will need Joe
 Felsenstein’s PHYLIP package
