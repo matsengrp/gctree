@@ -6,7 +6,6 @@ from ete3 import TreeNode
 import numpy as np
 from scipy.stats import poisson
 import random
-import scipy
 from Bio.Seq import Seq
 import historydag as hdag
 from multiset import FrozenMultiset
@@ -134,7 +133,7 @@ class MutationModel:
             *[self.context_model[x] for x in MutationModel._disambiguate(kmer)]
         )
 
-        average_mutability = scipy.mean(mutabilities_to_average)
+        average_mutability = np.mean(mutabilities_to_average)
         average_substitution = {
             b: sum(
                 substitution_dict[b] for substitution_dict in substitutions_to_average
@@ -193,7 +192,7 @@ class MutationModel:
         # number of mutations m
         trials = 20
         for trial in range(1, trials + 1):
-            m = scipy.random.poisson(lambda_sequence)
+            m = np.random.poisson(lambda_sequence)
             if m <= sequence_length or self.with_replacement:
                 break
             if trial == trials:
@@ -205,17 +204,17 @@ class MutationModel:
         for i in range(m):
             sequence_list = list(sequence)  # make string a list so we can modify it
             # Determine the position to mutate from the mutability matrix
-            mutability_p = scipy.array(
+            mutability_p = np.array(
                 [mutabilities[pos][0] for pos in unmutated_positions]
             )
             for trial in range(1, trials + 1):
-                mut_pos = scipy.random.choice(
+                mut_pos = np.random.choice(
                     unmutated_positions, p=mutability_p / mutability_p.sum()
                 )
                 # Now draw the target nucleotide using the substitution matrix
                 substitution_p = [mutabilities[mut_pos][1][n] for n in "ACGT"]
                 assert 0 <= abs(sum(substitution_p) - 1.0) < 1e-10
-                chosen_target = scipy.random.choice(4, p=substitution_p)
+                chosen_target = np.random.choice(4, p=substitution_p)
                 original_base = sequence_list[mut_pos]
                 sequence_list[mut_pos] = "ACGT"[chosen_target]
                 sequence = "".join(sequence_list)  # reconstruct our sequence

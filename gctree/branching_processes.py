@@ -1821,9 +1821,11 @@ def _make_dag(trees, from_copy=True, quick_sankoff=False):
                 if parent.label.sequence == node.label.sequence:
                     parent.label = node.label
 
-    if len(dag.hamming_parsimony_count()) > 1:
+    dag = hdag.sequence_dag.SequenceHistoryDag.from_history_dag(dag)
+    pars_count = dag.hamming_parsimony_count()
+    if len(pars_count) > 1:
         raise RuntimeError(
-            f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {dag.hamming_parsimony_count()}"
+            f"History DAG parsimony search resulted in parsimony trees of unexpected weights:\n {pars_count}"
         )
 
     # names on internal nodes are all messed up from disambiguation step, we'll

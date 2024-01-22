@@ -111,7 +111,7 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
     bootstrap = False
     # Ugg... for compilation need to let python know that these will definely both be defined :-/
     sequences, parents = {}, {}
-    with open(outfile, "rU") as fh:
+    with open(outfile, "r") as fh:
         for sect in sections(fh):
             if sect == "parents":
                 parents = {child: parent for child, parent in iter_edges(fh)}
