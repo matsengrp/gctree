@@ -266,9 +266,9 @@ class CollapsedTree:
     def _ll_genotype(
         c: int, m: int, p: np.float64, q: np.float64
     ) -> Tuple[np.float64, np.ndarray]:
-        r"""Log-probability of getting :math:`c` leaves that are clones of the root and
-        :math:`m` mutant clades off the root lineage, given branching probability :math:`p` and
-        mutation probability :math:`q`.
+        r"""Log-probability of getting :math:`c` leaves that are clones of the
+        root and :math:`m` mutant clades off the root lineage, given branching
+        probability :math:`p` and mutation probability :math:`q`.
 
         AKA the spaceship distribution. Also returns gradient wrt p and q
         (p, q). Computed by dynamic programming.
