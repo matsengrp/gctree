@@ -1,4 +1,5 @@
 r"""Utility functions."""
+
 from functools import wraps, reduce
 import Bio.Data.IUPACData
 import operator

@@ -235,9 +235,9 @@ class MutationModel:
                         + str(trials)
                         + " consecutive attempts"
                     )
-                sequence_list[
-                    mut_pos
-                ] = original_base  # <-- we only get here if we are retrying
+                sequence_list[mut_pos] = (
+                    original_base  # <-- we only get here if we are retrying
+                )
 
         return sequence
 

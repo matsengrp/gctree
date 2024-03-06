@@ -491,9 +491,11 @@ class CollapsedTree:
                     C = ete3.CircleFace(
                         radius=node_size2,
                         color=circle_color,
-                        label={"text": str(node.abundance), "color": text_color}
-                        if node.abundance > 0
-                        else None,
+                        label=(
+                            {"text": str(node.abundance), "color": text_color}
+                            if node.abundance > 0
+                            else None
+                        ),
                     )
                     C.rotation = -90
                     C.hz_align = 1
@@ -610,9 +612,11 @@ class CollapsedTree:
                                     node.add_face(
                                         T,
                                         0,
-                                        position="branch-bottom"
-                                        if start == 0
-                                        else "branch-top",
+                                        position=(
+                                            "branch-bottom"
+                                            if start == 0
+                                            else "branch-top"
+                                        ),
                                     )
                                 if "*" in aa:
                                     nstyle["hz_line_color"] = "red"
@@ -892,9 +896,9 @@ class CollapsedTree:
         for node in self.tree.traverse(strategy="postorder"):
             if node.is_leaf():
                 node.LB_down = {
-                    node: node.abundance * clone_contribution
-                    if node.abundance > 1
-                    else 0
+                    node: (
+                        node.abundance * clone_contribution if node.abundance > 1 else 0
+                    )
                 }
             else:
                 node.LB_down = {node: node.abundance * clone_contribution}
@@ -1772,9 +1776,7 @@ def _make_dag(trees, from_copy=True, quick_sankoff=False):
                 "original_ids": (
                     n.original_ids
                     if "original_ids" in n.features
-                    else {n.name}
-                    if n.is_leaf()
-                    else set()
+                    else {n.name} if n.is_leaf() else set()
                 ),
                 "isotype": frozendict(),
             },
