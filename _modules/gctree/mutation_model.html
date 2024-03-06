@@ -343,9 +343,9 @@
                         <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">trials</span><span class="p">)</span>
                         <span class="o">+</span> <span class="s2">&quot; consecutive attempts&quot;</span>
                     <span class="p">)</span>
-                <span class="n">sequence_list</span><span class="p">[</span>
-                    <span class="n">mut_pos</span>
-                <span class="p">]</span> <span class="o">=</span> <span class="n">original_base</span>  <span class="c1"># &lt;-- we only get here if we are retrying</span>
+                <span class="n">sequence_list</span><span class="p">[</span><span class="n">mut_pos</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">original_base</span>  <span class="c1"># &lt;-- we only get here if we are retrying</span>
+                <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sequence</span></div>
 

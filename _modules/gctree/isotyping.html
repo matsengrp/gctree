@@ -151,11 +151,11 @@
         <span class="k">if</span> <span class="n">weight_matrix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">weight_matrix</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">[</span>
-                    <span class="mf">0.0</span>
-                    <span class="k">if</span> <span class="n">target</span> <span class="o">==</span> <span class="n">origin</span>
-                    <span class="k">else</span> <span class="mf">1.0</span>
-                    <span class="k">if</span> <span class="n">target</span> <span class="o">&gt;</span> <span class="n">origin</span>
-                    <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+                    <span class="p">(</span>
+                        <span class="mf">0.0</span>
+                        <span class="k">if</span> <span class="n">target</span> <span class="o">==</span> <span class="n">origin</span>
+                        <span class="k">else</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">target</span> <span class="o">&gt;</span> <span class="n">origin</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+                    <span class="p">)</span>
                     <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
                 <span class="p">]</span>
                 <span class="k">for</span> <span class="n">origin</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>

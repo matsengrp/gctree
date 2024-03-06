@@ -127,6 +127,7 @@
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span>
+<span class="kn">import</span> <span class="nn">math</span>
 
 <span class="n">sequence_resolutions</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">parsimony_utils</span><span class="o">.</span><span class="n">standard_nt_ambiguity_map_gap_as_char</span><span class="o">.</span><span class="n">get_sequence_resolution_func</span><span class="p">(</span>
     <span class="s2">&quot;sequence&quot;</span>
@@ -601,9 +602,11 @@
                     <span class="n">C</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">CircleFace</span><span class="p">(</span>
                         <span class="n">radius</span><span class="o">=</span><span class="n">node_size2</span><span class="p">,</span>
                         <span class="n">color</span><span class="o">=</span><span class="n">circle_color</span><span class="p">,</span>
-                        <span class="n">label</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">),</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">text_color</span><span class="p">}</span>
-                        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
-                        <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">=</span><span class="p">(</span>
+                            <span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="p">),</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="n">text_color</span><span class="p">}</span>
+                            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                            <span class="k">else</span> <span class="kc">None</span>
+                        <span class="p">),</span>
                     <span class="p">)</span>
                     <span class="n">C</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
                     <span class="n">C</span><span class="o">.</span><span class="n">hz_align</span> <span class="o">=</span> <span class="mi">1</span>
@@ -720,9 +723,11 @@
                                     <span class="n">node</span><span class="o">.</span><span class="n">add_face</span><span class="p">(</span>
                                         <span class="n">T</span><span class="p">,</span>
                                         <span class="mi">0</span><span class="p">,</span>
-                                        <span class="n">position</span><span class="o">=</span><span class="s2">&quot;branch-bottom&quot;</span>
-                                        <span class="k">if</span> <span class="n">start</span> <span class="o">==</span> <span class="mi">0</span>
-                                        <span class="k">else</span> <span class="s2">&quot;branch-top&quot;</span><span class="p">,</span>
+                                        <span class="n">position</span><span class="o">=</span><span class="p">(</span>
+                                            <span class="s2">&quot;branch-bottom&quot;</span>
+                                            <span class="k">if</span> <span class="n">start</span> <span class="o">==</span> <span class="mi">0</span>
+                                            <span class="k">else</span> <span class="s2">&quot;branch-top&quot;</span>
+                                        <span class="p">),</span>
                                     <span class="p">)</span>
                                 <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="n">aa</span><span class="p">:</span>
                                     <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span>
@@ -1020,9 +1025,9 @@
         <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;postorder&quot;</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">():</span>
                 <span class="n">node</span><span class="o">.</span><span class="n">LB_down</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="n">node</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">*</span> <span class="n">clone_contribution</span>
-                    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">1</span>
-                    <span class="k">else</span> <span class="mi">0</span>
+                    <span class="n">node</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">*</span> <span class="n">clone_contribution</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
+                    <span class="p">)</span>
                 <span class="p">}</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">node</span><span class="o">.</span><span class="n">LB_down</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">abundance</span> <span class="o">*</span> <span class="n">clone_contribution</span><span class="p">}</span>
@@ -1241,9 +1246,11 @@
                     <span class="p">)</span>
                 <span class="n">grad_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grad_ls</span><span class="p">[</span><span class="n">i_prime</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">res</span><span class="p">)</span>
             <span class="c1"># count_ls shouldn&#39;t have any zeros in it...</span>
-            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">count_ls</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">+</span> <span class="n">scs</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">count_ls</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-                <span class="n">grad_l</span>
-            <span class="p">)</span>
+            <span class="c1"># using math.log instead of np.log is essential because np.log</span>
+            <span class="c1"># doesn&#39;t work on large integers &gt; 2**64 :eyeroll:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="o">-</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">count_ls</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">+</span> <span class="n">scs</span><span class="o">.</span><span class="n">logsumexp</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">count_ls</span><span class="p">)</span>
+            <span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">grad_l</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">(</span><span class="n">ls</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
                 <span class="p">[(</span><span class="n">grad_ls</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="p">(</span><span class="n">grad_ls</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">count_ls</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()]</span>
@@ -1933,9 +1940,7 @@
                 <span class="s2">&quot;original_ids&quot;</span><span class="p">:</span> <span class="p">(</span>
                     <span class="n">n</span><span class="o">.</span><span class="n">original_ids</span>
                     <span class="k">if</span> <span class="s2">&quot;original_ids&quot;</span> <span class="ow">in</span> <span class="n">n</span><span class="o">.</span><span class="n">features</span>
-                    <span class="k">else</span> <span class="p">{</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
-                    <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span>
-                    <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+                    <span class="k">else</span> <span class="p">{</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">}</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">()</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
                 <span class="p">),</span>
                 <span class="s2">&quot;isotype&quot;</span><span class="p">:</span> <span class="n">frozendict</span><span class="p">(),</span>
             <span class="p">},</span>
