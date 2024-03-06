@@ -173,6 +173,7 @@ def infer(args):
 
         if args.verbose:
             print("number of trees with integer branch lengths:", forest.n_trees)
+
         forest.mle(marginal=True)
         # Add isotypes to forest
         if args.isotype_mapfile:

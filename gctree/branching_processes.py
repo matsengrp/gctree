@@ -32,6 +32,7 @@ import matplotlib as mp
 import matplotlib.pyplot as plt
 from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence, Optional
 from decimal import Decimal
+import math
 
 sequence_resolutions = hdag.parsimony_utils.standard_nt_ambiguity_map_gap_as_char.get_sequence_resolution_func(
     "sequence"
@@ -1100,7 +1101,9 @@ class CollapsedForest:
                     )
                 grad_l.append(grad_ls[i_prime, j] + res)
             # count_ls shouldn't have any zeros in it...
-            return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
+            # using math.log instead of np.log is essential because np.log
+            # doesn't work on large integers > 2**64 :eyeroll:
+            return (-math.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
                 grad_l
             )
         else:
