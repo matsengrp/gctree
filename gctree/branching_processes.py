@@ -1103,9 +1103,9 @@ class CollapsedForest:
             # count_ls shouldn't have any zeros in it...
             # using math.log instead of np.log is essential because np.log
             # doesn't work on large integers > 2**64 :eyeroll:
-            return (-math.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
-                grad_l
-            )
+            return (
+                -math.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)
+            ), np.array(grad_l)
         else:
             return (ls * count_ls).sum(), np.array(
                 [(grad_ls[:, 0] * count_ls).sum(), (grad_ls[:, 1] * count_ls).sum()]
