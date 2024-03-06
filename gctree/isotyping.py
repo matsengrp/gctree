@@ -52,11 +52,11 @@ class IsotypeTemplate:
         if weight_matrix is None:
             weight_matrix = [
                 [
-                    0.0
-                    if target == origin
-                    else 1.0
-                    if target > origin
-                    else float("inf")
+                    (
+                        0.0
+                        if target == origin
+                        else 1.0 if target > origin else float("inf")
+                    )
                     for target in range(n)
                 ]
                 for origin in range(n)

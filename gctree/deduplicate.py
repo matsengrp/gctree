@@ -58,9 +58,9 @@ def fasta_parse(aln_file, root, frame=None, aln_file2=None, id_abundances=False)
         if seq.id == root:
             root_seq = seqstr
             if seqstr not in seqs_unique_counts:
-                seqs_unique_counts[
-                    seqstr
-                ] = []  # no observed root unless we see it elsewhere
+                seqs_unique_counts[seqstr] = (
+                    []
+                )  # no observed root unless we see it elsewhere
         elif seq.id.isdigit() and id_abundances:
             seqs_unique_counts[seqstr] = [seq.id for _ in range(int(seq.id))]
         else:

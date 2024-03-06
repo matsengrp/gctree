@@ -32,6 +32,7 @@ import matplotlib as mp
 import matplotlib.pyplot as plt
 from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence, Optional
 from decimal import Decimal
+import math
 
 sequence_resolutions = hdag.parsimony_utils.standard_nt_ambiguity_map_gap_as_char.get_sequence_resolution_func(
     "sequence"
@@ -490,9 +491,11 @@ class CollapsedTree:
                     C = ete3.CircleFace(
                         radius=node_size2,
                         color=circle_color,
-                        label={"text": str(node.abundance), "color": text_color}
-                        if node.abundance > 0
-                        else None,
+                        label=(
+                            {"text": str(node.abundance), "color": text_color}
+                            if node.abundance > 0
+                            else None
+                        ),
                     )
                     C.rotation = -90
                     C.hz_align = 1
@@ -609,9 +612,11 @@ class CollapsedTree:
                                     node.add_face(
                                         T,
                                         0,
-                                        position="branch-bottom"
-                                        if start == 0
-                                        else "branch-top",
+                                        position=(
+                                            "branch-bottom"
+                                            if start == 0
+                                            else "branch-top"
+                                        ),
                                     )
                                 if "*" in aa:
                                     nstyle["hz_line_color"] = "red"
@@ -891,9 +896,9 @@ class CollapsedTree:
         for node in self.tree.traverse(strategy="postorder"):
             if node.is_leaf():
                 node.LB_down = {
-                    node: node.abundance * clone_contribution
-                    if node.abundance > 1
-                    else 0
+                    node: (
+                        node.abundance * clone_contribution if node.abundance > 1 else 0
+                    )
                 }
             else:
                 node.LB_down = {node: node.abundance * clone_contribution}
@@ -1100,9 +1105,11 @@ class CollapsedForest:
                     )
                 grad_l.append(grad_ls[i_prime, j] + res)
             # count_ls shouldn't have any zeros in it...
-            return (-np.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)), np.array(
-                grad_l
-            )
+            # using math.log instead of np.log is essential because np.log
+            # doesn't work on large integers > 2**64 :eyeroll:
+            return (
+                -math.log(count_ls.sum()) + scs.logsumexp(ls, b=count_ls)
+            ), np.array(grad_l)
         else:
             return (ls * count_ls).sum(), np.array(
                 [(grad_ls[:, 0] * count_ls).sum(), (grad_ls[:, 1] * count_ls).sum()]
@@ -1769,9 +1776,7 @@ def _make_dag(trees, from_copy=True, quick_sankoff=False):
                 "original_ids": (
                     n.original_ids
                     if "original_ids" in n.features
-                    else {n.name}
-                    if n.is_leaf()
-                    else set()
+                    else {n.name} if n.is_leaf() else set()
                 ),
                 "isotype": frozendict(),
             },
