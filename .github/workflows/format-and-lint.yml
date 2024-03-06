@@ -1,0 +1,46 @@
+name: build and test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  format-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      - name: Install Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install miniconda and create environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: gctree
+          environment-file: environment.yml
+          python-version: "3.10"
+          auto-activate-base: false
+          auto-update-conda: true
+
+      - name: Lint
+        # NOTE: must specify the shell so that conda init updates bashrc see:
+        #      https://github.com/conda-incubator/setup-miniconda#IMPORTANT
+        shell: bash -l {0}
+        run: make lint
+
+      - name: Check format with black
+        shell: bash -l {0}
+        run: black --check gctree
+
+      - name: Test docs build
+        # NOTE: only run on ubuntu-latest to save on compute usage
+        shell: bash -l {0}
+        run: |
+          make docs
+        env:
+          QT_QPA_PLATFORM: offscreen
+          MPLBACKEND: agg
