@@ -10,6 +10,8 @@ from Bio.Seq import Seq
 import historydag as hdag
 from multiset import FrozenMultiset
 from typing import Tuple, List, Callable, Optional
+import itertools
+import math
 
 
 class MutationModel:
@@ -129,7 +131,7 @@ class MutationModel:
                 "sequence {} must contain only characters A, C, G, T, or N".format(kmer)
             )
 
-        cached = self.context_model.get(x, default=None)
+        cached = self.context_model.get(kmer, None)
         if cached is None:
             mutabilities_to_average, substitutions_to_average = zip(
                 *[self.context_model[x] for x in MutationModel._disambiguate(kmer)]
@@ -527,8 +529,8 @@ def _mutability_distance_precursors(
             p_arr = [
                 mult
                 * (
-                    np.log(mutation_model[mer][0])
-                    + np.log(mutation_model[mer][1][newbase])
+                    np.log(mutation_model.mutability(mer)[0])
+                    + np.log(mutation_model.mutability(mer)[1][newbase])
                 )
                 for (mer, newbase), mult in pairs
             ]
@@ -540,7 +542,7 @@ def _mutability_distance_precursors(
         padded_seq = add_ns(parent_seq)
         for idx in padding_indices:
             assert padded_seq[idx] == "N"
-        return sum(mutation_model[padded_seq[idx - h: idx + h + 1]] for idx, _ in enumerate(padded_seq[:-h]) if idx not in padding_indices)
+        return sum(mutation_model.mutability(padded_seq[idx - h: idx + h + 1])[0] for idx, _ in enumerate(padded_seq[:-h]) if idx not in padding_indices)
 
 
     return (mutpairs, sum_minus_logp, mutability_sum)
@@ -572,21 +574,24 @@ def _mutability_distance(mutation_model: MutationModel, splits=[]):
 
 
 def context_poisson_likelihood_funcs(mutation_model: MutationModel, splits=[]):
-    mutpairs, _, mutability_sum = _mutability_distance_precursors(
+    mutpairs, sum_minus_logp, mutability_sum = _mutability_distance_precursors(
         mutation_model, splits=splits
     )
 
     def log_mer_mutability(mer, targetbase):
-        mutability, targets = mutation_model[mer]
+        mutability, targets = mutation_model.mutability(mer)
         return math.log(mutability) + math.log(targets[targetbase])
 
     def distance(seq1, seq2):
-        mut_sum = mutability_sum(seq1)
         subs = mutpairs(seq1, seq2)
         sub_count = len(subs)
-        pairs = sorted(subs.items())
-        substitution_sum = sum(log_mer_mutability(mer, targetbase) * mult for (mer, targetbase), mult in pairs)
-        return substitution_sum + (sub_count * (math.log(sub_count) - math.log(mut_sum))) - sub_count
+        if sub_count == 0:
+            return 0
+        else:
+            mut_sum = mutability_sum(seq1)
+            pairs = sorted(subs.items())
+            substitution_sum = - sum_minus_logp(subs)
+            return substitution_sum + (sub_count * (math.log(sub_count) - math.log(mut_sum))) - sub_count
 
 
     return hdag.utils.AddFuncDict(
