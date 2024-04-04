@@ -140,7 +140,8 @@ class MutationModel:
             average_mutability = np.mean(mutabilities_to_average)
             average_substitution = {
                 b: sum(
-                    substitution_dict[b] for substitution_dict in substitutions_to_average
+                    substitution_dict[b]
+                    for substitution_dict in substitutions_to_average
                 )
                 / len(substitutions_to_average)
                 for b in "ACGT"
@@ -486,7 +487,11 @@ def _mutability_dagfuncs(
 
     return hdag.utils.HistoryDagFilter(
         hdag.utils.AddFuncDict(
-            {"start_func": lambda n: 0, "edge_weight_func": distance, "accum_func": sum},
+            {
+                "start_func": lambda n: 0,
+                "edge_weight_func": distance,
+                "accum_func": sum,
+            },
             name="Mut. Pars.",
         ),
         min,
@@ -505,7 +510,14 @@ def _mutability_distance_precursors(
 
     # Indices at which padding N's will be in sequences returned from add_ns.
     # Does not include indices of last two N's.
-    padding_indices = set(itertools.chain.from_iterable([range(split + idx*h, split + (idx + 1) * h ) for idx, split in enumerate([0] + splits)]))
+    padding_indices = set(
+        itertools.chain.from_iterable(
+            [
+                range(split + idx * h, split + (idx + 1) * h)
+                for idx, split in enumerate([0] + splits)
+            ]
+        )
+    )
 
     def add_ns(seq: str):
         ns = "N" * h
@@ -545,8 +557,11 @@ def _mutability_distance_precursors(
         padded_seq = add_ns(parent_seq)
         for idx in padding_indices:
             assert padded_seq[idx] == "N"
-        return sum(mutation_model.mutability(padded_seq[idx - h: idx + h + 1])[0] for idx, _ in enumerate(padded_seq[:-h]) if idx not in padding_indices)
-
+        return sum(
+            mutation_model.mutability(padded_seq[idx - h : idx + h + 1])[0]
+            for idx, _ in enumerate(padded_seq[:-h])
+            if idx not in padding_indices
+        )
 
     return (mutpairs, sum_minus_logp, mutability_sum)
 
@@ -576,11 +591,10 @@ def _mutability_distance(mutation_model: MutationModel, splits=[]):
     return distance
 
 
-def _context_poisson_likelihood(mutation_mode: MutationModel, splits=[]):
+def _context_poisson_likelihood(mutation_model: MutationModel, splits=[]):
     mutpairs, sum_minus_logp, mutability_sum = _mutability_distance_precursors(
         mutation_model, splits=splits
     )
-
 
     def distance(seq1, seq2):
         subs = mutpairs(seq1, seq2)
@@ -589,11 +603,15 @@ def _context_poisson_likelihood(mutation_mode: MutationModel, splits=[]):
             return 0
         else:
             mut_sum = mutability_sum(seq1)
-            pairs = sorted(subs.items())
-            substitution_sum = - sum_minus_logp(subs)
-            return substitution_sum + (sub_count * (math.log(sub_count) - math.log(mut_sum))) - sub_count
+            substitution_sum = -sum_minus_logp(subs)
+            return (
+                substitution_sum
+                + (sub_count * (math.log(sub_count) - math.log(mut_sum)))
+                - sub_count
+            )
 
     return distance
+
 
 def _context_poisson_likelihood_dagfuncs(mutation_model: MutationModel, splits=[]):
     distance = _context_poisson_likelihood(mutation_model, splits=splits)
@@ -602,8 +620,12 @@ def _context_poisson_likelihood_dagfuncs(mutation_model: MutationModel, splits=[
         hdag.utils.AddFuncDict(
             {
                 "start_func": lambda n: 0,
-                "edge_weight_func": lambda n1, n2: 0 if n1.is_ua_node() else distance(n1.label.sequence, n2.label.sequence),
-                "accum_func": sum
+                "edge_weight_func": lambda n1, n2: (
+                    0
+                    if n1.is_ua_node()
+                    else distance(n1.label.sequence, n2.label.sequence)
+                ),
+                "accum_func": sum,
             },
             name="LogPoissonContextLikelihood",
         ),

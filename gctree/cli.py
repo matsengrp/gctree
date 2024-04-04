@@ -642,7 +642,7 @@ def get_parser():
             "Use old mutability parsimony instead of poisson context likelihood. Not recommended "
             "unless attempting to reproduce results from older versions of gctree. "
             "This argument will have no effect unless an S5F model is provided with the arguments "
-            "`--mutability` and `--substitution`".
+            "`--mutability` and `--substitution`."
         ),
     )
     parser_infer.add_argument(

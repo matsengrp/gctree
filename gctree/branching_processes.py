@@ -6,7 +6,10 @@ from __future__ import annotations
 
 import gctree.utils
 from gctree.isotyping import _isotype_dagfuncs, _isotype_annotation_dagfuncs
-from gctree.mutation_model import _mutability_dagfuncs
+from gctree.mutation_model import (
+    _mutability_dagfuncs,
+    _context_poisson_likelihood_dagfuncs,
+)
 from gctree.phylip_parse import disambiguate
 
 from frozendict import frozendict
@@ -1131,7 +1134,7 @@ class CollapsedForest:
         return self.parameters
 
     @_requires_dag
-    def filter_trees(
+    def filter_trees(  # noqa: C901
         self,
         ranking_coeffs: Optional[Sequence[float]] = None,
         mutability_file: Optional[str] = None,
@@ -1193,7 +1196,12 @@ class CollapsedForest:
         else:
             coeffs = [1] * 4
 
-        nz_coeff_bplikelihood, nz_coeff_isotype_pars, nz_coeff_context, nz_coeff_alleles = [val != 0 for val in coeffs]
+        (
+            nz_coeff_bplikelihood,
+            nz_coeff_isotype_pars,
+            nz_coeff_context,
+            nz_coeff_alleles,
+        ) = [val != 0 for val in coeffs]
         coeff_bplikelihood, coeff_isotype_pars, coeff_context, coeff_alleles = coeffs
 
         dag_filters = []
@@ -1203,7 +1211,8 @@ class CollapsedForest:
             p, q = self.parameters
             ll_dagfuncs = _ll_genotype_dagfuncs(p, q)
             dag_filters.append((ll_dagfuncs, coeff_bplikelihood))
-            print(f"Branching process parameters to be used for ranking: {(p, q)}")
+            if verbose:
+                print(f"Branching process parameters to be used for ranking: {(p, q)}")
         if nz_coeff_isotype_pars and self.is_isotyped and (not ignore_isotype):
             if verbose:
                 print("Isotype parsimony will be used as a ranking criterion")
@@ -1241,8 +1250,9 @@ class CollapsedForest:
             allele_funcs = _allele_dagfuncs()
             dag_filters.append((allele_funcs, coeff_alleles))
 
-
-        combined_dag_filter = reduce(lambda x, y: x + y, (dag_filter for dag_filter, _ in dag_filters))
+        combined_dag_filter = functools.reduce(
+            lambda x, y: x + y, (dag_filter for dag_filter, _ in dag_filters)
+        )
         if ranking_coeffs:
             if len(ranking_coeffs) != 3:
                 raise ValueError(
@@ -1250,11 +1260,15 @@ class CollapsedForest:
                 )
             for dag_filter, coeff in dag_filters:
                 if dag_filter.optimal_func == max and coeff > 0:
-                    warnings.warn(f"Higher values for {dag_filter.weight_funcs.name} are generally better, but the "
-                                  "provided ranking coefficient is positive, so trees with lower values will be preferred.")
+                    warnings.warn(
+                        f"Higher values for {dag_filter.weight_funcs.name} are generally better, but the "
+                        "provided ranking coefficient is positive, so trees with lower values will be preferred."
+                    )
                 if dag_filter.optimal_func == min and coeff < 0:
-                    warnings.warn(f"Lower values for {dag_filter.weight_funcs.name} are generally better, but the "
-                                  "provided ranking coefficient is negative, so trees with higher values will be preferred.")
+                    warnings.warn(
+                        f"Lower values for {dag_filter.weight_funcs.name} are generally better, but the "
+                        "provided ranking coefficient is negative, so trees with higher values will be preferred."
+                    )
 
             filtered_coefficients = [coeff for _, coeff in dag_filters]
 
@@ -1265,13 +1279,15 @@ class CollapsedForest:
                         for priority, weight in zip(filtered_coefficients, weighttuple)
                     ]
                 )
-            
+
             old_edge_func = combined_dag_filter["edge_weight_func"]
             ranking_dag_filter = hdag.utils.HistoryDagFilter(
                 hdag.utils.AddFuncDict(
                     {
                         "start_func": lambda n: 0,
-                        "edge_weight_func": lambda n1, n2: linear_combinator(old_edge_func(n1, n2)),
+                        "edge_weight_func": lambda n1, n2: linear_combinator(
+                            old_edge_func(n1, n2)
+                        ),
                         "accum_func": sum,
                     }
                 ),
@@ -1280,15 +1296,22 @@ class CollapsedForest:
             )
             ranking_description = (
                 "Ranking trees to minimize a linear combination of "
-                " + ".join(str(coeff) + "(" + fl.weight_funcs.name + ")" for fl, coeff in dag_filters)
+                " + ".join(
+                    str(coeff) + "(" + fl.weight_funcs.name + ")"
+                    for fl, coeff in dag_filters
+                )
             )
         else:
             ranking_dag_filter = combined_dag_filter
-            ranking_description = (
-                "Ranking trees to "
-                " then ".join(opt_name + "imize " + ord_name for (opt_name, _), ord_name in zip(ranking_dag_filter.ordering_name, ranking_dag_filter.weight_funcs.names))
+            ranking_description = "Ranking trees to " " then ".join(
+                opt_name + "imize " + ord_name
+                for (opt_name, _), ord_name in zip(
+                    ranking_dag_filter.ordering_name,
+                    ranking_dag_filter.weight_funcs.names,
+                )
             )
-
+        if verbose:
+            print(ranking_description)
 
         def print_stats(statlist, title, file=None, suppress_score=False):
             show_score = ranking_coeffs and not suppress_score
@@ -1300,7 +1323,12 @@ class CollapsedForest:
                     return f"{field:{n}.{n}}"
 
             print("\n" + title + ":", file=file)
-            statstring = "\t".join(tuple(reformat(kwargs.name, n=14) for kwargs in kwargls))
+            statstring = "\t".join(
+                tuple(
+                    reformat(dfilter.weight_funcs.name, n=14)
+                    for dfilter, _ in dag_filters
+                )
+            )
             print(
                 f"tree     \t{statstring}" + ("\ttreescore" if show_score else ""),
                 file=file,
@@ -1340,11 +1368,13 @@ class CollapsedForest:
                         opt_weight = tempdag.trim_optimal_weight(**dfilter)
                         independent_best[-1].append(opt_weight)
                         fh.write(
-                            f"\nAmong trees with {opt.__name__} {kwargs.name} of: {opt_weight}\n"
+                            f"\nAmong trees with {opt.__name__} {dfilter.weight_funcs.name} of: {opt_weight}\n"
                         )
                         for indfilter, _ in dag_filters:
                             if indfilter.weight_funcs.name != dfilter.weight_funcs.name:
-                                minval, maxval = tempdag.weight_range_annotate(**indfilter.weight_funcs)
+                                minval, maxval = tempdag.weight_range_annotate(
+                                    **indfilter.weight_funcs
+                                )
                                 fh.write(
                                     f"\t{indfilter.weight_funcs.name} range: {minval} to {maxval}\n"
                                 )
@@ -1374,7 +1404,9 @@ class CollapsedForest:
             df = pd.DataFrame(dag_ls, columns=combined_dag_filter.weight_funcs.names)
             df.to_csv(outbase + ".tree_stats.csv")
             df["set"] = ["all_trees"] * len(df)
-            bestdf = pd.DataFrame([best_weighttuple], columns=combined_dag_filter.weight_funcs.names)
+            bestdf = pd.DataFrame(
+                [best_weighttuple], columns=combined_dag_filter.weight_funcs.names
+            )
             bestdf["set"] = ["best_tree"]
             toplot_df = pd.concat([df, bestdf], ignore_index=True)
             pplot = sns.pairplot(
@@ -1974,5 +2006,5 @@ def _allele_dagfuncs() -> hdag.utils.HistoryDagFilter:
             },
             name="Alleles",
         ),
-        min
+        min,
     )
