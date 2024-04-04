@@ -446,7 +446,7 @@ def _sequence_disambiguations(sequence, _accum=""):
 
 def _mutability_dagfuncs(
     *args, splits: List[int] = [], **kwargs
-) -> hdag.utils.AddFuncDict:
+) -> hdag.utils.HistoryDagFilter:
     """Return functions for counting mutability parsimony on the history DAG.
 
     Mutability parsimony of a tree is the sum over all edges in the tree
@@ -484,9 +484,12 @@ def _mutability_dagfuncs(
         else:
             return dist(node1.label.sequence, node2.label.sequence)
 
-    return hdag.utils.AddFuncDict(
-        {"start_func": lambda n: 0, "edge_weight_func": distance, "accum_func": sum},
-        name="Mut. Pars.",
+    return hdag.utils.HistoryDagFilter(
+        hdag.utils.AddFuncDict(
+            {"start_func": lambda n: 0, "edge_weight_func": distance, "accum_func": sum},
+            name="Mut. Pars.",
+        ),
+        min,
     )
 
 
@@ -573,14 +576,11 @@ def _mutability_distance(mutation_model: MutationModel, splits=[]):
     return distance
 
 
-def context_poisson_likelihood_funcs(mutation_model: MutationModel, splits=[]):
+def _context_poisson_likelihood(mutation_mode: MutationModel, splits=[]):
     mutpairs, sum_minus_logp, mutability_sum = _mutability_distance_precursors(
         mutation_model, splits=splits
     )
 
-    def log_mer_mutability(mer, targetbase):
-        mutability, targets = mutation_model.mutability(mer)
-        return math.log(mutability) + math.log(targets[targetbase])
 
     def distance(seq1, seq2):
         subs = mutpairs(seq1, seq2)
@@ -593,12 +593,19 @@ def context_poisson_likelihood_funcs(mutation_model: MutationModel, splits=[]):
             substitution_sum = - sum_minus_logp(subs)
             return substitution_sum + (sub_count * (math.log(sub_count) - math.log(mut_sum))) - sub_count
 
+    return distance
 
-    return hdag.utils.AddFuncDict(
-        {
-            "start_func": lambda n: 0,
-            "edge_weight_func": lambda n1, n2: 0 if n1.is_ua_node() else distance(n1.label.sequence, n2.label.sequence),
-            "accum_func": sum
-        },
-        name="LogPoissonContextLikelihood",
+def _context_poisson_likelihood_dagfuncs(mutation_model: MutationModel, splits=[]):
+    distance = _context_poisson_likelihood(mutation_model, splits=splits)
+
+    return hdag.utils.HistoryDagFilter(
+        hdag.utils.AddFuncDict(
+            {
+                "start_func": lambda n: 0,
+                "edge_weight_func": lambda n1, n2: 0 if n1.is_ua_node() else distance(n1.label.sequence, n2.label.sequence),
+                "accum_func": sum
+            },
+            name="LogPoissonContextLikelihood",
+        ),
+        max,
     )

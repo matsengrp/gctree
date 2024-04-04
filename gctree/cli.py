@@ -209,6 +209,8 @@ def infer(args):
         mutability_file=args.mutability,
         substitution_file=args.substitution,
         chain_split=args.chain_split,
+        branching_process_ranking_coeff=args.branching_process_ranking_coeff,
+        use_old_mut_parsimony=args.use_old_mut_parsimony,
     )
 
     if args.verbose:
@@ -611,6 +613,16 @@ def get_parser():
         ),
     )
     parser_infer.add_argument(
+        "--branching_process_ranking_coeff",
+        type=float,
+        default=-1,
+        help=(
+            "Coefficient used for branching process likelihood, when ranking trees by a linear "
+            "combination of traits. This value will be ignored if `--ranking_coeffs` argument is not "
+            "also provided."
+        ),
+    )
+    parser_infer.add_argument(
         "--ranking_coeffs",
         type=float,
         nargs=3,
@@ -621,6 +633,16 @@ def get_parser():
             "A coefficient of -1 will be applied to branching process likelihood. "
             "If not provided, trees will be ranked lexicographically by likelihood, "
             "isotype parsimony, and mutability parsimony in that order."
+        ),
+    )
+    parser_infer.add_argument(
+        "--use_old_mut_parsimony",
+        action="store_true",
+        help=(
+            "Use old mutability parsimony instead of poisson context likelihood. Not recommended "
+            "unless attempting to reproduce results from older versions of gctree. "
+            "This argument will have no effect unless an S5F model is provided with the arguments "
+            "`--mutability` and `--substitution`".
         ),
     )
     parser_infer.add_argument(

@@ -405,7 +405,7 @@ def explode_idmap(
     return newidmap
 
 
-def _isotype_dagfuncs() -> hdag.utils.AddFuncDict:
+def _isotype_dagfuncs() -> hdag.utils.HistoryDagFilter:
     """Return functions for filtering by isotype parsimony score on the history
     DAG.
 
@@ -435,13 +435,16 @@ def _isotype_dagfuncs() -> hdag.utils.AddFuncDict:
             n1iso = list(n1isos.keys())[0]
             return int(sum(isotype_distance(n1iso, n2iso) for n2iso in n2isos.keys()))
 
-    return hdag.utils.AddFuncDict(
-        {
-            "start_func": lambda n: 0,
-            "edge_weight_func": edge_weight_func,
-            "accum_func": sum,
-        },
-        name="Isotype Pars.",
+    return hdag.utils.HistoryDagFilter(
+        hdag.utils.AddFuncDict(
+            {
+                "start_func": lambda n: 0,
+                "edge_weight_func": edge_weight_func,
+                "accum_func": sum,
+            },
+            name="Isotype Pars.",
+        ),
+        min,
     )
 
 
