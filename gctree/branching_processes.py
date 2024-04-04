@@ -1214,8 +1214,6 @@ class CollapsedForest:
             if verbose:
                 print(f"Branching process parameters to be used for ranking: {(p, q)}")
         if nz_coeff_isotype_pars and self.is_isotyped and (not ignore_isotype):
-            if verbose:
-                print("Isotype parsimony will be used as a ranking criterion")
             # Check for missing isotype data in all but root node, and fake root-adjacent leaf node
             rootname = list(self._forest.dagroot.children())[0].attr["name"]
             if any(
@@ -1230,9 +1228,6 @@ class CollapsedForest:
             iso_funcs = _isotype_dagfuncs()
             dag_filters.append((iso_funcs, coeff_isotype_pars))
         if nz_coeff_context and mutability_file and substitution_file:
-            if verbose:
-                print("Mutation model parsimony will be used as a ranking criterion")
-
             if use_old_mut_parsimony:
                 mut_funcs = _mutability_dagfuncs(
                     mutability_file=mutability_file,
@@ -1241,6 +1236,7 @@ class CollapsedForest:
                 )
             else:
                 mut_funcs = _context_poisson_likelihood_dagfuncs(
+
                     mutability_file=mutability_file,
                     substitution_file=substitution_file,
                     splits=[] if chain_split is None else [chain_split],
@@ -1295,7 +1291,7 @@ class CollapsedForest:
                 ordering_name="LinearCombination",
             )
             ranking_description = (
-                "Ranking trees to minimize a linear combination of "
+                "Ranking trees to minimize a linear combination of " +
                 " + ".join(
                     str(coeff) + "(" + fl.weight_funcs.name + ")"
                     for fl, coeff in dag_filters
@@ -1303,10 +1299,10 @@ class CollapsedForest:
             )
         else:
             ranking_dag_filter = combined_dag_filter
-            ranking_description = "Ranking trees to " " then ".join(
-                opt_name + "imize " + ord_name
+            ranking_description = "Ranking trees to " + " then ".join(
+                opt_name[:3] + "imize " + ord_name
                 for (opt_name, _), ord_name in zip(
-                    ranking_dag_filter.ordering_name,
+                    ranking_dag_filter.ordering_names,
                     ranking_dag_filter.weight_funcs.names,
                 )
             )
@@ -1979,7 +1975,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.HistoryDag
                 "edge_weight_func": edge_weight_ll_genotype,
                 "accum_func": accum_func,
             },
-            name="Log Likelihood",
+            name="LogBPLikelihood",
         ),
         max,
     )

@@ -613,7 +613,10 @@ def _context_poisson_likelihood(mutation_model: MutationModel, splits=[]):
     return distance
 
 
-def _context_poisson_likelihood_dagfuncs(mutation_model: MutationModel, splits=[]):
+def _context_poisson_likelihood_dagfuncs(
+    *args, splits: List[int] = [], **kwargs
+):
+    mutation_model = MutationModel(*args, **kwargs)
     distance = _context_poisson_likelihood(mutation_model, splits=splits)
 
     return hdag.utils.HistoryDagFilter(
@@ -627,7 +630,7 @@ def _context_poisson_likelihood_dagfuncs(mutation_model: MutationModel, splits=[
                 ),
                 "accum_func": sum,
             },
-            name="LogPoissonContextLikelihood",
+            name="LogContextLikelihood",
         ),
         max,
     )
