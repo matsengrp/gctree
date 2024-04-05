@@ -605,7 +605,6 @@ class CollapsedTree:
                                         "\n".join(mutations),
                                         fsize=6,
                                         tight_text=False,
-                                        ftype="Courier",
                                     )
                                     if start == 0:
                                         T.margin_top = 6
@@ -1193,6 +1192,10 @@ class CollapsedForest:
                     "If ranking_coeffs are provided to `filter_trees` method, a list of three values is expected."
                 )
             coeffs = [branching_process_ranking_coeff] + list(ranking_coeffs)
+            if sum(abs(c) for c in coeffs) == 0:
+                raise ValueError(
+                    "At least one value provided to ranking_coeffs or the value of branching_process_ranking_coeff must be nonzero."
+                )
         else:
             coeffs = [1] * 4
 
@@ -1353,31 +1356,27 @@ class CollapsedForest:
             with open(outbase + ".forest_summary.log", "w") as fh:
                 independent_best = []
                 for dfilter, _ in dag_filters:
-                    independent_best.append([])
-                    if dfilter.optimal_func == max:
-                        opt_funcs = [max, min]
-                    else:
-                        opt_funcs = [min, max]
-                    for opt in opt_funcs:
-                        tempdag = dag.copy()
-                        opt_weight = tempdag.trim_optimal_weight(**dfilter)
-                        independent_best[-1].append(opt_weight)
-                        fh.write(
-                            f"\nAmong trees with {opt.__name__} {dfilter.weight_funcs.name} of: {opt_weight}\n"
-                        )
-                        for indfilter, _ in dag_filters:
-                            if indfilter.weight_funcs.name != dfilter.weight_funcs.name:
-                                minval, maxval = tempdag.weight_range_annotate(
-                                    **indfilter.weight_funcs
-                                )
-                                fh.write(
-                                    f"\t{indfilter.weight_funcs.name} range: {minval} to {maxval}\n"
-                                )
+                    tempdag = dag.copy()
+                    min_val, max_val = tempdag.weight_range_annotate(**dfilter)
+                    opt_weight = tempdag.trim_optimal_weight(**dfilter)
+                    independent_best.append(opt_weight)
+                    fh.write(
+                        f"\nOverall {dfilter.weight_funcs.name} range {min_val} to {max_val}."
+                        f"\nAmong trees with {dfilter.optimal_func.__name__} {dfilter.weight_funcs.name} of: {opt_weight}\n"
+                    )
+                    for indfilter, _ in dag_filters:
+                        if indfilter.weight_funcs.name != dfilter.weight_funcs.name:
+                            minval, maxval = tempdag.weight_range_annotate(
+                                **indfilter.weight_funcs
+                            )
+                            fh.write(
+                                f"\t{indfilter.weight_funcs.name} range: {minval} to {maxval}\n"
+                            )
                 print("\n", file=fh)
                 print_stats(
                     [
                         [
-                            stat - best[0]
+                            stat - best
                             for stat, best in zip(best_weighttuple, independent_best)
                         ]
                     ],
@@ -1405,11 +1404,11 @@ class CollapsedForest:
             bestdf["set"] = ["best_tree"]
             toplot_df = pd.concat([df, bestdf], ignore_index=True)
             pplot = sns.pairplot(
-                toplot_df.drop(["Alleles"]),
+                toplot_df.drop(["Alleles"], errors="ignore"),
                 hue="set",
                 diag_kind="hist",
             )
-            pplot.savefig(outbase + ".tree_stats.pairplot.png")
+            pplot.savefig(outbase + ".tree_stats.pairplot.pdf")
 
         return (self._trimmed_self(trimdag), best_weighttuple)
 
