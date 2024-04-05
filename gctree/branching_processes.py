@@ -1236,7 +1236,6 @@ class CollapsedForest:
                 )
             else:
                 mut_funcs = _context_poisson_likelihood_dagfuncs(
-
                     mutability_file=mutability_file,
                     substitution_file=substitution_file,
                     splits=[] if chain_split is None else [chain_split],
@@ -1291,8 +1290,8 @@ class CollapsedForest:
                 ordering_name="LinearCombination",
             )
             ranking_description = (
-                "Ranking trees to minimize a linear combination of " +
-                " + ".join(
+                "Ranking trees to minimize a linear combination of "
+                + " + ".join(
                     str(coeff) + "(" + fl.weight_funcs.name + ")"
                     for fl, coeff in dag_filters
                 )

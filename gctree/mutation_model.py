@@ -613,9 +613,7 @@ def _context_poisson_likelihood(mutation_model: MutationModel, splits=[]):
     return distance
 
 
-def _context_poisson_likelihood_dagfuncs(
-    *args, splits: List[int] = [], **kwargs
-):
+def _context_poisson_likelihood_dagfuncs(*args, splits: List[int] = [], **kwargs):
     mutation_model = MutationModel(*args, **kwargs)
     distance = _context_poisson_likelihood(mutation_model, splits=splits)
 
