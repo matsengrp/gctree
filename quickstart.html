@@ -223,10 +223,11 @@ You may also want to tell matplotlib to use a headless backend with <code class=
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer outfile abundances.csv --root GL --frame 1 --verbose
 number of trees with integer branch lengths: 703
-Parameters: (0.49618320692429585, 0.36445206621349757)
+Branching process parameters to be used for ranking: (0.49618320692429585, 0.36445206621349757)
+Ranking trees to maximize LogBPLikelihood then minimize Alleles
 
 Stats for optimal trees:
-tree     	Log Likelihood	Alleles       
+tree     	LogBPLikelihoo	Alleles       
 1         	-78.00393661	48        
 Degenerate ranking criteria: trimmed history DAG contains 3 unique trees, with 3 unique collapsed topologies.
 A representative of each topology will be sampled randomly for rendering.
@@ -247,7 +248,7 @@ a dnapars <code class="docutils literal notranslate"><span class="pre">outfile</
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <dl class="simple">
-<dt>Although described below, using mutability parsimony or isotype parsimony</dt><dd><p>as ranking criteria is experimental, and has not yet been shown in a careful
+<dt>Although described below, using context likelihood, mutability parsimony, or isotype parsimony</dt><dd><p>as ranking criteria is experimental, and has not yet been shown in a careful
 validation to improve tree inference. Only the default branching process
 likelihood is recommended for tree ranking!</p>
 </dd>
@@ -259,20 +260,21 @@ between trees. Providing arguments <code class="docutils literal notranslate"><s
 arguments <code class="docutils literal notranslate"><span class="pre">--mutability</span></code> and <code class="docutils literal notranslate"><span class="pre">--substitution</span></code> allows trees to be ranked
 according to a context-sensitive mutation model. By default, trees are ranked
 lexicographically, first maximizing likelihood, then minimizing isotype
-parsimony and mutabilities, if such information is provided.
+parsimony, and finally maximizing a context-based poisson likelihood, if such information is provided.
 Ranking priorities can be adjusted using the argument <code class="docutils literal notranslate"><span class="pre">--ranking_coeffs</span></code>.</p>
 <p>For example, to find the optimal tree
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../HS5F_Mutability.csv --substitution ../HS5F_Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/branching_processes.py:1262: UserWarning: Higher values for LogContextLikelihood are generally better, but the provided ranking coefficient is positive, so trees with lower values will be preferred.
+  warnings.warn(
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
-Isotype parsimony will be used as a ranking criterion
-Mutation model parsimony will be used as a ranking criterion
-Parameters: (0.49618320692429585, 0.36445206621349757)
+Branching process parameters to be used for ranking: (0.49618320692429585, 0.36445206621349757)
+Ranking trees to minimize a linear combination of -1(LogBPLikelihood) + 1.0(Isotype Pars.) + 0.1(LogContextLikelihood)
 
 Stats for optimal trees:
-tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       	treescore
-1         	-78.00393661	28        	66.45251203	48        	112.6491878
+tree     	LogBPLikelihoo	Isotype Pars. 	LogContextLike	treescore
+1         	-78.00393661	28        	-511.8011816	54.82381845
 </pre></div>
 </div>
 <p>The files <code class="docutils literal notranslate"><span class="pre">HS5F_Mutability.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">HS5F_Substitution.csv</span></code> are a context
@@ -280,56 +282,30 @@ sensitive mutation model which can be downloaded from the <cite>Shazam Project &
 <p>By default, only the files listed above will be generated, with the optional argument <code class="docutils literal notranslate"><span class="pre">--outbase</span></code> specifying how the output files should be named.</p>
 <a class="reference internal image-reference" href="_images/newranking.inference.1.svg"><img alt="_images/newranking.inference.1.svg" src="_images/newranking.inference.1.svg" width="1000" /></a>
 <p>For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees,use the argument <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code>.</p>
-<a class="reference internal image-reference" href="_images/newranking.tree_stats.pairplot.png"><img alt="_images/newranking.tree_stats.pairplot.png" src="_images/newranking.tree_stats.pairplot.png" style="width: 1000px;" /></a>
+<a class="reference internal image-reference" href="newranking.tree_stats.pairplot.png"><img alt="newranking.tree_stats.pairplot.png" src="newranking.tree_stats.pairplot.png" style="width: 1000px;" /></a>
 <p>Sometimes ranked trees are too numerous, and generating the output of <code class="docutils literal notranslate"><span class="pre">--tree_stats</span></code> would require too many resources. For a summary of the collection of trees used for ranking, the argument <code class="docutils literal notranslate"><span class="pre">--summarize_forest</span></code> is provided. Most importantly, this option summarizes how much less likely the top ranked tree is, compared to the most likely tree being ranked, for example to validate coefficients passed to <code class="docutils literal notranslate"><span class="pre">--ranking_coeffs</span></code>.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cat newranking.forest_summary.log
 
-Among trees with min Log Likelihood of: -92.15528744
-	Isotype Pars. range: 24 to 24
-	Mut. Pars. range: 71.58051182819214 to 71.58051182819214
-	Alleles range: 53 to 53
-
-Among trees with max Log Likelihood of: -78.00393661
+Overall LogBPLikelihood range -92.15528744 to -78.00393661.
+Among trees with max LogBPLikelihood of: -78.00393661
 	Isotype Pars. range: 28 to 28
-	Mut. Pars. range: 66.45251202776495 to 68.93267315487162
-	Alleles range: 48 to 48
+	LogContextLikelihood range: -511.80118157839865 to -509.3519837478429
 
+Overall Isotype Pars. range 23 to 28.
 Among trees with min Isotype Pars. of: 23
-	Log Likelihood range: -90.94295234 to -87.98896459
-	Mut. Pars. range: 67.70153148437015 to 72.04836178891952
-	Alleles range: 51 to 52
+	LogBPLikelihood range: -90.94295234 to -87.98896459
+	LogContextLikelihood range: -520.4288242353949 to -515.8186160410505
 
-Among trees with max Isotype Pars. of: 28
-	Log Likelihood range: -83.8653921 to -78.00393661
-	Mut. Pars. range: 65.83694196549037 to 72.02357794154058
-	Alleles range: 48 to 50
-
-Among trees with min Mut. Pars. of: 63.94500901769653
-	Log Likelihood range: -80.46148748 to -80.46148748
+Overall LogContextLikelihood range -524.6994201844342 to -508.85478662354575.
+Among trees with max LogContextLikelihood of: -508.85478662354575
+	LogBPLikelihood range: -80.46148748 to -80.46148748
 	Isotype Pars. range: 27 to 27
-	Alleles range: 49 to 49
-
-Among trees with max Mut. Pars. of: 76.08641625036459
-	Log Likelihood range: -85.28172209 to -85.28172209
-	Isotype Pars. range: 25 to 25
-	Alleles range: 50 to 50
-
-Among trees with min Alleles of: 48
-	Log Likelihood range: -82.14344157 to -78.00393661
-	Isotype Pars. range: 26 to 28
-	Mut. Pars. range: 66.45251202776495 to 74.06179332885715
-
-Among trees with max Alleles of: 53
-	Log Likelihood range: -92.15528744 to -90.28220403
-	Isotype Pars. range: 24 to 25
-	Mut. Pars. range: 71.58051182819214 to 72.97479724064682
 
 
-Parameters: (0.49618320692429585, 0.36445206621349757)
 
 Highest ranked tree: loss from best value:
-tree     	Log Likelihood	Isotype Pars. 	Mut. Pars.    	Alleles       
-1         	       0.0	5         	2.50750301	0
+tree     	LogBPLikelihoo	Isotype Pars. 	LogContextLike
+1         	       0.0	5         	-2.946394955
 </pre></div>
 </div>
 </section>

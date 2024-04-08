@@ -105,6 +105,8 @@
 <span class="kn">import</span> <span class="nn">historydag</span> <span class="k">as</span> <span class="nn">hdag</span>
 <span class="kn">from</span> <span class="nn">multiset</span> <span class="kn">import</span> <span class="n">FrozenMultiset</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">math</span>
 
 
 <div class="viewcode-block" id="MutationModel">
@@ -231,20 +233,25 @@
                 <span class="s2">&quot;sequence </span><span class="si">{}</span><span class="s2"> must contain only characters A, C, G, T, or N&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kmer</span><span class="p">)</span>
             <span class="p">)</span>
 
-        <span class="n">mutabilities_to_average</span><span class="p">,</span> <span class="n">substitutions_to_average</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">context_model</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">MutationModel</span><span class="o">.</span><span class="n">_disambiguate</span><span class="p">(</span><span class="n">kmer</span><span class="p">)]</span>
-        <span class="p">)</span>
-
-        <span class="n">average_mutability</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mutabilities_to_average</span><span class="p">)</span>
-        <span class="n">average_substitution</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">b</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span>
-                <span class="n">substitution_dict</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="k">for</span> <span class="n">substitution_dict</span> <span class="ow">in</span> <span class="n">substitutions_to_average</span>
+        <span class="n">cached</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_model</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kmer</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cached</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mutabilities_to_average</span><span class="p">,</span> <span class="n">substitutions_to_average</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">context_model</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">MutationModel</span><span class="o">.</span><span class="n">_disambiguate</span><span class="p">(</span><span class="n">kmer</span><span class="p">)]</span>
             <span class="p">)</span>
-            <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">substitutions_to_average</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="s2">&quot;ACGT&quot;</span>
-        <span class="p">}</span>
 
-        <span class="k">return</span> <span class="n">average_mutability</span><span class="p">,</span> <span class="n">average_substitution</span></div>
+            <span class="n">average_mutability</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mutabilities_to_average</span><span class="p">)</span>
+            <span class="n">average_substitution</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">b</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span>
+                    <span class="n">substitution_dict</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">substitution_dict</span> <span class="ow">in</span> <span class="n">substitutions_to_average</span>
+                <span class="p">)</span>
+                <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">substitutions_to_average</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="s2">&quot;ACGT&quot;</span>
+            <span class="p">}</span>
+            <span class="n">cached</span> <span class="o">=</span> <span class="n">average_mutability</span><span class="p">,</span> <span class="n">average_substitution</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">context_model</span><span class="p">[</span><span class="n">kmer</span><span class="p">]</span> <span class="o">=</span> <span class="n">cached</span>
+
+        <span class="k">return</span> <span class="n">cached</span></div>
 
 
 <div class="viewcode-block" id="MutationModel.mutabilities">
@@ -553,7 +560,7 @@
 
 <span class="k">def</span> <span class="nf">_mutability_dagfuncs</span><span class="p">(</span>
     <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">splits</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for counting mutability parsimony on the history DAG.</span>
 
 <span class="sd">    Mutability parsimony of a tree is the sum over all edges in the tree</span>
@@ -591,9 +598,16 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">dist</span><span class="p">(</span><span class="n">node1</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">node2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
-        <span class="p">{</span><span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span> <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">},</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Mut. Pars.&quot;</span><span class="p">,</span>
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">(</span>
+        <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span>
+                <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Mut. Pars.&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="nb">min</span><span class="p">,</span>
     <span class="p">)</span>
 
 
@@ -601,26 +615,21 @@
     <span class="n">mutation_model</span><span class="p">:</span> <span class="n">MutationModel</span><span class="p">,</span> <span class="n">splits</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="p">):</span>
     <span class="n">chunk_idxs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">splits</span><span class="p">,</span> <span class="n">splits</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]))</span>
-    <span class="c1"># Caching could be moved to the MutationModel class instead.</span>
-    <span class="n">context_model</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">context_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">k</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">k</span>
-    <span class="n">h</span> <span class="o">=</span> <span class="n">k</span> <span class="o">//</span> <span class="mi">2</span>
-    <span class="c1"># Build all sequences with (when k=5) one or two Ns on either end</span>
-    <span class="n">templates</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="p">(</span><span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">left</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="n">left</span> <span class="o">-</span> <span class="n">right</span><span class="p">),</span> <span class="s2">&quot;N&quot;</span> <span class="o">*</span> <span class="n">right</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">left</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">right</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">left</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">right</span> <span class="o">!=</span> <span class="mi">0</span>
-    <span class="p">]</span>
 
-    <span class="n">kmers_to_compute</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">leftns</span> <span class="o">+</span> <span class="n">stub</span> <span class="o">+</span> <span class="n">rightns</span>
-        <span class="k">for</span> <span class="n">leftns</span><span class="p">,</span> <span class="n">ambig_stub</span><span class="p">,</span> <span class="n">rightns</span> <span class="ow">in</span> <span class="n">templates</span>
-        <span class="k">for</span> <span class="n">stub</span> <span class="ow">in</span> <span class="n">_sequence_disambiguations</span><span class="p">(</span><span class="n">ambig_stub</span><span class="p">)</span>
-    <span class="p">]</span>
-    <span class="c1"># Cache all these mutabilities in context_model also</span>
-    <span class="n">context_model</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-        <span class="p">{</span><span class="n">kmer</span><span class="p">:</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">mutability</span><span class="p">(</span><span class="n">kmer</span><span class="p">)</span> <span class="k">for</span> <span class="n">kmer</span> <span class="ow">in</span> <span class="n">kmers_to_compute</span><span class="p">}</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">mutation_model</span><span class="o">.</span><span class="n">k</span> <span class="o">//</span> <span class="mi">2</span>
+
+    <span class="c1"># Pads sequence with N&#39;s, including in the chain-split boundary to</span>
+    <span class="c1"># avoid unrelated sites from being treated as part of each others&#39; context.</span>
+
+    <span class="c1"># Indices at which padding N&#39;s will be in sequences returned from add_ns.</span>
+    <span class="c1"># Does not include indices of last two N&#39;s.</span>
+    <span class="n">padding_indices</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+        <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="nb">range</span><span class="p">(</span><span class="n">split</span> <span class="o">+</span> <span class="n">idx</span> <span class="o">*</span> <span class="n">h</span><span class="p">,</span> <span class="n">split</span> <span class="o">+</span> <span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">split</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">splits</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">add_ns</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
@@ -648,8 +657,8 @@
             <span class="n">p_arr</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">mult</span>
                 <span class="o">*</span> <span class="p">(</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">context_model</span><span class="p">[</span><span class="n">mer</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">context_model</span><span class="p">[</span><span class="n">mer</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">newbase</span><span class="p">])</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mutation_model</span><span class="o">.</span><span class="n">mutability</span><span class="p">(</span><span class="n">mer</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mutation_model</span><span class="o">.</span><span class="n">mutability</span><span class="p">(</span><span class="n">mer</span><span class="p">)[</span><span class="mi">1</span><span class="p">][</span><span class="n">newbase</span><span class="p">])</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="p">(</span><span class="n">mer</span><span class="p">,</span> <span class="n">newbase</span><span class="p">),</span> <span class="n">mult</span> <span class="ow">in</span> <span class="n">pairs</span>
             <span class="p">]</span>
@@ -657,7 +666,17 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="mf">0.0</span>
 
-    <span class="k">return</span> <span class="p">(</span><span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">mutability_sum</span><span class="p">(</span><span class="n">parent_seq</span><span class="p">):</span>
+        <span class="n">padded_seq</span> <span class="o">=</span> <span class="n">add_ns</span><span class="p">(</span><span class="n">parent_seq</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">padding_indices</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">padded_seq</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;N&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">mutation_model</span><span class="o">.</span><span class="n">mutability</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="n">h</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">padded_seq</span><span class="p">[:</span><span class="o">-</span><span class="n">h</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">padding_indices</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span><span class="p">,</span> <span class="n">mutability_sum</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_mutability_distance</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">MutationModel</span><span class="p">,</span> <span class="n">splits</span><span class="o">=</span><span class="p">[]):</span>
@@ -675,7 +694,7 @@
 
 <span class="sd">    Note that, in particular, this function is not symmetric on its  arguments.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span> <span class="o">=</span> <span class="n">_mutability_distance_precursors</span><span class="p">(</span>
+    <span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_mutability_distance_precursors</span><span class="p">(</span>
         <span class="n">mutation_model</span><span class="p">,</span> <span class="n">splits</span><span class="o">=</span><span class="n">splits</span>
     <span class="p">)</span>
 
@@ -683,6 +702,49 @@
         <span class="k">return</span> <span class="n">sum_minus_logp</span><span class="p">(</span><span class="n">mutpairs</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">distance</span>
+
+
+<span class="k">def</span> <span class="nf">_context_poisson_likelihood</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">:</span> <span class="n">MutationModel</span><span class="p">,</span> <span class="n">splits</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="n">mutpairs</span><span class="p">,</span> <span class="n">sum_minus_logp</span><span class="p">,</span> <span class="n">mutability_sum</span> <span class="o">=</span> <span class="n">_mutability_distance_precursors</span><span class="p">(</span>
+        <span class="n">mutation_model</span><span class="p">,</span> <span class="n">splits</span><span class="o">=</span><span class="n">splits</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">):</span>
+        <span class="n">subs</span> <span class="o">=</span> <span class="n">mutpairs</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">)</span>
+        <span class="n">sub_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">subs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sub_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mut_sum</span> <span class="o">=</span> <span class="n">mutability_sum</span><span class="p">(</span><span class="n">seq1</span><span class="p">)</span>
+            <span class="n">substitution_sum</span> <span class="o">=</span> <span class="o">-</span><span class="n">sum_minus_logp</span><span class="p">(</span><span class="n">subs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">substitution_sum</span>
+                <span class="o">+</span> <span class="p">(</span><span class="n">sub_count</span> <span class="o">*</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">sub_count</span><span class="p">)</span> <span class="o">-</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mut_sum</span><span class="p">)))</span>
+                <span class="o">-</span> <span class="n">sub_count</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">distance</span>
+
+
+<span class="k">def</span> <span class="nf">_context_poisson_likelihood_dagfuncs</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">splits</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">mutation_model</span> <span class="o">=</span> <span class="n">MutationModel</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">_context_poisson_likelihood</span><span class="p">(</span><span class="n">mutation_model</span><span class="p">,</span> <span class="n">splits</span><span class="o">=</span><span class="n">splits</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">(</span>
+        <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="mi">0</span>
+                    <span class="k">if</span> <span class="n">n1</span><span class="o">.</span><span class="n">is_ua_node</span><span class="p">()</span>
+                    <span class="k">else</span> <span class="n">distance</span><span class="p">(</span><span class="n">n1</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LogContextLikelihood&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="nb">max</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 
            </div>

@@ -106,7 +106,7 @@ This file may be manipulated using ``gctree infer``, instead of providing
 a dnapars ``outfile``.
 
 .. note::
-  Although described below, using mutability parsimony or isotype parsimony
+  Although described below, using context likelihood, mutability parsimony, or isotype parsimony
    as ranking criteria is experimental, and has not yet been shown in a careful
    validation to improve tree inference. Only the default branching process
    likelihood is recommended for tree ranking!
@@ -117,7 +117,7 @@ between trees. Providing arguments ``--isotype_mapfile`` and
 arguments ``--mutability`` and ``--substitution`` allows trees to be ranked
 according to a context-sensitive mutation model. By default, trees are ranked
 lexicographically, first maximizing likelihood, then minimizing isotype
-parsimony and mutabilities, if such information is provided.
+parsimony, and finally maximizing a context-based poisson likelihood, if such information is provided.
 Ranking priorities can be adjusted using the argument ``--ranking_coeffs``.
 
 For example, to find the optimal tree
