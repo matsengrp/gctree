@@ -46,7 +46,7 @@ def get_parser() -> argparse.ArgumentParser:
             "  nodes.\n\n"
             "This tool doesn’t make any judgements about which tree is best.\n"
             "Tree output order is the same as in gctree inference: ranking is\n"
-            "by log likelihood before isotype additions. A determination of\n"
+            "by branching process likelihood before isotype additions. A determination of\n"
             "which is the best tree is left to the user, based on likelihoods,\n"
             "isotype parsimony score, and changes in the number of nodes after\n"
             "isotype additions.\n"

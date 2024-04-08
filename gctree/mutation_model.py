@@ -10,6 +10,8 @@ from Bio.Seq import Seq
 import historydag as hdag
 from multiset import FrozenMultiset
 from typing import Tuple, List, Callable, Optional
+import itertools
+import math
 
 
 class MutationModel:
@@ -129,20 +131,25 @@ class MutationModel:
                 "sequence {} must contain only characters A, C, G, T, or N".format(kmer)
             )
 
-        mutabilities_to_average, substitutions_to_average = zip(
-            *[self.context_model[x] for x in MutationModel._disambiguate(kmer)]
-        )
-
-        average_mutability = np.mean(mutabilities_to_average)
-        average_substitution = {
-            b: sum(
-                substitution_dict[b] for substitution_dict in substitutions_to_average
+        cached = self.context_model.get(kmer, None)
+        if cached is None:
+            mutabilities_to_average, substitutions_to_average = zip(
+                *[self.context_model[x] for x in MutationModel._disambiguate(kmer)]
             )
-            / len(substitutions_to_average)
-            for b in "ACGT"
-        }
 
-        return average_mutability, average_substitution
+            average_mutability = np.mean(mutabilities_to_average)
+            average_substitution = {
+                b: sum(
+                    substitution_dict[b]
+                    for substitution_dict in substitutions_to_average
+                )
+                / len(substitutions_to_average)
+                for b in "ACGT"
+            }
+            cached = average_mutability, average_substitution
+            self.context_model[kmer] = cached
+
+        return cached
 
     def mutabilities(self, sequence: str) -> List[Tuple[np.float64, np.float64]]:
         r"""Returns the mutability of a sequence at each site, along with
@@ -440,7 +447,7 @@ def _sequence_disambiguations(sequence, _accum=""):
 
 def _mutability_dagfuncs(
     *args, splits: List[int] = [], **kwargs
-) -> hdag.utils.AddFuncDict:
+) -> hdag.utils.HistoryDagFilter:
     """Return functions for counting mutability parsimony on the history DAG.
 
     Mutability parsimony of a tree is the sum over all edges in the tree
@@ -478,9 +485,16 @@ def _mutability_dagfuncs(
         else:
             return dist(node1.label.sequence, node2.label.sequence)
 
-    return hdag.utils.AddFuncDict(
-        {"start_func": lambda n: 0, "edge_weight_func": distance, "accum_func": sum},
-        name="Mut. Pars.",
+    return hdag.utils.HistoryDagFilter(
+        hdag.utils.AddFuncDict(
+            {
+                "start_func": lambda n: 0,
+                "edge_weight_func": distance,
+                "accum_func": sum,
+            },
+            name="Mut. Pars.",
+        ),
+        min,
     )
 
 
@@ -488,26 +502,21 @@ def _mutability_distance_precursors(
     mutation_model: MutationModel, splits: List[int] = []
 ):
     chunk_idxs = list(zip([0] + splits, splits + [None]))
-    # Caching could be moved to the MutationModel class instead.
-    context_model = mutation_model.context_model.copy()
-    k = mutation_model.k
-    h = k // 2
-    # Build all sequences with (when k=5) one or two Ns on either end
-    templates = [
-        ("N" * left, "N" * (k - left - right), "N" * right)
-        for left in range(h + 1)
-        for right in range(h + 1)
-        if left != 0 or right != 0
-    ]
 
-    kmers_to_compute = [
-        leftns + stub + rightns
-        for leftns, ambig_stub, rightns in templates
-        for stub in _sequence_disambiguations(ambig_stub)
-    ]
-    # Cache all these mutabilities in context_model also
-    context_model.update(
-        {kmer: mutation_model.mutability(kmer) for kmer in kmers_to_compute}
+    h = mutation_model.k // 2
+
+    # Pads sequence with N's, including in the chain-split boundary to
+    # avoid unrelated sites from being treated as part of each others' context.
+
+    # Indices at which padding N's will be in sequences returned from add_ns.
+    # Does not include indices of last two N's.
+    padding_indices = set(
+        itertools.chain.from_iterable(
+            [
+                range(split + idx * h, split + (idx + 1) * h)
+                for idx, split in enumerate([0] + splits)
+            ]
+        )
     )
 
     def add_ns(seq: str):
@@ -535,8 +544,8 @@ def _mutability_distance_precursors(
             p_arr = [
                 mult
                 * (
-                    np.log(context_model[mer][0])
-                    + np.log(context_model[mer][1][newbase])
+                    np.log(mutation_model.mutability(mer)[0])
+                    + np.log(mutation_model.mutability(mer)[1][newbase])
                 )
                 for (mer, newbase), mult in pairs
             ]
@@ -544,7 +553,17 @@ def _mutability_distance_precursors(
         else:
             return 0.0
 
-    return (mutpairs, sum_minus_logp)
+    def mutability_sum(parent_seq):
+        padded_seq = add_ns(parent_seq)
+        for idx in padding_indices:
+            assert padded_seq[idx] == "N"
+        return sum(
+            mutation_model.mutability(padded_seq[idx - h : idx + h + 1])[0]
+            for idx, _ in enumerate(padded_seq[:-h])
+            if idx not in padding_indices
+        )
+
+    return (mutpairs, sum_minus_logp, mutability_sum)
 
 
 def _mutability_distance(mutation_model: MutationModel, splits=[]):
@@ -562,7 +581,7 @@ def _mutability_distance(mutation_model: MutationModel, splits=[]):
 
     Note that, in particular, this function is not symmetric on its  arguments.
     """
-    mutpairs, sum_minus_logp = _mutability_distance_precursors(
+    mutpairs, sum_minus_logp, _ = _mutability_distance_precursors(
         mutation_model, splits=splits
     )
 
@@ -570,3 +589,46 @@ def _mutability_distance(mutation_model: MutationModel, splits=[]):
         return sum_minus_logp(mutpairs(seq1, seq2))
 
     return distance
+
+
+def _context_poisson_likelihood(mutation_model: MutationModel, splits=[]):
+    mutpairs, sum_minus_logp, mutability_sum = _mutability_distance_precursors(
+        mutation_model, splits=splits
+    )
+
+    def distance(seq1, seq2):
+        subs = mutpairs(seq1, seq2)
+        sub_count = len(subs)
+        if sub_count == 0:
+            return 0
+        else:
+            mut_sum = mutability_sum(seq1)
+            substitution_sum = -sum_minus_logp(subs)
+            return (
+                substitution_sum
+                + (sub_count * (math.log(sub_count) - math.log(mut_sum)))
+                - sub_count
+            )
+
+    return distance
+
+
+def _context_poisson_likelihood_dagfuncs(*args, splits: List[int] = [], **kwargs):
+    mutation_model = MutationModel(*args, **kwargs)
+    distance = _context_poisson_likelihood(mutation_model, splits=splits)
+
+    return hdag.utils.HistoryDagFilter(
+        hdag.utils.AddFuncDict(
+            {
+                "start_func": lambda n: 0,
+                "edge_weight_func": lambda n1, n2: (
+                    0
+                    if n1.is_ua_node()
+                    else distance(n1.label.sequence, n2.label.sequence)
+                ),
+                "accum_func": sum,
+            },
+            name="LogContextLikelihood",
+        ),
+        max,
+    )

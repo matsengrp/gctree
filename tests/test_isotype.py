@@ -51,9 +51,9 @@ def test_trim_byisotype():
     for node in tdag.preorder():
         if node.attr is not None:
             node.attr["isotype"] = node._dp_data
-    kwargs = _isotype_dagfuncs()
-    c = tdag.weight_count(**kwargs)
+    dag_filter = _isotype_dagfuncs()
+    c = tdag.weight_count(**dag_filter)
     key = min(c)
     count = c[key]
-    tdag.trim_optimal_weight(**kwargs, optimal_func=min)
-    assert tdag.weight_count(**kwargs) == {key: count}
+    tdag.trim_optimal_weight(**dag_filter)
+    assert tdag.weight_count(**dag_filter) == {key: count}

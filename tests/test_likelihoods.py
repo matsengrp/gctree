@@ -1,6 +1,8 @@
 import gctree.branching_processes as bp
 import gctree.phylip_parse as pp
 import gctree.utils as utils
+import gctree.mutation_model as mm
+from math import log
 
 import numpy as np
 from multiset import FrozenMultiset
@@ -198,3 +200,37 @@ def test_recursion_depth():
     bp.CollapsedTree._max_ll_cache = {}
     with np.errstate(all="raise"):
         bp.CollapsedTree._ll_genotype(2, 500, 0.4, 0.6)
+
+
+def test_context_likelihood():
+    # These files will be present if pytest is run through `make test`.
+    mutation_model = mm.MutationModel(
+        mutability_file="HS5F_Mutability.csv", substitution_file="HS5F_Substitution.csv"
+    )
+    log_likelihood = mm._context_poisson_likelihood(mutation_model, splits=[])
+
+    parent_seq = "AAGAAA"
+    child_seq = "AATCAA"
+
+    term1 = sum(
+        log(
+            mutation_model.mutability(fivemer)[0]
+            * mutation_model.mutability(fivemer)[1][target_base]
+        )
+        for fivemer, target_base in [("AAGAA", "T"), ("AGAAA", "C")]
+    )
+    sum_mutabilities = sum(
+        mutation_model.mutability(fivemer)[0]
+        for fivemer in ["NNAAG", "NAAGA", "AAGAA", "AGAAA", "GAAAN", "AAANN"]
+    )
+    true_val = term1 + 2 * log(2 / sum_mutabilities) - 2
+    assert true_val == log_likelihood(parent_seq, child_seq)
+
+    # Now test chain split:
+    parent_seq = parent_seq + parent_seq
+    child_seq = child_seq + child_seq
+    # At index 6, the second concatenated sequence starts.
+    log_likelihood = mm._context_poisson_likelihood(mutation_model, splits=[6])
+
+    true_val = 2 * term1 + 4 * log(4 / (2 * sum_mutabilities)) - 4
+    assert true_val == log_likelihood(parent_seq, child_seq)
