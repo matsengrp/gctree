@@ -537,7 +537,7 @@ def get_parser():
         help=(
             "when using concatenated heavy and light chains, this is the 0-based"
             " index at which the 2nd chain begins, needed for determining coding frame in both chains,"
-            " and also to correctly calculate mutability parsimony."
+            " and also to correctly calculate context-based Poisson likelihood."
         ),
     )
     parser_infer.add_argument(
@@ -632,7 +632,7 @@ def get_parser():
             "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
             "A coefficient of -1 will be applied to branching process likelihood. "
             "If not provided, trees will be ranked lexicographically by likelihood, "
-            "isotype parsimony, and mutability parsimony in that order."
+            "isotype parsimony, and context-based Poisson likelihood in that order."
         ),
     )
     parser_infer.add_argument(

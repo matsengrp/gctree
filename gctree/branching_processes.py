@@ -411,7 +411,7 @@ class CollapsedTree:
             (p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)
 
         Args:
-            kwargs: keyword arguments passed along to the log likelihood :meth:`CollapsedTree.ll`
+            kwargs: keyword arguments passed along to the branching process likelihood :meth:`CollapsedTree.ll`
 
         Returns:
             Tuple :math:`(p, q)` with estimated branching probability and estimated mutation probability
@@ -1052,7 +1052,7 @@ class CollapsedForest:
             marginal: compute the marginal likelihood over trees, otherwise compute the joint likelihood of trees
 
         Returns:
-            Log likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
+            Log branching process likelihood :math:`\ell(p, q; T, A)` and its gradient :math:`\nabla\ell(p, q; T, A)`
         """
         if self._cm_countlist is None:
             if self._forest is not None:
@@ -1124,7 +1124,7 @@ class CollapsedForest:
             (p, q) = \arg\max_{p,q\in [0,1]}\ell(p, q)
 
         Args:
-            kwargs: keyword arguments passed along to the log likelihood :meth:`CollapsedForest.ll`
+            kwargs: keyword arguments passed along to the branching process likelihood :meth:`CollapsedForest.ll`
 
         Returns:
             Tuple :math:`(p, q)` with estimated branching probability and estimated mutation probability
@@ -1151,7 +1151,7 @@ class CollapsedForest:
 
         Trim the forest to minimize a linear
         combination of branching process likelihood, isotype parsimony score,
-        mutability parsimony score, and number of alleles, with coefficients
+        context/mutability-based Poisson likelihood, and number of alleles, with coefficients
         provided in the argument ``ranking_coeffs`, in that order.
 
         Args:
@@ -1169,7 +1169,7 @@ class CollapsedForest:
             ignore_isotype: Ignore isotype parsimony when ranking. By default, isotype information added with
                 :meth:``add_isotypes`` will be used to compute isotype parsimony, which is used in ranking.
             chain_split: The index at which non-adjacent sequences are concatenated, for calculating
-                mutability parsimony.
+                context-based Poisson likelihood.
             verbose: print information about trimming
             outbase: file name stem for a file with information for each tree in the DAG.
             summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`
@@ -1182,7 +1182,8 @@ class CollapsedForest:
 
         Returns:
             The trimmed forest, containing all optimal trees according to the specified criteria, and a tuple
-            of data about the trees in that forest, with format (ll, isotype parsimony, mutability parsimony, alleles).
+            of data about the trees in that forest, with format (branching process likelihood, isotype parsimony,
+            context-based Poisson likelihood, alleles).
         """
         dag = self._forest
 
@@ -1681,7 +1682,7 @@ def _mle_helper(
     bounds = ((1e-6, 1 - 1e-6), (1e-6, 1 - 1e-6))
 
     def f(x):
-        """Negative log likelihood."""
+        """Negative log branching process likelihood."""
         return tuple(-y for y in ll(*x, **kwargs))
 
     grad_check = sco.check_grad(lambda x: f(x)[0], lambda x: f(x)[1], x_0)
@@ -1919,7 +1920,8 @@ def _cmcounter_dagfuncs():
 
 
 def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.HistoryDagFilter:
-    """Return functions for counting tree log likelihood on the history DAG.
+    """Return functions for counting tree log branching process likelihood on
+    the history DAG.
 
     For numerical consistency, we resort to the use of ``decimal.Decimal``.
     This is exactly for the purpose of solving the problem that float sum is
