@@ -1351,7 +1351,7 @@
             <span class="n">nz_coeff_bplikelihood</span><span class="p">,</span>
             <span class="n">nz_coeff_isotype_pars</span><span class="p">,</span>
             <span class="n">nz_coeff_context</span><span class="p">,</span>
-            <span class="n">nz_coeff_alleles</span><span class="p">,</span>
+            <span class="n">_</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">coeffs</span><span class="p">]</span>
         <span class="n">coeff_bplikelihood</span><span class="p">,</span> <span class="n">coeff_isotype_pars</span><span class="p">,</span> <span class="n">coeff_context</span><span class="p">,</span> <span class="n">coeff_alleles</span> <span class="o">=</span> <span class="n">coeffs</span>
 
@@ -1392,13 +1392,33 @@
                     <span class="n">splits</span><span class="o">=</span><span class="p">[]</span> <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">chain_split</span><span class="p">],</span>
                 <span class="p">)</span>
             <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">mut_funcs</span><span class="p">,</span> <span class="n">coeff_context</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">nz_coeff_alleles</span><span class="p">:</span>
-            <span class="n">allele_funcs</span> <span class="o">=</span> <span class="n">_allele_dagfuncs</span><span class="p">()</span>
-            <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">allele_funcs</span><span class="p">,</span> <span class="n">coeff_alleles</span><span class="p">))</span>
+
+        <span class="c1"># add allele funcs no matter what, for logging</span>
+        <span class="n">allele_funcs</span> <span class="o">=</span> <span class="n">_allele_dagfuncs</span><span class="p">()</span>
+        <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">allele_funcs</span><span class="p">,</span> <span class="n">coeff_alleles</span><span class="p">))</span>
+        <span class="c1"># add 0-returning functions so dagfuncs return tuples, even if allele funcs are the only ones used for filtering</span>
+        <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">(</span>
+                    <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ls</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                        <span class="p">},</span>
+                        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="nb">min</span><span class="p">,</span>
+                    <span class="n">ordering_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
 
         <span class="n">combined_dag_filter</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="n">dag_filter</span> <span class="k">for</span> <span class="n">dag_filter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">)</span>
         <span class="p">)</span>
+
         <span class="k">if</span> <span class="n">ranking_coeffs</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ranking_coeffs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -1445,6 +1465,7 @@
                 <span class="o">+</span> <span class="s2">&quot; + &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                     <span class="nb">str</span><span class="p">(</span><span class="n">coeff</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="n">fl</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
                     <span class="k">for</span> <span class="n">fl</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">dag_filters</span>
+                    <span class="k">if</span> <span class="n">coeff</span> <span class="o">!=</span> <span class="mi">0</span>
                 <span class="p">)</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1455,6 +1476,7 @@
                     <span class="n">ranking_dag_filter</span><span class="o">.</span><span class="n">ordering_names</span><span class="p">,</span>
                     <span class="n">ranking_dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">names</span><span class="p">,</span>
                 <span class="p">)</span>
+                <span class="k">if</span> <span class="n">ord_name</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="n">ranking_description</span><span class="p">)</span>
@@ -1471,8 +1493,8 @@
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span>
             <span class="n">statstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="nb">tuple</span><span class="p">(</span>
-                    <span class="n">reformat</span><span class="p">(</span><span class="n">dfilter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">dfilter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dag_filters</span>
+                    <span class="n">reformat</span><span class="p">(</span><span class="n">dfilter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">dfilter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
                 <span class="p">)</span>
             <span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span>
@@ -1480,7 +1502,8 @@
                 <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">best_weighttuple</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">statlist</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
-                <span class="n">statstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">reformat</span><span class="p">(</span><span class="n">it</span><span class="p">)</span> <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">best_weighttuple</span><span class="p">)</span>
+                <span class="c1"># ignore always-0 entry at end:</span>
+                <span class="n">statstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">reformat</span><span class="p">(</span><span class="n">it</span><span class="p">)</span> <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">best_weighttuple</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
                 <span class="nb">print</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">statstring</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="o">+</span> <span class="p">(</span>
@@ -1543,7 +1566,9 @@
                 <span class="n">minfunckey</span> <span class="o">=</span> <span class="n">ranking_dag_filter</span><span class="o">.</span><span class="n">optimal_func</span>
             <span class="n">dag_ls</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">)</span>
 
-            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">dag_ls</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">combined_dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                <span class="n">dag_ls</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">combined_dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">names</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">])</span>
             <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="s2">&quot;.tree_stats.csv&quot;</span><span class="p">)</span>
             <span class="n">df</span><span class="p">[</span><span class="s2">&quot;set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all_trees&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
             <span class="n">bestdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
@@ -1552,7 +1577,7 @@
             <span class="n">bestdf</span><span class="p">[</span><span class="s2">&quot;set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;best_tree&quot;</span><span class="p">]</span>
             <span class="n">toplot_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">bestdf</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">pplot</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">pairplot</span><span class="p">(</span>
-                <span class="n">toplot_df</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s2">&quot;Alleles&quot;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">),</span>
+                <span class="n">toplot_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Alleles&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">),</span>
                 <span class="n">hue</span><span class="o">=</span><span class="s2">&quot;set&quot;</span><span class="p">,</span>
                 <span class="n">diag_kind</span><span class="o">=</span><span class="s2">&quot;hist&quot;</span><span class="p">,</span>
             <span class="p">)</span>

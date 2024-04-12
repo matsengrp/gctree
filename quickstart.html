@@ -227,7 +227,7 @@ Branching process parameters to be used for ranking: (0.49618320692429585, 0.364
 Ranking trees to maximize LogBPLikelihood then minimize Alleles
 
 Stats for optimal trees:
-tree     	LogBPLikelihoo	Alleles       
+tree     	LogBPLikelihood	Alleles        
 1         	-78.00393661	48        
 Degenerate ranking criteria: trimmed history DAG contains 3 unique trees, with 3 unique collapsed topologies.
 A representative of each topology will be sampled randomly for rendering.
@@ -266,15 +266,15 @@ Ranking priorities can be adjusted using the argument <code class="docutils lite
 according to a linear combination of likelihood, isotype parsimony,
 mutabilities, and alleles:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../HS5F_Mutability.csv --substitution ../HS5F_Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
-/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/branching_processes.py:1262: UserWarning: Higher values for LogContextLikelihood are generally better, but the provided ranking coefficient is positive, so trees with lower values will be preferred.
+/usr/share/miniconda/envs/gctree/lib/python3.9/site-packages/gctree/branching_processes.py:1282: UserWarning: Higher values for LogContextLikelihood are generally better, but the provided ranking coefficient is positive, so trees with lower values will be preferred.
   warnings.warn(
 Loading provided parsimony forest. If forest has fit parameters, parameter fitting will be skipped.
 Branching process parameters to be used for ranking: (0.49618320692429585, 0.36445206621349757)
 Ranking trees to minimize a linear combination of -1(LogBPLikelihood) + 1.0(Isotype Pars.) + 0.1(LogContextLikelihood)
 
 Stats for optimal trees:
-tree     	LogBPLikelihoo	Isotype Pars. 	LogContextLike	treescore
-1         	-78.00393661	28        	-511.8011816	54.82381845
+tree     	LogBPLikelihood	Isotype Pars.  	LogContextLikel	Alleles        	treescore
+1         	-78.00393661	28        	-511.8011816	48        	54.82381845
 </pre></div>
 </div>
 <p>The files <code class="docutils literal notranslate"><span class="pre">HS5F_Mutability.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">HS5F_Substitution.csv</span></code> are a context
@@ -289,23 +289,43 @@ sensitive mutation model which can be downloaded from the <cite>Shazam Project &
 Overall LogBPLikelihood range -92.15528744 to -78.00393661.
 Among trees with max LogBPLikelihood of: -78.00393661
 	Isotype Pars. range: 28 to 28
-	LogContextLikelihood range: -511.80118157839865 to -509.3519837478429
+	LogContextLikelihood range: -511.8011815783986 to -509.3519837478428
+	Alleles range: 48 to 48
+	 range: 0 to 0
 
 Overall Isotype Pars. range 23 to 28.
 Among trees with min Isotype Pars. of: 23
 	LogBPLikelihood range: -90.94295234 to -87.98896459
 	LogContextLikelihood range: -520.4288242353949 to -515.8186160410505
+	Alleles range: 51 to 52
+	 range: 0 to 0
 
 Overall LogContextLikelihood range -524.6994201844342 to -508.85478662354575.
 Among trees with max LogContextLikelihood of: -508.85478662354575
 	LogBPLikelihood range: -80.46148748 to -80.46148748
 	Isotype Pars. range: 27 to 27
+	Alleles range: 49 to 49
+	 range: 0 to 0
+
+Overall Alleles range 48 to 53.
+Among trees with min Alleles of: 48
+	LogBPLikelihood range: -82.14344157 to -78.00393661
+	Isotype Pars. range: 26 to 28
+	LogContextLikelihood range: -516.8335781401432 to -509.3519837478428
+	 range: 0 to 0
+
+Overall  range 0 to 0.
+Among trees with min  of: 0
+	LogBPLikelihood range: -92.15528744 to -78.00393661
+	Isotype Pars. range: 23 to 28
+	LogContextLikelihood range: -524.6994201844342 to -508.85478662354575
+	Alleles range: 48 to 53
 
 
 
 Highest ranked tree: loss from best value:
-tree     	LogBPLikelihoo	Isotype Pars. 	LogContextLike
-1         	       0.0	5         	-2.946394955
+tree     	LogBPLikelihood	Isotype Pars.  	LogContextLikel	Alleles        
+1         	       0.0	5         	-2.946394955	0
 </pre></div>
 </div>
 </section>
