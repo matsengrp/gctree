@@ -1204,7 +1204,7 @@ class CollapsedForest:
             nz_coeff_bplikelihood,
             nz_coeff_isotype_pars,
             nz_coeff_context,
-            nz_coeff_alleles,
+            _,
         ) = [val != 0 for val in coeffs]
         coeff_bplikelihood, coeff_isotype_pars, coeff_context, coeff_alleles = coeffs
 
@@ -1245,13 +1245,33 @@ class CollapsedForest:
                     splits=[] if chain_split is None else [chain_split],
                 )
             dag_filters.append((mut_funcs, coeff_context))
-        if nz_coeff_alleles:
-            allele_funcs = _allele_dagfuncs()
-            dag_filters.append((allele_funcs, coeff_alleles))
+
+        # add allele funcs no matter what, for logging
+        allele_funcs = _allele_dagfuncs()
+        dag_filters.append((allele_funcs, coeff_alleles))
+        # add 0-returning functions so dagfuncs return tuples, even if allele funcs are the only ones used for filtering
+        dag_filters.append(
+            (
+                hdag.utils.HistoryDagFilter(
+                    hdag.utils.AddFuncDict(
+                        {
+                            "start_func": lambda n: 0,
+                            "edge_weight_func": lambda n1, n2: 0,
+                            "accum_func": lambda ls: 0,
+                        },
+                        name="",
+                    ),
+                    min,
+                    ordering_name="",
+                ),
+                0,
+            )
+        )
 
         combined_dag_filter = functools.reduce(
             lambda x, y: x + y, (dag_filter for dag_filter, _ in dag_filters)
         )
+
         if ranking_coeffs:
             if len(ranking_coeffs) != 3:
                 raise ValueError(
@@ -1298,6 +1318,7 @@ class CollapsedForest:
                 + " + ".join(
                     str(coeff) + "(" + fl.weight_funcs.name + ")"
                     for fl, coeff in dag_filters
+                    if coeff != 0
                 )
             )
         else:
@@ -1308,6 +1329,7 @@ class CollapsedForest:
                     ranking_dag_filter.ordering_names,
                     ranking_dag_filter.weight_funcs.names,
                 )
+                if ord_name != ""
             )
         if verbose:
             print(ranking_description)
@@ -1324,8 +1346,8 @@ class CollapsedForest:
             print("\n" + title + ":", file=file)
             statstring = "\t".join(
                 tuple(
-                    reformat(dfilter.weight_funcs.name, n=14)
-                    for dfilter, _ in dag_filters
+                    reformat(dfilter.weight_funcs.name, n=15)
+                    for dfilter, _ in dag_filters[:-1]
                 )
             )
             print(
@@ -1333,7 +1355,8 @@ class CollapsedForest:
                 file=file,
             )
             for j, best_weighttuple in enumerate(statlist, 1):
-                statstring = "\t".join(reformat(it) for it in best_weighttuple)
+                # ignore always-0 entry at end:
+                statstring = "\t".join(reformat(it) for it in best_weighttuple[:-1])
                 print(
                     f"{j:<10}\t{statstring}"
                     + (
@@ -1396,7 +1419,9 @@ class CollapsedForest:
                 minfunckey = ranking_dag_filter.optimal_func
             dag_ls.sort(key=minfunckey)
 
-            df = pd.DataFrame(dag_ls, columns=combined_dag_filter.weight_funcs.names)
+            df = pd.DataFrame(
+                dag_ls, columns=combined_dag_filter.weight_funcs.names
+            ).drop(columns=[""])
             df.to_csv(outbase + ".tree_stats.csv")
             df["set"] = ["all_trees"] * len(df)
             bestdf = pd.DataFrame(
@@ -1405,7 +1430,7 @@ class CollapsedForest:
             bestdf["set"] = ["best_tree"]
             toplot_df = pd.concat([df, bestdf], ignore_index=True)
             pplot = sns.pairplot(
-                toplot_df.drop(["Alleles"], errors="ignore"),
+                toplot_df.drop(columns=["Alleles", ""], errors="ignore"),
                 hue="set",
                 diag_kind="hist",
             )
