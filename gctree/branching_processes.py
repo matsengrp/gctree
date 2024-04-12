@@ -1204,7 +1204,7 @@ class CollapsedForest:
             nz_coeff_bplikelihood,
             nz_coeff_isotype_pars,
             nz_coeff_context,
-            nz_coeff_alleles,
+            _,
         ) = [val != 0 for val in coeffs]
         coeff_bplikelihood, coeff_isotype_pars, coeff_context, coeff_alleles = coeffs
 
@@ -1245,13 +1245,15 @@ class CollapsedForest:
                     splits=[] if chain_split is None else [chain_split],
                 )
             dag_filters.append((mut_funcs, coeff_context))
-        if nz_coeff_alleles:
-            allele_funcs = _allele_dagfuncs()
-            dag_filters.append((allele_funcs, coeff_alleles))
+
+        # add allele funcs no matter what, for logging and so dagfuncs return tuples
+        allele_funcs = _allele_dagfuncs()
+        dag_filters.append((allele_funcs, coeff_alleles))
 
         combined_dag_filter = functools.reduce(
             lambda x, y: x + y, (dag_filter for dag_filter, _ in dag_filters)
         )
+
         if ranking_coeffs:
             if len(ranking_coeffs) != 3:
                 raise ValueError(
@@ -1298,6 +1300,7 @@ class CollapsedForest:
                 + " + ".join(
                     str(coeff) + "(" + fl.weight_funcs.name + ")"
                     for fl, coeff in dag_filters
+                    if coeff != 0
                 )
             )
         else:
