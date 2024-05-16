@@ -13,7 +13,11 @@ from collections import defaultdict
 
 import pickle
 import argparse
+from warnings import warn
 from typing import Dict
+
+class TreeParseError(RuntimeError):
+    pass
 
 code_vectors = {
     code: [
@@ -95,11 +99,23 @@ def parse_seqdict(fh, mode="dnaml"):
     return seqs
 
 
+def get_expected_trees(outfile):
+    with open(outfile) as fh:
+        for line, _ in zip(fh, range(7)):
+            if "trees in all found" in line:
+                return int(line.strip().split()[0])
+                break
+        else:
+            return None
+
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
 def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False):
     """Parse phylip outfile, and return dnapars trees."""
+    _expected_seq_len = None
+    _expected_n_trees = get_expected_trees(outfile)
+    _n_trees_warned = False
     if abundance_file is not None:
         counts = {
             line.split(",")[0]: int(line.split(",")[1]) for line in open(abundance_file)
@@ -113,26 +129,53 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
     sequences, parents = {}, {}
     with open(outfile, "r") as fh:
         for sect in sections(fh):
-            if sect == "parents":
-                parents = {child: parent for child, parent in iter_edges(fh)}
-            elif sect[0] == "sequences":
-                sequences = parse_seqdict(fh, sect[1])
-                # sanity check;  a valid tree should have exactly one node that is parentless
-                if not len(parents) == len(sequences) - 1:
-                    raise RuntimeError(
-                        "invalid results attempting to parse {}: there are {} parentless sequences".format(
-                            outfile, len(sequences) - len(parents)
+            try:
+                if sect == "parents":
+                    parents = {child: parent for child, parent in iter_edges(fh)}
+                elif sect[0] == "sequences":
+                    sequences = parse_seqdict(fh, sect[1])
+                    # sanity check;  a valid tree should have exactly one node that is parentless
+                    if not len(parents) == len(sequences) - 1:
+                        raise TreeParseError(
+                            "invalid results attempting to parse {}: there are {} parentless sequences".format(
+                                outfile, len(sequences) - len(parents)
+                            )
                         )
-                    )
-                if bootstrap:
-                    trees[-1].append(build_tree(sequences, parents, counts, root))
+                    # Also, all sequences should have the same length!
+                    _seq_lengths = list(set(len(seq) for _, seq in sequences.items()))
+                    if not len(_seq_lengths) == 1:
+                        raise TreeParseError(
+                            "Parsed node sequences do not all have the same length!"
+                        )
+                    # Also, all sequences' lengths should match first tree's
+                    # seq lengths
+                    if _expected_seq_len is not None:
+                        if not _seq_lengths[0] == _expected_seq_len:
+                            raise TreeParseError(
+                                "Parsed tree node sequences don't match first parsed tree's sequences!"
+                            )
+                    else:
+                        _expected_seq_len = _seq_lengths[0]
+
+                    if bootstrap:
+                        trees[-1].append(build_tree(sequences, parents, counts, root))
+                    else:
+                        trees.append(build_tree(sequences, parents, counts, root))
+                elif sect == "seqboot_dataset":
+                    bootstrap = True
+                    trees.append([])
                 else:
-                    trees.append(build_tree(sequences, parents, counts, root))
-            elif sect == "seqboot_dataset":
-                bootstrap = True
-                trees.append([])
-            else:
-                raise RuntimeError("unrecognized phylip section = {}".format(sect))
+                    raise TreeParseError("unrecognized phylip section = {}".format(sect))
+            except TreeParseError:
+                if _expected_n_trees is not None:
+                    expected_message = f" but {_expected_n_trees} were expected"
+                else:
+                    expected_message = ""
+                warn(f"Error parsing {outfile}! {len(trees)} successfully read{expected_message}.")
+                _n_trees_warned = True
+                break
+        if not _n_trees_warned and _expected_n_trees is not None and _expected_n_trees != len(trees):
+            warn(f"Parsed {len(trees)} from {outfile} but {_expected_n_trees} expected!")
     if len(trees) == 0:
         raise RuntimeError(f"No trees found in '{outfile}'")
     if disambiguate:
