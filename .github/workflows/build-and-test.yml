@@ -23,7 +23,7 @@ jobs:
         uses: r-lib/actions/setup-pandoc@v2
 
       - name: Install miniconda and create environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: gctree
           environment-file: environment.yml
