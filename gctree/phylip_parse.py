@@ -16,8 +16,10 @@ import argparse
 from warnings import warn
 from typing import Dict
 
+
 class TreeParseError(RuntimeError):
     pass
+
 
 code_vectors = {
     code: [
@@ -108,6 +110,7 @@ def get_expected_trees(outfile):
         else:
             return None
 
+
 # parse the dnaml output file and return data structures containing a
 # list biopython.SeqRecords and a dict containing adjacency
 # relationships and distances between nodes.
@@ -165,17 +168,27 @@ def parse_outfile(outfile, abundance_file=None, root="root", disambiguate=False)
                     bootstrap = True
                     trees.append([])
                 else:
-                    raise TreeParseError("unrecognized phylip section = {}".format(sect))
+                    raise TreeParseError(
+                        "unrecognized phylip section = {}".format(sect)
+                    )
             except TreeParseError:
                 if _expected_n_trees is not None:
                     expected_message = f" but {_expected_n_trees} were expected"
                 else:
                     expected_message = ""
-                warn(f"Error parsing {outfile}! {len(trees)} successfully read{expected_message}.")
+                warn(
+                    f"Error parsing {outfile}! {len(trees)} successfully read{expected_message}."
+                )
                 _n_trees_warned = True
                 break
-        if not _n_trees_warned and _expected_n_trees is not None and _expected_n_trees != len(trees):
-            warn(f"Parsed {len(trees)} from {outfile} but {_expected_n_trees} expected!")
+        if (
+            not _n_trees_warned
+            and _expected_n_trees is not None
+            and _expected_n_trees != len(trees)
+        ):
+            warn(
+                f"Parsed {len(trees)} from {outfile} but {_expected_n_trees} expected!"
+            )
     if len(trees) == 0:
         raise RuntimeError(f"No trees found in '{outfile}'")
     if disambiguate:
