@@ -673,7 +673,7 @@ class CollapsedTree:
         Returns:
             Dictionary of node names to hex color strings, which may be used as the colormap in :meth:`gctree.CollapsedTree.render`
         """
-        cmap = mp.cm.get_cmap(cmap)
+        cmap = mp.colormaps[cmap]
 
         if vmin is None:
             vmin = np.nanmin([getattr(node, feature) for node in self.tree.traverse()])
