@@ -28,6 +28,7 @@ jobs:
           activate-environment: gctree
           environment-file: environment.yml
           python-version: ${{ matrix.python-version }}
+          channels: conda-forge,defaults,bioconda
           auto-activate-base: false
           auto-update-conda: true
 
