@@ -22,15 +22,13 @@ jobs:
       - name: Install Pandoc
         uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Install miniconda and create environment
-        uses: conda-incubator/setup-miniconda@v3
+      - uses: mamba-org/setup-micromamba@v1
         with:
-          activate-environment: gctree
+          micromamba-version: '1.5.6-0' # any version from https://github.com/mamba-org/micromamba-releases
           environment-file: environment.yml
-          python-version: ${{ matrix.python-version }}
-          channels: conda-forge,defaults,bioconda
-          auto-activate-base: false
-          auto-update-conda: false
+          init-shell: bash
+          cache-environment: false
+          post-cleanup: 'none'
 
       - name: Test
         shell: bash -l {0}
