@@ -1,8 +1,7 @@
 name: gctree
 channels:
-  - conda-forge
-  - defaults
   - bioconda
+  - defaults
 dependencies:
   - phylip
   - pip
