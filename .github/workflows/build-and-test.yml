@@ -12,10 +12,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: [3.7, 3.8, 3.9, "3.10"] # https://github.com/actions/runner/issues/1989
-      exclude:
-        # excludes 3.7 on macos-latest (no native build for M1)
-        - os: macos-latest
-          python-version: 3.7
+        exclude:
+          # excludes 3.7 on macos-latest (no native build for M1)
+          - os: macos-latest
+            python-version: 3.7
 
     runs-on: ${{ matrix.os }}
 
