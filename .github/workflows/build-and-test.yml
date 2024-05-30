@@ -12,6 +12,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: [3.7, 3.8, 3.9, "3.10"] # https://github.com/actions/runner/issues/1989
+        exclude:
+          # excludes 3.7 on macos-latest (no native build for M1)
+          - os: macos-latest
+            python-version: 3.7
 
     runs-on: ${{ matrix.os }}
 
@@ -19,18 +23,14 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v3
 
-      - name: Install Pandoc
-        uses: r-lib/actions/setup-pandoc@v2
-
-      - name: Install miniconda and create environment
-        uses: conda-incubator/setup-miniconda@v2
+      - name: Python Setup
+        uses: actions/setup-python@v5
         with:
-          activate-environment: gctree
-          environment-file: environment.yml
           python-version: ${{ matrix.python-version }}
-          auto-activate-base: false
-          auto-update-conda: true
 
-      - name: Test
+      - name: Install and Test
         shell: bash -l {0}
-        run: make test
+        run: |
+          pip install .
+          pip install -r requirements.txt
+          make test
