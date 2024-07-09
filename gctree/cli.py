@@ -628,11 +628,33 @@ def get_parser():
         nargs=3,
         default=None,
         help=(
+            "This argument is deprecated and will throw an error. Use `--ranking_strategy` instead."
             "List of coefficients for ranking trees by a linear combination of traits. "
             "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
             "A coefficient of -1 will be applied to branching process likelihood. "
             "If not provided, trees will be ranked lexicographically by likelihood, "
             "isotype parsimony, and context-based Poisson likelihood in that order."
+        ),
+    )
+    parser_infer.add_argument(
+        "--ranking_strategy",
+        type=str,
+        nargs=1,
+        default=None,
+        help=(
+            "Expression describing tree ranking strategy. If provided, takes precedence over all other ranking arguments. "
+            "Two types of expressions are permitted: First are those describing lexicographic orderings, like 'B,C,A', which means "
+            "choose trees to maximize branching process likelihood, then maximize context likelihood, then minimize number "
+            "of alleles. Next are expressions describing linear combinations of criteria, like 'B+2C-1.1A', which means choose "
+            "trees to minimize the specified linear combination of criteria. "
+            "These two methods of ranking cannot be combined. For example, 'B+C,A' is not a valid ranking strategy expression."
+            "Ranking criteria are specified using the following identifiers: "
+            "B - branching process likelihood (default maximized) "
+            "I - isotype parsimony (default minimized) "
+            "C - context-based Poisson likelihood (default maximized) "
+            "M - old mutability parsimony (deprecated, default minimized) "
+            "A - number of alleles (default minimized) "
+            "R - reversions to naive sequence (default minimized) "
         ),
     )
     parser_infer.add_argument(
