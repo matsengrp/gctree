@@ -1266,6 +1266,7 @@ class CollapsedForest:
 
         # Parsing ranking_strategy, if provided:
         if ranking_strategy:
+            print(ranking_strategy)
             if "," in ranking_strategy:
                 # Then we're doing lexicographic ranking
                 criteria = ranking_strategy.split(',')
