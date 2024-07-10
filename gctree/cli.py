@@ -202,6 +202,7 @@ def infer(args):
     # write a log file containing stats for all trees in the forest:
     trimmed_forest, _ = forest.filter_trees(
         ranking_coeffs=args.ranking_coeffs,
+        ranking_strategy=args.ranking_strategy,
         verbose=args.verbose,
         outbase=args.outbase,
         summarize_forest=args.summarize_forest,
@@ -639,7 +640,6 @@ def get_parser():
     parser_infer.add_argument(
         "--ranking_strategy",
         type=str,
-        nargs=1,
         default=None,
         help=(
             "Expression describing tree ranking strategy. If provided, takes precedence over all other ranking arguments. "

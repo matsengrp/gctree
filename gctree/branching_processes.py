@@ -1266,8 +1266,7 @@ class CollapsedForest:
 
         # Parsing ranking_strategy, if provided:
         if ranking_strategy:
-            print(ranking_strategy)
-            if "," in ranking_strategy:
+            if "," in ranking_strategy or sum(key in ranking_strategy for key in ranking_function_keys) == 1:
                 # Then we're doing lexicographic ranking
                 criteria = ranking_strategy.split(',')
 
@@ -1280,6 +1279,7 @@ class CollapsedForest:
                     criteria = criteria[1:]
 
             def expand_criterion(c):
+                print(c)
                 if c[0] == '-':
                     fac = -1
                     c = c[1:]
@@ -2105,7 +2105,10 @@ def _naive_reversion_dagfuncs(naive_seq: str) -> hdag.utils.HistoryDagFilter:
     """
 
     def edge_weight_func(n1, n2):
-        return sum(1 for p, c, n in zip(n1.label.sequence, n2.label.sequence, naive_seq) if (p != n and c == n))
+        if n1.is_ua_node():
+            return 0
+        else:
+            return sum(1 for p, c, n in zip(n1.label.sequence, n2.label.sequence, naive_seq) if (p != n and c == n))
 
     return hdag.utils.HistoryDagFilter(
         hdag.utils.AddFuncDict(
