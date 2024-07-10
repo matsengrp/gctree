@@ -44,8 +44,10 @@ sequence_resolutions_count = hdag.parsimony_utils.standard_nt_ambiguity_map_gap_
     "sequence"
 )
 
+
 class RankingCriterionError(Exception):
     pass
+
 
 class CollapsedTree:
     r"""A collapsed tree, modeled as an infinite type Galton-Watson process run
@@ -1137,7 +1139,6 @@ class CollapsedForest:
     @_requires_dag
     def filter_trees(  # noqa: C901
         self,
-        ranking_coeffs: Optional[Sequence[float]] = None,
         ranking_strategy: Optional[str] = None,
         mutability_file: Optional[str] = None,
         substitution_file: Optional[str] = None,
@@ -1147,26 +1148,17 @@ class CollapsedForest:
         outbase: str = "gctree.out",
         summarize_forest: bool = False,
         tree_stats: bool = False,
-        branching_process_ranking_coeff: float = -1,
-        use_old_mut_parsimony: bool = False,
     ) -> CollapsedForest:
         """Filter trees according to specified criteria.
 
-        Trim the forest to minimize a linear
-        combination of branching process likelihood, isotype parsimony score,
-        context/mutability-based Poisson likelihood, and number of alleles, with coefficients
-        provided in the argument ``ranking_coeffs`, in that order.
+        By default, the forest will be trimmed to maximize branching process likelihood,
+        then minimize isotype parsimony, then maximize context-based Poisson likelihood,
+        and finally minimize number of alleles. Any criteria for which the necessary arguments
+        are not provided will be automatically ignored.
+
+        For other ranking strategies, see the `ranking_strategy` argument.
 
         Args:
-            ranking_coeffs: A list or tuple of coefficients for prioritizing tree weights.
-                The order of coefficients is: isotype parsimony score, context poisson likelihood,
-                and number of alleles. A coefficient of ``-1`` will be applied to branching process
-                likelihood by default, unless a different value is provided to the keyword argument
-                `branching_process_ranking_coeff`. Trees are chosen to minimize this linear combination
-                of tree weights, so weights for which larger values are more optimal (such as
-                likelihoods) should have negative coefficients.
-                If ranking_coeffs is not provided, trees will be ranked lexicographically
-                by likelihood, then by other traits, in the same order.
             ranking_strategy: A string expression describing how to rank trees. See docs for command line
                 argument `--ranking_strategy` for description.
             mutability_file: A mutability model
@@ -1179,11 +1171,6 @@ class CollapsedForest:
             outbase: file name stem for a file with information for each tree in the DAG.
             summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`
             tree_stats: whether to write stats for each tree in the forest to file `[outbase].tree_stats.log`
-            branching_process_ranking_coeff: Ranking coefficient to use for branching process likelihood. Value
-                is ignored unless `ranking_coeffs` argument is provided.
-            use_old_mut_parsimony: Whether to use the deprecated 'mutability parsimony' instead of
-                context-based poisson likelihood (only applicable if mutability and substitution files are
-                provided.
 
         Returns:
             The trimmed forest, containing all optimal trees according to the specified criteria, and a tuple
@@ -1211,9 +1198,13 @@ class CollapsedForest:
 
         def prepare_isotype_parsimony_funcs():
             if not self.is_isotyped:
-                raise RankingCriterionError("Isotypes have not been added to this CollapsedForest.")
+                raise RankingCriterionError(
+                    "Isotypes have not been added to this CollapsedForest."
+                )
             if ignore_isotype:
-                raise RankingCriterionError("Isotype ranking is disabled by passed parameters.")
+                raise RankingCriterionError(
+                    "Isotype ranking is disabled by passed parameters."
+                )
             rootname = list(self._forest.dagroot.children())[0].attr["name"]
             if any(
                 not node.attr["isotype"]
@@ -1228,7 +1219,9 @@ class CollapsedForest:
 
         def prepare_context_poisson_funcs():
             if not (mutability_file and substitution_file):
-                raise RankingCriterionError("Poisson context likelihood requires mutability and substitution files.")
+                raise RankingCriterionError(
+                    "Poisson context likelihood requires mutability and substitution files."
+                )
             return _context_poisson_likelihood_dagfuncs(
                 mutability_file=mutability_file,
                 substitution_file=substitution_file,
@@ -1237,8 +1230,10 @@ class CollapsedForest:
 
         def prepare_mutability_parsimony_funcs():
             if not (mutability_file and substitution_file):
-                raise RankingCriterionError("Mutability parsimony requires mutability and substitution files.")
-            return _context_poisson_likelihood_dagfuncs(
+                raise RankingCriterionError(
+                    "Mutability parsimony requires mutability and substitution files."
+                )
+            return _mutability_dagfuncs(
                 mutability_file=mutability_file,
                 substitution_file=substitution_file,
                 splits=[] if chain_split is None else [chain_split],
@@ -1266,21 +1261,23 @@ class CollapsedForest:
 
         # Parsing ranking_strategy, if provided:
         if ranking_strategy:
-            if "," in ranking_strategy or sum(key in ranking_strategy for key in ranking_function_keys) == 1:
+            if (
+                "," in ranking_strategy
+                or sum(key in ranking_strategy for key in ranking_function_keys) == 1
+            ):
                 # Then we're doing lexicographic ranking
-                criteria = ranking_strategy.split(',')
+                criteria = ranking_strategy.split(",")
 
             else:
                 lexicographic = False
-                criteria = ranking_strategy.replace("-", "+-").split('+')
+                criteria = ranking_strategy.replace("-", "+-").split("+")
                 # If there's a leading '-', then we'll get an empty string as
                 # first element
-                if criteria[0] == '':
+                if criteria[0] == "":
                     criteria = criteria[1:]
 
             def expand_criterion(c):
-                print(c)
-                if c[0] == '-':
+                if c[0] == "-":
                     fac = -1
                     c = c[1:]
                 else:
@@ -1290,14 +1287,23 @@ class CollapsedForest:
                 else:
                     return c[-1], fac * float(c[:-1])
 
-            expanded_criteria = [expand_criterion(criterion) for criterion in criteria]
+            try:
+                expanded_criteria = [
+                    expand_criterion(criterion) for criterion in criteria
+                ]
+            except Exception as e:
+                raise RankingCriterionError(
+                    f"Error parsing ranking strategy string: '{ranking_strategy}'"
+                ) from e
+
             ranking_funcs_needed = set(name for name, _ in expanded_criteria)
-            # Add allele funcs no matter what, for logging:
-            if "A" not in ranking_funcs_needed:
-                expanded_criteria.append(("A", 0))
-                ranking_funcs_needed.add("A")
-            initialized_ranking_funcs = {name: ranking_function_keys[name]() for name in ranking_funcs_needed}
-            dag_filters = [(initialized_ranking_funcs[name], coeff) for name, coeff in expanded_criteria]
+            initialized_ranking_funcs = {
+                name: ranking_function_keys[name]() for name in ranking_funcs_needed
+            }
+            dag_filters = [
+                (initialized_ranking_funcs[name], coeff)
+                for name, coeff in expanded_criteria
+            ]
         else:
             # Then we need to do defaults
             dag_filters = []
@@ -1309,8 +1315,30 @@ class CollapsedForest:
                     # We're just seeing what we have info to handle, so failing
                     # silently is fine
                     pass
-                
 
+        # Switch optimal functions based on signs of coefficients. This is
+        # only for lexicographic sort and must be done before building combined
+        # filter. Notice warning messages are slightly different than for
+        # linear combination, so it's easier to just duplicate them
+        if lexicographic:
+            for dag_filter, coeff in dag_filters:
+                if coeff < 0:
+                    if dag_filter.optimal_func == max:
+                        warnings.warn(
+                            f"Higher values for {dag_filter.weight_funcs.name} are generally better, but the "
+                            "provided ranking coefficient is negative, so trees with lower values will be preferred."
+                        )
+                        dag_filter.optimal_func = min
+                    elif dag_filter.optimal_func == min:
+                        warnings.warn(
+                            f"Lower values for {dag_filter.weight_funcs.name} are generally better, but the "
+                            "provided ranking coefficient is negative, so trees with higher values will be preferred."
+                        )
+                        dag_filter.optimal_func = max
+                    else:
+                        warnings.warn(
+                            f"Unrecognized optimality function for {dag_filter.weight_funcs.name} cannot be negated and will be left unchanged."
+                        )
 
         dag = self._forest
 
@@ -2091,8 +2119,10 @@ def _allele_dagfuncs() -> hdag.utils.HistoryDagFilter:
         min,
     )
 
+
 def _naive_reversion_dagfuncs(naive_seq: str) -> hdag.utils.HistoryDagFilter:
-    """Return functions for filtering trees in a history DAG by the number of reversions to the naive nucleotide sequence.
+    """Return functions for filtering trees in a history DAG by the number of
+    reversions to the naive nucleotide sequence.
 
     Args:
         naive_seq: The naive sequence. Sitewise reversions to this sequence will be counted.
@@ -2108,7 +2138,11 @@ def _naive_reversion_dagfuncs(naive_seq: str) -> hdag.utils.HistoryDagFilter:
         if n1.is_ua_node():
             return 0
         else:
-            return sum(1 for p, c, n in zip(n1.label.sequence, n2.label.sequence, naive_seq) if (p != n and c == n))
+            return sum(
+                1
+                for p, c, n in zip(n1.label.sequence, n2.label.sequence, naive_seq)
+                if (p != n and c == n)
+            )
 
     return hdag.utils.HistoryDagFilter(
         hdag.utils.AddFuncDict(

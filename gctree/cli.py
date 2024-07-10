@@ -198,10 +198,22 @@ def infer(args):
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
         )
 
+    if args.branching_process_ranking_coeff:
+        raise ValueError(
+            "Argument --branching_process_ranking_coeff is deprecated. Use --ranking_strategy instead."
+        )
+    if args.ranking_coeffs:
+        raise ValueError(
+            "Argument --ranking_coeffs is deprecated. Use --ranking_strategy instead."
+        )
+    if args.use_old_mut_parsimony:
+        raise ValueError(
+            "Argument --use_old_mut_parsimony is deprecated. Use --ranking_strategy instead."
+        )
+
     # Filter the forest according to specified criteria, and along the way,
     # write a log file containing stats for all trees in the forest:
     trimmed_forest, _ = forest.filter_trees(
-        ranking_coeffs=args.ranking_coeffs,
         ranking_strategy=args.ranking_strategy,
         verbose=args.verbose,
         outbase=args.outbase,
@@ -210,8 +222,6 @@ def infer(args):
         mutability_file=args.mutability,
         substitution_file=args.substitution,
         chain_split=args.chain_split,
-        branching_process_ranking_coeff=args.branching_process_ranking_coeff,
-        use_old_mut_parsimony=args.use_old_mut_parsimony,
     )
 
     if args.verbose:
@@ -616,8 +626,9 @@ def get_parser():
     parser_infer.add_argument(
         "--branching_process_ranking_coeff",
         type=float,
-        default=-1,
+        default=None,
         help=(
+            "This argument is deprecated and will throw an error. Use `--ranking_strategy` instead. "
             "Coefficient used for branching process likelihood, when ranking trees by a linear "
             "combination of traits. This value will be ignored if `--ranking_coeffs` argument is not "
             "also provided."
@@ -629,7 +640,7 @@ def get_parser():
         nargs=3,
         default=None,
         help=(
-            "This argument is deprecated and will throw an error. Use `--ranking_strategy` instead."
+            "This argument is deprecated and will throw an error. Use `--ranking_strategy` instead. "
             "List of coefficients for ranking trees by a linear combination of traits. "
             "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
             "A coefficient of -1 will be applied to branching process likelihood. "
@@ -647,20 +658,22 @@ def get_parser():
             "choose trees to maximize branching process likelihood, then maximize context likelihood, then minimize number "
             "of alleles. Next are expressions describing linear combinations of criteria, like 'B+2C-1.1A', which means choose "
             "trees to minimize the specified linear combination of criteria. "
-            "These two methods of ranking cannot be combined. For example, 'B+C,A' is not a valid ranking strategy expression."
+            "These two methods of ranking cannot be combined. For example, 'B+C,A' is not a valid ranking strategy expression. "
             "Ranking criteria are specified using the following identifiers: "
             "B - branching process likelihood (default maximized) "
             "I - isotype parsimony (default minimized) "
             "C - context-based Poisson likelihood (default maximized) "
             "M - old mutability parsimony (deprecated, default minimized) "
             "A - number of alleles (default minimized) "
-            "R - reversions to naive sequence (default minimized) "
+            "R - sitewise reversions to naive sequence (default minimized) "
         ),
     )
     parser_infer.add_argument(
         "--use_old_mut_parsimony",
         action="store_true",
         help=(
+            "This argument is deprecated and will throw an error. Use the identifier 'M' with the "
+            "argument `--ranking_strategy` instead. "
             "Use old mutability parsimony instead of poisson context likelihood. Not recommended "
             "unless attempting to reproduce results from older versions of gctree. "
             "This argument will have no effect unless an S5F model is provided with the arguments "
