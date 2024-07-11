@@ -493,7 +493,7 @@ def simulate(args):
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        description="genotype collapsed tree inference and simulation"
+        description="genotype collapsed tree inference and simulation",
     )
     subparsers = parser.add_subparsers(
         title="subcommands",
@@ -658,14 +658,16 @@ def get_parser():
             "choose trees to maximize branching process likelihood, then maximize context likelihood, then minimize number "
             "of alleles. Next are expressions describing linear combinations of criteria, like 'B+2C-1.1A', which means choose "
             "trees to minimize the specified linear combination of criteria. "
+            "If linear combination expression has leading `-`, use `=` instead of space to separate argument, "
+            "e.g. ``--ranking_strategy=-B+R``. "
             "These two methods of ranking cannot be combined. For example, 'B+C,A' is not a valid ranking strategy expression. "
-            "Ranking criteria are specified using the following identifiers: "
-            "B - branching process likelihood (default maximized) "
-            "I - isotype parsimony (default minimized) "
-            "C - context-based Poisson likelihood (default maximized) "
-            "M - old mutability parsimony (deprecated, default minimized) "
-            "A - number of alleles (default minimized) "
-            "R - sitewise reversions to naive sequence (default minimized) "
+            "Ranking criteria are specified using the following identifiers:\n"
+            "B - branching process likelihood (default maximized),\n"
+            "I - isotype parsimony (default minimized),\n"
+            "C - context-based Poisson likelihood (default maximized),\n"
+            "M - old mutability parsimony (deprecated, default minimized),\n"
+            "A - number of alleles (default minimized),\n"
+            "R - sitewise reversions to naive sequence (default minimized)\n"
         ),
     )
     parser_infer.add_argument(

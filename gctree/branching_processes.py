@@ -1262,6 +1262,7 @@ class CollapsedForest:
 
         # Parsing ranking_strategy, if provided:
         if ranking_strategy:
+            ranking_strategy = ranking_strategy.replace(" ", "")
             if (
                 "," in ranking_strategy
                 or sum(key in ranking_strategy for key in ranking_function_keys) == 1
@@ -1496,6 +1497,7 @@ class CollapsedForest:
                             stat - best
                             for stat, best in zip(best_weighttuple, independent_best)
                         ]
+                        + [0]
                     ],
                     "Highest ranked tree: loss from best value",
                     file=fh,
