@@ -213,7 +213,7 @@ def infer(args):
 
     # Filter the forest according to specified criteria, and along the way,
     # write a log file containing stats for all trees in the forest:
-    trimmed_forest, _ = forest.filter_trees(
+    ctrees, _, _ = forest.filter_trees(
         ranking_strategy=args.ranking_strategy,
         verbose=args.verbose,
         outbase=args.outbase,
@@ -223,28 +223,6 @@ def infer(args):
         substitution_file=args.substitution,
         chain_split=args.chain_split,
     )
-
-    if args.verbose:
-        if trimmed_forest.n_trees > 1:
-            n_topologies = trimmed_forest.n_topologies()
-            print(
-                "Degenerate ranking criteria: trimmed history DAG contains "
-                f"{trimmed_forest.n_trees} unique trees, with {n_topologies} unique collapsed topologies."
-            )
-            if n_topologies > 10:
-                print(
-                    "A representative from each of the ten most abundant topologies will be sampled randomly for rendering."
-                )
-            else:
-                print(
-                    "A representative of each topology will be sampled randomly for rendering."
-                )
-
-    random.seed(forest.n_trees)
-    ctrees = [
-        topoclass.sample_tree()
-        for _, topoclass in zip(range(10), trimmed_forest.iter_topology_classes())
-    ]
 
     if args.colormapfile is not None:
         with open(args.colormapfile, "r") as f:

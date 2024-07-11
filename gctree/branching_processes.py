@@ -1302,10 +1302,26 @@ class CollapsedForest:
             initialized_ranking_funcs = {
                 name: ranking_function_keys[name]() for name in ranking_funcs_needed
             }
-            dag_filters = [
+            all_filters = [
                 (initialized_ranking_funcs[name], coeff)
                 for name, coeff in expanded_criteria
             ]
+            # Account for lexicographic filters with coefficient of 0, which
+            # will be computed on trees but not used for ranking.
+            if lexicographic:
+                # Want all the observer filters to be at the end, so it's easy
+                # to deal with them in the tree_stats section.
+                dag_filters = [
+                    (filt, coeff) for filt, coeff in all_filters if coeff != 0
+                ]
+                zero_filters = [
+                    (filt, coeff) for filt, coeff in all_filters if coeff == 0
+                ]
+                observer_filters = dag_filters + zero_filters
+            else:
+                dag_filters = all_filters.copy()
+                observer_filters = all_filters.copy()
+
         else:
             # Then we need to do defaults
             dag_filters = []
@@ -1317,6 +1333,7 @@ class CollapsedForest:
                     # We're just seeing what we have info to handle, so failing
                     # silently is fine
                     pass
+            observer_filters = dag_filters.copy()
 
         # Switch optimal functions based on signs of coefficients. This is
         # only for lexicographic sort and must be done before building combined
@@ -1345,29 +1362,40 @@ class CollapsedForest:
         dag = self._forest
 
         # add 0-returning functions so dagfuncs return tuples, even if allele funcs are the only ones used for filtering
-        dag_filters.append(
-            (
-                hdag.utils.HistoryDagFilter(
-                    hdag.utils.AddFuncDict(
-                        {
-                            "start_func": lambda n: 0,
-                            "edge_weight_func": lambda n1, n2: 0,
-                            "accum_func": lambda ls: 0,
-                        },
-                        name="",
-                    ),
-                    min,
-                    ordering_name="",
-                ),
-                0,
-            )
+        null_filter = hdag.utils.HistoryDagFilter(
+            hdag.utils.AddFuncDict(
+                {
+                    "start_func": lambda n: 0,
+                    "edge_weight_func": lambda n1, n2: 0,
+                    "accum_func": lambda ls: 0,
+                },
+                name="",
+            ),
+            min,
+            ordering_name="",
         )
+        dag_filters.append((null_filter, 0))
+        observer_filters.append((null_filter, 0))
 
         combined_dag_filter = functools.reduce(
             lambda x, y: x + y, (dag_filter for dag_filter, _ in dag_filters)
         )
 
-        if not lexicographic:
+        combined_observer_filter = functools.reduce(
+            lambda x, y: x + y, (dag_filter for dag_filter, _ in observer_filters)
+        )
+
+        if lexicographic:
+            ranking_dag_filter = combined_dag_filter
+            ranking_description = "Ranking trees to " + " then ".join(
+                opt_name[:3] + "imize " + ord_name
+                for (opt_name, _), ord_name in zip(
+                    ranking_dag_filter.ordering_names,
+                    ranking_dag_filter.weight_funcs.names,
+                )
+                if ord_name != ""
+            )
+        else:
             for dag_filter, coeff in dag_filters:
                 if dag_filter.optimal_func == max and coeff > 0:
                     warnings.warn(
@@ -1412,20 +1440,17 @@ class CollapsedForest:
                     if coeff != 0
                 )
             )
-        else:
-            ranking_dag_filter = combined_dag_filter
-            ranking_description = "Ranking trees to " + " then ".join(
-                opt_name[:3] + "imize " + ord_name
-                for (opt_name, _), ord_name in zip(
-                    ranking_dag_filter.ordering_names,
-                    ranking_dag_filter.weight_funcs.names,
-                )
-                if ord_name != ""
-            )
+
         if verbose:
             print(ranking_description)
 
-        def print_stats(statlist, title, file=None, suppress_score=False):
+        def print_stats(
+            statlist,
+            title,
+            file=None,
+            suppress_score=False,
+            filter_list=observer_filters,
+        ):
             show_score = (not lexicographic) and (not suppress_score)
 
             def reformat(field, n=10):
@@ -1438,7 +1463,7 @@ class CollapsedForest:
             statstring = "\t".join(
                 tuple(
                     reformat(dfilter.weight_funcs.name, n=15)
-                    for dfilter, _ in dag_filters[:-1]
+                    for dfilter, _ in filter_list[:-1]
                 )
             )
             print(
@@ -1460,12 +1485,48 @@ class CollapsedForest:
 
         trimdag = dag[ranking_dag_filter]
 
-        best_weighttuple = trimdag.optimal_weight_annotate(
-            **combined_dag_filter,
-        )
+        trimmed_forest = self._trimmed_self(trimdag)
 
         if verbose:
-            print_stats([best_weighttuple], "Stats for optimal trees")
+            if trimmed_forest.n_trees > 1:
+                n_topologies = trimmed_forest.n_topologies()
+                print(
+                    "Degenerate ranking criteria: filtered forest contains "
+                    f"{trimmed_forest.n_trees} unique trees, with {n_topologies} unique collapsed topologies."
+                )
+                if n_topologies > 10:
+                    print(
+                        "A representative from each of the ten most abundant topologies will be sampled randomly for rendering."
+                    )
+                else:
+                    print(
+                        "A representative of each topology will be sampled randomly for rendering."
+                    )
+
+        random.seed(trimmed_forest.n_trees)
+        topoclasses = list(trimmed_forest.iter_topology_classes())
+
+        sampled_histories = [topoclass._forest.sample() for topoclass in topoclasses]
+
+        weighttuples = [
+            history.optimal_weight_annotate(**combined_observer_filter)
+            for history in sampled_histories
+        ]
+
+        first_tree_weighttuple = weighttuples[0]
+
+        ctrees = [
+            topoclass._clade_tree_to_ctree(history)
+            for topoclass, history in zip(topoclasses, sampled_histories)
+        ]
+
+        if verbose:
+            if len(observer_filters) == len(dag_filters):
+                # Then all selected tree stats are the same, no need to print
+                # them multiple times:
+                print_stats(weighttuples[:1], "Stats for optimal trees")
+            else:
+                print_stats(weighttuples, "Stats for optimal trees")
 
         if summarize_forest:
             with open(outbase + ".forest_summary.log", "w") as fh:
@@ -1495,7 +1556,9 @@ class CollapsedForest:
                     [
                         [
                             stat - best
-                            for stat, best in zip(best_weighttuple, independent_best)
+                            for stat, best in zip(
+                                first_tree_weighttuple, independent_best
+                            )
                         ]
                         + [0]
                     ],
@@ -1505,33 +1568,44 @@ class CollapsedForest:
                 )
 
         if tree_stats:
-            dag_ls = list(dag.weight_count(**combined_dag_filter).elements())
+            dag_ls = list(dag.weight_count(**combined_observer_filter).elements())
             # To clear _dp_data fields of their large cargo
             dag.optimal_weight_annotate(edge_weight_func=lambda n1, n2: 0)
+            num_ranking_filters = len(dag_filters)
             if not lexicographic:
-                minfunckey = linear_combinator
+
+                def minfunckey(tup):
+                    return linear_combinator(tup[:num_ranking_filters])
+
             else:
-                minfunckey = ranking_dag_filter.optimal_func
+                _tuple_coeffs = [
+                    -1 if filt.optimal_func == max else 1 for filt, _ in dag_filters
+                ]
+
+                def minfunckey(tup):
+                    return tuple(coeff * it for coeff, it in zip(_tuple_coeffs, tup))
+
             dag_ls.sort(key=minfunckey)
 
             df = pd.DataFrame(
-                dag_ls, columns=combined_dag_filter.weight_funcs.names
+                dag_ls, columns=combined_observer_filter.weight_funcs.names
             ).drop(columns=[""])
             df.to_csv(outbase + ".tree_stats.csv")
             df["set"] = ["all_trees"] * len(df)
             bestdf = pd.DataFrame(
-                [best_weighttuple], columns=combined_dag_filter.weight_funcs.names
+                [first_tree_weighttuple],
+                columns=combined_observer_filter.weight_funcs.names,
             )
             bestdf["set"] = ["best_tree"]
             toplot_df = pd.concat([df, bestdf], ignore_index=True)
             pplot = sns.pairplot(
-                toplot_df.drop(columns=["Alleles", ""], errors="ignore"),
+                toplot_df.drop(columns=[""], errors="ignore"),
                 hue="set",
                 diag_kind="hist",
             )
             pplot.savefig(outbase + ".tree_stats.pairplot.pdf")
 
-        return (self._trimmed_self(trimdag), best_weighttuple)
+        return (ctrees, trimmed_forest, weighttuples)
 
     def likelihood_rankplot(self, outbase, p, q, img_type="svg"):
         """Save a rank plot of likelihoods to the file
