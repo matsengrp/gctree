@@ -1256,6 +1256,7 @@ class CollapsedForest:
             prepare_isotype_parsimony_funcs,
             prepare_context_poisson_funcs,
             _allele_dagfuncs,
+            prepare_reversions_funcs,
         ]
         lexicographic = True
 
@@ -1468,7 +1469,10 @@ class CollapsedForest:
         if summarize_forest:
             with open(outbase + ".forest_summary.log", "w") as fh:
                 independent_best = []
-                for dfilter, _ in dag_filters:
+                considered_dag_filters = [
+                    dfilt for dfilt in dag_filters if dfilt[0].weight_funcs.name != ""
+                ]
+                for dfilter, _ in considered_dag_filters:
                     tempdag = dag.copy()
                     min_val, max_val = tempdag.weight_range_annotate(**dfilter)
                     opt_weight = tempdag.trim_optimal_weight(**dfilter)
@@ -1477,7 +1481,7 @@ class CollapsedForest:
                         f"\nOverall {dfilter.weight_funcs.name} range {min_val} to {max_val}."
                         f"\nAmong trees with {dfilter.optimal_func.__name__} {dfilter.weight_funcs.name} of: {opt_weight}\n"
                     )
-                    for indfilter, _ in dag_filters:
+                    for indfilter, _ in considered_dag_filters:
                         if indfilter.weight_funcs.name != dfilter.weight_funcs.name:
                             minval, maxval = tempdag.weight_range_annotate(
                                 **indfilter.weight_funcs
