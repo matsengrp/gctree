@@ -1531,10 +1531,8 @@ class CollapsedForest:
         if summarize_forest:
             with open(outbase + ".forest_summary.log", "w") as fh:
                 independent_best = []
-                considered_dag_filters = [
-                    dfilt for dfilt in dag_filters if dfilt[0].weight_funcs.name != ""
-                ]
-                for dfilter, _ in considered_dag_filters:
+
+                for dfilter, _ in observer_filters[:-1]:
                     tempdag = dag.copy()
                     min_val, max_val = tempdag.weight_range_annotate(**dfilter)
                     opt_weight = tempdag.trim_optimal_weight(**dfilter)
@@ -1543,7 +1541,7 @@ class CollapsedForest:
                         f"\nOverall {dfilter.weight_funcs.name} range {min_val} to {max_val}."
                         f"\nAmong trees with {dfilter.optimal_func.__name__} {dfilter.weight_funcs.name} of: {opt_weight}\n"
                     )
-                    for indfilter, _ in considered_dag_filters:
+                    for indfilter, _ in observer_filters[:-1]:
                         if indfilter.weight_funcs.name != dfilter.weight_funcs.name:
                             minval, maxval = tempdag.weight_range_annotate(
                                 **indfilter.weight_funcs
