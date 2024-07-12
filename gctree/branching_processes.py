@@ -1256,7 +1256,6 @@ class CollapsedForest:
             prepare_isotype_parsimony_funcs,
             prepare_context_poisson_funcs,
             _allele_dagfuncs,
-            prepare_reversions_funcs,
         ]
         lexicographic = True
 
@@ -1340,6 +1339,7 @@ class CollapsedForest:
         # filter. Notice warning messages are slightly different than for
         # linear combination, so it's easier to just duplicate them
         if lexicographic:
+            adjusted_filters = []
             for dag_filter, coeff in dag_filters:
                 if coeff < 0:
                     if dag_filter.optimal_func == max:
@@ -1347,17 +1347,23 @@ class CollapsedForest:
                             f"Higher values for {dag_filter.weight_funcs.name} are generally better, but the "
                             "provided ranking coefficient is negative, so trees with lower values will be preferred."
                         )
-                        dag_filter.optimal_func = min
+                        dag_filter = hdag.utils.HistoryDagFilter(
+                            dag_filter.weight_funcs, min
+                        )
                     elif dag_filter.optimal_func == min:
                         warnings.warn(
                             f"Lower values for {dag_filter.weight_funcs.name} are generally better, but the "
                             "provided ranking coefficient is negative, so trees with higher values will be preferred."
                         )
-                        dag_filter.optimal_func = max
+                        dag_filter = hdag.utils.HistoryDagFilter(
+                            dag_filter.weight_funcs, max
+                        )
                     else:
                         warnings.warn(
                             f"Unrecognized optimality function for {dag_filter.weight_funcs.name} cannot be negated and will be left unchanged."
                         )
+                adjusted_filters.append((dag_filter, coeff))
+            dag_filters = adjusted_filters
 
         dag = self._forest
 
@@ -1451,37 +1457,39 @@ class CollapsedForest:
             suppress_score=False,
             filter_list=observer_filters,
         ):
-            show_score = (not lexicographic) and (not suppress_score)
-
-            def reformat(field, n=10):
-                if isinstance(field, int):
-                    return format(field, "<" + str(n))
-                else:
-                    return f"{field:{n}.{n}}"
-
-            print("\n" + title + ":", file=file)
-            statstring = "\t".join(
-                tuple(
-                    reformat(dfilter.weight_funcs.name, n=15)
-                    for dfilter, _ in filter_list[:-1]
-                )
+            df_dict = {"Tree": list(range(1, len(statlist) + 1))}
+            df_dict.update(
+                {
+                    dfilter.weight_funcs.name: vals
+                    for (dfilter, _), vals in zip(filter_list, zip(*statlist))
+                }
             )
-            print(
-                f"tree     \t{statstring}" + ("\ttreescore" if show_score else ""),
-                file=file,
-            )
-            for j, best_weighttuple in enumerate(statlist, 1):
-                # ignore always-0 entry at end:
-                statstring = "\t".join(reformat(it) for it in best_weighttuple[:-1])
-                print(
-                    f"{j:<10}\t{statstring}"
-                    + (
-                        f"\t{reformat(linear_combinator(best_weighttuple))}"
-                        if show_score
-                        else ""
-                    ),
-                    file=file,
-                )
+
+            if (not lexicographic) and (not suppress_score):
+                df_dict["TreeScore"] = [
+                    linear_combinator(stattup) for stattup in statlist
+                ]
+
+            df_dict.pop("")
+            printing_df = pd.DataFrame(df_dict)
+            # Hide index
+            printing_df.index = [""] * len(statlist)
+            # Set display options without side-effects
+            with pd.option_context(
+                "display.max_rows",
+                None,
+                "display.max_columns",
+                100,
+                "display.width",
+                1000,
+                "display.max_colwidth",
+                None,
+                "display.show_dimensions",
+                False,
+                "display.colheader_justify",
+                "right",
+            ):
+                print(printing_df, file=file)
 
         trimdag = dag[ranking_dag_filter]
 

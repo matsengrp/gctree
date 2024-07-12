@@ -492,7 +492,7 @@ def _mutability_dagfuncs(
                 "edge_weight_func": distance,
                 "accum_func": sum,
             },
-            name="Mut. Pars.",
+            name="MutabilityParsimony",
         ),
         min,
     )

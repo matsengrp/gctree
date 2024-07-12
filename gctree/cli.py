@@ -277,6 +277,8 @@ def infer(args):
     plt.xlabel("genotype")
     plt.ylabel("abundance")
     plt.savefig(args.outbase + ".inference.abundance_rank." + args.img_type)
+    if args.verbose:
+        print()
 
 
 def simulate(args):
@@ -632,13 +634,13 @@ def get_parser():
         default=None,
         help=(
             "Expression describing tree ranking strategy. If provided, takes precedence over all other ranking arguments. "
-            "Two types of expressions are permitted: First are those describing lexicographic orderings, like 'B,C,A', which means "
+            "Two types of expressions are permitted: First are those describing lexicographic orderings, like `B,C,A`, which means "
             "choose trees to maximize branching process likelihood, then maximize context likelihood, then minimize number "
-            "of alleles. Next are expressions describing linear combinations of criteria, like 'B+2C-1.1A', which means choose "
+            "of alleles. Next are expressions describing linear combinations of criteria, like `B+2C-1.1A`, which means choose "
             "trees to minimize the specified linear combination of criteria. "
             "If linear combination expression has leading `-`, use `=` instead of space to separate argument, "
             "e.g. ``--ranking_strategy=-B+R``. "
-            "These two methods of ranking cannot be combined. For example, 'B+C,A' is not a valid ranking strategy expression. "
+            "These two methods of ranking cannot be combined. For example, `B+C,A` is not a valid ranking strategy expression. "
             "Ranking criteria are specified using the following identifiers:\n"
             "B - branching process likelihood (default maximized),\n"
             "I - isotype parsimony (default minimized),\n"
@@ -646,6 +648,16 @@ def get_parser():
             "M - old mutability parsimony (deprecated, default minimized),\n"
             "A - number of alleles (default minimized),\n"
             "R - sitewise reversions to naive sequence (default minimized)\n"
+            "To compute the value of a criterion on ranked trees without affecting the ranking, include that ranking criterion "
+            "with a coefficient of zero, as in `B+2C+0A`, or `B,C,0A`.\n"
+            "To reverse the default ordering on a criterion in lexicographic ranking, provide a negative coefficient. "
+            "For example, `B,-A` will first maximize branching process likelihood, then maximize the number of alleles, since "
+            "the default is to minimize the number of alleles. `-B, A` will minimize branching process likelihood, since the default "
+            "is to maximize it, then minimize alleles.\n"
+            "A ranking strategy string containing a single ranking criterion identifier will be treated as a lexicographic ordering. "
+            "That is, `B` will maximize branching process likelihood, and `-B` will minimize branching process likelihood, while "
+            "`B+0C` will minimize branching process likelihood and `-B+0C` will maximize it. "
+            "`gctree infer --verbose` will describe the ranking strategy used. Examine this output to make sure it's as expected."
         ),
     )
     parser_infer.add_argument(

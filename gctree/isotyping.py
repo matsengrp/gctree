@@ -442,7 +442,7 @@ def _isotype_dagfuncs() -> hdag.utils.HistoryDagFilter:
                 "edge_weight_func": edge_weight_func,
                 "accum_func": sum,
             },
-            name="Isotype Pars.",
+            name="IsotypeParsimony",
         ),
         min,
     )
