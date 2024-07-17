@@ -465,6 +465,7 @@ class CollapsedTree:
         frame2: Optional[int] = None,
         position_map2: Optional[List] = None,
         show_support: bool = False,
+        show_nuc_muts: bool = False,
     ):
         r"""Render to tree image file.
 
@@ -481,6 +482,8 @@ class CollapsedTree:
             frame2: coding frame for 2nd sequence when using ``chain_split``
             position_map2: like ``position_map``, but for 2nd sequence when using ``chain_split``
             show_support: annotate bootstrap support if available
+            show_nuc_muts: If True, annotate branches with nucleotide mutations. If False, and frame is provided, then branches
+                will be annotated with amino acid mutations.
         """
         if frame is not None and frame not in (1, 2, 3):
             raise RuntimeError("frame must be 1, 2, or 3")
@@ -564,7 +567,24 @@ class CollapsedTree:
                 if "sequence" in tree_copy.features and set(
                     node.sequence.upper()
                 ) == set("ACGT"):
-                    if frame is not None:
+                    if show_nuc_muts:
+                        mutations = [f"{pn}{idx + 1}{cn}" for idx, (pn, cn) in enumerate(zip(node.up.sequence, node.sequence)) if pn != cn]
+                        if mutations:
+                            T = ete3.TextFace(
+                                "\n".join(mutations),
+                                fsize=6,
+                                tight_text=False,
+                            )
+                            T.margin_top = 6
+                            T.rotation = -90
+                            node.add_face(
+                                T,
+                                0,
+                                position=(
+                                    "branch-bottom"
+                                ),
+                            )
+                    elif frame is not None:
                         if chain_split is not None and frame2 is None:
                             raise ValueError(
                                 "must define frame2 when using chain_split"
@@ -626,6 +646,7 @@ class CollapsedTree:
                                     )
                                 if "*" in aa:
                                     nstyle["hz_line_color"] = "red"
+
             node.set_style(nstyle)
 
         ts = ete3.TreeStyle()

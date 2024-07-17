@@ -263,6 +263,7 @@ def infer(args):
             chain_split=args.chain_split,
             frame2=args.frame2,
             position_map2=position_map2,
+            show_nuc_muts=args.show_nucleotide_mutations,
         )
         collapsed_tree.newick(f"{args.outbase}.inference.{j}.nk")
         with open(f"{args.outbase}.inference.{j}.p", "wb") as f:
@@ -671,6 +672,13 @@ def get_parser():
             "unless attempting to reproduce results from older versions of gctree. "
             "This argument will have no effect unless an S5F model is provided with the arguments "
             "`--mutability` and `--substitution`."
+        ),
+    )
+    parser_infer.add_argument(
+        "--show_nucleotide_mutations",
+        action="store_true",
+        help=(
+            "If provided, branches in rendered tree will be annotated with nucleotide mutations."
         ),
     )
     parser_infer.add_argument(
