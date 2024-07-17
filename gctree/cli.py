@@ -171,8 +171,6 @@ def infer(args):
         if forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
 
-        if args.verbose:
-            print("number of trees with integer branch lengths:", forest.n_trees)
 
         forest.mle(marginal=True)
         # Add isotypes to forest
@@ -197,6 +195,9 @@ def infer(args):
         raise ValueError(
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
         )
+
+    if args.verbose:
+        print("number of trees with integer branch lengths:", forest.n_trees)
 
     if args.branching_process_ranking_coeff:
         raise ValueError(
