@@ -1356,36 +1356,23 @@ class CollapsedForest:
                     pass
             observer_filters = dag_filters.copy()
 
-        # Switch optimal functions based on signs of coefficients. This is
-        # only for lexicographic sort and must be done before building combined
-        # filter. Notice warning messages are slightly different than for
-        # linear combination, so it's easier to just duplicate them
-        if lexicographic:
-            adjusted_filters = []
-            for dag_filter, coeff in dag_filters:
-                if coeff < 0:
-                    if dag_filter.optimal_func == max:
-                        warnings.warn(
-                            f"Higher values for {dag_filter.weight_funcs.name} are generally better, but the "
-                            "provided ranking coefficient is negative, so trees with lower values will be preferred."
-                        )
-                        dag_filter = hdag.utils.HistoryDagFilter(
-                            dag_filter.weight_funcs, min
-                        )
-                    elif dag_filter.optimal_func == min:
-                        warnings.warn(
-                            f"Lower values for {dag_filter.weight_funcs.name} are generally better, but the "
-                            "provided ranking coefficient is negative, so trees with higher values will be preferred."
-                        )
-                        dag_filter = hdag.utils.HistoryDagFilter(
-                            dag_filter.weight_funcs, max
-                        )
-                    else:
-                        warnings.warn(
-                            f"Unrecognized optimality function for {dag_filter.weight_funcs.name} cannot be negated and will be left unchanged."
-                        )
-                adjusted_filters.append((dag_filter, coeff))
-            dag_filters = adjusted_filters
+        # Switch optimal functions based on signs of coefficients
+        adjusted_filters = []
+        for dag_filter, coeff in dag_filters:
+            if coeff < 0:
+                warnings.warn(
+                    f"Lower values for {dag_filter.weight_funcs.name} are generally better, but the "
+                    "provided ranking coefficient is negative, so trees with higher values will be preferred."
+                )
+                if lexicographic and dag_filter.optimal_func != min:
+                    warnings.warn(
+                        f"Unrecognized optimality function for {dag_filter.weight_funcs.name} may not support negation."
+                    )
+                dag_filter = hdag.utils.HistoryDagFilter(
+                    dag_filter.weight_funcs, max
+                )
+            adjusted_filters.append((dag_filter, coeff))
+        dag_filters = adjusted_filters
 
         dag = self._forest
 
@@ -1424,18 +1411,6 @@ class CollapsedForest:
                 if ord_name != ""
             )
         else:
-            for dag_filter, coeff in dag_filters:
-                if dag_filter.optimal_func == max and coeff > 0:
-                    warnings.warn(
-                        f"Higher values for {dag_filter.weight_funcs.name} are generally better, but the "
-                        "provided ranking coefficient is positive, so trees with lower values will be preferred."
-                    )
-                if dag_filter.optimal_func == min and coeff < 0:
-                    warnings.warn(
-                        f"Lower values for {dag_filter.weight_funcs.name} are generally better, but the "
-                        "provided ranking coefficient is negative, so trees with higher values will be preferred."
-                    )
-
             filtered_coefficients = [coeff for _, coeff in dag_filters]
 
             def linear_combinator(weighttuple):
