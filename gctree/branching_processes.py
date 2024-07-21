@@ -1207,6 +1207,7 @@ class CollapsedForest:
         #     * Add the prepare_func to the list of default ranking
         #           constructors, if desired.
         #     * Modify docs in cli.py to describe new criterion
+        #     * All ranking criteria should be minimized by default.
 
         def prepare_bp_likelihood_funcs():
             if self.parameters is None:
@@ -1241,7 +1242,7 @@ class CollapsedForest:
         def prepare_context_poisson_funcs():
             if not (mutability_file and substitution_file):
                 raise RankingCriterionError(
-                    "Poisson context likelihood requires mutability and substitution files."
+                    "Poisson context likelihood loss requires mutability and substitution files."
                 )
             return _context_poisson_likelihood_dagfuncs(
                 mutability_file=mutability_file,
@@ -2141,7 +2142,7 @@ def _cmcounter_dagfuncs():
 
 
 def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.HistoryDagFilter:
-    """Return functions for counting tree log branching process likelihood on
+    """Return functions for counting tree negative log branching process likelihood on
     the history DAG.
 
     For numerical consistency, we resort to the use of ``decimal.Decimal``.
@@ -2182,7 +2183,7 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.HistoryDag
             if n1.is_root() and c == 0 and m == 1:
                 # Add pseudocount for unobserved root unifurcation
                 c = 1
-            res = Decimal(CollapsedTree._ll_genotype(c, m, p, q)[0])
+            res = Decimal(-CollapsedTree._ll_genotype(c, m, p, q)[0])
             return hdag.utils.FloatState(float(round(res, 8)), state=res)
 
     def accum_func(weightlist):
@@ -2196,9 +2197,9 @@ def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.HistoryDag
                 "edge_weight_func": edge_weight_ll_genotype,
                 "accum_func": accum_func,
             },
-            name="LogBPLikelihood",
+            name="BPLikelihoodLogLoss",
         ),
-        max,
+        min,
     )
 
 
