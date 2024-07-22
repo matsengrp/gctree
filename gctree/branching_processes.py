@@ -1575,10 +1575,14 @@ class CollapsedForest:
             # To clear _dp_data fields of their large cargo
             dag.optimal_weight_annotate(edge_weight_func=lambda n1, n2: 0)
             num_ranking_filters = len(dag_filters)
+            col_names = combined_observer_filter.weight_funcs.names
+
             if not lexicographic:
+                col_names += (ranking_strategy.replace(' ', ''),)
+                dag_ls = [tup + (linear_combinator(tup),) for tup in dag_ls]
 
                 def minfunckey(tup):
-                    return linear_combinator(tup[:num_ranking_filters])
+                    return tup[-1]
 
             else:
                 _tuple_coeffs = [
@@ -1590,14 +1594,15 @@ class CollapsedForest:
 
             dag_ls.sort(key=minfunckey)
 
+
             df = pd.DataFrame(
-                dag_ls, columns=combined_observer_filter.weight_funcs.names
+                dag_ls, columns=col_names
             ).drop(columns=[""])
             df.to_csv(outbase + ".tree_stats.csv")
             df["set"] = ["all_trees"] * len(df)
             bestdf = pd.DataFrame(
                 [first_tree_weighttuple],
-                columns=combined_observer_filter.weight_funcs.names,
+                columns=col_names,
             )
             bestdf["set"] = ["best_tree"]
             toplot_df = pd.concat([df, bestdf], ignore_index=True)

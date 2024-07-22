@@ -6,12 +6,11 @@ export XDG_RUNTIME_DIR=/tmp/runtime-runner
 export MPLBACKEND=agg
 mkdir -p tests/smalltest_output
 
-# mutabilities=HS5F_Mutability.csv
-# substitutions=HS5F_Substitution.csv
-mutabilities=random_s5_mutabilities.csv
-substitutions=random_s5_substitution.csv
-# wget -O HS5F_Mutability.csv https://bitbucket.org/kleinstein/shazam/raw/ba4b30fc6791e2cfd5712e9024803c53b136e664/data-raw/HS5F_Mutability.csv
-# wget -O HS5F_Substitution.csv https://bitbucket.org/kleinstein/shazam/raw/ba4b30fc6791e2cfd5712e9024803c53b136e664/data-raw/HS5F_Substitution.csv
+mutabilities=HS5F_Mutability.csv
+substitutions=HS5F_Substitution.csv
+
+wget -O $mutabilities https://bitbucket.org/kleinstein/shazam/raw/ba4b30fc6791e2cfd5712e9024803c53b136e664/data-raw/HS5F_Mutability.csv
+wget -O $substitutions https://bitbucket.org/kleinstein/shazam/raw/ba4b30fc6791e2cfd5712e9024803c53b136e664/data-raw/HS5F_Substitution.csv
 
 gctree infer tests/small_outfile tests/abundances.csv --outbase tests/smalltest_output/gctree.infer1  --root GL --frame 1 --verbose --idlabel
 
