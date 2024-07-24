@@ -171,7 +171,6 @@ def infer(args):
         if forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
 
-
         forest.mle(marginal=True)
         # Add isotypes to forest
         if args.isotype_mapfile:

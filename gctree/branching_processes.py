@@ -568,7 +568,13 @@ class CollapsedTree:
                     node.sequence.upper()
                 ) == set("ACGT"):
                     if show_nuc_muts:
-                        mutations = [f"{pn}{idx + 1}{cn}" for idx, (pn, cn) in enumerate(zip(node.up.sequence, node.sequence)) if pn != cn]
+                        mutations = [
+                            f"{pn}{idx + 1}{cn}"
+                            for idx, (pn, cn) in enumerate(
+                                zip(node.up.sequence, node.sequence)
+                            )
+                            if pn != cn
+                        ]
                         if mutations:
                             T = ete3.TextFace(
                                 "\n".join(mutations),
@@ -580,9 +586,7 @@ class CollapsedTree:
                             node.add_face(
                                 T,
                                 0,
-                                position=(
-                                    "branch-bottom"
-                                ),
+                                position=("branch-bottom"),
                             )
                     elif frame is not None:
                         if chain_split is not None and frame2 is None:
@@ -1368,9 +1372,7 @@ class CollapsedForest:
                     warnings.warn(
                         f"Unrecognized optimality function for {dag_filter.weight_funcs.name} may not support negation."
                     )
-                dag_filter = hdag.utils.HistoryDagFilter(
-                    dag_filter.weight_funcs, max
-                )
+                dag_filter = hdag.utils.HistoryDagFilter(dag_filter.weight_funcs, max)
             adjusted_filters.append((dag_filter, coeff))
         dag_filters = adjusted_filters
 
@@ -1574,17 +1576,20 @@ class CollapsedForest:
             dag_ls = list(dag.weight_count(**combined_observer_filter).elements())
             # To clear _dp_data fields of their large cargo
             dag.optimal_weight_annotate(edge_weight_func=lambda n1, n2: 0)
-            num_ranking_filters = len(dag_filters)
             col_names = combined_observer_filter.weight_funcs.names
 
             if not lexicographic:
-                col_names += (ranking_strategy.replace(' ', ''),)
+                col_names += (ranking_strategy.replace(" ", ""),)
                 dag_ls = [tup + (linear_combinator(tup),) for tup in dag_ls]
+                best_tree_tup = first_tree_weighttuple + (
+                    linear_combinator(first_tree_weighttuple),
+                )
 
                 def minfunckey(tup):
                     return tup[-1]
 
             else:
+                best_tree_tup = first_tree_weighttuple
                 _tuple_coeffs = [
                     -1 if filt.optimal_func == max else 1 for filt, _ in dag_filters
                 ]
@@ -1594,14 +1599,11 @@ class CollapsedForest:
 
             dag_ls.sort(key=minfunckey)
 
-
-            df = pd.DataFrame(
-                dag_ls, columns=col_names
-            ).drop(columns=[""])
+            df = pd.DataFrame(dag_ls, columns=col_names).drop(columns=[""])
             df.to_csv(outbase + ".tree_stats.csv")
             df["set"] = ["all_trees"] * len(df)
             bestdf = pd.DataFrame(
-                [first_tree_weighttuple],
+                [best_tree_tup],
                 columns=col_names,
             )
             bestdf["set"] = ["best_tree"]
@@ -2122,8 +2124,8 @@ def _cmcounter_dagfuncs():
 
 
 def _ll_genotype_dagfuncs(p: np.float64, q: np.float64) -> hdag.utils.HistoryDagFilter:
-    """Return functions for counting tree negative log branching process likelihood on
-    the history DAG.
+    """Return functions for counting tree negative log branching process
+    likelihood on the history DAG.
 
     For numerical consistency, we resort to the use of ``decimal.Decimal``.
     This is exactly for the purpose of solving the problem that float sum is
