@@ -222,6 +222,7 @@ def infer(args):
         mutability_file=args.mutability,
         substitution_file=args.substitution,
         chain_split=args.chain_split,
+        img_type=args.img_type,
     )
 
     if args.colormapfile is not None:
@@ -609,9 +610,9 @@ def get_parser():
         type=float,
         default=None,
         help=(
-            "This argument is deprecated and will throw an error. Use `--ranking_strategy` instead. "
+            "This argument is deprecated and will throw an error. Use ``--ranking_strategy`` instead. "
             "Coefficient used for branching process likelihood, when ranking trees by a linear "
-            "combination of traits. This value will be ignored if `--ranking_coeffs` argument is not "
+            "combination of traits. This value will be ignored if ``--ranking_coeffs`` argument is not "
             "also provided."
         ),
     )
@@ -621,7 +622,7 @@ def get_parser():
         nargs=3,
         default=None,
         help=(
-            "This argument is deprecated and will throw an error. Use `--ranking_strategy` instead. "
+            "This argument is deprecated and will throw an error. Use ``--ranking_strategy`` instead. "
             "List of coefficients for ranking trees by a linear combination of traits. "
             "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
             "A coefficient of -1 will be applied to branching process likelihood. "
@@ -635,13 +636,13 @@ def get_parser():
         default=None,
         help=(
             "Expression describing tree ranking strategy. If provided, takes precedence over all other ranking arguments. "
-            "Two types of expressions are permitted: First are those describing lexicographic orderings, like `B,C,A`, which means "
+            "Two types of expressions are permitted: First are those describing lexicographic orderings, like ``B,C,A``, which means "
             "choose trees to minimize branching process log loss, then minimize context log loss, then minimize number "
-            "of alleles. Next are expressions describing linear combinations of criteria, like `B+2C-1.1A`, which means choose "
+            "of alleles. Next are expressions describing linear combinations of criteria, like ``B+2C-1.1A``, which means choose "
             "trees to minimize the specified linear combination of criteria. "
-            "If linear combination expression has leading `-`, use `=` instead of space to separate argument, "
+            "If linear combination expression has leading ``-``, use ``=`` instead of space to separate argument, "
             "e.g. ``--ranking_strategy=-B+R``. "
-            "These two methods of ranking cannot be combined. For example, `B+C,A` is not a valid ranking strategy expression. "
+            "These two methods of ranking cannot be combined. For example, ``B+C,A`` is not a valid ranking strategy expression. "
             "Ranking criteria are specified using the following identifiers. All are by default minimized:\n"
             "B - branching process log loss,\n"
             "I - isotype parsimony,\n"
@@ -650,11 +651,11 @@ def get_parser():
             "A - number of alleles,\n"
             "R - sitewise reversions to naive sequence.\n"
             "To compute the value of a criterion on ranked trees without affecting the ranking, include that ranking criterion "
-            "with a coefficient of zero, as in `B+2C+0A`, or `B,C,0A`.\n"
+            "with a coefficient of zero, as in ``B+2C+0A``, or ``B,C,0A``.\n"
             "To maximize instead of minimizing a criterion in lexicographic ranking, provide a negative coefficient. "
-            "For example, `B,-A` will first minimiz branching process log loss, then maximize the number of alleles. \n"
+            "For example, ``B,-A`` will first minimize branching process log loss, then maximize the number of alleles. \n"
             "A ranking strategy string containing a single ranking criterion identifier will be interpreted as a lexicographic ordering. "
-            "`gctree infer --verbose` will describe the ranking strategy used. Examine this output to make sure it's as expected."
+            "``gctree infer --verbose`` will describe the ranking strategy used. Examine this output to make sure it's as expected."
         ),
     )
     parser_infer.add_argument(
@@ -662,11 +663,11 @@ def get_parser():
         action="store_true",
         help=(
             "This argument is deprecated and will throw an error. Use the identifier 'M' with the "
-            "argument `--ranking_strategy` instead. "
+            "argument ``--ranking_strategy`` instead. "
             "Use old mutability parsimony instead of poisson context likelihood. Not recommended "
             "unless attempting to reproduce results from older versions of gctree. "
             "This argument will have no effect unless an S5F model is provided with the arguments "
-            "`--mutability` and `--substitution`."
+            "``--mutability`` and ``--substitution``."
         ),
     )
     parser_infer.add_argument(
@@ -680,14 +681,14 @@ def get_parser():
         "--summarize_forest",
         action="store_true",
         help=(
-            "write a file `[outbase].forest_summary.log` with a summary of traits for trees in the forest."
+            "write a file ``[outbase].forest_summary.log`` with a summary of traits for trees in the forest."
         ),
     )
     parser_infer.add_argument(
         "--tree_stats",
         action="store_true",
         help=(
-            "write a file `[outbase].tree_stats.log` with stats for all trees in the forest. "
+            "write a file ``[outbase].tree_stats.log`` with stats for all trees in the forest. "
             "For large forests, this is slow and memory intensive."
         ),
     )

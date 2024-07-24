@@ -1173,6 +1173,7 @@ class CollapsedForest:
         outbase: str = "gctree.out",
         summarize_forest: bool = False,
         tree_stats: bool = False,
+        img_type: str = "svg",
     ) -> CollapsedForest:
         """Filter trees according to specified criteria.
 
@@ -1196,6 +1197,7 @@ class CollapsedForest:
             outbase: file name stem for a file with information for each tree in the DAG.
             summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`
             tree_stats: whether to write stats for each tree in the forest to file `[outbase].tree_stats.log`
+            img_type: format for output plots.
 
         Returns:
             The trimmed forest, containing all optimal trees according to the specified criteria, and a tuple
@@ -1613,7 +1615,7 @@ class CollapsedForest:
                 hue="set",
                 diag_kind="hist",
             )
-            pplot.savefig(outbase + ".tree_stats.pairplot.pdf")
+            pplot.savefig(outbase + f".tree_stats.pairplot.{img_type}")
 
         return (ctrees, trimmed_forest, weighttuples)
 

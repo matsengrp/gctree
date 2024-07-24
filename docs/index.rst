@@ -34,8 +34,6 @@ gctree documentation
    :maxdepth: 1
    :caption: Notes
 
-   CHANGELOG
-   faq
 
 
 Indices and tables

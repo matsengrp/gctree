@@ -67,8 +67,8 @@ You now have two new files, ``outfile`` and ``outtree``.
 Note: if you want to rerun the above ``dnapars`` command, you must delete these two files first!
 
 
-gctree
-======
+Gctree Ranking
+==============
 
 We're now ready to run ``gctree infer`` to use abundance data (in ``abundances.csv``) to rank the equally parsimonious trees (in ``outfile``).
 We can use the optional argument ``--frame`` to indicate the coding frame of the sequence start, so that amino acid substitutions can be annotated on our trees.
@@ -106,48 +106,82 @@ This file may be manipulated using ``gctree infer``, instead of providing
 a dnapars ``outfile``.
 
 .. note::
-  Although described below, using context likelihood, mutability parsimony, or isotype parsimony
-   as ranking criteria is experimental, and has not yet been shown in a careful
-   validation to improve tree inference. Only the default branching process
-   likelihood is recommended for tree ranking!
+  Although described below, using context likelihood log loss, mutability parsimony, or isotype parsimony
+  as ranking criteria is experimental, and has not yet been shown in a careful
+  validation to improve tree inference. Only the default branching process
+  likelihood is recommended for tree ranking!
 
 Criteria other than branching process likelihoods can be used to break ties
 between trees. Providing arguments ``--isotype_mapfile`` and
 ``--idmapfile`` will allow trees to be ranked by isotype parsimony. Providing
 arguments ``--mutability`` and ``--substitution`` allows trees to be ranked
-according to a context-sensitive mutation model. By default, trees are ranked
-lexicographically, first maximizing likelihood, then minimizing isotype
-parsimony, and finally maximizing a context-based poisson likelihood, if such information is provided.
-Ranking priorities can be adjusted using the argument ``--ranking_coeffs``.
+according to a context-sensitive Poisson model. By default, trees are ranked
+lexicographically, first minimizing branching process log loss (negative
+log-likelihood), then minimizing isotype
+parsimony, minimizing context-based poisson log loss, and finally minimizing number of alleles,
+if required information for all criteria is provided. Criteria for which
+required information is not provided will be skipped.
 
-For example, to find the optimal tree
-according to a linear combination of likelihood, isotype parsimony,
-mutabilities, and alleles:
+Ranking priorities can be adjusted using the argument ``--ranking_strategy``.
+This argument accepts a string describing either an alternative lexicographic
+ordering, or a linear combination of criteria to be minimized. The following
+identifiers are used to specify available ranking criteria:
 
-.. command-output:: gctree infer gctree.out.inference.parsimony_forest.p --frame 1 --idmap idmap.txt --isotype_mapfile ../example/isotypemap.txt --mutability ../HS5F_Mutability.csv --substitution ../HS5F_Substitution.csv --ranking_coeffs 1 0.1 0 --outbase newranking --summarize_forest --tree_stats --verbose
+* ``B`` - branching process log loss
+* ``I`` - isotype parsimony
+* ``C`` - context-based Poisson log loss
+* ``M`` - old mutability parsimony
+* ``A`` - number of alleles
+* ``R`` - sitewise reversions to naive sequence
+
+An alternative lexicographic ordering can be specified using a comma-separated
+list of identifiers. For example by passing ``--ranking_strategy "C, B, R"`` to
+``gctree infer``, we will minimize context-based Poisson log loss, then
+branching process log-loss, and finally naive reversions. If for some reason
+the user wishes to maximize instead of minimizing a criterion, a negative
+coefficient can be provided, as in ``"C, B, -R"``. To compute the value of
+a criterion without using it for ranking, a coefficient of zero can be
+prepended to its identifier.
+
+Alternatively, the ``--ranking_strategy`` option can be used to rank trees to
+minimize a linear combination of criteria.
+For example, to find the optimal tree according to a linear combination of
+branching process log loss, isotype parsimony, context-based Poisson log loss,
+and alleles:
+
+.. command-output:: gctree infer gctree.out.inference.parsimony_forest.p \
+                                --frame 1 \
+                                --idmap idmap.txt \
+                                --isotype_mapfile ../example/isotypemap.txt \
+                                --mutability ../HS5F_Mutability.csv \
+                                --substitution ../HS5F_Substitution.csv \
+                                --ranking_strategy "B + I + 0.1C + 0.01A" \
+                                --outbase newranking --summarize_forest \
+                                --tree_stats \
+                                --verbose
    :shell:
 
 The files ``HS5F_Mutability.csv`` and ``HS5F_Substitution.csv`` are a context
-sensitive mutation model which can be downloaded from the `Shazam Project <https://bitbucket.org/kleinstein/shazam/src/master/data-raw/`>_.
+sensitive mutation model which can be downloaded from the `Shazam Project <https://bitbucket.org/kleinstein/shazam/src/master/data-raw/>`_, and are required here to compute context-based Poisson log loss.
 
 By default, only the files listed above will be generated, with the optional argument ``--outbase`` specifying how the output files should be named.
 
 .. image:: newranking.inference.1.svg
    :width: 1000
 
-For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees,use the argument ``--tree_stats``.
+For detailed information about each tree used for ranking, as well as a pairplot like the one below comparing the highest ranked tree to all other ranked trees, use the argument ``--tree_stats``.
 
-.. image:: newranking.tree_stats.pairplot.png
+.. image:: newranking.tree_stats.pairplot.svg
    :width: 1000
 
-Sometimes ranked trees are too numerous, and generating the output of ``--tree_stats`` would require too many resources. For a summary of the collection of trees used for ranking, the argument ``--summarize_forest`` is provided. Most importantly, this option summarizes how much less likely the top ranked tree is, compared to the most likely tree being ranked, for example to validate coefficients passed to ``--ranking_coeffs``.
+Sometimes ranked trees are too numerous to generate the output of ``--tree_stats`` in a reasonable amount of time. For a summary of the collection of trees used for ranking, the option ``--summarize_forest`` is provided. Most importantly, this option summarizes how much less likely the top ranked tree is, compared to the most likely tree being ranked, for example to validate coefficients passed to ``--ranking_strategy``.
 
 .. command-output:: cat newranking.forest_summary.log
    :shell:
 
 
-isotype
-=======
+Isotypes
+========
 
 If we would like to add observed isotype data to trees output by gctree
 inference, we can now do so.
