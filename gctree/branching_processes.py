@@ -1174,6 +1174,9 @@ class CollapsedForest:
         summarize_forest: bool = False,
         tree_stats: bool = False,
         img_type: str = "svg",
+        ranking_coeffs: Optional[Sequence[float]] = None,
+        branching_process_ranking_coeff: float = -1,
+        use_old_mut_parsimony: bool = False,
     ) -> CollapsedForest:
         """Filter trees according to specified criteria.
 
@@ -1198,6 +1201,21 @@ class CollapsedForest:
             summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`
             tree_stats: whether to write stats for each tree in the forest to file `[outbase].tree_stats.log`
             img_type: format for output plots.
+            ranking_coeffs: (Deprecated. Use ``ranking_strategy`` instead) A list or tuple of coefficients
+                for prioritizing tree weights.
+                The order of coefficients is: isotype parsimony score, context poisson likelihood,
+                and number of alleles. A coefficient of ``-1`` will be applied to branching process
+                likelihood by default, unless a different value is provided to the keyword argument
+                `branching_process_ranking_coeff`. Trees are chosen to minimize this linear combination
+                of tree weights, so weights for which larger values are more optimal (such as
+                likelihoods) should have negative coefficients.
+            branching_process_ranking_coeff: (Deprecated. Use ``ranking_strategy`` instead)
+                Ranking coefficient to use for branching process likelihood. Value
+                is ignored unless `ranking_coeffs` argument is provided.
+            use_old_mut_parsimony: (Deprecated. Use ``ranking_strategy`` instead)
+                Whether to use the deprecated 'mutability parsimony' instead of
+                context-based poisson likelihood (only applicable if mutability and substitution files are
+                provided.
 
         Returns:
             The trimmed forest, containing all optimal trees according to the specified criteria, and a tuple
@@ -1285,8 +1303,58 @@ class CollapsedForest:
             prepare_context_poisson_funcs,
             _allele_dagfuncs,
         ]
-        lexicographic = True
 
+        # ####### BEGIN backward compatibility adjustments with old ways of specifying ranking
+        # ####### strategy:
+        if (
+            (ranking_coeffs is not None)
+            or (branching_process_ranking_coeff != -1)
+            or use_old_mut_parsimony
+        ):
+            if ranking_strategy is None:
+                # Then we'll try to recover old behavior.
+
+                warnings.warn(
+                    "Arguments `branching_process_ranking_coeff`, `use_old_mut_parsimony`, and `ranking_coeffs` "
+                    "are deprecated! Use `ranking_strategy` argument instead."
+                )
+                if ranking_coeffs is not None:
+                    if use_old_mut_parsimony:
+                        criteria = ("B", "I", "M", "A")
+                        max_to_min = (-1, 1, 1, 1)
+                    else:
+                        criteria = ("B", "I", "C", "A")
+                        max_to_min = (-1, 1, -1, 1)
+
+                    coefficients = (branching_process_ranking_coeff,) + tuple(
+                        ranking_coeffs
+                    )
+                    ranking_strategy = "+".join(
+                        [
+                            f"{coeff * mtm}{crit}"
+                            for coeff, mtm, crit in zip(
+                                coefficients, max_to_min, criteria
+                            )
+                            if coeff != 0
+                        ]
+                    )
+                elif use_old_mut_parsimony:
+                    default_ranking_constructors = [
+                        prepare_bp_likelihood_funcs,
+                        prepare_isotype_parsimony_funcs,
+                        prepare_mutability_parsimony_funcs,
+                        _allele_dagfuncs,
+                    ]
+                # in absence of ranking_coeffs, branching_process_ranking_coeff
+                # was ignored.
+            else:
+                warnings.warn(
+                    "Arguments `branching_process_ranking_coeff`, `use_old_mut_parsimony`, and `ranking_coeffs` "
+                    "are deprecated! They will be ignored, since a `ranking_strategy` was provided."
+                )
+        # ####### END backward compatibility for old ways of specifying ranking strategy
+
+        lexicographic = True
         # Parsing ranking_strategy, if provided:
         if ranking_strategy:
             ranking_strategy = ranking_strategy.replace(" ", "")
@@ -1300,10 +1368,9 @@ class CollapsedForest:
             else:
                 lexicographic = False
                 criteria = ranking_strategy.replace("-", "+-").split("+")
-                # If there's a leading '-', then we'll get an empty string as
-                # first element
-                if criteria[0] == "":
-                    criteria = criteria[1:]
+                # If there's a leading '-', or a '+-' already, then we'll get an empty
+                # string somewhere
+                criteria = [cr for cr in criteria if cr != ""]
 
             def expand_criterion(c):
                 if c[0] == "-":

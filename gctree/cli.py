@@ -198,19 +198,6 @@ def infer(args):
     if args.verbose:
         print("number of trees with integer branch lengths:", forest.n_trees)
 
-    if args.branching_process_ranking_coeff:
-        raise ValueError(
-            "Argument --branching_process_ranking_coeff is deprecated. Use --ranking_strategy instead."
-        )
-    if args.ranking_coeffs:
-        raise ValueError(
-            "Argument --ranking_coeffs is deprecated. Use --ranking_strategy instead."
-        )
-    if args.use_old_mut_parsimony:
-        raise ValueError(
-            "Argument --use_old_mut_parsimony is deprecated. Use --ranking_strategy instead."
-        )
-
     # Filter the forest according to specified criteria, and along the way,
     # write a log file containing stats for all trees in the forest:
     ctrees, _, _ = forest.filter_trees(
@@ -223,6 +210,9 @@ def infer(args):
         substitution_file=args.substitution,
         chain_split=args.chain_split,
         img_type=args.img_type,
+        ranking_coeffs=args.ranking_coeffs,
+        branching_process_ranking_coeff=args.branching_process_ranking_coeff,
+        use_old_mut_parsimony=args.use_old_mut_parsimony,
     )
 
     if args.colormapfile is not None:
@@ -608,9 +598,9 @@ def get_parser():
     parser_infer.add_argument(
         "--branching_process_ranking_coeff",
         type=float,
-        default=None,
+        default=-1,
         help=(
-            "This argument is deprecated and will throw an error. Use ``--ranking_strategy`` instead. "
+            "This argument is deprecated. Use ``--ranking_strategy`` instead. "
             "Coefficient used for branching process likelihood, when ranking trees by a linear "
             "combination of traits. This value will be ignored if ``--ranking_coeffs`` argument is not "
             "also provided."
@@ -622,7 +612,7 @@ def get_parser():
         nargs=3,
         default=None,
         help=(
-            "This argument is deprecated and will throw an error. Use ``--ranking_strategy`` instead. "
+            "This argument is deprecated. Use ``--ranking_strategy`` instead. "
             "List of coefficients for ranking trees by a linear combination of traits. "
             "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
             "A coefficient of -1 will be applied to branching process likelihood. "
@@ -662,7 +652,7 @@ def get_parser():
         "--use_old_mut_parsimony",
         action="store_true",
         help=(
-            "This argument is deprecated and will throw an error. Use the identifier 'M' with the "
+            "This argument is deprecated. Use the identifier 'M' with the "
             "argument ``--ranking_strategy`` instead. "
             "Use old mutability parsimony instead of poisson context likelihood. Not recommended "
             "unless attempting to reproduce results from older versions of gctree. "
