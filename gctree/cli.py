@@ -171,9 +171,6 @@ def infer(args):
         if forest.n_trees == 1:
             warnings.warn("only one parsimony tree reported from dnapars")
 
-        if args.verbose:
-            print("number of trees with integer branch lengths:", forest.n_trees)
-
         forest.mle(marginal=True)
         # Add isotypes to forest
         if args.isotype_mapfile:
@@ -198,10 +195,13 @@ def infer(args):
             "The filename of a pickled history DAG object, or a phylipfile and abundance file, are required."
         )
 
+    if args.verbose:
+        print("number of trees with integer branch lengths:", forest.n_trees)
+
     # Filter the forest according to specified criteria, and along the way,
     # write a log file containing stats for all trees in the forest:
-    trimmed_forest, _ = forest.filter_trees(
-        ranking_coeffs=args.ranking_coeffs,
+    ctrees, _, _ = forest.filter_trees(
+        ranking_strategy=args.ranking_strategy,
         verbose=args.verbose,
         outbase=args.outbase,
         summarize_forest=args.summarize_forest,
@@ -209,31 +209,11 @@ def infer(args):
         mutability_file=args.mutability,
         substitution_file=args.substitution,
         chain_split=args.chain_split,
+        img_type=args.img_type,
+        ranking_coeffs=args.ranking_coeffs,
         branching_process_ranking_coeff=args.branching_process_ranking_coeff,
         use_old_mut_parsimony=args.use_old_mut_parsimony,
     )
-
-    if args.verbose:
-        if trimmed_forest.n_trees > 1:
-            n_topologies = trimmed_forest.n_topologies()
-            print(
-                "Degenerate ranking criteria: trimmed history DAG contains "
-                f"{trimmed_forest.n_trees} unique trees, with {n_topologies} unique collapsed topologies."
-            )
-            if n_topologies > 10:
-                print(
-                    "A representative from each of the ten most abundant topologies will be sampled randomly for rendering."
-                )
-            else:
-                print(
-                    "A representative of each topology will be sampled randomly for rendering."
-                )
-
-    random.seed(forest.n_trees)
-    ctrees = [
-        topoclass.sample_tree()
-        for _, topoclass in zip(range(10), trimmed_forest.iter_topology_classes())
-    ]
 
     if args.colormapfile is not None:
         with open(args.colormapfile, "r") as f:
@@ -273,6 +253,7 @@ def infer(args):
             chain_split=args.chain_split,
             frame2=args.frame2,
             position_map2=position_map2,
+            show_nuc_muts=args.show_nucleotide_mutations,
         )
         collapsed_tree.newick(f"{args.outbase}.inference.{j}.nk")
         with open(f"{args.outbase}.inference.{j}.p", "wb") as f:
@@ -288,6 +269,8 @@ def infer(args):
     plt.xlabel("genotype")
     plt.ylabel("abundance")
     plt.savefig(args.outbase + ".inference.abundance_rank." + args.img_type)
+    if args.verbose:
+        print()
 
 
 def simulate(args):
@@ -482,7 +465,7 @@ def simulate(args):
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        description="genotype collapsed tree inference and simulation"
+        description="genotype collapsed tree inference and simulation",
     )
     subparsers = parser.add_subparsers(
         title="subcommands",
@@ -617,8 +600,9 @@ def get_parser():
         type=float,
         default=-1,
         help=(
+            "This argument is deprecated. Use ``--ranking_strategy`` instead. "
             "Coefficient used for branching process likelihood, when ranking trees by a linear "
-            "combination of traits. This value will be ignored if `--ranking_coeffs` argument is not "
+            "combination of traits. This value will be ignored if ``--ranking_coeffs`` argument is not "
             "also provided."
         ),
     )
@@ -628,6 +612,7 @@ def get_parser():
         nargs=3,
         default=None,
         help=(
+            "This argument is deprecated. Use ``--ranking_strategy`` instead. "
             "List of coefficients for ranking trees by a linear combination of traits. "
             "Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. "
             "A coefficient of -1 will be applied to branching process likelihood. "
@@ -636,27 +621,64 @@ def get_parser():
         ),
     )
     parser_infer.add_argument(
+        "--ranking_strategy",
+        type=str,
+        default=None,
+        help=(
+            "Expression describing tree ranking strategy. If provided, takes precedence over all other ranking arguments. "
+            "Two types of expressions are permitted: First are those describing lexicographic orderings, like ``B,C,A``, which means "
+            "choose trees to minimize branching process log loss, then minimize context log loss, then minimize number "
+            "of alleles. Next are expressions describing linear combinations of criteria, like ``B+2C-1.1A``, which means choose "
+            "trees to minimize the specified linear combination of criteria. "
+            "If linear combination expression has leading ``-``, use ``=`` instead of space to separate argument, "
+            "e.g. ``--ranking_strategy=-B+R``. "
+            "These two methods of ranking cannot be combined. For example, ``B+C,A`` is not a valid ranking strategy expression. "
+            "Ranking criteria are specified using the following identifiers. All are by default minimized:\n"
+            "B - branching process log loss,\n"
+            "I - isotype parsimony,\n"
+            "C - context-based Poisson log loss,\n"
+            "M - old mutability parsimony,\n"
+            "A - number of alleles,\n"
+            "R - sitewise reversions to naive sequence.\n"
+            "To compute the value of a criterion on ranked trees without affecting the ranking, include that ranking criterion "
+            "with a coefficient of zero, as in ``B+2C+0A``, or ``B,C,0A``.\n"
+            "To maximize instead of minimizing a criterion in lexicographic ranking, provide a negative coefficient. "
+            "For example, ``B,-A`` will first minimize branching process log loss, then maximize the number of alleles. \n"
+            "A ranking strategy string containing a single ranking criterion identifier will be interpreted as a lexicographic ordering. "
+            "``gctree infer --verbose`` will describe the ranking strategy used. Examine this output to make sure it's as expected."
+        ),
+    )
+    parser_infer.add_argument(
         "--use_old_mut_parsimony",
         action="store_true",
         help=(
+            "This argument is deprecated. Use the identifier 'M' with the "
+            "argument ``--ranking_strategy`` instead. "
             "Use old mutability parsimony instead of poisson context likelihood. Not recommended "
             "unless attempting to reproduce results from older versions of gctree. "
             "This argument will have no effect unless an S5F model is provided with the arguments "
-            "`--mutability` and `--substitution`."
+            "``--mutability`` and ``--substitution``."
+        ),
+    )
+    parser_infer.add_argument(
+        "--show_nucleotide_mutations",
+        action="store_true",
+        help=(
+            "If provided, branches in rendered tree will be annotated with nucleotide mutations."
         ),
     )
     parser_infer.add_argument(
         "--summarize_forest",
         action="store_true",
         help=(
-            "write a file `[outbase].forest_summary.log` with a summary of traits for trees in the forest."
+            "write a file ``[outbase].forest_summary.log`` with a summary of traits for trees in the forest."
         ),
     )
     parser_infer.add_argument(
         "--tree_stats",
         action="store_true",
         help=(
-            "write a file `[outbase].tree_stats.log` with stats for all trees in the forest. "
+            "write a file ``[outbase].tree_stats.log`` with stats for all trees in the forest. "
             "For large forests, this is slow and memory intensive."
         ),
     )

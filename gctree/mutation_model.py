@@ -492,7 +492,7 @@ def _mutability_dagfuncs(
                 "edge_weight_func": distance,
                 "accum_func": sum,
             },
-            name="Mut. Pars.",
+            name="MutabilityParsimony",
         ),
         min,
     )
@@ -624,11 +624,11 @@ def _context_poisson_likelihood_dagfuncs(*args, splits: List[int] = [], **kwargs
                 "edge_weight_func": lambda n1, n2: (
                     0
                     if n1.is_ua_node()
-                    else distance(n1.label.sequence, n2.label.sequence)
+                    else -distance(n1.label.sequence, n2.label.sequence)
                 ),
                 "accum_func": sum,
             },
-            name="LogContextLikelihood",
+            name="ContextLikelihoodLogLoss",
         ),
-        max,
+        min,
     )
