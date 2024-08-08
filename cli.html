@@ -177,7 +177,8 @@
              <span class="p">[</span><span class="o">--</span><span class="n">mutability</span> <span class="n">MUTABILITY</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">substitution</span> <span class="n">SUBSTITUTION</span><span class="p">]</span>
              <span class="p">[</span><span class="o">--</span><span class="n">branching_process_ranking_coeff</span> <span class="n">BRANCHING_PROCESS_RANKING_COEFF</span><span class="p">]</span>
              <span class="p">[</span><span class="o">--</span><span class="n">ranking_coeffs</span> <span class="n">RANKING_COEFFS</span> <span class="n">RANKING_COEFFS</span> <span class="n">RANKING_COEFFS</span><span class="p">]</span>
-             <span class="p">[</span><span class="o">--</span><span class="n">use_old_mut_parsimony</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">summarize_forest</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">tree_stats</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">ranking_strategy</span> <span class="n">RANKING_STRATEGY</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">use_old_mut_parsimony</span><span class="p">]</span>
+             <span class="p">[</span><span class="o">--</span><span class="n">show_nucleotide_mutations</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">summarize_forest</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">tree_stats</span><span class="p">]</span>
              <span class="p">[</span><span class="o">--</span><span class="n">outbase</span> <span class="n">OUTBASE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">img_type</span> <span class="n">IMG_TYPE</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span>
              <span class="p">[</span><span class="o">--</span><span class="n">frame</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">idlabel</span><span class="p">]</span>
              <span class="n">infiles</span> <span class="p">[</span><span class="n">infiles</span> <span class="o">...</span><span class="p">]</span>
@@ -229,19 +230,34 @@
 <dd><p>Path to substitution model file. If –mutability and –substitution are both provided, they will be used to rank trees after likelihood and isotype parsimony.This shall be a csv file with the first column containing fivemers, and the next fourcolumns containing targeting probabilities for bases A, C, G, and T, respectively.See a file excerpt in the documentation for <code class="xref py py-meth docutils literal notranslate"><span class="pre">mutation_model.MutationModel()</span></code>.</p>
 </dd>
 <dt><kbd>--branching_process_ranking_coeff</kbd></dt>
-<dd><p>Coefficient used for branching process likelihood, when ranking trees by a linear combination of traits. This value will be ignored if <cite>–ranking_coeffs</cite> argument is not also provided.</p>
+<dd><p>This argument is deprecated. Use <code class="docutils literal notranslate"><span class="pre">--ranking_strategy</span></code> instead. Coefficient used for branching process likelihood, when ranking trees by a linear combination of traits. This value will be ignored if <code class="docutils literal notranslate"><span class="pre">--ranking_coeffs</span></code> argument is not also provided.</p>
 </dd>
 <dt><kbd>--ranking_coeffs</kbd></dt>
-<dd><p>List of coefficients for ranking trees by a linear combination of traits. Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. A coefficient of -1 will be applied to branching process likelihood. If not provided, trees will be ranked lexicographically by likelihood, isotype parsimony, and context-based Poisson likelihood in that order.</p>
+<dd><p>This argument is deprecated. Use <code class="docutils literal notranslate"><span class="pre">--ranking_strategy</span></code> instead. List of coefficients for ranking trees by a linear combination of traits. Coefficients are in order: isotype parsimony, mutation model parsimony, number of alleles. A coefficient of -1 will be applied to branching process likelihood. If not provided, trees will be ranked lexicographically by likelihood, isotype parsimony, and context-based Poisson likelihood in that order.</p>
+</dd>
+<dt><kbd>--ranking_strategy</kbd></dt>
+<dd><p>Expression describing tree ranking strategy. If provided, takes precedence over all other ranking arguments. Two types of expressions are permitted: First are those describing lexicographic orderings, like <code class="docutils literal notranslate"><span class="pre">B,C,A</span></code>, which means choose trees to minimize branching process log loss, then minimize context log loss, then minimize number of alleles. Next are expressions describing linear combinations of criteria, like <code class="docutils literal notranslate"><span class="pre">B+2C-1.1A</span></code>, which means choose trees to minimize the specified linear combination of criteria. If linear combination expression has leading <code class="docutils literal notranslate"><span class="pre">-</span></code>, use <code class="docutils literal notranslate"><span class="pre">=</span></code> instead of space to separate argument, e.g. <code class="docutils literal notranslate"><span class="pre">--ranking_strategy=-B+R</span></code>. These two methods of ranking cannot be combined. For example, <code class="docutils literal notranslate"><span class="pre">B+C,A</span></code> is not a valid ranking strategy expression. Ranking criteria are specified using the following identifiers. All are by default minimized:
+B - branching process log loss,
+I - isotype parsimony,
+C - context-based Poisson log loss,
+M - old mutability parsimony,
+A - number of alleles,
+R - sitewise reversions to naive sequence.
+To compute the value of a criterion on ranked trees without affecting the ranking, include that ranking criterion with a coefficient of zero, as in <code class="docutils literal notranslate"><span class="pre">B+2C+0A</span></code>, or <code class="docutils literal notranslate"><span class="pre">B,C,0A</span></code>.
+To maximize instead of minimizing a criterion in lexicographic ranking, provide a negative coefficient. For example, <code class="docutils literal notranslate"><span class="pre">B,-A</span></code> will first minimize branching process log loss, then maximize the number of alleles.
+A ranking strategy string containing a single ranking criterion identifier will be interpreted as a lexicographic ordering. <code class="docutils literal notranslate"><span class="pre">gctree</span> <span class="pre">infer</span> <span class="pre">--verbose</span></code> will describe the ranking strategy used. Examine this output to make sure it’s as expected.</p>
 </dd>
 <dt><kbd>--use_old_mut_parsimony</kbd></dt>
-<dd><p>Use old mutability parsimony instead of poisson context likelihood. Not recommended unless attempting to reproduce results from older versions of gctree. This argument will have no effect unless an S5F model is provided with the arguments <cite>–mutability</cite> and <cite>–substitution</cite>.</p>
+<dd><p>This argument is deprecated. Use the identifier ‘M’ with the argument <code class="docutils literal notranslate"><span class="pre">--ranking_strategy</span></code> instead. Use old mutability parsimony instead of poisson context likelihood. Not recommended unless attempting to reproduce results from older versions of gctree. This argument will have no effect unless an S5F model is provided with the arguments <code class="docutils literal notranslate"><span class="pre">--mutability</span></code> and <code class="docutils literal notranslate"><span class="pre">--substitution</span></code>.</p>
+</dd>
+<dt><kbd>--show_nucleotide_mutations</kbd></dt>
+<dd><p>If provided, branches in rendered tree will be annotated with nucleotide mutations.</p>
 </dd>
 <dt><kbd>--summarize_forest</kbd></dt>
-<dd><p>write a file <cite>[outbase].forest_summary.log</cite> with a summary of traits for trees in the forest.</p>
+<dd><p>write a file <code class="docutils literal notranslate"><span class="pre">[outbase].forest_summary.log</span></code> with a summary of traits for trees in the forest.</p>
 </dd>
 <dt><kbd>--tree_stats</kbd></dt>
-<dd><p>write a file <cite>[outbase].tree_stats.log</cite> with stats for all trees in the forest. For large forests, this is slow and memory intensive.</p>
+<dd><p>write a file <code class="docutils literal notranslate"><span class="pre">[outbase].tree_stats.log</span></code> with stats for all trees in the forest. For large forests, this is slow and memory intensive.</p>
 </dd>
 <dt><kbd>--outbase</kbd></dt>
 <dd><p>output file base name</p>

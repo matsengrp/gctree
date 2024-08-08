@@ -605,7 +605,7 @@
                 <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">distance</span><span class="p">,</span>
                 <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
             <span class="p">},</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Mut. Pars.&quot;</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MutabilityParsimony&quot;</span><span class="p">,</span>
         <span class="p">),</span>
         <span class="nb">min</span><span class="p">,</span>
     <span class="p">)</span>
@@ -737,13 +737,13 @@
                 <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="p">(</span>
                     <span class="mi">0</span>
                     <span class="k">if</span> <span class="n">n1</span><span class="o">.</span><span class="n">is_ua_node</span><span class="p">()</span>
-                    <span class="k">else</span> <span class="n">distance</span><span class="p">(</span><span class="n">n1</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="o">-</span><span class="n">distance</span><span class="p">(</span><span class="n">n1</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
                 <span class="p">),</span>
                 <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
             <span class="p">},</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LogContextLikelihood&quot;</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ContextLikelihoodLogLoss&quot;</span><span class="p">,</span>
         <span class="p">),</span>
-        <span class="nb">max</span><span class="p">,</span>
+        <span class="nb">min</span><span class="p">,</span>
     <span class="p">)</span>
 </pre></div>
 

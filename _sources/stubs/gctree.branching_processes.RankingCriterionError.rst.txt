@@ -1,0 +1,6 @@
+gctree.branching\_processes.RankingCriterionError
+=================================================
+
+.. currentmodule:: gctree.branching_processes
+
+.. autoexception:: RankingCriterionError

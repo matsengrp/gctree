@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>gctree.utils &mdash; gctree  documentation</title>
+  <title>gctree.branching_processes.RankingCriterionError &mdash; gctree  documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
@@ -22,8 +22,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="gctree.utils.hamming_distance" href="gctree.utils.hamming_distance.html" />
-    <link rel="prev" title="gctree.mutation_model.MutationModel" href="gctree.mutation_model.MutationModel.html" /> 
+    <link rel="next" title="Open source code repository" href="../developer.html" />
+    <link rel="prev" title="gctree.branching_processes.CollapsedTree" href="gctree.branching_processes.CollapsedTree.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -64,14 +64,20 @@
 <li class="toctree-l1"><a class="reference internal" href="../api.html">Classes</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html#modules">Modules</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="gctree.mutation_model.html">gctree.mutation_model</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">gctree.utils</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="gctree.utils.hamming_distance.html">gctree.utils.hamming_distance</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gctree.utils.product.html">gctree.utils.product</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#gctree.utils.hamming_distance"><code class="docutils literal notranslate"><span class="pre">hamming_distance()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.utils.html">gctree.utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gctree.isotyping.html">gctree.isotyping</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gctree.branching_processes.html">gctree.branching_processes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.CollapsedForest.html">gctree.branching_processes.CollapsedForest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.CollapsedTree.html">gctree.branching_processes.CollapsedTree</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">gctree.branching_processes.RankingCriterionError</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#gctree.branching_processes.RankingCriterionError"><code class="docutils literal notranslate"><span class="pre">RankingCriterionError</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="gctree.isotyping.html">gctree.isotyping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gctree.branching_processes.html">gctree.branching_processes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.html#gctree.branching_processes.RankingCriterionError"><code class="docutils literal notranslate"><span class="pre">RankingCriterionError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.html#gctree.branching_processes.CollapsedTree"><code class="docutils literal notranslate"><span class="pre">CollapsedTree</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gctree.branching_processes.html#gctree.branching_processes.CollapsedForest"><code class="docutils literal notranslate"><span class="pre">CollapsedForest</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -97,7 +103,8 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="../api.html">Classes</a></li>
-      <li class="breadcrumb-item active">gctree.utils</li>
+          <li class="breadcrumb-item"><a href="gctree.branching_processes.html">gctree.branching_processes</a></li>
+      <li class="breadcrumb-item active">gctree.branching_processes.RankingCriterionError</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -106,36 +113,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-gctree.utils">
-<span id="gctree-utils"></span><h1>gctree.utils<a class="headerlink" href="#module-gctree.utils" title="Link to this heading"></a></h1>
-<p>Utility functions.</p>
-<p class="rubric">Functions</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="gctree.utils.hamming_distance.html#gctree.utils.hamming_distance" title="gctree.utils.hamming_distance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hamming_distance</span></code></a></p></td>
-<td><p>Hamming distance between two sequences of equal length.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="gctree.utils.product.html#gctree.utils.product" title="gctree.utils.product"><code class="xref py py-obj docutils literal notranslate"><span class="pre">product</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
-<dl class="py function">
-<dt class="sig sig-object py" id="gctree.utils.hamming_distance">
-<span class="sig-prename descclassname"><span class="pre">gctree.utils.</span></span><span class="sig-name descname"><span class="pre">hamming_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gctree/utils.html#hamming_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.utils.hamming_distance" title="Link to this definition"></a></dt>
-<dd><p>Hamming distance between two sequences of equal length.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>seq1</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – sequence 1</p></li>
-<li><p><strong>seq2</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – sequence 2</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span></p>
-</dd>
-</dl>
-</dd></dl>
+  <section id="gctree-branching-processes-rankingcriterionerror">
+<h1>gctree.branching_processes.RankingCriterionError<a class="headerlink" href="#gctree-branching-processes-rankingcriterionerror" title="Link to this heading"></a></h1>
+<dl class="py exception">
+<dt class="sig sig-object py" id="gctree.branching_processes.RankingCriterionError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gctree.branching_processes.</span></span><span class="sig-name descname"><span class="pre">RankingCriterionError</span></span><a class="reference internal" href="../_modules/gctree/branching_processes.html#RankingCriterionError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gctree.branching_processes.RankingCriterionError" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 </section>
 
@@ -143,8 +126,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="gctree.mutation_model.MutationModel.html" class="btn btn-neutral float-left" title="gctree.mutation_model.MutationModel" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="gctree.utils.hamming_distance.html" class="btn btn-neutral float-right" title="gctree.utils.hamming_distance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="gctree.branching_processes.CollapsedTree.html" class="btn btn-neutral float-left" title="gctree.branching_processes.CollapsedTree" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../developer.html" class="btn btn-neutral float-right" title="Open source code repository" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

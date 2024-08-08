@@ -140,6 +140,13 @@
 <span class="p">)</span>
 
 
+<div class="viewcode-block" id="RankingCriterionError">
+<a class="viewcode-back" href="../../stubs/gctree.branching_processes.RankingCriterionError.html#gctree.RankingCriterionError">[docs]</a>
+<span class="k">class</span> <span class="nc">RankingCriterionError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
 <div class="viewcode-block" id="CollapsedTree">
 <a class="viewcode-back" href="../../stubs/gctree.branching_processes.CollapsedTree.html#gctree.CollapsedTree">[docs]</a>
 <span class="k">class</span> <span class="nc">CollapsedTree</span><span class="p">:</span>
@@ -572,6 +579,7 @@
         <span class="n">frame2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">position_map2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">show_support</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">show_nuc_muts</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Render to tree image file.</span>
 
@@ -588,6 +596,8 @@
 <span class="sd">            frame2: coding frame for 2nd sequence when using ``chain_split``</span>
 <span class="sd">            position_map2: like ``position_map``, but for 2nd sequence when using ``chain_split``</span>
 <span class="sd">            show_support: annotate bootstrap support if available</span>
+<span class="sd">            show_nuc_muts: If True, annotate branches with nucleotide mutations. If False, and frame is provided, then branches</span>
+<span class="sd">                will be annotated with amino acid mutations.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frame</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;frame must be 1, 2, or 3&quot;</span><span class="p">)</span>
@@ -671,7 +681,28 @@
                 <span class="k">if</span> <span class="s2">&quot;sequence&quot;</span> <span class="ow">in</span> <span class="n">tree_copy</span><span class="o">.</span><span class="n">features</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span>
                     <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
                 <span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;ACGT&quot;</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">show_nuc_muts</span><span class="p">:</span>
+                        <span class="n">mutations</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pn</span><span class="si">}{</span><span class="n">idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">pn</span><span class="p">,</span> <span class="n">cn</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                                <span class="nb">zip</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">sequence</span><span class="p">)</span>
+                            <span class="p">)</span>
+                            <span class="k">if</span> <span class="n">pn</span> <span class="o">!=</span> <span class="n">cn</span>
+                        <span class="p">]</span>
+                        <span class="k">if</span> <span class="n">mutations</span><span class="p">:</span>
+                            <span class="n">T</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TextFace</span><span class="p">(</span>
+                                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mutations</span><span class="p">),</span>
+                                <span class="n">fsize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                                <span class="n">tight_text</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="p">)</span>
+                            <span class="n">T</span><span class="o">.</span><span class="n">margin_top</span> <span class="o">=</span> <span class="mi">6</span>
+                            <span class="n">T</span><span class="o">.</span><span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">90</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">add_face</span><span class="p">(</span>
+                                <span class="n">T</span><span class="p">,</span>
+                                <span class="mi">0</span><span class="p">,</span>
+                                <span class="n">position</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;branch-bottom&quot;</span><span class="p">),</span>
+                            <span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frame2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                                 <span class="s2">&quot;must define frame2 when using chain_split&quot;</span>
@@ -733,6 +764,7 @@
                                     <span class="p">)</span>
                                 <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="n">aa</span><span class="p">:</span>
                                     <span class="n">nstyle</span><span class="p">[</span><span class="s2">&quot;hz_line_color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span>
+
             <span class="n">node</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="n">nstyle</span><span class="p">)</span>
 
         <span class="n">ts</span> <span class="o">=</span> <span class="n">ete3</span><span class="o">.</span><span class="n">TreeStyle</span><span class="p">()</span>
@@ -1282,7 +1314,7 @@
     <span class="nd">@_requires_dag</span>
     <span class="k">def</span> <span class="nf">filter_trees</span><span class="p">(</span>  <span class="c1"># noqa: C901</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">ranking_coeffs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ranking_strategy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">mutability_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">substitution_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">ignore_isotype</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1291,26 +1323,23 @@
         <span class="n">outbase</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gctree.out&quot;</span><span class="p">,</span>
         <span class="n">summarize_forest</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">tree_stats</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">img_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;svg&quot;</span><span class="p">,</span>
+        <span class="n">ranking_coeffs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">branching_process_ranking_coeff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">use_old_mut_parsimony</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CollapsedForest</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Filter trees according to specified criteria.</span>
 
-<span class="sd">        Trim the forest to minimize a linear</span>
-<span class="sd">        combination of branching process likelihood, isotype parsimony score,</span>
-<span class="sd">        context/mutability-based Poisson likelihood, and number of alleles, with coefficients</span>
-<span class="sd">        provided in the argument ``ranking_coeffs`, in that order.</span>
+<span class="sd">        By default, the forest will be trimmed to maximize branching process likelihood,</span>
+<span class="sd">        then minimize isotype parsimony, then maximize context-based Poisson likelihood,</span>
+<span class="sd">        and finally minimize number of alleles. Any criteria for which the necessary arguments</span>
+<span class="sd">        are not provided will be automatically ignored.</span>
+
+<span class="sd">        For other ranking strategies, see the `ranking_strategy` argument.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            ranking_coeffs: A list or tuple of coefficients for prioritizing tree weights.</span>
-<span class="sd">                The order of coefficients is: isotype parsimony score, context poisson likelihood,</span>
-<span class="sd">                and number of alleles. A coefficient of ``-1`` will be applied to branching process</span>
-<span class="sd">                likelihood by default, unless a different value is provided to the keyword argument</span>
-<span class="sd">                `branching_process_ranking_coeff`. Trees are chosen to minimize this linear combination</span>
-<span class="sd">                of tree weights, so weights for which larger values are more optimal (such as</span>
-<span class="sd">                likelihoods) should have negative coefficients.</span>
-<span class="sd">                If ranking_coeffs is not provided, trees will be ranked lexicographically</span>
-<span class="sd">                by likelihood, then by other traits, in the same order.</span>
+<span class="sd">            ranking_strategy: A string expression describing how to rank trees. See docs for command line</span>
+<span class="sd">                argument `--ranking_strategy` for description.</span>
 <span class="sd">            mutability_file: A mutability model</span>
 <span class="sd">            substitution_file: A substitution model</span>
 <span class="sd">            ignore_isotype: Ignore isotype parsimony when ranking. By default, isotype information added with</span>
@@ -1321,9 +1350,20 @@
 <span class="sd">            outbase: file name stem for a file with information for each tree in the DAG.</span>
 <span class="sd">            summarize_forest: whether to write a summary of the forest to file `[outbase].forest_summary.log`</span>
 <span class="sd">            tree_stats: whether to write stats for each tree in the forest to file `[outbase].tree_stats.log`</span>
-<span class="sd">            branching_process_ranking_coeff: Ranking coefficient to use for branching process likelihood. Value</span>
+<span class="sd">            img_type: format for output plots.</span>
+<span class="sd">            ranking_coeffs: (Deprecated. Use ``ranking_strategy`` instead) A list or tuple of coefficients</span>
+<span class="sd">                for prioritizing tree weights.</span>
+<span class="sd">                The order of coefficients is: isotype parsimony score, context poisson likelihood,</span>
+<span class="sd">                and number of alleles. A coefficient of ``-1`` will be applied to branching process</span>
+<span class="sd">                likelihood by default, unless a different value is provided to the keyword argument</span>
+<span class="sd">                `branching_process_ranking_coeff`. Trees are chosen to minimize this linear combination</span>
+<span class="sd">                of tree weights, so weights for which larger values are more optimal (such as</span>
+<span class="sd">                likelihoods) should have negative coefficients.</span>
+<span class="sd">            branching_process_ranking_coeff: (Deprecated. Use ``ranking_strategy`` instead)</span>
+<span class="sd">                Ranking coefficient to use for branching process likelihood. Value</span>
 <span class="sd">                is ignored unless `ranking_coeffs` argument is provided.</span>
-<span class="sd">            use_old_mut_parsimony: Whether to use the deprecated &#39;mutability parsimony&#39; instead of</span>
+<span class="sd">            use_old_mut_parsimony: (Deprecated. Use ``ranking_strategy`` instead)</span>
+<span class="sd">                Whether to use the deprecated &#39;mutability parsimony&#39; instead of</span>
 <span class="sd">                context-based poisson likelihood (only applicable if mutability and substitution files are</span>
 <span class="sd">                provided.</span>
 
@@ -1332,40 +1372,35 @@
 <span class="sd">            of data about the trees in that forest, with format (branching process likelihood, isotype parsimony,</span>
 <span class="sd">            context-based Poisson likelihood, alleles).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">dag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span>
 
-        <span class="k">if</span> <span class="n">ranking_coeffs</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ranking_coeffs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;If ranking_coeffs are provided to `filter_trees` method, a list of three values is expected.&quot;</span>
-                <span class="p">)</span>
-            <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="n">branching_process_ranking_coeff</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">ranking_coeffs</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coeffs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;At least one value provided to ranking_coeffs or the value of branching_process_ranking_coeff must be nonzero.&quot;</span>
-                <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+        <span class="c1"># To add a new ranking criterion:</span>
+        <span class="c1">#     * Add a prepare_func below which checks for prerequisites</span>
+        <span class="c1">#           and throws a RankingCriterionError if not met</span>
+        <span class="c1">#     * Add a key, value pair to ranking_function_keys so that a user</span>
+        <span class="c1">#           can use the new criterion</span>
+        <span class="c1">#     * Add the prepare_func to the list of default ranking</span>
+        <span class="c1">#           constructors, if desired.</span>
+        <span class="c1">#     * Modify docs in cli.py to describe new criterion</span>
+        <span class="c1">#     * All ranking criteria should be minimized by default.</span>
 
-        <span class="p">(</span>
-            <span class="n">nz_coeff_bplikelihood</span><span class="p">,</span>
-            <span class="n">nz_coeff_isotype_pars</span><span class="p">,</span>
-            <span class="n">nz_coeff_context</span><span class="p">,</span>
-            <span class="n">_</span><span class="p">,</span>
-        <span class="p">)</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">coeffs</span><span class="p">]</span>
-        <span class="n">coeff_bplikelihood</span><span class="p">,</span> <span class="n">coeff_isotype_pars</span><span class="p">,</span> <span class="n">coeff_context</span><span class="p">,</span> <span class="n">coeff_alleles</span> <span class="o">=</span> <span class="n">coeffs</span>
-
-        <span class="n">dag_filters</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">nz_coeff_bplikelihood</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">prepare_bp_likelihood_funcs</span><span class="p">():</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mle</span><span class="p">(</span><span class="n">marginal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">p</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
             <span class="n">ll_dagfuncs</span> <span class="o">=</span> <span class="n">_ll_genotype_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
-            <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ll_dagfuncs</span><span class="p">,</span> <span class="n">coeff_bplikelihood</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Branching process parameters to be used for ranking: </span><span class="si">{</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">nz_coeff_isotype_pars</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_isotyped</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ignore_isotype</span><span class="p">):</span>
-            <span class="c1"># Check for missing isotype data in all but root node, and fake root-adjacent leaf node</span>
+            <span class="k">return</span> <span class="n">ll_dagfuncs</span>
+
+        <span class="k">def</span> <span class="nf">prepare_isotype_parsimony_funcs</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_isotyped</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">RankingCriterionError</span><span class="p">(</span>
+                    <span class="s2">&quot;Isotypes have not been added to this CollapsedForest.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">ignore_isotype</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">RankingCriterionError</span><span class="p">(</span>
+                    <span class="s2">&quot;Isotype ranking is disabled by passed parameters.&quot;</span>
+                <span class="p">)</span>
             <span class="n">rootname</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">dagroot</span><span class="o">.</span><span class="n">children</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
                 <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">attr</span><span class="p">[</span><span class="s2">&quot;isotype&quot;</span><span class="p">]</span>
@@ -1376,66 +1411,227 @@
                     <span class="s2">&quot;Some isotype data seems to be missing. Isotype parsimony scores may be incorrect.&quot;</span>
                 <span class="p">)</span>
 
-            <span class="n">iso_funcs</span> <span class="o">=</span> <span class="n">_isotype_dagfuncs</span><span class="p">()</span>
-            <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">iso_funcs</span><span class="p">,</span> <span class="n">coeff_isotype_pars</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">nz_coeff_context</span> <span class="ow">and</span> <span class="n">mutability_file</span> <span class="ow">and</span> <span class="n">substitution_file</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">use_old_mut_parsimony</span><span class="p">:</span>
-                <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">_mutability_dagfuncs</span><span class="p">(</span>
-                    <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span>
-                    <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span><span class="p">,</span>
-                    <span class="n">splits</span><span class="o">=</span><span class="p">[]</span> <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">chain_split</span><span class="p">],</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">mut_funcs</span> <span class="o">=</span> <span class="n">_context_poisson_likelihood_dagfuncs</span><span class="p">(</span>
-                    <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span>
-                    <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span><span class="p">,</span>
-                    <span class="n">splits</span><span class="o">=</span><span class="p">[]</span> <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">chain_split</span><span class="p">],</span>
-                <span class="p">)</span>
-            <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">mut_funcs</span><span class="p">,</span> <span class="n">coeff_context</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">_isotype_dagfuncs</span><span class="p">()</span>
 
-        <span class="c1"># add allele funcs no matter what, for logging</span>
-        <span class="n">allele_funcs</span> <span class="o">=</span> <span class="n">_allele_dagfuncs</span><span class="p">()</span>
-        <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">allele_funcs</span><span class="p">,</span> <span class="n">coeff_alleles</span><span class="p">))</span>
-        <span class="c1"># add 0-returning functions so dagfuncs return tuples, even if allele funcs are the only ones used for filtering</span>
-        <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="p">(</span>
-                <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">(</span>
-                    <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
-                        <span class="p">{</span>
-                            <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-                            <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-                            <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ls</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-                        <span class="p">},</span>
-                        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                    <span class="p">),</span>
-                    <span class="nb">min</span><span class="p">,</span>
-                    <span class="n">ordering_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                <span class="p">),</span>
-                <span class="mi">0</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">prepare_context_poisson_funcs</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">mutability_file</span> <span class="ow">and</span> <span class="n">substitution_file</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">RankingCriterionError</span><span class="p">(</span>
+                    <span class="s2">&quot;Poisson context likelihood loss requires mutability and substitution files.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">_context_poisson_likelihood_dagfuncs</span><span class="p">(</span>
+                <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span>
+                <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span><span class="p">,</span>
+                <span class="n">splits</span><span class="o">=</span><span class="p">[]</span> <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">chain_split</span><span class="p">],</span>
             <span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">prepare_mutability_parsimony_funcs</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">mutability_file</span> <span class="ow">and</span> <span class="n">substitution_file</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">RankingCriterionError</span><span class="p">(</span>
+                    <span class="s2">&quot;Mutability parsimony requires mutability and substitution files.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">_mutability_dagfuncs</span><span class="p">(</span>
+                <span class="n">mutability_file</span><span class="o">=</span><span class="n">mutability_file</span><span class="p">,</span>
+                <span class="n">substitution_file</span><span class="o">=</span><span class="n">substitution_file</span><span class="p">,</span>
+                <span class="n">splits</span><span class="o">=</span><span class="p">[]</span> <span class="k">if</span> <span class="n">chain_split</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">chain_split</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">prepare_reversions_funcs</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">_naive_reversion_dagfuncs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_validation_stats</span><span class="p">[</span><span class="s2">&quot;root_seq&quot;</span><span class="p">])</span>
+
+        <span class="n">ranking_function_keys</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;B&quot;</span><span class="p">:</span> <span class="n">prepare_bp_likelihood_funcs</span><span class="p">,</span>
+            <span class="s2">&quot;I&quot;</span><span class="p">:</span> <span class="n">prepare_isotype_parsimony_funcs</span><span class="p">,</span>
+            <span class="s2">&quot;C&quot;</span><span class="p">:</span> <span class="n">prepare_context_poisson_funcs</span><span class="p">,</span>
+            <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="n">prepare_mutability_parsimony_funcs</span><span class="p">,</span>
+            <span class="s2">&quot;A&quot;</span><span class="p">:</span> <span class="n">_allele_dagfuncs</span><span class="p">,</span>
+            <span class="s2">&quot;R&quot;</span><span class="p">:</span> <span class="n">prepare_reversions_funcs</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">default_ranking_constructors</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">prepare_bp_likelihood_funcs</span><span class="p">,</span>
+            <span class="n">prepare_isotype_parsimony_funcs</span><span class="p">,</span>
+            <span class="n">prepare_context_poisson_funcs</span><span class="p">,</span>
+            <span class="n">_allele_dagfuncs</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="c1"># ####### BEGIN backward compatibility adjustments with old ways of specifying ranking</span>
+        <span class="c1"># ####### strategy:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">ranking_coeffs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">(</span><span class="n">branching_process_ranking_coeff</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">use_old_mut_parsimony</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">ranking_strategy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Then we&#39;ll try to recover old behavior.</span>
+
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;Arguments `branching_process_ranking_coeff`, `use_old_mut_parsimony`, and `ranking_coeffs` &quot;</span>
+                    <span class="s2">&quot;are deprecated! Use `ranking_strategy` argument instead.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">ranking_coeffs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">use_old_mut_parsimony</span><span class="p">:</span>
+                        <span class="n">criteria</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">)</span>
+                        <span class="n">max_to_min</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">criteria</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">)</span>
+                        <span class="n">max_to_min</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+                    <span class="n">coefficients</span> <span class="o">=</span> <span class="p">(</span><span class="n">branching_process_ranking_coeff</span><span class="p">,)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span>
+                        <span class="n">ranking_coeffs</span>
+                    <span class="p">)</span>
+                    <span class="n">ranking_strategy</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">coeff</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">mtm</span><span class="si">}{</span><span class="n">crit</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="k">for</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">mtm</span><span class="p">,</span> <span class="n">crit</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                                <span class="n">coefficients</span><span class="p">,</span> <span class="n">max_to_min</span><span class="p">,</span> <span class="n">criteria</span>
+                            <span class="p">)</span>
+                            <span class="k">if</span> <span class="n">coeff</span> <span class="o">!=</span> <span class="mi">0</span>
+                        <span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">use_old_mut_parsimony</span><span class="p">:</span>
+                    <span class="n">default_ranking_constructors</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">prepare_bp_likelihood_funcs</span><span class="p">,</span>
+                        <span class="n">prepare_isotype_parsimony_funcs</span><span class="p">,</span>
+                        <span class="n">prepare_mutability_parsimony_funcs</span><span class="p">,</span>
+                        <span class="n">_allele_dagfuncs</span><span class="p">,</span>
+                    <span class="p">]</span>
+                <span class="c1"># in absence of ranking_coeffs, branching_process_ranking_coeff</span>
+                <span class="c1"># was ignored.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;Arguments `branching_process_ranking_coeff`, `use_old_mut_parsimony`, and `ranking_coeffs` &quot;</span>
+                    <span class="s2">&quot;are deprecated! They will be ignored, since a `ranking_strategy` was provided.&quot;</span>
+                <span class="p">)</span>
+        <span class="c1"># ####### END backward compatibility for old ways of specifying ranking strategy</span>
+
+        <span class="n">lexicographic</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># Parsing ranking_strategy, if provided:</span>
+        <span class="k">if</span> <span class="n">ranking_strategy</span><span class="p">:</span>
+            <span class="n">ranking_strategy</span> <span class="o">=</span> <span class="n">ranking_strategy</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="s2">&quot;,&quot;</span> <span class="ow">in</span> <span class="n">ranking_strategy</span>
+                <span class="ow">or</span> <span class="nb">sum</span><span class="p">(</span><span class="n">key</span> <span class="ow">in</span> <span class="n">ranking_strategy</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ranking_function_keys</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+            <span class="p">):</span>
+                <span class="c1"># Then we&#39;re doing lexicographic ranking</span>
+                <span class="n">criteria</span> <span class="o">=</span> <span class="n">ranking_strategy</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lexicographic</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">criteria</span> <span class="o">=</span> <span class="n">ranking_strategy</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;+-&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)</span>
+                <span class="c1"># If there&#39;s a leading &#39;-&#39;, or a &#39;+-&#39; already, then we&#39;ll get an empty</span>
+                <span class="c1"># string somewhere</span>
+                <span class="n">criteria</span> <span class="o">=</span> <span class="p">[</span><span class="n">cr</span> <span class="k">for</span> <span class="n">cr</span> <span class="ow">in</span> <span class="n">criteria</span> <span class="k">if</span> <span class="n">cr</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
+
+            <span class="k">def</span> <span class="nf">expand_criterion</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span>
+                    <span class="n">fac</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                    <span class="n">c</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fac</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="n">fac</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">c</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">fac</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">c</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">expanded_criteria</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">expand_criterion</span><span class="p">(</span><span class="n">criterion</span><span class="p">)</span> <span class="k">for</span> <span class="n">criterion</span> <span class="ow">in</span> <span class="n">criteria</span>
+                <span class="p">]</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">RankingCriterionError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Error parsing ranking strategy string: &#39;</span><span class="si">{</span><span class="n">ranking_strategy</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+
+            <span class="n">ranking_funcs_needed</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">expanded_criteria</span><span class="p">)</span>
+            <span class="n">initialized_ranking_funcs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="n">ranking_function_keys</span><span class="p">[</span><span class="n">name</span><span class="p">]()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ranking_funcs_needed</span>
+            <span class="p">}</span>
+            <span class="n">all_filters</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">initialized_ranking_funcs</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">coeff</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">expanded_criteria</span>
+            <span class="p">]</span>
+            <span class="c1"># Account for lexicographic filters with coefficient of 0, which</span>
+            <span class="c1"># will be computed on trees but not used for ranking.</span>
+            <span class="k">if</span> <span class="n">lexicographic</span><span class="p">:</span>
+                <span class="c1"># Want all the observer filters to be at the end, so it&#39;s easy</span>
+                <span class="c1"># to deal with them in the tree_stats section.</span>
+                <span class="n">dag_filters</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="n">coeff</span><span class="p">)</span> <span class="k">for</span> <span class="n">filt</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">all_filters</span> <span class="k">if</span> <span class="n">coeff</span> <span class="o">!=</span> <span class="mi">0</span>
+                <span class="p">]</span>
+                <span class="n">zero_filters</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="n">coeff</span><span class="p">)</span> <span class="k">for</span> <span class="n">filt</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">all_filters</span> <span class="k">if</span> <span class="n">coeff</span> <span class="o">==</span> <span class="mi">0</span>
+                <span class="p">]</span>
+                <span class="n">observer_filters</span> <span class="o">=</span> <span class="n">dag_filters</span> <span class="o">+</span> <span class="n">zero_filters</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dag_filters</span> <span class="o">=</span> <span class="n">all_filters</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">observer_filters</span> <span class="o">=</span> <span class="n">all_filters</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Then we need to do defaults</span>
+            <span class="n">dag_filters</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">cons</span> <span class="ow">in</span> <span class="n">default_ranking_constructors</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">dagfunc</span> <span class="o">=</span> <span class="n">cons</span><span class="p">()</span>
+                    <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dagfunc</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="k">except</span> <span class="n">RankingCriterionError</span><span class="p">:</span>
+                    <span class="c1"># We&#39;re just seeing what we have info to handle, so failing</span>
+                    <span class="c1"># silently is fine</span>
+                    <span class="k">pass</span>
+            <span class="n">observer_filters</span> <span class="o">=</span> <span class="n">dag_filters</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Switch optimal functions based on signs of coefficients</span>
+        <span class="n">adjusted_filters</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">dag_filter</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">coeff</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Lower values for </span><span class="si">{</span><span class="n">dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> are generally better, but the &quot;</span>
+                    <span class="s2">&quot;provided ranking coefficient is negative, so trees with higher values will be preferred.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">lexicographic</span> <span class="ow">and</span> <span class="n">dag_filter</span><span class="o">.</span><span class="n">optimal_func</span> <span class="o">!=</span> <span class="nb">min</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Unrecognized optimality function for </span><span class="si">{</span><span class="n">dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> may not support negation.&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">dag_filter</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">(</span><span class="n">dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="p">,</span> <span class="nb">max</span><span class="p">)</span>
+            <span class="n">adjusted_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dag_filter</span><span class="p">,</span> <span class="n">coeff</span><span class="p">))</span>
+        <span class="n">dag_filters</span> <span class="o">=</span> <span class="n">adjusted_filters</span>
+
+        <span class="n">dag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forest</span>
+
+        <span class="c1"># add 0-returning functions so dagfuncs return tuples, even if allele funcs are the only ones used for filtering</span>
+        <span class="n">null_filter</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">(</span>
+            <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ls</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="nb">min</span><span class="p">,</span>
+            <span class="n">ordering_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="n">dag_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">null_filter</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">observer_filters</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">null_filter</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
 
         <span class="n">combined_dag_filter</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="n">dag_filter</span> <span class="k">for</span> <span class="n">dag_filter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">)</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">ranking_coeffs</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ranking_coeffs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;If ranking_coeffs are provided to `filter_trees` method, a list of three values is expected.&quot;</span>
-                <span class="p">)</span>
-            <span class="k">for</span> <span class="n">dag_filter</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">dag_filter</span><span class="o">.</span><span class="n">optimal_func</span> <span class="o">==</span> <span class="nb">max</span> <span class="ow">and</span> <span class="n">coeff</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Higher values for </span><span class="si">{</span><span class="n">dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> are generally better, but the &quot;</span>
-                        <span class="s2">&quot;provided ranking coefficient is positive, so trees with lower values will be preferred.&quot;</span>
-                    <span class="p">)</span>
-                <span class="k">if</span> <span class="n">dag_filter</span><span class="o">.</span><span class="n">optimal_func</span> <span class="o">==</span> <span class="nb">min</span> <span class="ow">and</span> <span class="n">coeff</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Lower values for </span><span class="si">{</span><span class="n">dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> are generally better, but the &quot;</span>
-                        <span class="s2">&quot;provided ranking coefficient is negative, so trees with higher values will be preferred.&quot;</span>
-                    <span class="p">)</span>
+        <span class="n">combined_observer_filter</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="n">dag_filter</span> <span class="k">for</span> <span class="n">dag_filter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">observer_filters</span><span class="p">)</span>
+        <span class="p">)</span>
 
+        <span class="k">if</span> <span class="n">lexicographic</span><span class="p">:</span>
+            <span class="n">ranking_dag_filter</span> <span class="o">=</span> <span class="n">combined_dag_filter</span>
+            <span class="n">ranking_description</span> <span class="o">=</span> <span class="s2">&quot;Ranking trees to &quot;</span> <span class="o">+</span> <span class="s2">&quot; then &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">opt_name</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;imize &quot;</span> <span class="o">+</span> <span class="n">ord_name</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">opt_name</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="n">ord_name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="n">ranking_dag_filter</span><span class="o">.</span><span class="n">ordering_names</span><span class="p">,</span>
+                    <span class="n">ranking_dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">names</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">ord_name</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="n">filtered_coefficients</span> <span class="o">=</span> <span class="p">[</span><span class="n">coeff</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">]</span>
 
             <span class="k">def</span> <span class="nf">linear_combinator</span><span class="p">(</span><span class="n">weighttuple</span><span class="p">):</span>
@@ -1468,65 +1664,101 @@
                     <span class="k">if</span> <span class="n">coeff</span> <span class="o">!=</span> <span class="mi">0</span>
                 <span class="p">)</span>
             <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">ranking_dag_filter</span> <span class="o">=</span> <span class="n">combined_dag_filter</span>
-            <span class="n">ranking_description</span> <span class="o">=</span> <span class="s2">&quot;Ranking trees to &quot;</span> <span class="o">+</span> <span class="s2">&quot; then &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-                <span class="n">opt_name</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;imize &quot;</span> <span class="o">+</span> <span class="n">ord_name</span>
-                <span class="k">for</span> <span class="p">(</span><span class="n">opt_name</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="n">ord_name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-                    <span class="n">ranking_dag_filter</span><span class="o">.</span><span class="n">ordering_names</span><span class="p">,</span>
-                    <span class="n">ranking_dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">names</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">ord_name</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
-            <span class="p">)</span>
+
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="n">ranking_description</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">print_stats</span><span class="p">(</span><span class="n">statlist</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">suppress_score</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-            <span class="n">show_score</span> <span class="o">=</span> <span class="n">ranking_coeffs</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">suppress_score</span>
-
-            <span class="k">def</span> <span class="nf">reformat</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-                    <span class="k">return</span> <span class="nb">format</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">:{</span><span class="n">n</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">n</span><span class="si">}}</span><span class="s2">&quot;</span>
-
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span>
-            <span class="n">statstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-                <span class="nb">tuple</span><span class="p">(</span>
-                    <span class="n">reformat</span><span class="p">(</span><span class="n">dfilter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">dfilter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="p">)</span>
+        <span class="k">def</span> <span class="nf">print_stats</span><span class="p">(</span>
+            <span class="n">statlist</span><span class="p">,</span>
+            <span class="n">title</span><span class="p">,</span>
+            <span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">suppress_score</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">filter_list</span><span class="o">=</span><span class="n">observer_filters</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">df_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Tree&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">statlist</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))}</span>
+            <span class="n">df_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="n">dfilter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">vals</span>
+                    <span class="k">for</span> <span class="p">(</span><span class="n">dfilter</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="n">vals</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">filter_list</span><span class="p">,</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">statlist</span><span class="p">))</span>
+                <span class="p">}</span>
             <span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;tree     </span><span class="se">\t</span><span class="si">{</span><span class="n">statstring</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">treescore&quot;</span> <span class="k">if</span> <span class="n">show_score</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
-                <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">best_weighttuple</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">statlist</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
-                <span class="c1"># ignore always-0 entry at end:</span>
-                <span class="n">statstring</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">reformat</span><span class="p">(</span><span class="n">it</span><span class="p">)</span> <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">best_weighttuple</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-                <span class="nb">print</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">statstring</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="o">+</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">{</span><span class="n">reformat</span><span class="p">(</span><span class="n">linear_combinator</span><span class="p">(</span><span class="n">best_weighttuple</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
-                        <span class="k">if</span> <span class="n">show_score</span>
-                        <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">,</span>
-                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">lexicographic</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">suppress_score</span><span class="p">):</span>
+                <span class="n">df_dict</span><span class="p">[</span><span class="s2">&quot;TreeScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">linear_combinator</span><span class="p">(</span><span class="n">stattup</span><span class="p">)</span> <span class="k">for</span> <span class="n">stattup</span> <span class="ow">in</span> <span class="n">statlist</span>
+                <span class="p">]</span>
+
+            <span class="n">df_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">printing_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">df_dict</span><span class="p">)</span>
+            <span class="c1"># Hide index</span>
+            <span class="n">printing_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">statlist</span><span class="p">)</span>
+            <span class="c1"># Set display options without side-effects</span>
+            <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">option_context</span><span class="p">(</span>
+                <span class="s2">&quot;display.max_rows&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;display.max_columns&quot;</span><span class="p">,</span>
+                <span class="mi">100</span><span class="p">,</span>
+                <span class="s2">&quot;display.width&quot;</span><span class="p">,</span>
+                <span class="mi">1000</span><span class="p">,</span>
+                <span class="s2">&quot;display.max_colwidth&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;display.show_dimensions&quot;</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;display.colheader_justify&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;right&quot;</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">printing_df</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span>
 
         <span class="n">trimdag</span> <span class="o">=</span> <span class="n">dag</span><span class="p">[</span><span class="n">ranking_dag_filter</span><span class="p">]</span>
 
-        <span class="n">best_weighttuple</span> <span class="o">=</span> <span class="n">trimdag</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span>
-            <span class="o">**</span><span class="n">combined_dag_filter</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="n">trimmed_forest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trimmed_self</span><span class="p">(</span><span class="n">trimdag</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="n">print_stats</span><span class="p">([</span><span class="n">best_weighttuple</span><span class="p">],</span> <span class="s2">&quot;Stats for optimal trees&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">trimmed_forest</span><span class="o">.</span><span class="n">n_trees</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">n_topologies</span> <span class="o">=</span> <span class="n">trimmed_forest</span><span class="o">.</span><span class="n">n_topologies</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;Degenerate ranking criteria: filtered forest contains &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">trimmed_forest</span><span class="o">.</span><span class="n">n_trees</span><span class="si">}</span><span class="s2"> unique trees, with </span><span class="si">{</span><span class="n">n_topologies</span><span class="si">}</span><span class="s2"> unique collapsed topologies.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">n_topologies</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;A representative from each of the ten most abundant topologies will be sampled randomly for rendering.&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">&quot;A representative of each topology will be sampled randomly for rendering.&quot;</span>
+                    <span class="p">)</span>
+
+        <span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">trimmed_forest</span><span class="o">.</span><span class="n">n_trees</span><span class="p">)</span>
+        <span class="n">topoclasses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">trimmed_forest</span><span class="o">.</span><span class="n">iter_topology_classes</span><span class="p">())</span>
+
+        <span class="n">sampled_histories</span> <span class="o">=</span> <span class="p">[</span><span class="n">topoclass</span><span class="o">.</span><span class="n">_forest</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span> <span class="k">for</span> <span class="n">topoclass</span> <span class="ow">in</span> <span class="n">topoclasses</span><span class="p">]</span>
+
+        <span class="n">weighttuples</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">history</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span><span class="o">**</span><span class="n">combined_observer_filter</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">history</span> <span class="ow">in</span> <span class="n">sampled_histories</span>
+        <span class="p">]</span>
+
+        <span class="n">first_tree_weighttuple</span> <span class="o">=</span> <span class="n">weighttuples</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">ctrees</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">topoclass</span><span class="o">.</span><span class="n">_clade_tree_to_ctree</span><span class="p">(</span><span class="n">history</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">topoclass</span><span class="p">,</span> <span class="n">history</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">topoclasses</span><span class="p">,</span> <span class="n">sampled_histories</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observer_filters</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">dag_filters</span><span class="p">):</span>
+                <span class="c1"># Then all selected tree stats are the same, no need to print</span>
+                <span class="c1"># them multiple times:</span>
+                <span class="n">print_stats</span><span class="p">(</span><span class="n">weighttuples</span><span class="p">[:</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;Stats for optimal trees&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">print_stats</span><span class="p">(</span><span class="n">weighttuples</span><span class="p">,</span> <span class="s2">&quot;Stats for optimal trees&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">summarize_forest</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="s2">&quot;.forest_summary.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
                 <span class="n">independent_best</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">for</span> <span class="n">dfilter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">:</span>
+
+                <span class="k">for</span> <span class="n">dfilter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">observer_filters</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
                     <span class="n">tempdag</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                     <span class="n">min_val</span><span class="p">,</span> <span class="n">max_val</span> <span class="o">=</span> <span class="n">tempdag</span><span class="o">.</span><span class="n">weight_range_annotate</span><span class="p">(</span><span class="o">**</span><span class="n">dfilter</span><span class="p">)</span>
                     <span class="n">opt_weight</span> <span class="o">=</span> <span class="n">tempdag</span><span class="o">.</span><span class="n">trim_optimal_weight</span><span class="p">(</span><span class="o">**</span><span class="n">dfilter</span><span class="p">)</span>
@@ -1535,7 +1767,7 @@
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Overall </span><span class="si">{</span><span class="n">dfilter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> range </span><span class="si">{</span><span class="n">min_val</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">max_val</span><span class="si">}</span><span class="s2">.&quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Among trees with </span><span class="si">{</span><span class="n">dfilter</span><span class="o">.</span><span class="n">optimal_func</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">dfilter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> of: </span><span class="si">{</span><span class="n">opt_weight</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
                     <span class="p">)</span>
-                    <span class="k">for</span> <span class="n">indfilter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dag_filters</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">indfilter</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">observer_filters</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
                         <span class="k">if</span> <span class="n">indfilter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="n">dfilter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
                             <span class="n">minval</span><span class="p">,</span> <span class="n">maxval</span> <span class="o">=</span> <span class="n">tempdag</span><span class="o">.</span><span class="n">weight_range_annotate</span><span class="p">(</span>
                                 <span class="o">**</span><span class="n">indfilter</span><span class="o">.</span><span class="n">weight_funcs</span>
@@ -1548,8 +1780,11 @@
                     <span class="p">[</span>
                         <span class="p">[</span>
                             <span class="n">stat</span> <span class="o">-</span> <span class="n">best</span>
-                            <span class="k">for</span> <span class="n">stat</span><span class="p">,</span> <span class="n">best</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">best_weighttuple</span><span class="p">,</span> <span class="n">independent_best</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">stat</span><span class="p">,</span> <span class="n">best</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                                <span class="n">first_tree_weighttuple</span><span class="p">,</span> <span class="n">independent_best</span>
+                            <span class="p">)</span>
                         <span class="p">]</span>
+                        <span class="o">+</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                     <span class="p">],</span>
                     <span class="s2">&quot;Highest ranked tree: loss from best value&quot;</span><span class="p">,</span>
                     <span class="n">file</span><span class="o">=</span><span class="n">fh</span><span class="p">,</span>
@@ -1557,33 +1792,49 @@
                 <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">tree_stats</span><span class="p">:</span>
-            <span class="n">dag_ls</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dag</span><span class="o">.</span><span class="n">weight_count</span><span class="p">(</span><span class="o">**</span><span class="n">combined_dag_filter</span><span class="p">)</span><span class="o">.</span><span class="n">elements</span><span class="p">())</span>
+            <span class="n">dag_ls</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dag</span><span class="o">.</span><span class="n">weight_count</span><span class="p">(</span><span class="o">**</span><span class="n">combined_observer_filter</span><span class="p">)</span><span class="o">.</span><span class="n">elements</span><span class="p">())</span>
             <span class="c1"># To clear _dp_data fields of their large cargo</span>
             <span class="n">dag</span><span class="o">.</span><span class="n">optimal_weight_annotate</span><span class="p">(</span><span class="n">edge_weight_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">ranking_coeffs</span><span class="p">:</span>
-                <span class="n">minfunckey</span> <span class="o">=</span> <span class="n">linear_combinator</span>
+            <span class="n">col_names</span> <span class="o">=</span> <span class="n">combined_observer_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">names</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">lexicographic</span><span class="p">:</span>
+                <span class="n">col_names</span> <span class="o">+=</span> <span class="p">(</span><span class="n">ranking_strategy</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),)</span>
+                <span class="n">dag_ls</span> <span class="o">=</span> <span class="p">[</span><span class="n">tup</span> <span class="o">+</span> <span class="p">(</span><span class="n">linear_combinator</span><span class="p">(</span><span class="n">tup</span><span class="p">),)</span> <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">dag_ls</span><span class="p">]</span>
+                <span class="n">best_tree_tup</span> <span class="o">=</span> <span class="n">first_tree_weighttuple</span> <span class="o">+</span> <span class="p">(</span>
+                    <span class="n">linear_combinator</span><span class="p">(</span><span class="n">first_tree_weighttuple</span><span class="p">),</span>
+                <span class="p">)</span>
+
+                <span class="k">def</span> <span class="nf">minfunckey</span><span class="p">(</span><span class="n">tup</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">tup</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">minfunckey</span> <span class="o">=</span> <span class="n">ranking_dag_filter</span><span class="o">.</span><span class="n">optimal_func</span>
+                <span class="n">best_tree_tup</span> <span class="o">=</span> <span class="n">first_tree_weighttuple</span>
+                <span class="n">_tuple_coeffs</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">filt</span><span class="o">.</span><span class="n">optimal_func</span> <span class="o">==</span> <span class="nb">max</span> <span class="k">else</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">filt</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dag_filters</span>
+                <span class="p">]</span>
+
+                <span class="k">def</span> <span class="nf">minfunckey</span><span class="p">(</span><span class="n">tup</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">coeff</span> <span class="o">*</span> <span class="n">it</span> <span class="k">for</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">_tuple_coeffs</span><span class="p">,</span> <span class="n">tup</span><span class="p">))</span>
+
             <span class="n">dag_ls</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">minfunckey</span><span class="p">)</span>
 
-            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-                <span class="n">dag_ls</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">combined_dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">names</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">])</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">dag_ls</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">col_names</span><span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">])</span>
             <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="s2">&quot;.tree_stats.csv&quot;</span><span class="p">)</span>
             <span class="n">df</span><span class="p">[</span><span class="s2">&quot;set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;all_trees&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
             <span class="n">bestdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">best_weighttuple</span><span class="p">],</span> <span class="n">columns</span><span class="o">=</span><span class="n">combined_dag_filter</span><span class="o">.</span><span class="n">weight_funcs</span><span class="o">.</span><span class="n">names</span>
+                <span class="p">[</span><span class="n">best_tree_tup</span><span class="p">],</span>
+                <span class="n">columns</span><span class="o">=</span><span class="n">col_names</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">bestdf</span><span class="p">[</span><span class="s2">&quot;set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;best_tree&quot;</span><span class="p">]</span>
             <span class="n">toplot_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">bestdf</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">pplot</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">pairplot</span><span class="p">(</span>
-                <span class="n">toplot_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Alleles&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">),</span>
+                <span class="n">toplot_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">),</span>
                 <span class="n">hue</span><span class="o">=</span><span class="s2">&quot;set&quot;</span><span class="p">,</span>
                 <span class="n">diag_kind</span><span class="o">=</span><span class="s2">&quot;hist&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">pplot</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="s2">&quot;.tree_stats.pairplot.pdf&quot;</span><span class="p">)</span>
+            <span class="n">pplot</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outbase</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;.tree_stats.pairplot.</span><span class="si">{</span><span class="n">img_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_trimmed_self</span><span class="p">(</span><span class="n">trimdag</span><span class="p">),</span> <span class="n">best_weighttuple</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ctrees</span><span class="p">,</span> <span class="n">trimmed_forest</span><span class="p">,</span> <span class="n">weighttuples</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CollapsedForest.likelihood_rankplot">
@@ -2109,8 +2360,8 @@
 
 
 <span class="k">def</span> <span class="nf">_ll_genotype_dagfuncs</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for counting tree log branching process likelihood on</span>
-<span class="sd">    the history DAG.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for counting tree negative log branching process</span>
+<span class="sd">    likelihood on the history DAG.</span>
 
 <span class="sd">    For numerical consistency, we resort to the use of ``decimal.Decimal``.</span>
 <span class="sd">    This is exactly for the purpose of solving the problem that float sum is</span>
@@ -2150,7 +2401,7 @@
             <span class="k">if</span> <span class="n">n1</span><span class="o">.</span><span class="n">is_root</span><span class="p">()</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="c1"># Add pseudocount for unobserved root unifurcation</span>
                 <span class="n">c</span> <span class="o">=</span> <span class="mi">1</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="o">-</span><span class="n">CollapsedTree</span><span class="o">.</span><span class="n">_ll_genotype</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
             <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">FloatState</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mi">8</span><span class="p">)),</span> <span class="n">state</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">accum_func</span><span class="p">(</span><span class="n">weightlist</span><span class="p">):</span>
@@ -2164,9 +2415,9 @@
                 <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">edge_weight_ll_genotype</span><span class="p">,</span>
                 <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="n">accum_func</span><span class="p">,</span>
             <span class="p">},</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LogBPLikelihood&quot;</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;BPLikelihoodLogLoss&quot;</span><span class="p">,</span>
         <span class="p">),</span>
-        <span class="nb">max</span><span class="p">,</span>
+        <span class="nb">min</span><span class="p">,</span>
     <span class="p">)</span>
 
 
@@ -2190,6 +2441,43 @@
                 <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alleles&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="nb">min</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_naive_reversion_dagfuncs</span><span class="p">(</span><span class="n">naive_seq</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return functions for filtering trees in a history DAG by the number of</span>
+<span class="sd">    reversions to the naive nucleotide sequence.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        naive_seq: The naive sequence. Sitewise reversions to this sequence will be counted.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        A :meth:`historydag.utils.AddFuncDict` which may be passed as keyword arguments</span>
+<span class="sd">        to :meth:`historydag.HistoryDag.weight_count`, :meth:`historydag.HistoryDag.trim_optimal_weight`,</span>
+<span class="sd">        or :meth:`historydag.HistoryDag.optimal_weight_annotate`</span>
+<span class="sd">        methods to trim or annotate a :meth:`historydag.HistoryDag` according to allele count.</span>
+<span class="sd">        Weight format is ``int``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">edge_weight_func</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n1</span><span class="o">.</span><span class="n">is_ua_node</span><span class="p">():</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="mi">1</span>
+                <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">n1</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">n2</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span> <span class="n">naive_seq</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">p</span> <span class="o">!=</span> <span class="n">n</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">==</span> <span class="n">n</span><span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HistoryDagFilter</span><span class="p">(</span>
+        <span class="n">hdag</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">AddFuncDict</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;start_func&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;edge_weight_func&quot;</span><span class="p">:</span> <span class="n">edge_weight_func</span><span class="p">,</span>
+                <span class="s2">&quot;accum_func&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;NaiveReversions&quot;</span><span class="p">,</span>
         <span class="p">),</span>
         <span class="nb">min</span><span class="p">,</span>
     <span class="p">)</span>

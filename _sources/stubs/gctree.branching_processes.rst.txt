@@ -27,6 +27,13 @@
 
    
    
+   .. rubric:: Exceptions
+
+   .. autosummary::
+      :toctree:
+   
+      RankingCriterionError
+   
    
 
 
