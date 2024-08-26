@@ -14,7 +14,7 @@ wget -O $substitutions https://bitbucket.org/kleinstein/shazam/raw/ba4b30fc6791e
 
 # testing backward compatibility:
 
-gctree infer tests/small_outfile tests/abundances.csv --outbase tests/smalltest_output/gctree.infer --root GL --frame 1 --verbose --idlabel --idmapfile tests/idmap.txt --isotype_mapfile tests/isotypemap.txt --mutability HS5F_Mutability.csv --substitution HS5F_Substitution.csv --ranking_coeffs 1 1 0 --use_old_mut_parsimony --branching_process_ranking_coeff 0 
+gctree infer tests/small_outfile tests/abundances.csv --outbase tests/smalltest_output/nonexistant_dir/gctree.infer --root GL --frame 1 --verbose --idlabel --idmapfile tests/idmap.txt --isotype_mapfile tests/isotypemap.txt --mutability HS5F_Mutability.csv --substitution HS5F_Substitution.csv --ranking_coeffs 1 1 0 --use_old_mut_parsimony --branching_process_ranking_coeff 0 
 
 gctree infer tests/smalltest_output/gctree.infer.inference.parsimony_forest.p --outbase tests/smalltest_output/gctree.infer --root GL --frame 1 --verbose --idlabel --idmapfile tests/idmap.txt --isotype_mapfile tests/isotypemap.txt --mutability HS5F_Mutability.csv --substitution HS5F_Substitution.csv --ranking_coeffs 1 -1 0 --use_old_mut_parsimony
 
