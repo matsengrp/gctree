@@ -18,7 +18,6 @@ import seaborn as sns
 import numpy as np
 import warnings
 import random
-import os
 import scipy.special as scs
 import scipy.optimize as sco
 import ete3
@@ -36,6 +35,7 @@ import matplotlib.pyplot as plt
 from typing import Tuple, Dict, List, Union, Set, Callable, Mapping, Sequence, Optional
 from decimal import Decimal
 import math
+from pathlib import Path
 
 sequence_resolutions = hdag.parsimony_utils.standard_nt_ambiguity_map_gap_as_char.get_sequence_resolution_func(
     "sequence"
@@ -485,6 +485,10 @@ class CollapsedTree:
             show_nuc_muts: If True, annotate branches with nucleotide mutations. If False, and frame is provided, then branches
                 will be annotated with amino acid mutations.
         """
+        # Create parent directories of outfile if they don't exist
+        outfile = Path(outfile)
+        outfile.parent.mkdir(parents=True, exist_ok=True)
+
         if frame is not None and frame not in (1, 2, 3):
             raise RuntimeError("frame must be 1, 2, or 3")
 
@@ -675,10 +679,10 @@ class CollapsedTree:
                         description=f"abundance={node.abundance}",
                     )
                 )
-            AlignIO.write(
-                aln, open(os.path.splitext(outfile)[0] + ".fasta", "w"), "fasta"
-            )
-        return tree_copy.render(outfile, tree_style=ts)
+            with open(outfile.with_suffix(".fasta"), "w") as fh:
+                AlignIO.write(aln, fh, "fasta")
+
+        return tree_copy.render(str(outfile), tree_style=ts)
 
     def feature_colormap(
         self,
