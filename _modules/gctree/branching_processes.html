@@ -113,7 +113,6 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">scs</span>
 <span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">sco</span>
 <span class="kn">import</span> <span class="nn">ete3</span>
@@ -131,6 +130,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span>
 <span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
 <span class="n">sequence_resolutions</span> <span class="o">=</span> <span class="n">hdag</span><span class="o">.</span><span class="n">parsimony_utils</span><span class="o">.</span><span class="n">standard_nt_ambiguity_map_gap_as_char</span><span class="o">.</span><span class="n">get_sequence_resolution_func</span><span class="p">(</span>
     <span class="s2">&quot;sequence&quot;</span>
@@ -599,6 +599,10 @@
 <span class="sd">            show_nuc_muts: If True, annotate branches with nucleotide mutations. If False, and frame is provided, then branches</span>
 <span class="sd">                will be annotated with amino acid mutations.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Create parent directories of outfile if they don&#39;t exist</span>
+        <span class="n">outfile</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">outfile</span><span class="p">)</span>
+        <span class="n">outfile</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frame</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;frame must be 1, 2, or 3&quot;</span><span class="p">)</span>
 
@@ -789,10 +793,10 @@
                         <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;abundance=</span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">abundance</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
-            <span class="n">AlignIO</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
-                <span class="n">aln</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">outfile</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">),</span> <span class="s2">&quot;fasta&quot;</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">tree_copy</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">tree_style</span><span class="o">=</span><span class="n">ts</span><span class="p">)</span></div>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outfile</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">&quot;.fasta&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                <span class="n">AlignIO</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">aln</span><span class="p">,</span> <span class="n">fh</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">tree_copy</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">outfile</span><span class="p">),</span> <span class="n">tree_style</span><span class="o">=</span><span class="n">ts</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CollapsedTree.feature_colormap">
