@@ -15,6 +15,7 @@ import pickle
 import random
 import ete3
 import itertools
+from pathlib import Path
 
 
 def test(args):
@@ -163,6 +164,9 @@ def infer(args):
             idmap_file=args.idmapfile,
             isotype_names=args.isotype_names,
         )
+
+    # Make parent directory of output file base string if it doesn't exist
+    Path(args.outbase).parent.mkdir(parents=True, exist_ok=True)
 
     if len(args.infiles) == 2:
         forest = bp.CollapsedForest(
